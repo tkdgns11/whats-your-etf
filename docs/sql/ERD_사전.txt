@@ -1,0 +1,239 @@
+================================================================================
+What's Your ETF ERD 용어 사전
+담당: 윤상훈 (사용자/인증, 뉴스, AI 피드백)
+================================================================================
+
+【 테이블명 】
+--------------------------------------------------------------------------------
+user                      사용자
+user_social_account       소셜계정연동
+refresh_token             리프레시토큰
+password_reset_token      비밀번호재설정토큰
+email_verification_token  이메일인증토큰
+login_history             로그인이력
+news_article              뉴스기사
+news_etf_influence        뉴스ETF영향력매핑
+portfolio_ai_feedback     포트폴리오AI피드백
+ai_feedback_rating        AI피드백평가
+user_favorite_etf         관심ETF
+user_holding_etf          보유ETF(마이데이터)
+etf_alert                 ETF알림
+notification_setting      알림설정
+fcm_token                 FCM토큰
+etf_tag                   ETF태그
+etf_tag_mapping           ETF태그매핑
+etf_cluster               ETF클러스터
+etf_cluster_mapping       ETF클러스터매핑
+industry_classification   표준산업소분류코드
+company_info              상장회사정보
+etf_disclosure            ETF공시정보
+
+【 속성명 (공통) 】
+--------------------------------------------------------------------------------
+id                        고유ID (PK)
+created_at                생성일시
+updated_at                수정일시
+user_id                   사용자ID (FK)
+is_active                 활성여부
+is_read                   읽음여부
+
+【 속성명 (사용자/인증) 】
+--------------------------------------------------------------------------------
+email                     이메일
+password                  비밀번호
+nickname                  닉네임
+profile_image             프로필이미지
+role                      역할
+last_login_at             마지막로그인일시
+provider                  소셜제공자
+provider_user_id          소셜사용자ID
+is_primary                주로그인수단여부
+linked_at                 연동일시
+token                     토큰
+expires_at                만료일시
+is_revoked                폐기여부
+is_used                   사용여부
+is_verified               인증여부
+login_at                  로그인일시
+ip_address                IP주소
+device_info               기기정보
+
+【 속성명 (뉴스) 】
+--------------------------------------------------------------------------------
+title                     제목
+content_summary           내용요약
+source                    출처(언론사명)
+source_url                원본URL
+thumbnail_url             썸네일URL
+category                  카테고리
+keywords                  키워드배열
+published_at              발행일시
+view_count                조회수
+news_id                   뉴스ID (FK)
+etf_ticker                ETF종목코드
+influence_score           영향력점수
+influence_type            영향력유형
+analysis_reason           분석사유
+
+【 속성명 (AI 피드백) 】
+--------------------------------------------------------------------------------
+portfolio_snapshot_id     포트폴리오스냅샷ID
+bull_review               강세관점리뷰
+bear_review               약세관점리뷰
+overall_score             종합점수
+risk_level                리스크레벨
+recommendation            추천사항
+llm_model                 LLM모델
+prompt_version            프롬프트버전
+feedback_id               피드백ID (FK)
+rating                    평가
+comment                   코멘트
+
+【 속성명 (사용자 ETF) 】
+--------------------------------------------------------------------------------
+quantity                  보유수량
+avg_price                 평균매입가
+synced_at                 동기화시점
+
+【 속성명 (알림) 】
+--------------------------------------------------------------------------------
+alert_type                알림유형
+message                   메시지
+etf_listing_alert         ETF상장알림설정
+etf_delisting_alert       ETF상장폐지알림설정
+portfolio_alert           포트폴리오알림설정
+news_alert                뉴스알림설정
+device_type               기기타입
+
+【 속성명 (태그/클러스터) 】
+--------------------------------------------------------------------------------
+name                      태그명
+color                     색상코드
+description               설명
+tag_id                    태그ID (FK)
+confidence                신뢰도
+cluster_id                클러스터ID (FK)
+cluster_name              클러스터이름
+cluster_label             클러스터라벨
+center_x                  중심좌표X
+center_y                  중심좌표Y
+pos_x                     좌표X
+pos_y                     좌표Y
+etf_count                 ETF개수
+avg_return_1m             1개월평균수익률
+avg_volatility            평균변동성
+distance_to_center        중심과의거리
+
+【 값 (ENUM) 】
+--------------------------------------------------------------------------------
+
+--- role (역할) ---
+USER                      일반사용자
+ADMIN                     관리자
+
+--- provider (소셜제공자) ---
+KAKAO                     카카오
+EMAIL                     이메일(일반로그인)
+
+--- category (뉴스카테고리) ---
+금융                      금융뉴스
+ETF                       ETF뉴스
+경제                      경제뉴스
+
+--- influence_type (영향력유형) ---
+POSITIVE                  긍정적영향
+NEGATIVE                  부정적영향
+NEUTRAL                   중립
+
+--- risk_level (리스크레벨) ---
+LOW                       저위험
+MEDIUM                    중위험
+HIGH                      고위험
+
+--- rating (AI피드백평가) ---
+HELPFUL                   도움됨
+NOT_HELPFUL               도움안됨
+
+--- alert_type (알림유형) ---
+LISTING                   ETF상장
+DELISTING                 ETF상장폐지
+PRICE_CHANGE              가격변동
+
+--- device_type (기기타입) ---
+ANDROID                   안드로이드
+IOS                       아이폰
+WEB                       웹
+
+--- tag category (태그카테고리) ---
+RISK                      위험등급
+SECTOR                    섹터
+THEME                     테마
+
+【 속성명 (산업분류/회사정보) 】
+--------------------------------------------------------------------------------
+code                      산업분류코드
+group_code                대분류그룹코드
+group_name                대분류그룹명
+stock_code                종목코드
+stock_name                종목명
+market_type               시장구분
+industry_code             산업분류코드
+industry_name             산업분류명
+industry_group            산업대분류그룹
+listing_date              상장일
+fiscal_month              결산월
+ceo_name                  대표자명
+homepage                  홈페이지
+region                    지역
+face_value                액면가
+listed_shares             상장주식수
+data_source               데이터소스
+
+【 속성명 (ETF공시) 】
+--------------------------------------------------------------------------------
+etf_code                  ETF종목코드
+etf_name                  ETF종목명
+disclosure_type           공시유형
+disclosure_title          공시제목
+disclosure_content        공시내용
+disclosure_date           공시일
+effective_date            효력발생일
+is_notified               알림발송여부
+
+【 값 (산업대분류 그룹) 】
+--------------------------------------------------------------------------------
+IT_SEMI                   반도체
+IT_ELEC                   전자/IT
+IT_SW                     소프트웨어
+BIO                       바이오/의약
+AUTO                      자동차
+CHEM                      화학/소재
+STEEL                     철강/금속
+ENERGY                    에너지/유틸리티
+FINANCE                   금융
+INSURANCE                 보험
+CONSTRUCT                 건설
+RETAIL                    유통/소매
+FOOD                      식품/음료
+TELECOM                   통신/미디어
+CONSUMER                  소비재
+TRANSPORT                 운송
+MACHINERY                 기계
+SHIPBUILD                 조선
+DEFENSE                   방산
+AGRI                      농업/어업
+MINING                    광업
+ETC                       기타
+
+【 값 (공시유형) 】
+--------------------------------------------------------------------------------
+delisting                 상장폐지결정
+liquidation               정리매매지정
+caution                   투자유의지정
+surveillance              투자경고
+
+【 값 (시장구분) 】
+--------------------------------------------------------------------------------
+KOSPI                     코스피
+KOSDAQ                    코스닥
+KONEX                     코넥스
