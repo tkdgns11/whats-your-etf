@@ -1,0 +1,53 @@
+stages:
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+.deploy_template: &deploy_template
+  stage: deploy
+  image: docker:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval "$(ssh-agent -s)"
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+    - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+
+# ===============================
+# FastAPI - data-service
+# ===============================
+deploy_data_service:
+  <<: *deploy_template
+  only:
+    refs: [ master ]
+    changes:
+      - backend/data-service/**/*
+  script:
+    - docker build -t $DOCKERHUB_USERNAME/data-service:latest backend/data-service
+    - docker push $DOCKERHUB_USERNAME/data-service:latest
+    - ssh ubuntu@$SSH_HOST "
+        cd /home/ubuntu/wye&
+        docker compose pull data-service &&
+        docker compose up -d data-service
+      "
+
+# ===============================
+# Spring - user-service
+# ===============================
+deploy_user_service:
+  <<: *deploy_template
+  only:
+    refs: [ master ]
+    changes:
+      - backend/user-service/**/*
+  script:
+    - docker build -t $DOCKERHUB_USERNAME/user-service:latest backend/user-service
+    - docker push $DOCKERHUB_USERNAME/user-service:latest
+    - ssh ubuntu@$SSH_HOST "
+        cd /home/ubuntu/wye &&
+        docker compose pull user-service &&
+        docker compose up -d user-service
+      "

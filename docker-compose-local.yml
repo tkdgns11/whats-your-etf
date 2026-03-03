@@ -34,7 +34,7 @@ services:
       - postgres
     restart: unless-stopped
   
-  rabbigmq:
+  rabbitmq:
     image: rabbitmq:3-management
     container_name: wye-rabbitmq
     ports:
