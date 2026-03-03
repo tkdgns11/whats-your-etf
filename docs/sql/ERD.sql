@@ -1,7 +1,6 @@
 -- =============================================
 -- What's Your ETF ERD (DDL)
 -- ERDCloud import용 / PostgreSQL
--- 담당: 윤상훈 (사용자/인증, 뉴스, AI 피드백)
 -- =============================================
 
 -- =============================================
@@ -13,7 +12,6 @@ CREATE TABLE "user" (
     "email" VARCHAR(100) NOT NULL UNIQUE,
     "password" VARCHAR(255),                      -- 비밀번호 (nullable, 소셜만 사용 시 NULL)
     "nickname" VARCHAR(50) UNIQUE,                -- 닉네임 (신규 가입 시 이메일로 설정)
-    "profile_image" VARCHAR(500),
     "role" VARCHAR(20) DEFAULT 'USER',            -- USER / ADMIN
     "is_active" BOOLEAN DEFAULT TRUE,
     "last_login_at" TIMESTAMP,
@@ -397,3 +395,207 @@ CREATE INDEX "idx_disclosure_date" ON "etf_disclosure"("disclosure_date" DESC);
 CREATE INDEX "idx_disclosure_notified" ON "etf_disclosure"("is_notified") WHERE "is_notified" = 'N';
 
 COMMENT ON TABLE "etf_disclosure" IS 'ETF 공시 정보 (KRX KIND 크롤링)';
+
+-- =============================================
+-- 10. ETF 목록 (국내 상장 ETF ~800종)
+-- =============================================
+
+CREATE TABLE "etf" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "ticker" VARCHAR(20) UNIQUE NOT NULL,         -- ETF 코드 (069500, 102110 등)
+    "name" VARCHAR(200) NOT NULL,                 -- KODEX 200, TIGER 200 등
+    -- 분류
+    "category" VARCHAR(50),                       -- 국내주식형/해외주식형/채권형/원자재형/통화형 등
+    "strategy_type" VARCHAR(30),                  -- MARKET/THEME/DIVIDEND/BOND/DERIVATIVE
+    "sector" VARCHAR(50),                         -- 반도체/2차전지/AI/배당/ESG/금리/헬스케어/소비재/금융 등
+    "asset_class" VARCHAR(30),                    -- EQUITY/BOND/COMMODITY/MIXED
+    "asset_manager" VARCHAR(50),                  -- 삼성(KODEX)/미래에셋(TIGER)/KB(KBSTAR) 등
+    -- 속성 플래그
+    "is_leveraged" BOOLEAN DEFAULT FALSE,         -- 레버리지 ETF 여부
+    "is_inverse" BOOLEAN DEFAULT FALSE,           -- 인버스 ETF 여부
+    "is_hedged" BOOLEAN,                          -- 환헤지 여부 (NULL=해당없음, TRUE=H, FALSE=UH)
+    -- 비용/규모
+    "expense_ratio" DECIMAL(6,4),                 -- 총보수 (%)
+    "nav" DECIMAL(14,2),                          -- 최근 NAV
+    "aum" BIGINT,                                 -- 순자산총액 (원)
+    -- 배당
+    "dividend_yield" DECIMAL(6,3),                -- 배당률 (%)
+    "dividend_freq" VARCHAR(10),                  -- MONTHLY/QUARTERLY/SEMI_ANNUAL/ANNUAL/NONE
+    -- 밸류에이션 (구성종목 가중평균, 배치 계산)
+    "avg_per" DECIMAL(8,2),                       -- 가중평균 P/E
+    "avg_pbr" DECIMAL(8,2),                       -- 가중평균 P/B
+    "avg_roe" DECIMAL(8,2),                       -- 가중평균 ROE (%)
+    -- 위험 분류 (변동성 기반, 배치 계산: 일일수익률 표준편차 × √252)
+    "risk_grade" VARCHAR(20),                     -- HIGH_RISK/MODERATE/STABLE
+    "volatility_1y" DECIMAL(8,4),                 -- 최근 1년 변동성 (%)
+    -- 생애주기
+    "listing_date" DATE,
+    "delisted_date" DATE,                         -- 상장폐지일 (NULL이면 현재 상장 중)
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX "idx_etf_category" ON "etf"("category", "is_active");
+CREATE INDEX "idx_etf_strategy" ON "etf"("strategy_type", "is_active");
+CREATE INDEX "idx_etf_risk" ON "etf"("risk_grade", "is_active");
+CREATE INDEX "idx_etf_dividend" ON "etf"("dividend_freq", "is_active");
+CREATE INDEX "idx_etf_manager" ON "etf"("asset_manager", "is_active");
+
+-- =============================================
+-- 11. ETF 구성종목
+-- =============================================
+
+CREATE TABLE "etf_compositions" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
+    "component_ticker" VARCHAR(20),               -- 구성 종목 코드 (company_info.stock_code 참조)
+    "weight_pct" DECIMAL(6,3),                    -- 비중 (%)
+    "base_date" DATE NOT NULL,
+    UNIQUE("etf_id", "component_ticker", "base_date"),
+    CONSTRAINT "fk_composition_etf" FOREIGN KEY ("etf_id")
+        REFERENCES "etf"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_composition_component" FOREIGN KEY ("component_ticker")
+        REFERENCES "company_info"("stock_code") ON DELETE SET NULL
+);
+-- 종목명/산업분류는 company_info 테이블 JOIN으로 조회
+
+CREATE INDEX "idx_etf_compositions_etf" ON "etf_compositions"("etf_id", "base_date" DESC);
+CREATE INDEX "idx_etf_compositions_component" ON "etf_compositions"("component_ticker");
+
+-- =============================================
+-- 12. ETF 일별 시세 (클러스터링 + 백테스트용)
+-- =============================================
+
+CREATE TABLE "etf_prices" (
+    "ticker" VARCHAR(20) NOT NULL,
+    "trade_date" DATE NOT NULL,
+    "close" DECIMAL(14,2),                        -- 종가
+    "nav" DECIMAL(14,2),                          -- 순자산가치
+    "volume" BIGINT,
+    "change_rate" DECIMAL(8,4),                   -- 등락률: (당일종가 - 전일종가) / 전일종가 * 100
+    PRIMARY KEY ("ticker", "trade_date")
+);
+
+CREATE INDEX "idx_etf_prices_ticker_date" ON "etf_prices"("ticker", "trade_date" DESC);
+
+-- =============================================
+-- 13. 사용자 포트폴리오 (계정당 최대 10개)
+-- =============================================
+
+CREATE TABLE "portfolios" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "user_id" BIGINT NOT NULL,
+    "name" VARCHAR(100) NOT NULL,                 -- "나의 성장형 포트폴리오"
+    -- 목표 설정
+    "goal_amount" DECIMAL(18,2),                  -- 목표 금액
+    "invest_amount" DECIMAL(18,2),                -- 투자 금액
+    "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE (사용자 선택)
+    -- 상태
+    "status" VARCHAR(20) DEFAULT 'DRAFT',         -- DRAFT/ACTIVE/ARCHIVED
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_portfolio_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX "idx_portfolios_user" ON "portfolios"("user_id", "status");
+
+-- 포트폴리오 내 ETF 구성 (포트폴리오당 최대 10개 ETF)
+CREATE TABLE "portfolio_etfs" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "portfolio_id" BIGINT NOT NULL,
+    "etf_ticker" VARCHAR(20) NOT NULL,
+    "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
+    UNIQUE("portfolio_id", "etf_ticker"),
+    CONSTRAINT "fk_portfolio_etf_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE
+);
+
+-- =============================================
+-- 14. 시뮬레이션 (백테스트 요청)
+-- =============================================
+
+CREATE TABLE "simulations" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "portfolio_id" BIGINT NOT NULL,
+    "user_id" BIGINT NOT NULL,
+    -- 백테스트 설정
+    "start_date" DATE NOT NULL,
+    "end_date" DATE NOT NULL,
+    "initial_amount" DECIMAL(18,2) NOT NULL,      -- 초기 투자 금액
+    "rebalance_period" VARCHAR(20) DEFAULT 'MONTHLY', -- MONTHLY/QUARTERLY/YEARLY/NONE
+    -- 결과
+    "final_amount" DECIMAL(18,2),
+    "total_return" DECIMAL(8,4),                  -- 총 수익률
+    "annualized_return" DECIMAL(8,4),             -- 연환산 수익률 (CAGR)
+    "max_drawdown" DECIMAL(8,4),                  -- 최대 낙폭 (MDD)
+    "sharpe_ratio" DECIMAL(8,4),                  -- 샤프 비율
+    "volatility" DECIMAL(8,4),                    -- 변동성
+    -- 벤치마크 비교
+    "benchmark_ticker" VARCHAR(20) DEFAULT '069500', -- KODEX 200
+    "benchmark_return" DECIMAL(8,4),
+    "alpha" DECIMAL(8,4),                         -- 초과 수익률
+    -- 메타
+    "status" VARCHAR(20) DEFAULT 'PENDING',       -- PENDING/RUNNING/COMPLETED/FAILED
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "completed_at" TIMESTAMP,
+    CONSTRAINT "fk_simulation_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_simulation_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX "idx_simulations_portfolio" ON "simulations"("portfolio_id", "status");
+CREATE INDEX "idx_simulations_user" ON "simulations"("user_id", "created_at" DESC);
+
+-- 시뮬레이션 일별 결과 (백테스트 차트용)
+CREATE TABLE "simulation_daily" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "simulation_id" BIGINT NOT NULL,
+    "trade_date" DATE NOT NULL,
+    "portfolio_value" DECIMAL(18,2),              -- 포트폴리오 평가액
+    "benchmark_value" DECIMAL(18,2),              -- 벤치마크 평가액
+    "daily_return" DECIMAL(8,6),                  -- 일별 수익률
+    "cumulative_return" DECIMAL(8,4),             -- 누적 수익률
+    "drawdown" DECIMAL(8,4),                      -- 낙폭
+    UNIQUE("simulation_id", "trade_date"),
+    CONSTRAINT "fk_simulation_daily" FOREIGN KEY ("simulation_id") REFERENCES "simulations"("id") ON DELETE CASCADE
+);
+
+-- =============================================
+-- 15. 전략 저장 (Strategy)
+-- =============================================
+
+CREATE TABLE "strategies" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "user_id" BIGINT NOT NULL,
+    "portfolio_id" BIGINT,
+    "simulation_id" BIGINT,
+    "name" VARCHAR(100),
+    "description" TEXT,
+    -- 저장 시점 스냅샷
+    "saved_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "snapshot_etfs" JSONB,                        -- 저장 시점 ETF 구성 + 비중
+    "snapshot_metrics" JSONB,                     -- 저장 시점 시뮬 지표
+    -- 추적
+    "is_tracking" BOOLEAN DEFAULT TRUE,           -- 이후 움직임 추적 중
+    "tracking_start_date" DATE,                   -- 추적 시작일
+    "current_return" DECIMAL(8,4),                -- 현재 수익률 (실시간 갱신)
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_strategy_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_strategy_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE SET NULL,
+    CONSTRAINT "fk_strategy_simulation" FOREIGN KEY ("simulation_id") REFERENCES "simulations"("id") ON DELETE SET NULL
+);
+
+CREATE INDEX "idx_strategies_user" ON "strategies"("user_id", "is_tracking");
+
+-- 전략 일별 추적 (저장 이후 실제 시장 움직임)
+CREATE TABLE "strategy_tracking" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "strategy_id" BIGINT NOT NULL,
+    "trade_date" DATE NOT NULL,
+    "portfolio_value" DECIMAL(18,2),
+    "benchmark_value" DECIMAL(18,2),
+    "daily_return" DECIMAL(8,6),
+    "cumulative_return" DECIMAL(8,4),
+    UNIQUE("strategy_id", "trade_date"),
+    CONSTRAINT "fk_strategy_tracking" FOREIGN KEY ("strategy_id") REFERENCES "strategies"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX "idx_strategy_tracking_date" ON "strategy_tracking"("strategy_id", "trade_date" DESC);

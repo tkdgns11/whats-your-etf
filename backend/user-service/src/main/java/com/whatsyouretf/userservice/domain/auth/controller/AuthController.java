@@ -3,6 +3,7 @@ package com.whatsyouretf.userservice.domain.auth.controller;
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.auth.dto.AuthResponse;
+import com.whatsyouretf.userservice.domain.auth.dto.AuthUrl;
 import com.whatsyouretf.userservice.domain.auth.dto.TokenRefreshRequest;
 import com.whatsyouretf.userservice.domain.auth.service.OAuth2Service;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,13 +31,13 @@ public class AuthController {
 
     @Operation(summary = "Kakao OAuth URL 조회", description = "카카오 로그인 페이지 URL을 반환합니다.")
     @GetMapping("/oauth/kakao")
-    public ResponseEntity<ApiResponse<String>> getKakaoAuthUrl() {
+    public ResponseEntity<ApiResponse<AuthUrl>> getKakaoAuthUrl() {
         String authUrl = String.format(
                 "https://kauth.kakao.com/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=profile_nickname,profile_image,account_email",
                 kakaoClientId,
                 kakaoRedirectUri
         );
-        return ResponseEntity.ok(ApiResponse.success(authUrl));
+        return ResponseEntity.ok(ApiResponse.success(AuthUrl.of(authUrl)));
     }
 
     @Operation(summary = "Kakao OAuth Callback", description = "카카오 로그인 콜백을 처리합니다.")

@@ -287,8 +287,8 @@ Content-Type: application/json
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| ALERT_NOT_FOUND | 알림을 찾을 수 없음 |
-| INVALID_TOKEN | 유효하지 않은 FCM 토큰 |
-| TOKEN_ALREADY_EXISTS | 이미 등록된 FCM 토큰 |
+| 코드 | 에러명 | 설명 |
+|------|--------|------|
+| ALERT001 | ALERT_NOT_FOUND | 알림을 찾을 수 없음 |
+| ALERT002 | FCM_TOKEN_INVALID | 유효하지 않은 FCM 토큰 |
+| ALERT003 | FCM_TOKEN_ALREADY_EXISTS | 이미 등록된 FCM 토큰 |

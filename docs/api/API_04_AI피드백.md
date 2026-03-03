@@ -321,12 +321,12 @@ Content-Type: application/json
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| REVIEW_NOT_FOUND | 리뷰를 찾을 수 없음 |
-| REVIEW_PROCESSING | 리뷰 분석 중 |
-| REVIEW_FAILED | 리뷰 생성 실패 |
-| ALREADY_RATED | 이미 평가한 리뷰 |
-| INVALID_PORTFOLIO | 유효하지 않은 포트폴리오 |
-| AI_SERVICE_UNAVAILABLE | AI 서비스 일시 불가 |
-| RATE_LIMIT_EXCEEDED | 요청 한도 초과 |
+| 코드 | 에러명 | 설명 |
+|------|--------|------|
+| AI001 | REVIEW_NOT_FOUND | 리뷰를 찾을 수 없음 |
+| AI002 | REVIEW_GENERATION_FAILED | 리뷰 생성 실패 |
+| AI003 | INVALID_PORTFOLIO_FOR_REVIEW | 유효하지 않은 포트폴리오 |
+| AI004 | REVIEW_PROCESSING | 리뷰 분석 중 |
+| AI005 | ALREADY_RATED | 이미 평가한 리뷰 |
+| AI006 | AI_SERVICE_UNAVAILABLE | AI 서비스 일시 불가 |
+| AI007 | RATE_LIMIT_EXCEEDED | 요청 한도 초과 |

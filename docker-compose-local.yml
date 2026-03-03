@@ -33,6 +33,15 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
+  
+  rabbigmq:
+    image: rabbitmq:3-management
+    container_name: wye-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  rabbitmq_data:
