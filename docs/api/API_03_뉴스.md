@@ -348,9 +348,10 @@ ETF, 반도체+ETF, 2차전지+ETF, AI+ETF, 배당+ETF,
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| NEWS_NOT_FOUND | 뉴스를 찾을 수 없음 |
-| ETF_NOT_FOUND | ETF를 찾을 수 없음 |
-| SCRAPE_FAILED | 크롤링 실패 |
-| INVALID_KEYWORD | 유효하지 않은 검색어 |
+| 코드 | 에러명 | 설명 |
+|------|--------|------|
+| NEWS001 | NEWS_NOT_FOUND | 뉴스를 찾을 수 없음 |
+| NEWS002 | NEWS_SCRAPE_FAILED | 크롤링 실패 |
+| NEWS003 | INVALID_DATE_RANGE | 잘못된 날짜 범위 |
+| NEWS004 | INVALID_KEYWORD | 유효하지 않은 검색어 |
+| ETF001 | ETF_NOT_FOUND | ETF를 찾을 수 없음 |

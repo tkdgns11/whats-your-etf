@@ -388,13 +388,13 @@ Content-Type: application/json
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| USER_NOT_FOUND | 사용자를 찾을 수 없음 |
-| NICKNAME_ALREADY_EXISTS | 이미 사용 중인 닉네임 |
-| INVALID_PASSWORD | 현재 비밀번호 불일치 |
-| ALREADY_FAVORITE | 이미 관심 ETF에 추가됨 |
-| FAVORITE_NOT_FOUND | 관심 ETF를 찾을 수 없음 |
-| ETF_NOT_FOUND | ETF를 찾을 수 없음 |
-| MYDATA_NOT_CONNECTED | 마이데이터 미연동 |
-| MYDATA_SYNC_FAILED | 마이데이터 동기화 실패 |
+| 코드 | 에러명 | 설명 |
+|------|--------|------|
+| USER001 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |
+| USER003 | DUPLICATE_NICKNAME | 이미 사용 중인 닉네임 |
+| USER004 | INVALID_PASSWORD | 현재 비밀번호 불일치 |
+| USER005 | ALREADY_FAVORITE | 이미 관심 ETF에 추가됨 |
+| USER006 | FAVORITE_NOT_FOUND | 관심 ETF를 찾을 수 없음 |
+| USER007 | MYDATA_NOT_CONNECTED | 마이데이터 미연동 |
+| USER008 | MYDATA_SYNC_FAILED | 마이데이터 동기화 실패 |
+| ETF001 | ETF_NOT_FOUND | ETF를 찾을 수 없음 |

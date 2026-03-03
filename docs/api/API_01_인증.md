@@ -470,14 +470,15 @@ Content-Type: application/json
 
 ## 에러 코드
 
-| 코드 | 설명 |
-|------|------|
-| INVALID_CREDENTIALS | 이메일 또는 비밀번호 불일치 |
-| EMAIL_ALREADY_EXISTS | 이미 가입된 이메일 |
-| NICKNAME_ALREADY_EXISTS | 이미 사용 중인 닉네임 |
-| EMAIL_NOT_VERIFIED | 이메일 인증 미완료 |
-| INVALID_TOKEN | 유효하지 않은 토큰 |
-| TOKEN_EXPIRED | 토큰 만료 |
-| OAUTH_FAILED | OAuth 인증 실패 |
-| PASSWORD_MISMATCH | 비밀번호 확인 불일치 |
-| WEAK_PASSWORD | 비밀번호 조건 미충족 |
+| 코드 | 에러명 | 설명 |
+|------|--------|------|
+| AUTH001 | UNAUTHORIZED | 인증이 필요합니다 |
+| AUTH002 | INVALID_TOKEN | 유효하지 않은 토큰 |
+| AUTH003 | EXPIRED_TOKEN | 토큰 만료 |
+| AUTH004 | OAUTH_FAILED | OAuth 인증 실패 |
+| AUTH005 | INVALID_CREDENTIALS | 이메일 또는 비밀번호 불일치 |
+| AUTH006 | EMAIL_NOT_VERIFIED | 이메일 인증 미완료 |
+| AUTH007 | PASSWORD_MISMATCH | 비밀번호 확인 불일치 |
+| AUTH008 | WEAK_PASSWORD | 비밀번호 조건 미충족 |
+| USER002 | DUPLICATE_EMAIL | 이미 가입된 이메일 |
+| USER003 | DUPLICATE_NICKNAME | 이미 사용 중인 닉네임 |

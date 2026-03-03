@@ -1,6 +1,5 @@
 ================================================================================
 What's Your ETF ERD 용어 사전
-담당: 윤상훈 (사용자/인증, 뉴스, AI 피드백)
 ================================================================================
 
 【 테이블명 】
@@ -27,6 +26,15 @@ etf_cluster_mapping       ETF클러스터매핑
 industry_classification   표준산업소분류코드
 company_info              상장회사정보
 etf_disclosure            ETF공시정보
+etf                       ETF목록
+etf_compositions          ETF구성종목
+etf_prices                ETF일별시세
+portfolios                사용자포트폴리오
+portfolio_etfs            포트폴리오ETF구성
+simulations               시뮬레이션
+simulation_daily          시뮬레이션일별결과
+strategies                전략저장
+strategy_tracking         전략일별추적
 
 【 속성명 (공통) 】
 --------------------------------------------------------------------------------
@@ -42,7 +50,6 @@ is_read                   읽음여부
 email                     이메일
 password                  비밀번호
 nickname                  닉네임
-profile_image             프로필이미지
 role                      역할
 last_login_at             마지막로그인일시
 provider                  소셜제공자
@@ -124,6 +131,115 @@ avg_return_1m             1개월평균수익률
 avg_volatility            평균변동성
 distance_to_center        중심과의거리
 
+【 속성명 (산업분류/회사정보) 】
+--------------------------------------------------------------------------------
+code                      산업분류코드
+group_code                대분류그룹코드
+group_name                대분류그룹명
+stock_code                종목코드
+stock_name                종목명
+market_type               시장구분
+industry_code             산업분류코드
+industry_name             산업분류명
+industry_group            산업대분류그룹
+listing_date              상장일
+fiscal_month              결산월
+ceo_name                  대표자명
+homepage                  홈페이지
+region                    지역
+face_value                액면가
+listed_shares             상장주식수
+data_source               데이터소스
+
+【 속성명 (ETF공시) 】
+--------------------------------------------------------------------------------
+etf_code                  ETF종목코드
+etf_name                  ETF종목명
+disclosure_type           공시유형
+disclosure_title          공시제목
+disclosure_content        공시내용
+disclosure_date           공시일
+effective_date            효력발생일
+is_notified               알림발송여부
+
+【 속성명 (ETF 목록) 】
+--------------------------------------------------------------------------------
+ticker                    ETF종목코드
+name                      ETF종목명
+category                  ETF분류
+strategy_type             전략유형
+sector                    섹터
+asset_class               자산유형
+asset_manager             운용사
+is_leveraged              레버리지여부
+is_inverse                인버스여부
+is_hedged                 환헤지여부
+expense_ratio             총보수
+nav                       순자산가치(NAV)
+aum                       순자산총액
+dividend_yield            배당률
+dividend_freq             배당주기
+avg_per                   가중평균PER
+avg_pbr                   가중평균PBR
+avg_roe                   가중평균ROE
+risk_grade                위험등급
+volatility_1y             1년변동성
+delisted_date             상장폐지일
+
+【 속성명 (ETF 구성종목) 】
+--------------------------------------------------------------------------------
+etf_id                    ETF ID (FK)
+component_ticker          구성종목코드
+weight_pct                비중(%)
+base_date                 기준일
+
+【 속성명 (ETF 일별시세) 】
+--------------------------------------------------------------------------------
+trade_date                거래일
+close                     종가
+volume                    거래량
+change_rate               등락률
+
+【 속성명 (포트폴리오) 】
+--------------------------------------------------------------------------------
+portfolio_id              포트폴리오ID (FK)
+goal_amount               목표금액
+invest_amount             투자금액
+status                    상태
+
+【 속성명 (시뮬레이션) 】
+--------------------------------------------------------------------------------
+simulation_id             시뮬레이션ID (FK)
+start_date                시작일
+end_date                  종료일
+initial_amount            초기투자금액
+rebalance_period          리밸런싱주기
+final_amount              최종금액
+total_return              총수익률
+annualized_return         연환산수익률(CAGR)
+max_drawdown              최대낙폭(MDD)
+sharpe_ratio              샤프비율
+volatility                변동성
+benchmark_ticker          벤치마크종목코드
+benchmark_return          벤치마크수익률
+alpha                     초과수익률(알파)
+completed_at              완료일시
+portfolio_value           포트폴리오평가액
+benchmark_value           벤치마크평가액
+daily_return              일별수익률
+cumulative_return         누적수익률
+drawdown                  낙폭
+
+【 속성명 (전략) 】
+--------------------------------------------------------------------------------
+strategy_id               전략ID (FK)
+saved_at                  저장일시
+snapshot_etfs             ETF구성스냅샷(JSON)
+snapshot_metrics          지표스냅샷(JSON)
+is_tracking               추적여부
+tracking_start_date       추적시작일
+current_return            현재수익률
+
 【 값 (ENUM) 】
 --------------------------------------------------------------------------------
 
@@ -169,36 +285,47 @@ RISK                      위험등급
 SECTOR                    섹터
 THEME                     테마
 
-【 속성명 (산업분류/회사정보) 】
---------------------------------------------------------------------------------
-code                      산업분류코드
-group_code                대분류그룹코드
-group_name                대분류그룹명
-stock_code                종목코드
-stock_name                종목명
-market_type               시장구분
-industry_code             산업분류코드
-industry_name             산업분류명
-industry_group            산업대분류그룹
-listing_date              상장일
-fiscal_month              결산월
-ceo_name                  대표자명
-homepage                  홈페이지
-region                    지역
-face_value                액면가
-listed_shares             상장주식수
-data_source               데이터소스
+--- strategy_type (ETF전략유형) ---
+MARKET                    시장추종형
+THEME                     테마형
+DIVIDEND                  배당형
+BOND                      채권형
+DERIVATIVE                파생형
 
-【 속성명 (ETF공시) 】
---------------------------------------------------------------------------------
-etf_code                  ETF종목코드
-etf_name                  ETF종목명
-disclosure_type           공시유형
-disclosure_title          공시제목
-disclosure_content        공시내용
-disclosure_date           공시일
-effective_date            효력발생일
-is_notified               알림발송여부
+--- asset_class (자산유형) ---
+EQUITY                    주식
+BOND                      채권
+COMMODITY                 원자재
+MIXED                     혼합
+
+--- risk_grade (위험등급) ---
+HIGH_RISK                 고위험
+MODERATE                  중위험
+STABLE                    안정형
+
+--- dividend_freq (배당주기) ---
+MONTHLY                   월배당
+QUARTERLY                 분기배당
+SEMI_ANNUAL               반기배당
+ANNUAL                    연배당
+NONE                      무배당
+
+--- portfolio status (포트폴리오상태) ---
+DRAFT                     임시저장
+ACTIVE                    활성
+ARCHIVED                  보관
+
+--- simulation status (시뮬레이션상태) ---
+PENDING                   대기중
+RUNNING                   실행중
+COMPLETED                 완료
+FAILED                    실패
+
+--- rebalance_period (리밸런싱주기) ---
+MONTHLY                   월간
+QUARTERLY                 분기
+YEARLY                    연간
+NONE                      없음
 
 【 값 (산업대분류 그룹) 】
 --------------------------------------------------------------------------------
