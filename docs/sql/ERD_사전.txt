@@ -23,7 +23,7 @@ etf_tag                   ETF태그
 etf_tag_mapping           ETF태그매핑
 etf_cluster               ETF클러스터
 etf_cluster_mapping       ETF클러스터매핑
-industry_classification   표준산업소분류코드
+industry_classification   산업분류코드(셀프참조트리)
 company_info              상장회사정보
 etf_disclosure            ETF공시정보
 etf                       ETF목록
@@ -133,7 +133,10 @@ distance_to_center        중심과의거리
 
 【 속성명 (산업분류/회사정보) 】
 --------------------------------------------------------------------------------
-code                      산업분류코드
+code                      산업분류코드 (PK)
+name                      분류명
+level                     분류단계 (1=대,2=중,3=소,4=세분류)
+parent_code               상위분류코드 (셀프참조FK, 대분류는NULL)
 group_code                대분류그룹코드
 group_name                대분류그룹명
 stock_code                종목코드
@@ -327,6 +330,13 @@ QUARTERLY                 분기
 YEARLY                    연간
 NONE                      없음
 
+【 값 (산업분류 level) 】
+--------------------------------------------------------------------------------
+1                         대분류 (KSIC 알파벳, 예: C=제조업)
+2                         중분류 (KSIC 2자리, 예: 26=전자부품/컴퓨터)
+3                         소분류 (6자리 코드, 예: 032601=반도체 제조업)
+4                         세분류 (커스텀, 섹터ETF용, 예: SEMI_MEM=메모리 반도체)
+
 【 값 (산업대분류 그룹) 】
 --------------------------------------------------------------------------------
 IT_SEMI                   반도체
@@ -351,6 +361,207 @@ DEFENSE                   방산
 AGRI                      농업/어업
 MINING                    광업
 ETC                       기타
+
+【 값 (세분류 코드 - 한국 ETF 전체 섹터/테마 커버) 】
+--------------------------------------------------------------------------------
+--- 반도체 (parent: 032601) ---
+SEMI_MEM                  메모리 반도체 (DRAM/NAND)
+SEMI_SYS                  시스템 반도체 (비메모리/AP)
+SEMI_FAB                  파운드리 (위탁생산)
+SEMI_FBL                  팹리스 (설계전문)
+SEMI_EQP                  반도체 장비
+SEMI_MAT                  반도체 소재
+SEMI_CER                  반도체 세라믹/기판/PCB
+SEMI_PKG                  반도체 패키징/테스트 (OSAT)
+SEMI_HBM                  HBM (고대역폭메모리)
+SEMI_AI                   AI 반도체/GPU/NPU
+SEMI_PWR                  전력반도체
+SEMI_CIS                  이미지센서 (CIS)
+
+--- 2차전지 (parent: 032802) ---
+BAT_CELL                  배터리 셀
+BAT_CATH                  양극재
+BAT_ANOD                  음극재
+BAT_SEP                   분리막
+BAT_ELEC                  전해질/전해액
+BAT_EQP                   배터리 장비/공정
+BAT_RECY                  배터리 리사이클링
+BAT_LFP                   LFP (리튬인산철)
+BAT_SSB                   전고체 배터리
+BAT_BMS                   BMS (배터리관리시스템)
+
+--- 디스플레이 (parent: 032602) ---
+DISP_LCD                  LCD 패널
+DISP_OLED                 OLED/플렉서블
+DISP_MAT                  디스플레이 소재/부품
+DISP_EQP                  디스플레이 장비
+
+--- 바이오/헬스케어 (parent: 032102, 032701) ---
+BIO_NEW                   신약개발 (합성신약)
+BIO_SIM                   바이오시밀러
+BIO_CDMO                  CDMO (위탁개발생산)
+BIO_CELL                  세포/유전자 치료제 (CGT)
+BIO_DIAG                  진단/체외진단 (IVD)
+BIO_VACC                  백신/감염병
+BIO_ANTI                  항체/ADC
+BIO_OBST                  비만/대사질환 치료제
+MED_DEV                   의료기기/장비
+MED_DIG                   디지털 헬스케어/원격의료
+MED_ROBO                  수술용 로봇
+MED_DENT                  치과/미용의료
+
+--- 자동차/모빌리티 (parent: 033001, 033003) ---
+AUTO_EV                   전기차 (EV)
+AUTO_HEV                  하이브리드 (HEV/PHEV)
+AUTO_FCEV                 수소차 (FCEV)
+AUTO_AUT                  자율주행/레벨4+
+AUTO_SDV                  SDV (소프트웨어정의차량)
+AUTO_MOT                  EV 모터/인버터/감속기
+AUTO_THM                  열관리 시스템
+AUTO_ADAS                 ADAS/라이다/센서
+AUTO_CHRG                 전기차 충전 인프라
+AUTO_TIRE                 타이어/고무부품
+
+--- SW/IT서비스/플랫폼 (parent: 105802, 106201, 106301) ---
+SW_AI                     인공지능 (AI/LLM)
+SW_CLOUD                  클라우드/SaaS/IaaS
+SW_SEC                    사이버보안/정보보안
+SW_GAME                   게임
+SW_PLAT                   플랫폼/커머스/O2O
+SW_META                   메타버스/XR/AR/VR
+SW_BLOC                   블록체인/디지털자산
+SW_FINT                   핀테크/디지털금융
+SW_EDTC                   에듀테크/온라인교육
+SW_QNTM                   양자컴퓨팅
+SW_DATA                   데이터센터/서버
+SW_IOT                    IoT/스마트팩토리
+
+--- 통신/5G (parent: 106102) ---
+TEL_5G                    5G/6G 통신장비
+TEL_INFR                  통신 인프라/기지국
+TEL_SAT                   위성통신/저궤도위성
+
+--- 미디어/콘텐츠/엔터 (parent: 105901, 189001) ---
+MED_KPOP                  K-POP/음악/엔터테인먼트
+MED_DRAM                  K-드라마/영상콘텐츠
+MED_OTT                   OTT/스트리밍
+MED_AD                    광고/디지털마케팅
+MED_WEB                   웹툰/웹소설/IP
+
+--- 로봇/자동화 (parent: 032902) ---
+ROBO_HUM                  휴머노이드 로봇
+ROBO_IND                  산업용 로봇/협동로봇
+ROBO_SVC                  서비스 로봇 (배달/물류)
+ROBO_DRN                  드론/무인기 (UAM)
+ROBO_AUT                  공장자동화/스마트제조
+
+--- 에너지/전력 (parent: 043501, 043502) ---
+ENG_SOL                   태양광/태양전지
+ENG_WIND                  풍력 (해상/육상)
+ENG_NUC                   원자력/SMR
+ENG_H2                    수소에너지/수전해
+ENG_ESS                   ESS (에너지 저장장치)
+ENG_GRID                  전력인프라/송배전/변압기
+ENG_AI                    AI 전력핵심설비/데이터센터전력
+ENG_CARB                  탄소배출권/탄소중립
+ENG_LNG                   LNG/천연가스
+ENG_OIL                   정유/석유화학
+
+--- 화학/소재 (parent: 032001, 032004) ---
+CHM_PETRO                 석유화학/나프타
+CHM_FINE                  정밀화학/특수화학
+CHM_GAS                   특수가스/산업가스
+CHM_COSM                  화장품/K-뷰티
+CHM_ADV                   첨단소재/신소재
+
+--- 철강/금속 (parent: 032401, 032402) ---
+STL_SPE                   특수강/고강도강
+STL_NFE                   비철금속 (알루미늄/구리/니켈)
+STL_RMT                   희토류/희귀금속
+
+--- 건설/인프라/부동산 (parent: 064101, 126801) ---
+CON_BULD                  건축/주택
+CON_PLNT                  플랜트/EPC
+CON_CIVL                  토목/SOC
+RE_REIT                   리츠 (REITs)
+RE_DC                     데이터센터 리츠
+RE_LOGI                   물류센터/물류리츠
+
+--- 금융 (parent: 116401, 116402, 116501) ---
+FIN_BANK                  은행/저축은행
+FIN_SEC                   증권/투자은행
+FIN_INS                   보험/생명보험
+FIN_CARD                  카드/할부금융
+FIN_HOLD                  지주회사/금융지주
+
+--- 유통/소매 (parent: 074701, 074709) ---
+RET_DEPT                  백화점/대형마트/편의점
+RET_ECOM                  이커머스/온라인쇼핑
+RET_DUTY                  면세점/여행소비
+
+--- 식품/음료 (parent: 031007, 031101) ---
+FOOD_FNB                  식품/음료/HMR
+FOOD_ALC                  주류 (소주/맥주/와인)
+FOOD_AGR                  농산물/곡물
+
+--- 소비재/라이프스타일 ---
+CSM_FASH                  패션/의류/럭셔리
+CSM_BEAU                  K-뷰티/화장품
+CSM_TRVL                  여행/항공/레저
+CSM_SPRT                  스포츠/피트니스
+CSM_PET                   펫/반려동물
+CSM_BABY                  유아/출산/교육
+
+--- 운송/물류 (parent: 085001, 085101, 085201) ---
+TRN_SHIP                  해운/벌크/컨테이너
+TRN_AIR                   항공사/저비용항공
+TRN_LOGI                  물류/택배/3PL
+TRN_RAIL                  철도/UAM (도심항공)
+
+--- 조선/해양 (parent: 033101) ---
+SHIP_LNG                  LNG선/LNG운반선
+SHIP_CNT                  컨테이너선/벌크선
+SHIP_OFF                  해양플랜트/시추
+SHIP_EQP                  선박기자재/엔진
+
+--- 방산/우주항공 (parent: 032502, 033103) ---
+DEF_LAND                  지상무기/장갑차
+DEF_MIS                   미사일/유도무기
+DEF_SURV                  감시/정찰/C4I
+DEF_SHIP                  함정/해군장비
+SPC_SAT                   위성/발사체
+SPC_AERO                  항공기/UAM
+SPC_TOUR                  우주관광/우주인프라
+
+--- 기계/산업재 (parent: 032901, 032902) ---
+MCH_CNC                   공작기계/CNC
+MCH_HVAC                  냉난방/공조설비
+MCH_PUMP                  펌프/밸브/배관
+MCH_ELEV                  승강기/물류자동화
+
+--- 원자재/커머디티 (parent: 020502, 020602 등) ---
+CMD_GOLD                  금 (Gold)
+CMD_SLVR                  은 (Silver)
+CMD_COPR                  구리 (Copper)
+CMD_PALL                  팔라듐/백금
+CMD_OIL                   원유/WTI/브렌트
+CMD_NATG                  천연가스
+CMD_LITH                  리튬/니켈/코발트
+CMD_URAN                  우라늄
+CMD_AGRI                  농산물 (옥수수/대두/밀)
+
+--- ESG/친환경 (parent: 053901, 053803 등) ---
+ESG_INTG                  ESG 통합/ESG리더
+ESG_GRNE                  그린에너지/신재생
+ESG_WAST                  폐기물/자원순환
+ESG_WATR                  수처리/수자원
+
+--- 대기업그룹주 (parent: 137105) ---
+GRP_SS                    삼성그룹
+GRP_HMC                   현대차그룹
+GRP_LG                    LG그룹
+GRP_SK                    SK그룹
+GRP_HOLD                  기타 지주회사
 
 【 값 (공시유형) 】
 --------------------------------------------------------------------------------

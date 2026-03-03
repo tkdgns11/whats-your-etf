@@ -298,18 +298,37 @@ CREATE INDEX "idx_cluster_mapping_cluster" ON "etf_cluster_mapping"("cluster_id"
 -- 8. 상장 회사 정보 (산업분류 포함)
 -- =============================================
 
--- 표준산업소분류 코드 테이블 (참조용, 약 200개)
+-- 산업분류 코드 테이블 (셀프 참조 트리 구조)
+-- level 1: 대분류 (표준산업분류 알파벳, 예: C=제조업)
+-- level 2: 중분류 (표준산업분류 2자리, 예: 26=전자부품/컴퓨터)
+-- level 3: 소분류 (표준산업분류 3자리, 예: 261=반도체 제조업)
+-- level 4: 세분류 (커스텀, 예: 반도체 ETF 내 세라믹/공정/메모리 등)
 CREATE TABLE "industry_classification" (
-    "code" VARCHAR(10) PRIMARY KEY,              -- 표준산업소분류코드 (6자리, 예: 032601)
-    "name" VARCHAR(100) NOT NULL,                -- 소분류명 (예: 반도체 제조업)
+    "code" VARCHAR(10) PRIMARY KEY,              -- 분류코드 (대: C, 중: 26, 소: 261, 세: SEMI_CER 등)
+    "name" VARCHAR(100) NOT NULL,                -- 분류명 (예: 제조업, 반도체 제조업, 세라믹 등)
+    "level" INTEGER NOT NULL,                    -- 분류 단계 (1=대, 2=중, 3=소, 4=세분류)
+    "parent_code" VARCHAR(10),                   -- 상위 분류 코드 (셀프 참조, 대분류는 NULL)
     "group_code" VARCHAR(10),                    -- 대분류 그룹 코드 (자체 정의, 예: IT_SEMI)
     "group_name" VARCHAR(50),                    -- 대분류 그룹명 (예: 반도체)
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "fk_industry_parent" FOREIGN KEY ("parent_code")
+        REFERENCES "industry_classification"("code") ON DELETE SET NULL
 );
 
-COMMENT ON TABLE "industry_classification" IS '표준산업소분류코드 (클러스터링/필터링용)';
+CREATE INDEX "idx_industry_parent" ON "industry_classification"("parent_code");
+CREATE INDEX "idx_industry_level" ON "industry_classification"("level");
+CREATE INDEX "idx_industry_group" ON "industry_classification"("group_code");
 
--- 대분류 그룹 코드 (20개)
+COMMENT ON TABLE "industry_classification" IS '산업분류 코드 (셀프참조 트리, 대/중/소/세분류)';
+
+-- 분류 계층 예시:
+-- level 1 (대분류): C=제조업, K=금융/보험업 ...
+-- level 2 (중분류): 26=전자부품/컴퓨터, 21=의약품 ...
+-- level 3 (소분류): 261=반도체 제조업, 211=의약품 제조업 ...
+-- level 4 (세분류/커스텀): SEMI_CER=세라믹, SEMI_FAB=공정, SEMI_MEM=메모리 ...
+--
+-- 대분류 그룹 코드 (20개) - ETF 클러스터링/필터링용
 -- IT_SEMI: 반도체
 -- IT_ELEC: 전자/IT
 -- IT_SW: 소프트웨어
