@@ -153,11 +153,12 @@ class NaverNewsScraper:
 
         return NewsArticle(
             title=title,
-            content_summary=description if len(description) > 50 else None,
+            content=description if len(description) > 50 else None,  # API snippet → content (본문 크롤링 시 덮어씀)
+            # content_summary는 LLM이 생성 (JSONB bullets)
+            # keywords는 LLM이 생성
             source=source_name,
             source_url=source_url,
             category="금융",
-            keywords=[keyword],
             published_at=published_at
         )
 
