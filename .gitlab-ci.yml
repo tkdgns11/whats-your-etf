@@ -22,7 +22,7 @@ variables:
 deploy_data_service:
   <<: *deploy_template
   only:
-    refs: [ master ]
+    refs: [ dev ]
     changes:
       - backend/data-service/**/*
   script:
@@ -40,7 +40,7 @@ deploy_data_service:
 deploy_user_service:
   <<: *deploy_template
   only:
-    refs: [ master ]
+    refs: [ dev ]
     changes:
       - backend/user-service/**/*
   script:
