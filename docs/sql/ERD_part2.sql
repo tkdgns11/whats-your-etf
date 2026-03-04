@@ -38,6 +38,20 @@ CREATE TABLE "company_info" (
     CONSTRAINT "fk_company_industry" FOREIGN KEY ("industry_code") REFERENCES "industry_classification"("code")
 );
 
+-- 주식 일별 시세
+CREATE TABLE "stock_prices" (
+    "id" BIGINT PRIMARY KEY,
+    "stock_code" VARCHAR(20) NOT NULL,
+    "trade_date" DATE NOT NULL,
+    "open" DECIMAL(14,2),
+    "high" DECIMAL(14,2),
+    "low" DECIMAL(14,2),
+    "close" DECIMAL(14,2),
+    "volume" BIGINT,
+    "change_rate" DECIMAL(8,4),
+    CONSTRAINT "fk_stock_prices_company" FOREIGN KEY ("stock_code") REFERENCES "company_info"("stock_code")
+);
+
 -- =============================================
 -- 9. ETF 공시 정보
 -- =============================================
@@ -118,7 +132,32 @@ CREATE TABLE "etf_prices" (
 );
 
 -- =============================================
--- 13. 사용자 포트폴리오
+-- 13. 꾸러미 (시스템 제공 예시 포트폴리오)
+-- =============================================
+
+CREATE TABLE "preset_portfolios" (
+    "id" BIGINT PRIMARY KEY,
+    "name" VARCHAR(100) NOT NULL,
+    "description" TEXT,
+    "risk_level" VARCHAR(20),
+    "category" VARCHAR(50),
+    "display_order" INTEGER,
+    "is_active" BOOLEAN,
+    "created_at" TIMESTAMP,
+    "updated_at" TIMESTAMP
+);
+
+CREATE TABLE "preset_portfolio_etfs" (
+    "id" BIGINT PRIMARY KEY,
+    "preset_portfolio_id" BIGINT NOT NULL,
+    "etf_id" BIGINT NOT NULL,
+    "weight_pct" DECIMAL(6,3) NOT NULL,
+    CONSTRAINT "fk_preset_portfolio" FOREIGN KEY ("preset_portfolio_id") REFERENCES "preset_portfolios"("id"),
+    CONSTRAINT "fk_preset_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id")
+);
+
+-- =============================================
+-- 14. 사용자 포트폴리오
 -- =============================================
 
 CREATE TABLE "portfolios" (
@@ -130,7 +169,7 @@ CREATE TABLE "portfolios" (
     "risk_level" VARCHAR(20),
     "snapshot_etfs" TEXT,
     "snapshot_metrics" TEXT,
-    "is_tracking" BOOLEAN,
+    "is_alert_enabled" BOOLEAN,
     "current_return" DECIMAL(8,4),
     "created_at" TIMESTAMP,
     "updated_at" TIMESTAMP
@@ -146,7 +185,7 @@ CREATE TABLE "portfolio_etfs" (
 );
 
 -- =============================================
--- 14. 시뮬레이션
+-- 15. 시뮬레이션
 -- =============================================
 
 CREATE TABLE "simulations" (

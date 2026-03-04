@@ -13,7 +13,6 @@ login_history             로그인이력
 news_article              뉴스기사
 news_etf_influence        뉴스ETF영향력매핑
 portfolio_ai_feedback     포트폴리오AI피드백
-ai_feedback_rating        AI피드백평가
 user_favorite_etf         관심ETF
 user_holding_etf          보유ETF(마이데이터)
 etf_alert                 ETF알림
@@ -25,10 +24,13 @@ etf_cluster               ETF클러스터
 etf_cluster_mapping       ETF클러스터매핑
 industry_classification   산업분류코드(셀프참조트리)
 company_info              상장회사정보
+stock_prices              주식일별시세
 etf_disclosure            ETF공시정보
 etf                       ETF목록
 etf_compositions          ETF구성종목
 etf_prices                ETF일별시세
+preset_portfolios         꾸러미(시스템예시포트폴리오)
+preset_portfolio_etfs     꾸러미ETF구성
 portfolios                사용자포트폴리오
 portfolio_etfs            포트폴리오ETF구성
 simulations               시뮬레이션
@@ -90,9 +92,6 @@ risk_level                리스크레벨
 recommendation            추천사항
 llm_model                 LLM모델
 prompt_version            프롬프트버전
-feedback_id               피드백ID (FK)
-rating                    평가
-comment                   코멘트
 
 【 속성명 (사용자 ETF) 】
 --------------------------------------------------------------------------------
@@ -152,6 +151,12 @@ face_value                액면가
 listed_shares             상장주식수
 data_source               데이터소스
 
+【 속성명 (주식시세) 】
+--------------------------------------------------------------------------------
+open                      시가
+high                      고가
+low                       저가
+
 【 속성명 (ETF공시) 】
 --------------------------------------------------------------------------------
 etf_code                  ETF종목코드
@@ -200,6 +205,11 @@ close                     종가
 volume                    거래량
 change_rate               등락률
 
+【 속성명 (꾸러미) 】
+--------------------------------------------------------------------------------
+preset_portfolio_id       꾸러미ID (FK)
+display_order             노출순서
+
 【 속성명 (포트폴리오) 】
 --------------------------------------------------------------------------------
 portfolio_id              포트폴리오ID (FK)
@@ -207,7 +217,7 @@ description               설명
 invest_amount             투자금액
 snapshot_etfs             ETF구성스냅샷(JSON)
 snapshot_metrics          지표스냅샷(JSON)
-is_tracking               추적여부
+is_alert_enabled          알림허용여부
 current_return            현재수익률
 
 【 속성명 (시뮬레이션) 】
@@ -259,10 +269,6 @@ LOW                       저위험
 MEDIUM                    중위험
 HIGH                      고위험
 
---- rating (AI피드백평가) ---
-HELPFUL                   도움됨
-NOT_HELPFUL               도움안됨
-
 --- alert_type (알림유형) ---
 LISTING                   ETF상장
 DELISTING                 ETF상장폐지
@@ -303,7 +309,13 @@ SEMI_ANNUAL               반기배당
 ANNUAL                    연배당
 NONE                      무배당
 
---- portfolio risk_level (포트폴리오 위험성향) ---
+--- preset_portfolios category (꾸러미 카테고리) ---
+DIVIDEND                  배당형
+GROWTH                    성장형
+STABLE                    안정형
+THEME                     테마형
+
+--- risk_level (위험성향) ---
 CONSERVATIVE              보수적
 MODERATE                  중립적
 AGGRESSIVE                공격적

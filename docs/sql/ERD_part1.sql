@@ -121,17 +121,6 @@ CREATE TABLE "portfolio_ai_feedback" (
     CONSTRAINT "fk_ai_feedback_user" FOREIGN KEY ("user_id") REFERENCES "user"("id")
 );
 
-CREATE TABLE "ai_feedback_rating" (
-    "id" BIGINT PRIMARY KEY,
-    "feedback_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
-    "rating" VARCHAR(20) NOT NULL,
-    "comment" VARCHAR(500),
-    "created_at" TIMESTAMP,
-    CONSTRAINT "fk_rating_feedback" FOREIGN KEY ("feedback_id") REFERENCES "portfolio_ai_feedback"("id"),
-    CONSTRAINT "fk_rating_user" FOREIGN KEY ("user_id") REFERENCES "user"("id")
-);
-
 -- =============================================
 -- 4. 사용자 ETF 관련
 -- =============================================

@@ -140,19 +140,6 @@ CREATE TABLE "portfolio_ai_feedback" (
 CREATE INDEX "idx_ai_feedback_user" ON "portfolio_ai_feedback"("user_id");
 CREATE INDEX "idx_ai_feedback_created" ON "portfolio_ai_feedback"("created_at" DESC);
 
--- AI 피드백 사용자 평가
-CREATE TABLE "ai_feedback_rating" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "feedback_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
-    "rating" VARCHAR(20) NOT NULL,                -- HELPFUL / NOT_HELPFUL
-    "comment" VARCHAR(500),
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_rating_feedback" FOREIGN KEY ("feedback_id") REFERENCES "portfolio_ai_feedback"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_rating_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_feedback_user_rating" UNIQUE ("feedback_id", "user_id")
-);
-
 -- =============================================
 -- 4. 사용자 ETF 관련 (마이페이지)
 -- =============================================
@@ -397,6 +384,23 @@ CREATE INDEX "idx_company_market" ON "company_info"("market_type");
 
 COMMENT ON TABLE "company_info" IS '상장 회사 정보 (ETF 구성종목 JOIN용)';
 
+-- 주식 일별 시세
+CREATE TABLE "stock_prices" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "stock_code" VARCHAR(20) NOT NULL,            -- company_info.stock_code 참조
+    "trade_date" DATE NOT NULL,
+    "open" DECIMAL(14,2),                         -- 시가
+    "high" DECIMAL(14,2),                         -- 고가
+    "low" DECIMAL(14,2),                          -- 저가
+    "close" DECIMAL(14,2),                        -- 종가
+    "volume" BIGINT,                              -- 거래량
+    "change_rate" DECIMAL(8,4),                   -- 등락률
+    UNIQUE("stock_code", "trade_date"),
+    CONSTRAINT "fk_stock_prices_company" FOREIGN KEY ("stock_code") REFERENCES "company_info"("stock_code") ON DELETE CASCADE
+);
+
+CREATE INDEX "idx_stock_prices_code_date" ON "stock_prices"("stock_code", "trade_date" DESC);
+
 -- =============================================
 -- 9. ETF 공시 정보 (상장폐지 알림용)
 -- =============================================
@@ -507,7 +511,34 @@ CREATE TABLE "etf_prices" (
 CREATE INDEX "idx_etf_prices_etf_date" ON "etf_prices"("etf_id", "trade_date" DESC);
 
 -- =============================================
--- 13. 사용자 포트폴리오 (계정당 최대 10개)
+-- 13. 꾸러미 (시스템 제공 예시 포트폴리오)
+-- =============================================
+
+CREATE TABLE "preset_portfolios" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "name" VARCHAR(100) NOT NULL,                 -- "배당 성장형 꾸러미"
+    "description" TEXT,
+    "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE
+    "category" VARCHAR(50),                       -- 배당/성장/안정/테마 등
+    "display_order" INTEGER DEFAULT 0,            -- 노출 순서
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 꾸러미 ETF 구성
+CREATE TABLE "preset_portfolio_etfs" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "preset_portfolio_id" BIGINT NOT NULL,
+    "etf_id" BIGINT NOT NULL,
+    "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
+    UNIQUE("preset_portfolio_id", "etf_id"),
+    CONSTRAINT "fk_preset_portfolio" FOREIGN KEY ("preset_portfolio_id") REFERENCES "preset_portfolios"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_preset_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
+);
+
+-- =============================================
+-- 14. 사용자 포트폴리오 (계정당 최대 10개)
 -- =============================================
 
 CREATE TABLE "portfolios" (
@@ -521,8 +552,8 @@ CREATE TABLE "portfolios" (
     -- 저장 시점 스냅샷
     "snapshot_etfs" JSONB,                        -- 저장 시점 ETF 구성 + 비중
     "snapshot_metrics" JSONB,                     -- 저장 시점 시뮬 지표
-    -- 추적 (선택)
-    "is_tracking" BOOLEAN DEFAULT FALSE,
+    -- 알림
+    "is_alert_enabled" BOOLEAN DEFAULT FALSE,     -- 알림 허용 여부
     "current_return" DECIMAL(8,4),                -- 현재 수익률
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -543,7 +574,7 @@ CREATE TABLE "portfolio_etfs" (
 );
 
 -- =============================================
--- 14. 시뮬레이션 (백테스트 요청)
+-- 15. 시뮬레이션 (백테스트 요청)
 -- =============================================
 
 CREATE TABLE "simulations" (
