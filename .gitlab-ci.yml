@@ -26,8 +26,8 @@ deploy_data_service:
     changes:
       - backend/data-service/**/*
   script:
-    - docker build -t "$DOCKERHUB_USERNAME/data-service:latest" backend/data-service
-    - docker push "$DOCKERHUB_USERNAME/data-service:latest"
+    - docker build -t "$DOCKERHUB_USERNAME/wye-data-service:latest" backend/data-service
+    - docker push "$DOCKERHUB_USERNAME/wye-data-service:latest"
     - >
       ssh ${SSH_USER}@${SSH_HOST}
       "cd ${REMOTE_APP_DIR} &&
@@ -44,8 +44,8 @@ deploy_user_service:
     changes:
       - backend/user-service/**/*
   script:
-    - docker build -t "$DOCKERHUB_USERNAME/user-service:latest" backend/user-service
-    - docker push "$DOCKERHUB_USERNAME/user-service:latest"
+    - docker build -t "$DOCKERHUB_USERNAME/wye-user-service:latest" backend/user-service
+    - docker push "$DOCKERHUB_USERNAME/wye-user-service:latest"
     - >
       ssh ${SSH_USER}@${SSH_HOST}
       "cd ${REMOTE_APP_DIR} &&
