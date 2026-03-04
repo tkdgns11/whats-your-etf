@@ -13,7 +13,7 @@ variables:
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    - echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+    - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
     - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
 
 # ===============================
@@ -26,13 +26,13 @@ deploy_data_service:
     changes:
       - backend/data-service/**/*
   script:
-    - docker build -t $DOCKERHUB_USERNAME/data-service:latest backend/data-service
-    - docker push $DOCKERHUB_USERNAME/data-service:latest
-    - ssh ubuntu@$SSH_HOST "
-        cd /home/ubuntu/wye&
-        docker compose pull data-service &&
-        docker compose up -d data-service
-      "
+    - docker build -t "$DOCKERHUB_USERNAME/data-service:latest" backend/data-service
+    - docker push "$DOCKERHUB_USERNAME/data-service:latest"
+    - >
+      ssh ${SSH_USER}@${SSH_HOST}
+      "cd ${REMOTE_APP_DIR} &&
+       docker compose pull data-service &&
+       docker compose up -d data-service"
 
 # ===============================
 # Spring - user-service
@@ -44,10 +44,10 @@ deploy_user_service:
     changes:
       - backend/user-service/**/*
   script:
-    - docker build -t $DOCKERHUB_USERNAME/user-service:latest backend/user-service
-    - docker push $DOCKERHUB_USERNAME/user-service:latest
-    - ssh ubuntu@$SSH_HOST "
-        cd /home/ubuntu/wye &&
-        docker compose pull user-service &&
-        docker compose up -d user-service
-      "
+    - docker build -t "$DOCKERHUB_USERNAME/user-service:latest" backend/user-service
+    - docker push "$DOCKERHUB_USERNAME/user-service:latest"
+    - >
+      ssh ${SSH_USER}@${SSH_HOST}
+      "cd ${REMOTE_APP_DIR} &&
+       docker compose pull user-service &&
+       docker compose up -d user-service"
