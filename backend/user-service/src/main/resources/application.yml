@@ -1,6 +1,8 @@
 spring:
   application:
     name: user-service
+  config:
+    import: optional:file:.env[.properties]
 
   # Database
   datasource:

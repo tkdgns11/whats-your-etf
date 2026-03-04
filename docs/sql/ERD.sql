@@ -104,16 +104,17 @@ CREATE INDEX "idx_news_keywords" ON "news_article" USING GIN("keywords");
 CREATE TABLE "news_etf_influence" (
     "id" BIGSERIAL PRIMARY KEY,
     "news_id" BIGINT NOT NULL,
-    "etf_ticker" VARCHAR(20) NOT NULL,            -- ETF 종목 코드
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "influence_score" DECIMAL(5,4),               -- 영향력 점수 (0.0000 ~ 1.0000)
     "influence_type" VARCHAR(20),                 -- POSITIVE / NEGATIVE / NEUTRAL
     "analysis_reason" TEXT,                       -- LLM 분석 사유
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_news_influence_news" FOREIGN KEY ("news_id") REFERENCES "news_article"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_news_etf" UNIQUE ("news_id", "etf_ticker")
+    CONSTRAINT "fk_news_influence_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
+    CONSTRAINT "uk_news_etf" UNIQUE ("news_id", "etf_id")
 );
 
-CREATE INDEX "idx_news_etf_ticker" ON "news_etf_influence"("etf_ticker");
+CREATE INDEX "idx_news_etf_etf" ON "news_etf_influence"("etf_id");
 CREATE INDEX "idx_news_etf_influence_score" ON "news_etf_influence"("influence_score" DESC);
 
 -- =============================================
@@ -139,19 +140,6 @@ CREATE TABLE "portfolio_ai_feedback" (
 CREATE INDEX "idx_ai_feedback_user" ON "portfolio_ai_feedback"("user_id");
 CREATE INDEX "idx_ai_feedback_created" ON "portfolio_ai_feedback"("created_at" DESC);
 
--- AI 피드백 사용자 평가
-CREATE TABLE "ai_feedback_rating" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "feedback_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
-    "rating" VARCHAR(20) NOT NULL,                -- HELPFUL / NOT_HELPFUL
-    "comment" VARCHAR(500),
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_rating_feedback" FOREIGN KEY ("feedback_id") REFERENCES "portfolio_ai_feedback"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_rating_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_feedback_user_rating" UNIQUE ("feedback_id", "user_id")
-);
-
 -- =============================================
 -- 4. 사용자 ETF 관련 (마이페이지)
 -- =============================================
@@ -160,10 +148,11 @@ CREATE TABLE "ai_feedback_rating" (
 CREATE TABLE "user_favorite_etf" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "etf_ticker" VARCHAR(20) NOT NULL,            -- ETF 종목 코드
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_favorite_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_user_favorite_etf" UNIQUE ("user_id", "etf_ticker")
+    CONSTRAINT "fk_favorite_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
+    CONSTRAINT "uk_user_favorite_etf" UNIQUE ("user_id", "etf_id")
 );
 
 CREATE INDEX "idx_favorite_user" ON "user_favorite_etf"("user_id");
@@ -172,14 +161,15 @@ CREATE INDEX "idx_favorite_user" ON "user_favorite_etf"("user_id");
 CREATE TABLE "user_holding_etf" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "etf_ticker" VARCHAR(20) NOT NULL,            -- ETF 종목 코드
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "quantity" INTEGER NOT NULL,                  -- 보유 수량
     "avg_price" DECIMAL(15,2),                    -- 평균 매입가
     "synced_at" TIMESTAMP,                        -- 마이데이터 동기화 시점
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_holding_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_user_holding_etf" UNIQUE ("user_id", "etf_ticker")
+    CONSTRAINT "fk_holding_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
+    CONSTRAINT "uk_user_holding_etf" UNIQUE ("user_id", "etf_id")
 );
 
 CREATE INDEX "idx_holding_user" ON "user_holding_etf"("user_id");
@@ -192,13 +182,14 @@ CREATE INDEX "idx_holding_user" ON "user_holding_etf"("user_id");
 CREATE TABLE "etf_alert" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "etf_ticker" VARCHAR(20),                     -- ETF 종목 코드 (NULL이면 전체 알림)
+    "etf_id" BIGINT,                              -- ETF 테이블 FK (NULL이면 전체 알림)
     "alert_type" VARCHAR(30) NOT NULL,            -- LISTING / DELISTING / PRICE_CHANGE
     "title" VARCHAR(200) NOT NULL,
     "message" TEXT,
     "is_read" BOOLEAN DEFAULT FALSE,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+    CONSTRAINT "fk_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_alert_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE SET NULL
 );
 
 CREATE INDEX "idx_alert_user" ON "etf_alert"("user_id");
@@ -250,15 +241,16 @@ CREATE TABLE "etf_tag" (
 -- ETF-태그 매핑
 CREATE TABLE "etf_tag_mapping" (
     "id" BIGSERIAL PRIMARY KEY,
-    "etf_ticker" VARCHAR(20) NOT NULL,
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "tag_id" BIGINT NOT NULL,
     "confidence" DECIMAL(3,2) DEFAULT 1.00,       -- 태그 신뢰도 (0.00 ~ 1.00)
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_tag_mapping_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
     CONSTRAINT "fk_tag_mapping_tag" FOREIGN KEY ("tag_id") REFERENCES "etf_tag"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_etf_tag" UNIQUE ("etf_ticker", "tag_id")
+    CONSTRAINT "uk_etf_tag" UNIQUE ("etf_id", "tag_id")
 );
 
-CREATE INDEX "idx_etf_tag_ticker" ON "etf_tag_mapping"("etf_ticker");
+CREATE INDEX "idx_etf_tag_etf" ON "etf_tag_mapping"("etf_id");
 CREATE INDEX "idx_etf_tag_tag" ON "etf_tag_mapping"("tag_id");
 
 -- =============================================
@@ -282,16 +274,18 @@ CREATE TABLE "etf_cluster" (
 -- ETF 클러스터 매핑
 CREATE TABLE "etf_cluster_mapping" (
     "id" BIGSERIAL PRIMARY KEY,
-    "etf_ticker" VARCHAR(20) NOT NULL UNIQUE,
+    "etf_id" BIGINT NOT NULL UNIQUE,              -- ETF 테이블 FK
     "cluster_id" BIGINT NOT NULL,
     "pos_x" DECIMAL(10,6),                        -- UMAP 좌표 X
     "pos_y" DECIMAL(10,6),                        -- UMAP 좌표 Y
     "distance_to_center" DECIMAL(10,6),           -- 클러스터 중심과의 거리
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_cluster_mapping_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
     CONSTRAINT "fk_cluster_mapping" FOREIGN KEY ("cluster_id") REFERENCES "etf_cluster"("id") ON DELETE CASCADE
 );
 
+CREATE INDEX "idx_cluster_mapping_etf" ON "etf_cluster_mapping"("etf_id");
 CREATE INDEX "idx_cluster_mapping_cluster" ON "etf_cluster_mapping"("cluster_id");
 
 -- =============================================
@@ -390,6 +384,23 @@ CREATE INDEX "idx_company_market" ON "company_info"("market_type");
 
 COMMENT ON TABLE "company_info" IS '상장 회사 정보 (ETF 구성종목 JOIN용)';
 
+-- 주식 일별 시세
+CREATE TABLE "stock_prices" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "stock_code" VARCHAR(20) NOT NULL,            -- company_info.stock_code 참조
+    "trade_date" DATE NOT NULL,
+    "open" DECIMAL(14,2),                         -- 시가
+    "high" DECIMAL(14,2),                         -- 고가
+    "low" DECIMAL(14,2),                          -- 저가
+    "close" DECIMAL(14,2),                        -- 종가
+    "volume" BIGINT,                              -- 거래량
+    "change_rate" DECIMAL(8,4),                   -- 등락률
+    UNIQUE("stock_code", "trade_date"),
+    CONSTRAINT "fk_stock_prices_company" FOREIGN KEY ("stock_code") REFERENCES "company_info"("stock_code") ON DELETE CASCADE
+);
+
+CREATE INDEX "idx_stock_prices_code_date" ON "stock_prices"("stock_code", "trade_date" DESC);
+
 -- =============================================
 -- 9. ETF 공시 정보 (상장폐지 알림용)
 -- =============================================
@@ -486,50 +497,84 @@ CREATE INDEX "idx_etf_compositions_component" ON "etf_compositions"("component_t
 -- =============================================
 
 CREATE TABLE "etf_prices" (
-    "ticker" VARCHAR(20) NOT NULL,
+    "id" BIGSERIAL PRIMARY KEY,
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "trade_date" DATE NOT NULL,
     "close" DECIMAL(14,2),                        -- 종가
     "nav" DECIMAL(14,2),                          -- 순자산가치
     "volume" BIGINT,
     "change_rate" DECIMAL(8,4),                   -- 등락률: (당일종가 - 전일종가) / 전일종가 * 100
-    PRIMARY KEY ("ticker", "trade_date")
+    UNIQUE("etf_id", "trade_date"),
+    CONSTRAINT "fk_etf_prices_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_etf_prices_ticker_date" ON "etf_prices"("ticker", "trade_date" DESC);
+CREATE INDEX "idx_etf_prices_etf_date" ON "etf_prices"("etf_id", "trade_date" DESC);
 
 -- =============================================
--- 13. 사용자 포트폴리오 (계정당 최대 10개)
+-- 13. 꾸러미 (시스템 제공 예시 포트폴리오)
+-- =============================================
+
+CREATE TABLE "preset_portfolios" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "name" VARCHAR(100) NOT NULL,                 -- "배당 성장형 꾸러미"
+    "description" TEXT,
+    "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE
+    "category" VARCHAR(50),                       -- 배당/성장/안정/테마 등
+    "display_order" INTEGER DEFAULT 0,            -- 노출 순서
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 꾸러미 ETF 구성
+CREATE TABLE "preset_portfolio_etfs" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "preset_portfolio_id" BIGINT NOT NULL,
+    "etf_id" BIGINT NOT NULL,
+    "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
+    UNIQUE("preset_portfolio_id", "etf_id"),
+    CONSTRAINT "fk_preset_portfolio" FOREIGN KEY ("preset_portfolio_id") REFERENCES "preset_portfolios"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_preset_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
+);
+
+-- =============================================
+-- 14. 사용자 포트폴리오 (계정당 최대 10개)
 -- =============================================
 
 CREATE TABLE "portfolios" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
     "name" VARCHAR(100) NOT NULL,                 -- "나의 성장형 포트폴리오"
-    -- 목표 설정
-    "goal_amount" DECIMAL(18,2),                  -- 목표 금액
+    "description" TEXT,
+    -- 설정
     "invest_amount" DECIMAL(18,2),                -- 투자 금액
     "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE (사용자 선택)
-    -- 상태
-    "status" VARCHAR(20) DEFAULT 'DRAFT',         -- DRAFT/ACTIVE/ARCHIVED
+    -- 저장 시점 스냅샷
+    "snapshot_etfs" JSONB,                        -- 저장 시점 ETF 구성 + 비중
+    "snapshot_metrics" JSONB,                     -- 저장 시점 시뮬 지표
+    -- 알림
+    "is_alert_enabled" BOOLEAN DEFAULT FALSE,     -- 알림 허용 여부
+    "current_return" DECIMAL(8,4),                -- 현재 수익률
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_portfolio_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_portfolios_user" ON "portfolios"("user_id", "status");
+CREATE INDEX "idx_portfolios_user" ON "portfolios"("user_id");
 
 -- 포트폴리오 내 ETF 구성 (포트폴리오당 최대 10개 ETF)
 CREATE TABLE "portfolio_etfs" (
     "id" BIGSERIAL PRIMARY KEY,
     "portfolio_id" BIGINT NOT NULL,
-    "etf_ticker" VARCHAR(20) NOT NULL,
+    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
-    UNIQUE("portfolio_id", "etf_ticker"),
-    CONSTRAINT "fk_portfolio_etf_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE
+    UNIQUE("portfolio_id", "etf_id"),
+    CONSTRAINT "fk_portfolio_etf_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_portfolio_etf_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
 -- =============================================
--- 14. 시뮬레이션 (백테스트 요청)
+-- 15. 시뮬레이션 (백테스트 요청)
 -- =============================================
 
 CREATE TABLE "simulations" (
@@ -577,44 +622,3 @@ CREATE TABLE "simulation_daily" (
     CONSTRAINT "fk_simulation_daily" FOREIGN KEY ("simulation_id") REFERENCES "simulations"("id") ON DELETE CASCADE
 );
 
--- =============================================
--- 15. 전략 저장 (Strategy)
--- =============================================
-
-CREATE TABLE "strategies" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "user_id" BIGINT NOT NULL,
-    "portfolio_id" BIGINT,
-    "simulation_id" BIGINT,
-    "name" VARCHAR(100),
-    "description" TEXT,
-    -- 저장 시점 스냅샷
-    "saved_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "snapshot_etfs" JSONB,                        -- 저장 시점 ETF 구성 + 비중
-    "snapshot_metrics" JSONB,                     -- 저장 시점 시뮬 지표
-    -- 추적
-    "is_tracking" BOOLEAN DEFAULT TRUE,           -- 이후 움직임 추적 중
-    "tracking_start_date" DATE,                   -- 추적 시작일
-    "current_return" DECIMAL(8,4),                -- 현재 수익률 (실시간 갱신)
-    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_strategy_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_strategy_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE SET NULL,
-    CONSTRAINT "fk_strategy_simulation" FOREIGN KEY ("simulation_id") REFERENCES "simulations"("id") ON DELETE SET NULL
-);
-
-CREATE INDEX "idx_strategies_user" ON "strategies"("user_id", "is_tracking");
-
--- 전략 일별 추적 (저장 이후 실제 시장 움직임)
-CREATE TABLE "strategy_tracking" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "strategy_id" BIGINT NOT NULL,
-    "trade_date" DATE NOT NULL,
-    "portfolio_value" DECIMAL(18,2),
-    "benchmark_value" DECIMAL(18,2),
-    "daily_return" DECIMAL(8,6),
-    "cumulative_return" DECIMAL(8,4),
-    UNIQUE("strategy_id", "trade_date"),
-    CONSTRAINT "fk_strategy_tracking" FOREIGN KEY ("strategy_id") REFERENCES "strategies"("id") ON DELETE CASCADE
-);
-
-CREATE INDEX "idx_strategy_tracking_date" ON "strategy_tracking"("strategy_id", "trade_date" DESC);
