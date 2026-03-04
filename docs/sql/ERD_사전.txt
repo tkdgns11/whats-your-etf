@@ -10,18 +10,18 @@ refresh_token             리프레시토큰
 password_reset_token      비밀번호재설정토큰
 email_verification_token  이메일인증토큰
 login_history             로그인이력
+news_source               뉴스소스(언론사)관리
 news_article              뉴스기사
 news_etf_influence        뉴스ETF영향력매핑
+news_industry_influence   뉴스산업영향력매핑(2단계분석중간테이블)
+ai_prompt                 AI프롬프트관리
 portfolio_ai_feedback     포트폴리오AI피드백
 user_favorite_etf         관심ETF
 user_holding_etf          보유ETF(마이데이터)
 etf_alert                 ETF알림
 notification_setting      알림설정
 fcm_token                 FCM토큰
-etf_tag                   ETF태그
-etf_tag_mapping           ETF태그매핑
-etf_cluster               ETF클러스터
-etf_cluster_mapping       ETF클러스터매핑
+etf_sector_breakdown      ETF섹터분포(구성종목산업별집계)
 industry_classification   산업분류코드(셀프참조트리)
 company_info              상장회사정보
 stock_prices              주식일별시세
@@ -33,8 +33,6 @@ preset_portfolios         꾸러미(시스템예시포트폴리오)
 preset_portfolio_etfs     꾸러미ETF구성
 portfolios                사용자포트폴리오
 portfolio_etfs            포트폴리오ETF구성
-simulations               시뮬레이션
-simulation_daily          시뮬레이션일별결과
 
 【 속성명 (공통) 】
 --------------------------------------------------------------------------------
@@ -51,7 +49,6 @@ is_read                   읽음여부
 email                     이메일
 password                  비밀번호
 nickname                  닉네임
-role                      역할
 last_login_at             마지막로그인일시
 provider                  소셜제공자
 provider_user_id          소셜사용자ID
@@ -66,9 +63,21 @@ login_at                  로그인일시
 ip_address                IP주소
 device_info               기기정보
 
+【 속성명 (뉴스 소스) 】
+--------------------------------------------------------------------------------
+name                      언론사명
+domain                    도메인
+is_content_available      본문크롤링가능여부
+last_success_at           마지막크롤링성공시점
+last_failure_at           마지막크롤링실패시점
+failure_count             연속실패횟수
+css_selector              본문CSS선택자
+notes                     비고
+
 【 속성명 (뉴스) 】
 --------------------------------------------------------------------------------
 title                     제목
+content                   뉴스본문전체
 content_summary           내용요약
 source                    출처(언론사명)
 source_url                원본URL
@@ -81,17 +90,34 @@ news_id                   뉴스ID (FK)
 influence_score           영향력점수
 influence_type            영향력유형
 analysis_reason           분석사유
+timeline_title            타임라인제목 (UI표시용, 예: "연준 기준금리 동결 발표")
+timeline_summary          타임라인요약 (UI표시용, 예: "시장 예상치 부합, 기술주 중심 반등세")
+actual_change_rate        뉴스발행후ETF실제변동률
+verified_at               검증시점 (장마감후)
+is_verified               실제데이터로검증됨여부
+
+【 속성명 (뉴스-산업 영향력) 】
+--------------------------------------------------------------------------------
+industry_code             산업분류코드 (FK)
+relevance_score           관련성점수 (0~1)
+sentiment                 감성분석 (POSITIVE/NEGATIVE/NEUTRAL)
 
 【 속성명 (AI 피드백) 】
 --------------------------------------------------------------------------------
 portfolio_snapshot_id     포트폴리오스냅샷ID
-bull_review               강세관점리뷰
-bear_review               약세관점리뷰
-overall_score             종합점수
-risk_level                리스크레벨
-recommendation            추천사항
+headline                  헤드라인 (예: "공격적인 수익 추구!")
+sub_headline              서브헤드라인 (예: "기술주 중심의 로켓 포트폴리오")
+keywords                  키워드배열 (예: ["기술주집중", "고변동성", "성장중심"])
+analysis                  종합분석결과
 llm_model                 LLM모델
-prompt_version            프롬프트버전
+prompt_id                 프롬프트ID (FK)
+
+【 속성명 (AI 프롬프트) 】
+--------------------------------------------------------------------------------
+name                      프롬프트명 (portfolio_feedback, etf_analysis)
+version                   버전 (v1.0, v1.1)
+prompt_template           프롬프트내용
+is_active                 활성버전여부
 
 【 속성명 (사용자 ETF) 】
 --------------------------------------------------------------------------------
@@ -105,28 +131,25 @@ alert_type                알림유형
 message                   메시지
 etf_listing_alert         ETF상장알림설정
 etf_delisting_alert       ETF상장폐지알림설정
-portfolio_alert           포트폴리오알림설정
+portfolio_rebalance_alert 포트폴리오리밸런싱알림설정 (예정+완료)
+portfolio_return_alert    포트폴리오수익률알림설정 (5%, 10%)
 news_alert                뉴스알림설정
 device_type               기기타입
 
-【 속성명 (태그/클러스터) 】
+【 속성명 (공통 - 기타) 】
 --------------------------------------------------------------------------------
-name                      태그명
-color                     색상코드
+short_description         짧은설명(카드표시용)
 description               설명
-tag_id                    태그ID (FK)
-confidence                신뢰도
-cluster_id                클러스터ID (FK)
-cluster_name              클러스터이름
-cluster_label             클러스터라벨
-center_x                  중심좌표X
-center_y                  중심좌표Y
-pos_x                     좌표X
-pos_y                     좌표Y
-etf_count                 ETF개수
-avg_return_1m             1개월평균수익률
-avg_volatility            평균변동성
-distance_to_center        중심과의거리
+
+【 속성명 (ETF 섹터 분포) 】
+--------------------------------------------------------------------------------
+breakdown_type            분류타입 (GROUP_CODE/INDUSTRY/SUB_SECTOR)
+sub_sector                세부섹터명 (테마ETF용)
+stock_count               해당섹터종목수
+pos_x                     버블X좌표 (UMAP)
+pos_y                     버블Y좌표 (UMAP)
+radius                    버블반지름
+distance_to_center        ETF중심까지거리
 
 【 속성명 (산업분류/회사정보) 】
 --------------------------------------------------------------------------------
@@ -142,6 +165,7 @@ market_type               시장구분
 industry_code             산업분류코드
 industry_name             산업분류명
 industry_group            산업대분류그룹
+description               회사설명/사업내용
 listing_date              상장일
 fiscal_month              결산월
 ceo_name                  대표자명
@@ -170,7 +194,7 @@ is_notified               알림발송여부
 
 【 속성명 (ETF 목록) 】
 --------------------------------------------------------------------------------
-ticker                    ETF종목코드
+stock_code                ETF종목코드
 name                      ETF종목명
 category                  ETF분류
 strategy_type             전략유형
@@ -194,7 +218,8 @@ delisted_date             상장폐지일
 
 【 속성명 (ETF 구성종목) 】
 --------------------------------------------------------------------------------
-component_ticker          구성종목코드
+company_id                회사정보ID (FK, NULL=현금/기타)
+component_stock_code      종목코드 또는 CASH/ETC
 weight_pct                비중(%)
 base_date                 기준일
 
@@ -219,36 +244,11 @@ snapshot_etfs             ETF구성스냅샷(JSON)
 snapshot_metrics          지표스냅샷(JSON)
 is_alert_enabled          알림허용여부
 current_return            현재수익률
+prev_close_value          전일종가(포트폴리오평가액)
 
-【 속성명 (시뮬레이션) 】
---------------------------------------------------------------------------------
-simulation_id             시뮬레이션ID (FK)
-start_date                시작일
-end_date                  종료일
-initial_amount            초기투자금액
-rebalance_period          리밸런싱주기
-final_amount              최종금액
-total_return              총수익률
-annualized_return         연환산수익률(CAGR)
-max_drawdown              최대낙폭(MDD)
-sharpe_ratio              샤프비율
-volatility                변동성
-benchmark_ticker          벤치마크종목코드
-benchmark_return          벤치마크수익률
-alpha                     초과수익률(알파)
-completed_at              완료일시
-portfolio_value           포트폴리오평가액
-benchmark_value           벤치마크평가액
-daily_return              일별수익률
-cumulative_return         누적수익률
-drawdown                  낙폭
 
 【 값 (ENUM) 】
 --------------------------------------------------------------------------------
-
---- role (역할) ---
-USER                      일반사용자
-ADMIN                     관리자
 
 --- provider (소셜제공자) ---
 KAKAO                     카카오
@@ -270,19 +270,19 @@ MEDIUM                    중위험
 HIGH                      고위험
 
 --- alert_type (알림유형) ---
-LISTING                   ETF상장
-DELISTING                 ETF상장폐지
-PRICE_CHANGE              가격변동
+LISTING                   ETF신규상장
+DELISTING_SCHEDULED       ETF상장폐지예정 (공시확정시)
+DELISTING_COMPLETED       ETF상장폐지완료
+REBALANCING_SCHEDULED     ETF리밸런싱예정 (공시확정시)
+REBALANCING_COMPLETED     ETF리밸런싱완료
+RETURN_5PCT               수익률5%도달
+RETURN_10PCT              수익률10%도달
+NEWS_RELATED              관련뉴스발행 (관심ETF관련)
 
 --- device_type (기기타입) ---
 ANDROID                   안드로이드
 IOS                       아이폰
 WEB                       웹
-
---- tag category (태그카테고리) ---
-RISK                      위험등급
-SECTOR                    섹터
-THEME                     테마
 
 --- strategy_type (ETF전략유형) ---
 MARKET                    시장추종형
@@ -315,22 +315,7 @@ GROWTH                    성장형
 STABLE                    안정형
 THEME                     테마형
 
---- risk_level (위험성향) ---
-CONSERVATIVE              보수적
-MODERATE                  중립적
-AGGRESSIVE                공격적
 
---- simulation status (시뮬레이션상태) ---
-PENDING                   대기중
-RUNNING                   실행중
-COMPLETED                 완료
-FAILED                    실패
-
---- rebalance_period (리밸런싱주기) ---
-MONTHLY                   월간
-QUARTERLY                 분기
-YEARLY                    연간
-NONE                      없음
 
 【 값 (산업분류 level) 】
 --------------------------------------------------------------------------------
@@ -339,231 +324,7 @@ NONE                      없음
 3                         소분류 (6자리 코드, 예: 032601=반도체 제조업)
 4                         세분류 (커스텀, 섹터ETF용, 예: SEMI_MEM=메모리 반도체)
 
-【 값 (산업대분류 그룹 - group_code) 】
---------------------------------------------------------------------------------
-AGRI                      농업/어업
-MINING                    광업
-IT_SEMI                   반도체
-IT_ELEC                   전자/IT
-IT_SW                     소프트웨어
-BIO                       바이오/의약
-AUTO                      자동차
-CHEM                      화학/소재
-STEEL                     철강/금속
-ENERGY                    에너지/유틸리티
-FINANCE                   금융
-INSURANCE                 보험
-CONSTRUCT                 건설
-RETAIL                    유통/소매
-FOOD                      식품/음료
-TELECOM                   통신/미디어
-CONSUMER                  소비재
-TRANSPORT                 운송
-MACHINERY                 기계
-SHIPBUILD                 조선
-DEFENSE                   방산
-ETC                       기타
-
-【 값 (세분류 코드 - 한국 ETF 전체 섹터/테마 커버) 】
---------------------------------------------------------------------------------
---- 반도체 (parent: 032601) ---
-SEMI_MEM                  메모리 반도체 (DRAM/NAND)
-SEMI_SYS                  시스템 반도체 (비메모리/AP)
-SEMI_FAB                  파운드리 (위탁생산)
-SEMI_FBL                  팹리스 (설계전문)
-SEMI_EQP                  반도체 장비
-SEMI_MAT                  반도체 소재
-SEMI_CER                  반도체 세라믹/기판/PCB
-SEMI_PKG                  반도체 패키징/테스트 (OSAT)
-SEMI_HBM                  HBM (고대역폭메모리)
-SEMI_AI                   AI 반도체/GPU/NPU
-SEMI_PWR                  전력반도체
-SEMI_CIS                  이미지센서 (CIS)
-
---- 2차전지 (parent: 032802) ---
-BAT_CELL                  배터리 셀
-BAT_CATH                  양극재
-BAT_ANOD                  음극재
-BAT_SEP                   분리막
-BAT_ELEC                  전해질/전해액
-BAT_EQP                   배터리 장비/공정
-BAT_RECY                  배터리 리사이클링
-BAT_LFP                   LFP (리튬인산철)
-BAT_SSB                   전고체 배터리
-BAT_BMS                   BMS (배터리관리시스템)
-
---- 디스플레이 (parent: 032602) ---
-DISP_LCD                  LCD 패널
-DISP_OLED                 OLED/플렉서블
-DISP_MAT                  디스플레이 소재/부품
-DISP_EQP                  디스플레이 장비
-
---- 바이오/헬스케어 (parent: 032102, 032701) ---
-BIO_NEW                   신약개발 (합성신약)
-BIO_SIM                   바이오시밀러
-BIO_CDMO                  CDMO (위탁개발생산)
-BIO_CELL                  세포/유전자 치료제 (CGT)
-BIO_DIAG                  진단/체외진단 (IVD)
-BIO_VACC                  백신/감염병
-BIO_ANTI                  항체/ADC
-BIO_OBST                  비만/대사질환 치료제
-MED_DEV                   의료기기/장비
-MED_DIG                   디지털 헬스케어/원격의료
-MED_ROBO                  수술용 로봇
-MED_DENT                  치과/미용의료
-
---- 자동차/모빌리티 (parent: 033001, 033003) ---
-AUTO_EV                   전기차 (EV)
-AUTO_HEV                  하이브리드 (HEV/PHEV)
-AUTO_FCEV                 수소차 (FCEV)
-AUTO_AUT                  자율주행/레벨4+
-AUTO_SDV                  SDV (소프트웨어정의차량)
-AUTO_MOT                  EV 모터/인버터/감속기
-AUTO_THM                  열관리 시스템
-AUTO_ADAS                 ADAS/라이다/센서
-AUTO_CHRG                 전기차 충전 인프라
-AUTO_TIRE                 타이어/고무부품
-
---- SW/IT서비스/플랫폼 (parent: 105802, 106201, 106301) ---
-SW_AI                     인공지능 (AI/LLM)
-SW_CLOUD                  클라우드/SaaS/IaaS
-SW_SEC                    사이버보안/정보보안
-SW_GAME                   게임
-SW_PLAT                   플랫폼/커머스/O2O
-SW_META                   메타버스/XR/AR/VR
-SW_BLOC                   블록체인/디지털자산
-SW_FINT                   핀테크/디지털금융
-SW_EDTC                   에듀테크/온라인교육
-SW_QNTM                   양자컴퓨팅
-SW_DATA                   데이터센터/서버
-SW_IOT                    IoT/스마트팩토리
-
---- 통신/5G (parent: 106102) ---
-TEL_5G                    5G/6G 통신장비
-TEL_INFR                  통신 인프라/기지국
-TEL_SAT                   위성통신/저궤도위성
-
---- 미디어/콘텐츠/엔터 (parent: 105901, 189001) ---
-MED_KPOP                  K-POP/음악/엔터테인먼트
-MED_DRAM                  K-드라마/영상콘텐츠
-MED_OTT                   OTT/스트리밍
-MED_AD                    광고/디지털마케팅
-MED_WEB                   웹툰/웹소설/IP
-
---- 로봇/자동화 (parent: 032902) ---
-ROBO_HUM                  휴머노이드 로봇
-ROBO_IND                  산업용 로봇/협동로봇
-ROBO_SVC                  서비스 로봇 (배달/물류)
-ROBO_DRN                  드론/무인기 (UAM)
-ROBO_AUT                  공장자동화/스마트제조
-
---- 에너지/전력 (parent: 043501, 043502) ---
-ENG_SOL                   태양광/태양전지
-ENG_WIND                  풍력 (해상/육상)
-ENG_NUC                   원자력/SMR
-ENG_H2                    수소에너지/수전해
-ENG_ESS                   ESS (에너지 저장장치)
-ENG_GRID                  전력인프라/송배전/변압기
-ENG_AI                    AI 전력핵심설비/데이터센터전력
-ENG_CARB                  탄소배출권/탄소중립
-ENG_LNG                   LNG/천연가스
-ENG_OIL                   정유/석유화학
-
---- 화학/소재 (parent: 032001, 032004) ---
-CHM_PETRO                 석유화학/나프타
-CHM_FINE                  정밀화학/특수화학
-CHM_GAS                   특수가스/산업가스
-CHM_COSM                  화장품/K-뷰티
-CHM_ADV                   첨단소재/신소재
-
---- 철강/금속 (parent: 032401, 032402) ---
-STL_SPE                   특수강/고강도강
-STL_NFE                   비철금속 (알루미늄/구리/니켈)
-STL_RMT                   희토류/희귀금속
-
---- 건설/인프라/부동산 (parent: 064101, 126801) ---
-CON_BULD                  건축/주택
-CON_PLNT                  플랜트/EPC
-CON_CIVL                  토목/SOC
-RE_REIT                   리츠 (REITs)
-RE_DC                     데이터센터 리츠
-RE_LOGI                   물류센터/물류리츠
-
---- 금융 (parent: 116401, 116402, 116501) ---
-FIN_BANK                  은행/저축은행
-FIN_SEC                   증권/투자은행
-FIN_INS                   보험/생명보험
-FIN_CARD                  카드/할부금융
-FIN_HOLD                  지주회사/금융지주
-
---- 유통/소매 (parent: 074701, 074709) ---
-RET_DEPT                  백화점/대형마트/편의점
-RET_ECOM                  이커머스/온라인쇼핑
-RET_DUTY                  면세점/여행소비
-
---- 식품/음료 (parent: 031007, 031101) ---
-FOOD_FNB                  식품/음료/HMR
-FOOD_ALC                  주류 (소주/맥주/와인)
-FOOD_AGR                  농산물/곡물
-
---- 소비재/라이프스타일 ---
-CSM_FASH                  패션/의류/럭셔리
-CSM_BEAU                  K-뷰티/화장품
-CSM_TRVL                  여행/항공/레저
-CSM_SPRT                  스포츠/피트니스
-CSM_PET                   펫/반려동물
-CSM_BABY                  유아/출산/교육
-
---- 운송/물류 (parent: 085001, 085101, 085201) ---
-TRN_SHIP                  해운/벌크/컨테이너
-TRN_AIR                   항공사/저비용항공
-TRN_LOGI                  물류/택배/3PL
-TRN_RAIL                  철도/UAM (도심항공)
-
---- 조선/해양 (parent: 033101) ---
-SHIP_LNG                  LNG선/LNG운반선
-SHIP_CNT                  컨테이너선/벌크선
-SHIP_OFF                  해양플랜트/시추
-SHIP_EQP                  선박기자재/엔진
-
---- 방산/우주항공 (parent: 032502, 033103) ---
-DEF_LAND                  지상무기/장갑차
-DEF_MIS                   미사일/유도무기
-DEF_SURV                  감시/정찰/C4I
-DEF_SHIP                  함정/해군장비
-SPC_SAT                   위성/발사체
-SPC_AERO                  항공기/UAM
-SPC_TOUR                  우주관광/우주인프라
-
---- 기계/산업재 (parent: 032901, 032902) ---
-MCH_CNC                   공작기계/CNC
-MCH_HVAC                  냉난방/공조설비
-MCH_PUMP                  펌프/밸브/배관
-MCH_ELEV                  승강기/물류자동화
-
---- 원자재/커머디티 (parent: 020502, 020602 등) ---
-CMD_GOLD                  금 (Gold)
-CMD_SLVR                  은 (Silver)
-CMD_COPR                  구리 (Copper)
-CMD_PALL                  팔라듐/백금
-CMD_OIL                   원유/WTI/브렌트
-CMD_NATG                  천연가스
-CMD_LITH                  리튬/니켈/코발트
-CMD_URAN                  우라늄
-CMD_AGRI                  농산물 (옥수수/대두/밀)
-
---- ESG/친환경 (parent: 053901, 053803 등) ---
-ESG_INTG                  ESG 통합/ESG리더
-ESG_GRNE                  그린에너지/신재생
-ESG_WAST                  폐기물/자원순환
-ESG_WATR                  수처리/수자원
-
---- 대기업그룹주 (parent: 137105) ---
-GRP_SS                    삼성그룹
-GRP_HMC                   현대차그룹
-GRP_LG                    LG그룹
-GRP_SK                    SK그룹
-GRP_HOLD                  기타 지주회사
+※ group_code, 세분류 코드 상세 설명은 docs/planning/산업분류_체계_설계.md 참조
 
 【 값 (공시유형) 】
 --------------------------------------------------------------------------------
@@ -577,3 +338,11 @@ surveillance              투자경고
 KOSPI                     코스피
 KOSDAQ                    코스닥
 KONEX                     코넥스
+NYSE                      뉴욕증권거래소
+NASDAQ                    나스닥
+AMEX                      미국증권거래소
+HKEX                      홍콩증권거래소
+SSE                       상해증권거래소
+TSE                       도쿄증권거래소
+LSE                       런던증권거래소
+OTHER                     기타해외

@@ -18,6 +18,8 @@
 | DELETE | `/` | 읽은 알림 전체 삭제 | O |
 | POST | `/fcm/token` | FCM 토큰 등록 | O |
 | DELETE | `/fcm/token` | FCM 토큰 삭제 | O |
+| GET | `/settings` | 알림 설정 조회 | O |
+| PUT | `/settings` | 알림 설정 수정 | O |
 
 ---
 
@@ -35,7 +37,7 @@ Authorization: Bearer {accessToken}
 |-----------|------|------|------|
 | page | int | X | 페이지 번호 (기본 0) |
 | size | int | X | 페이지 크기 (기본 20) |
-| type | string | X | 알림 유형 필터 (all/LISTING/DELISTING/PRICE_CHANGE) |
+| type | string | X | 알림 유형 필터 (all/LISTING/DELISTING/REBALANCING/RETURN/NEWS) |
 
 **Response**
 ```json
@@ -63,12 +65,22 @@ Authorization: Bearer {accessToken}
       },
       {
         "id": 3,
-        "alertType": "PRICE_CHANGE",
-        "etfTicker": "069500",
-        "title": "ETF 가격 변동 알림",
-        "message": "KODEX 200의 가격이 전일 대비 5% 이상 변동했습니다.",
+        "alertType": "RETURN_5PCT",
+        "portfolioId": 123,
+        "title": "포트폴리오 수익률 알림",
+        "message": "내 포트폴리오 '성장형 전략' 수익률이 +5%를 달성했습니다!",
         "isRead": true,
         "createdAt": "2025-01-15T10:00:00Z"
+      },
+      {
+        "id": 4,
+        "alertType": "NEWS_RELATED",
+        "etfTicker": "091160",
+        "newsId": 456,
+        "title": "관심 ETF 뉴스",
+        "message": "관심 ETF 'KODEX 반도체' 관련 뉴스가 있습니다: 반도체 업황 회복 신호",
+        "isRead": false,
+        "createdAt": "2025-01-14T14:30:00Z"
       }
     ],
     "page": 0,
@@ -235,13 +247,78 @@ Content-Type: application/json
 
 ---
 
+### 9. 알림 설정 조회
+
+**Request**
+```
+GET /api/v1/alerts/settings
+Authorization: Bearer {accessToken}
+```
+
+**Response**
+```json
+{
+  "success": true,
+  "data": {
+    "etfListingAlert": true,
+    "etfDelistingAlert": true,
+    "portfolioRebalanceAlert": true,
+    "portfolioReturnAlert": true,
+    "newsAlert": true
+  }
+}
+```
+
+---
+
+### 10. 알림 설정 수정
+
+**Request**
+```
+PUT /api/v1/alerts/settings
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+```json
+{
+  "etfListingAlert": true,
+  "etfDelistingAlert": true,
+  "portfolioRebalanceAlert": false,
+  "portfolioReturnAlert": true,
+  "newsAlert": false
+}
+```
+
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| etfListingAlert | boolean | X | ETF 신규 상장 알림 |
+| etfDelistingAlert | boolean | X | ETF 상장폐지 알림 (예정+완료) |
+| portfolioRebalanceAlert | boolean | X | 포트폴리오 리밸런싱 알림 (예정+완료) |
+| portfolioReturnAlert | boolean | X | 포트폴리오 수익률 알림 (5%, 10%) |
+| newsAlert | boolean | X | 관심 ETF 관련 뉴스 알림 |
+
+**Response**
+```json
+{
+  "success": true,
+  "message": "알림 설정이 변경되었습니다."
+}
+```
+
+---
+
 ## 알림 유형
 
 | Type | 설명 | 발송 조건 |
 |------|------|----------|
-| LISTING | ETF 신규 상장 | 매일 상장 예정 ETF 확인 후 발송 |
-| DELISTING | ETF 상장폐지 | 관심 ETF 또는 포트폴리오 내 ETF 상장폐지 시 |
-| PRICE_CHANGE | 가격 변동 | 종가 대비 5%/10% 변동 시 (1일 1회) |
+| LISTING | ETF 신규 상장 | 신규 ETF 상장 시 (전일 공시 기준) |
+| DELISTING_SCHEDULED | ETF 상장폐지 예정 | 관심/보유 ETF 상장폐지 공시 확정 시 |
+| DELISTING_COMPLETED | ETF 상장폐지 완료 | 관심/보유 ETF 상장폐지 완료 시 |
+| REBALANCING_SCHEDULED | ETF 리밸런싱 예정 | 관심/보유 ETF 리밸런싱 공시 확정 시 |
+| REBALANCING_COMPLETED | ETF 리밸런싱 완료 | 관심/보유 ETF 리밸런싱 완료 시 |
+| RETURN_5PCT | 수익률 5% 도달 | 포트폴리오 수익률 ±5% 도달 시 |
+| RETURN_10PCT | 수익률 10% 도달 | 포트폴리오 수익률 ±10% 도달 시 |
+| NEWS_RELATED | 관련 뉴스 발행 | 관심 ETF 관련 뉴스 발행 시 |
 
 ---
 
@@ -275,10 +352,35 @@ Content-Type: application/json
 ```json
 {
   "title": "포트폴리오 수익률 알림",
-  "body": "내 포트폴리오 수익률이 +5%를 달성했습니다!",
+  "body": "내 포트폴리오 '성장형 전략' 수익률이 +5%를 달성했습니다!",
   "data": {
-    "alertType": "PRICE_CHANGE",
+    "alertType": "RETURN_5PCT",
     "portfolioId": "123"
+  }
+}
+```
+
+### 관련 뉴스 알림
+```json
+{
+  "title": "관심 ETF 뉴스",
+  "body": "KODEX 반도체 관련: 반도체 업황 회복 신호",
+  "data": {
+    "alertType": "NEWS_RELATED",
+    "etfTicker": "091160",
+    "newsId": "456"
+  }
+}
+```
+
+### ETF 리밸런싱 알림
+```json
+{
+  "title": "ETF 리밸런싱 완료",
+  "body": "관심 ETF 'TIGER 반도체' 구성종목이 변경되었습니다.",
+  "data": {
+    "alertType": "REBALANCING_COMPLETED",
+    "etfTicker": "091170"
   }
 }
 ```

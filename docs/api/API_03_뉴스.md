@@ -16,6 +16,7 @@
 | GET | `/search` | 뉴스 검색 | X |
 | GET | `/etf/{ticker}` | ETF 관련 뉴스 조회 | X |
 | GET | `/etf/{ticker}/influence` | ETF 영향력 뉴스 조회 | X |
+| GET | `/etf/{ticker}/timeline` | ETF 뉴스 타임라인 조회 | X |
 | GET | `/highlight` | 하이라이트 뉴스 (맵 뷰용) | X |
 | POST | `/scrape` | 수동 크롤링 트리거 (관리자) | O |
 
@@ -45,26 +46,20 @@ GET /api/v1/news?limit=20&offset=0
       {
         "id": 1,
         "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
         "source": "한국경제",
-        "sourceUrl": "https://news.google.com/...",
         "thumbnailUrl": "https://...",
         "category": "ETF",
         "keywords": ["반도체", "ETF", "외국인"],
-        "publishedAt": "2025-01-17T09:30:00Z",
-        "viewCount": 125
+        "publishedAt": "2025-01-17T09:30:00Z"
       },
       {
         "id": 2,
         "title": "금리 인하 기대감에 채권 ETF 강세",
-        "contentSummary": "미국 연준의 금리 인하 시그널에 채권형 ETF가...",
         "source": "매일경제",
-        "sourceUrl": "https://news.google.com/...",
         "thumbnailUrl": null,
         "category": "금융",
         "keywords": ["금리", "채권", "ETF"],
-        "publishedAt": "2025-01-17T08:45:00Z",
-        "viewCount": 89
+        "publishedAt": "2025-01-17T08:45:00Z"
       }
     ],
     "totalCount": 150,
@@ -89,24 +84,33 @@ GET /api/v1/news/1
   "data": {
     "id": 1,
     "title": "반도체 ETF, 외국인 순매수 지속",
-    "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
+    "keywords": ["반도체", "ETF", "외국인", "순매수"],
+    "aiSummary": [
+      "외국인 투자자들이 반도체 관련 ETF를 5거래일 연속 순매수하며 강한 매수세를 보이고 있음",
+      "삼성전자, SK하이닉스 등 주요 반도체 종목 비중이 높은 ETF 중심으로 자금 유입",
+      "AI·데이터센터 수요 증가 기대감이 반도체 섹터 투자 심리를 뒷받침하는 것으로 분석"
+    ],
+    "content": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며 시장의 관심을 모으고 있다...(본문 전체)",
     "source": "한국경제",
     "sourceUrl": "https://news.google.com/...",
     "thumbnailUrl": "https://...",
     "category": "ETF",
-    "keywords": ["반도체", "ETF", "외국인"],
     "publishedAt": "2025-01-17T09:30:00Z",
     "viewCount": 126,
     "relatedEtfs": [
       {
+        "id": 1,
         "ticker": "091160",
         "name": "KODEX 반도체",
+        "changeRate": 1.24,
         "influenceScore": 0.85,
         "influenceType": "POSITIVE"
       },
       {
+        "id": 2,
         "ticker": "091170",
         "name": "KODEX 반도체레버리지",
+        "changeRate": 2.48,
         "influenceScore": 0.78,
         "influenceType": "POSITIVE"
       }
@@ -150,7 +154,7 @@ GET /api/v1/news/search?keyword=반도체&limit=20
       {
         "id": 1,
         "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
+        "keywords": ["반도체", "ETF", "외국인"],
         "source": "한국경제",
         "publishedAt": "2025-01-17T09:30:00Z"
       }
@@ -188,7 +192,7 @@ GET /api/v1/news/etf/091160?limit=10
       {
         "id": 1,
         "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속...",
+        "keywords": ["반도체", "ETF", "외국인"],
         "source": "한국경제",
         "publishedAt": "2025-01-17T09:30:00Z",
         "influenceScore": 0.85,
@@ -249,7 +253,69 @@ GET /api/v1/news/etf/091160/influence?limit=5
 
 ---
 
-### 6. 하이라이트 뉴스 (맵 뷰용)
+### 6. ETF 뉴스 타임라인 조회
+특정 ETF에 영향을 미친 뉴스를 타임라인 형태로 조회 (실제 가격 변동 검증 포함)
+
+**Request**
+```
+GET /api/v1/news/etf/091160/timeline?limit=10&verified_only=true
+```
+
+| Parameter | Type | 필수 | 기본값 | 설명 |
+|-----------|------|------|--------|------|
+| ticker | string | O | - | ETF 종목 코드 |
+| limit | int | X | 10 | 조회 개수 (최대 50) |
+| verified_only | boolean | X | false | 검증된 뉴스만 조회 |
+
+**Response**
+```json
+{
+  "success": true,
+  "data": {
+    "etf": {
+      "ticker": "091160",
+      "name": "KODEX 반도체"
+    },
+    "timeline": [
+      {
+        "news": {
+          "id": 1,
+          "title": "삼성전자 HBM 대규모 수주 성공",
+          "source": "한국경제",
+          "publishedAt": "2025-01-17T09:30:00Z"
+        },
+        "timelineTitle": "삼성전자 HBM 수주 발표",
+        "timelineSummary": "글로벌 AI 기업 대상 HBM 대규모 공급 계약 체결",
+        "influenceScore": 0.92,
+        "influenceType": "POSITIVE",
+        "actualChangeRate": 2.35,
+        "isVerified": true,
+        "verifiedAt": "2025-01-17T18:00:00Z"
+      },
+      {
+        "news": {
+          "id": 5,
+          "title": "미국 반도체 수출 규제 강화 검토",
+          "source": "연합뉴스",
+          "publishedAt": "2025-01-16T08:00:00Z"
+        },
+        "timelineTitle": "미국 대중 반도체 규제 검토",
+        "timelineSummary": "미 상무부, 추가 수출 규제 검토 중",
+        "influenceScore": 0.78,
+        "influenceType": "NEGATIVE",
+        "actualChangeRate": -1.82,
+        "isVerified": true,
+        "verifiedAt": "2025-01-16T18:00:00Z"
+      }
+    ],
+    "totalCount": 25
+  }
+}
+```
+
+---
+
+### 7. 하이라이트 뉴스 (맵 뷰용)
 ETF 맵에서 하이라이트할 뉴스 기반 클러스터 정보 반환
 
 **Request**
@@ -299,7 +365,7 @@ GET /api/v1/news/highlight
 
 ---
 
-### 7. 수동 크롤링 트리거 (관리자)
+### 8. 수동 크롤링 트리거 (관리자)
 
 **Request**
 ```
@@ -326,23 +392,78 @@ Authorization: Bearer {accessToken}
 
 ### 크롤링 소스
 - **Google News RSS API** (한국어)
+- 산업분류(group_code) 기반 키워드 (22개 산업, 250+ 키워드)
 
-### 크롤링 키워드
-```
-ETF, 반도체+ETF, 2차전지+ETF, AI+ETF, 배당+ETF,
-금리+인하, 금리+인상, KOSPI, KOSDAQ, 미국+증시,
-나스닥, S&P500, 채권+금리, 환율+원달러, 원자재+금,
-원유+가격, 인플레이션, 삼성전자, SK하이닉스, 테슬라
-```
+### 뉴스 소스 관리 (news_source 테이블)
+
+| 언론사 | 도메인 | 본문 크롤링 |
+|--------|--------|-------------|
+| 한국경제 | hankyung.com | ✅ 가능 |
+| 서울경제 | sedaily.com | ✅ 가능 |
+| 이데일리 | edaily.co.kr | ✅ 가능 |
+| 뉴스1 | news1.kr | ✅ 가능 |
+| 이투데이 | etoday.co.kr | ✅ 가능 |
+| 비즈워치 | bizwatch.co.kr | ✅ 가능 |
+| 기타 언론사 | - | ❌ RSS snippet 사용 |
+
+- 본문 크롤링 실패 5회 연속 시 자동 비활성화
+- 매일 1회 비활성 언론사 재테스트
 
 ### 스케줄
-- **실행 주기**: 10분 간격
-- **처리량**: 키워드당 최대 5개 뉴스
+- **뉴스 수집**: 10분 간격
+- **ETF 영향력 검증**: 매일 장 마감 후 (18:00)
 
-### 뉴스-ETF 영향력 분석
-1. 뉴스 수집 후 LLM을 통해 관련 ETF 분석
-2. 영향력 점수 (0.0 ~ 1.0) 및 유형 (POSITIVE/NEGATIVE/NEUTRAL) 산출
-3. 분석 근거 텍스트 저장
+### 2-Step 뉴스-ETF 영향력 분석
+
+```
+[Step 1: 뉴스 발행 시점 - 10분 배치]
+
+  1. Google News RSS로 뉴스 수집
+  2. 본문 크롤링 가능 언론사 → content 저장
+     본문 크롤링 불가 언론사 → RSS snippet 활용
+  3. LLM 분석 (뉴스 본문 또는 snippet 입력)
+     → keywords: 핵심 키워드 배열 (4~6개)
+     → content_summary: AI 요약 (bullets 3개)
+     → industry_influence: 산업(group_code) 매핑 + 관련도 + 감성
+  4. 저장
+     → news_article: keywords, content_summary (JSONB)
+     → news_industry_influence: 산업코드 + 관련도 + 감성
+  5. 관심 ETF 보유 사용자에게 알림 발송
+
+[Step 2: 장 마감 후 - 일 1회 배치]
+
+  1. 뉴스 발행 후 실제 ETF 가격 변동률 조회
+  2. 산업 → ETF 매핑 (etf_sector_breakdown 기반)
+  3. 영향도 계산 = (산업 관련도 × 0.5) + (실제 변동률 기여도 × 0.5)
+  4. 타임라인 텍스트 생성 (LLM)
+     - timeline_title: UI 표시용 제목 (20자)
+     - timeline_summary: UI 표시용 요약 (50자)
+  5. news_etf_influence 저장 (is_verified = TRUE)
+```
+
+### LLM 분석 출력 형식
+
+```json
+{
+  "keywords": ["금리동결", "나스닥", "빅테크", "반도체"],
+  "content_summary": {
+    "bullets": [
+      "미국 연방준비제도(Fed)가 기준금리를 현 수준에서 동결하기로 결정",
+      "파월 의장은 인플레이션 둔화세가 뚜렷해질 때까지 신중한 접근 유지 시사",
+      "금리 인상 사이클 종료 기대감에 나스닥 등 주요 기술주들이 강세"
+    ]
+  },
+  "industry_influence": [
+    {"group_code": "IT_SEMI", "relevance": 0.85, "sentiment": "POSITIVE"},
+    {"group_code": "IT_ELEC", "relevance": 0.72, "sentiment": "POSITIVE"}
+  ]
+}
+```
+
+### 장점
+- **과거 데이터 정확**: 실제 주가 변동 기반으로 신뢰도 높음
+- **산업 매핑 재사용**: 뉴스→산업은 한번만, ETF 매핑은 자동
+- **검증 가능**: is_verified로 예측 vs 실제 구분
 
 ---
 
