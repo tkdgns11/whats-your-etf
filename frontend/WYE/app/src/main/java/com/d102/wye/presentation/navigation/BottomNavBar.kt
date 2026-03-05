@@ -17,7 +17,7 @@ import androidx.navigation.NavHostController
 /**
  * 앱 하단 네비게이션 바
  *
- * TODO: 팀원 디자인 확정 후 색상/스타일 교체
+ * TODO: 디자인 확정 후 색상/스타일 교체
  *       현재는 Material3 기본 스타일 임시 사용
  *
  * @param currentDestination 현재 활성화된 NavDestination (계층 비교용)
@@ -30,7 +30,7 @@ fun BottomNavBar(
 ) {
     NavigationBar(
         tonalElevation = 0.dp,
-        // TODO: 팀원 디자인 컬러로 교체
+        // TODO: 디자인 컬러로 교체
         containerColor = Color.White
     ) {
         BottomNavItem.entries.forEach { item ->
@@ -60,7 +60,7 @@ fun BottomNavBar(
                 label = {
                     Text(text = item.label)
                 },
-                // TODO: 팀원 디자인 컬러로 교체
+                // TODO: 디자인 컬러로 교체
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color(0xFF1A73E8),
                     selectedTextColor = Color(0xFF1A73E8),

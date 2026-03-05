@@ -16,7 +16,7 @@ enum class BottomNavItem(
     @DrawableRes val iconRes: Int
 ) {
     MAIN(
-        route = Route.Main.route,
+        route = Route.Home.route,
         label = "홈",
         iconRes = R.drawable.ic_launcher_background         // TODO: 팀원 디자인 리소스로 교체
     ),

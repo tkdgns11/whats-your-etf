@@ -16,7 +16,7 @@ sealed class Route(val route: String) {
     // Bottom Nav (BottomNavBar가 보이는 화면)
     // ─────────────────────────────────────────
 
-    object Main : Route("main")
+    object Home : Route("home")
     object Explore : Route("explore")
     object Simulation : Route("simulation")
     object Strategy : Route("strategy")

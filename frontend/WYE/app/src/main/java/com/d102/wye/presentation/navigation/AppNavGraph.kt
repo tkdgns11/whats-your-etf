@@ -10,14 +10,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.d102.wye.presentation.auth.login.LoginScreen
+import com.d102.wye.presentation.explore.ExploreScreen
+import com.d102.wye.presentation.home.HomeScreen
+import com.d102.wye.presentation.mypage.MyPageScreen
+import com.d102.wye.presentation.simulation.SimulationScreen
+import com.d102.wye.presentation.strategy.StrategyScreen
 
 /**
  * 앱 전체 NavGraph
- *
- * @param navController  네비게이션 컨트롤러
- * @param contentPadding Scaffold에서 내려오는 innerPadding
- *                       BottomNavBar + TopBar 높이를 제외한 실제 콘텐츠 영역
- * @param startDestination 앱 시작 화면 (로그인 여부에 따라 외부에서 결정)
  */
 @Composable
 fun AppNavGraph(
@@ -38,7 +39,15 @@ fun AppNavGraph(
         // ─────────────────────────────────────────
 
         composable(Route.Login.route) {
-//            LoginScreen(navController = navController)
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Route.Home.route) {
+                        popUpTo(Route.Login.route) { inclusive = true }
+                    }
+                },
+                onSignupClick = { navController.navigate(Route.Signup.route) },
+                onForgotPasswordClick = { navController.navigate(Route.PasswordReset.route) }
+            )
         }
 
         composable(Route.Signup.route) {
@@ -53,10 +62,43 @@ fun AppNavGraph(
         // Bottom Nav 화면
         // ─────────────────────────────────────────
 
-        composable(Route.Main.route) {
-//            MainScreen(navController = navController)
+        composable(Route.Home.route) {
+            HomeScreen(
+                onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+            )
         }
 
+        composable(Route.Explore.route) {
+            ExploreScreen(
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+            )
+        }
+
+        composable(Route.Simulation.route) {
+            SimulationScreen(
+                onStartClick = { navController.navigate(Route.SimulationSetup.route) },
+                onBundleClick = { }
+            )
+        }
+
+        composable(Route.Strategy.route) {
+            StrategyScreen(
+                onStrategyClick = { id -> navController.navigate(Route.StrategyDetail(id).route) },
+                onCompareClick = { navController.navigate(Route.StrategyCompare.route) }
+            )
+        }
+
+        composable(Route.MyPage.route) {
+            MyPageScreen(
+                onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onLogoutClick = {
+                    navController.navigate(Route.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         // ─────────────────────────────────────────
         // ETF 상세 (ticker 파라미터)
@@ -68,7 +110,8 @@ fun AppNavGraph(
                 navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val ticker = backStackEntry.arguments?.getString(Route.EtfDetail.ARG_TICKER) ?: return@composable
+            val ticker =
+                backStackEntry.arguments?.getString(Route.EtfDetail.ARG_TICKER) ?: return@composable
 //            EtfDetailScreen(
 //                ticker = ticker,
 //                navController = navController
@@ -85,7 +128,8 @@ fun AppNavGraph(
                 navArgument(Route.NewsDetail.ARG_NEWS_ID) { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            val newsId = backStackEntry.arguments?.getLong(Route.NewsDetail.ARG_NEWS_ID) ?: return@composable
+            val newsId =
+                backStackEntry.arguments?.getLong(Route.NewsDetail.ARG_NEWS_ID) ?: return@composable
 //            NewsDetailScreen(
 //                newsId = newsId,
 //                navController = navController
@@ -111,20 +155,13 @@ fun AppNavGraph(
                 navArgument(Route.StrategyDetail.ARG_STRATEGY_ID) { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            val strategyId = backStackEntry.arguments?.getLong(Route.StrategyDetail.ARG_STRATEGY_ID) ?: return@composable
+            val strategyId = backStackEntry.arguments?.getLong(Route.StrategyDetail.ARG_STRATEGY_ID)
+                ?: return@composable
 //            StrategyDetailScreen(
 //                strategyId = strategyId,
 //                navController = navController
 //            )
         }
 
-
-        // ─────────────────────────────────────────
-        // 알림
-        // ─────────────────────────────────────────
-
-        composable(Route.Notification.route) {
-//            NotificationScreen(navController = navController)
-        }
     }
 }
