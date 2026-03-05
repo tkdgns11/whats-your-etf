@@ -1,6 +1,6 @@
 package com.whatsyouretf.userservice.domain.auth.service.impl;
 
-import com.whatsyouretf.userservice.common.exception.CustomException;
+import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.util.JwtTokenUtil;
 import com.whatsyouretf.userservice.domain.auth.dto.AuthResponse;
@@ -61,13 +61,13 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refreshToken(String refreshTokenValue) {
         // 1. Refresh Token 유효성 검증
         if (!jwtTokenUtil.validateToken(refreshTokenValue) || !jwtTokenUtil.isRefreshToken(refreshTokenValue)) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
         // 2. DB에서 Refresh Token 조회
         RefreshToken refreshToken = refreshTokenRepository
                 .findValidToken(refreshTokenValue, LocalDateTime.now())
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_TOKEN));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
 
         // 3. 기존 토큰 폐기
         refreshToken.revoke();
@@ -102,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
             return response.getBody();
         } catch (Exception e) {
             log.error("Failed to get Kakao user info: {}", e.getMessage());
-            throw new CustomException(ErrorCode.OAUTH_FAILED);
+            throw new BusinessException(ErrorCode.OAUTH_FAILED);
         }
     }
 

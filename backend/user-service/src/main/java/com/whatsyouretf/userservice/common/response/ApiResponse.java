@@ -1,6 +1,7 @@
 package com.whatsyouretf.userservice.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class ApiResponse<T> {
 
     private final boolean success;
     private final String message;
+    private String code;
     private final T data;
     private final LocalDateTime timestamp;
 
@@ -22,6 +24,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message("Success")
+                .code("OK")
                 .data(data)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -31,6 +34,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
+                .code("OK")
                 .data(data)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -40,14 +44,16 @@ public class ApiResponse<T> {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message(message)
+                .code("OK")
                 .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(String message) {
+    public static <T> ApiResponse<T> error(String message, ErrorCode e) {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
+                .code(e.getCode())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
