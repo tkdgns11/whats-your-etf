@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android keystore
+app/keystore/
+app/keystore/debug.keystore
