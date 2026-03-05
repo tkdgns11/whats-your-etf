@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore
+package com.d102.wye.presentation.mypage
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,9 +21,10 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 
 @Composable
-fun ExploreScreen(
-    onEtfClick: (ticker: String) -> Unit,
-    viewModel: ExploreViewModel = hiltViewModel()
+fun MyPageScreen(
+    onLikedEtfClick: (ticker: String) -> Unit,  // 관심 ETF 상세로 이동
+    onLogoutClick: () -> Unit,                   // 로그아웃 → 로그인 화면으로
+    viewModel: MyPageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -36,24 +37,26 @@ fun ExploreScreen(
         }
     }
 
-    ExploreScreenContent(
+    MyPageScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onEtfClick = onEtfClick
+        onLikedEtfClick = onLikedEtfClick,
+        onLogoutClick = onLogoutClick
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExploreScreenContent(
-    uiState: UiState<ExploreData>,
+private fun MyPageScreenContent(
+    uiState: UiState<MyPageData>,
     snackbarHostState: SnackbarHostState,
-    onEtfClick: (ticker: String) -> Unit
+    onLikedEtfClick: (ticker: String) -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            WyeTopBar(title = "탐색")
+            WyeTopBar(title = "마이페이지")
         }
     ) { innerPadding ->
         Box(
@@ -67,9 +70,9 @@ private fun ExploreScreenContent(
                 }
 
                 is UiState.Success -> {
-                    // TODO: ETF 리스트 + 필터 UI 구현
+                    // TODO: 관심 ETF / 보유 ETF / 계정 설정 UI 구현
                     Text(
-                        text = "ETF ${uiState.data.etfList.size}개",
+                        text = uiState.data.nickname,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }

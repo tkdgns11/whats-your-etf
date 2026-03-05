@@ -2,6 +2,8 @@ package com.d102.wye.presentation.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.state.EtfFilterState
+import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,36 +12,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * =====================================================================
- * ViewModel 작성 템플릿
- * =====================================================================
- *
- * 사용법:
- * 1. 이 파일을 복사해서 presentation/[feature]/[FeatureName]ViewModel.kt 에 붙여넣기
- * 2. Explore → 실제 기능 이름으로 전체 교체
- * 3. TODO 주석 위치에 실제 Repository / UseCase 주입 및 로직 구현
- *
- * UiState 설계 기준:
- * - 화면 전체가 로딩/에러로 전환되는 경우 → sealed class (아래 방식)
- * - 여러 독립적인 상태를 동시에 관리할 경우 → data class (ex. SimulationUiState)
- * =====================================================================
- */
-
-// ─────────────────────────────────────────────────────────────────────
-// UiState 정의 (같은 파일에 두거나 별도 파일로 분리 가능)
-// ─────────────────────────────────────────────────────────────────────
-
-sealed class ExploreUiState {
-    object Idle : ExploreUiState()
-    object Loading : ExploreUiState()
-    data class Success(val data: String) : ExploreUiState()   // TODO: 실제 타입으로 교체
-    data class Error(val message: String) : ExploreUiState()
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// ViewModel
-// ─────────────────────────────────────────────────────────────────────
 
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
@@ -48,26 +20,95 @@ class ExploreViewModel @Inject constructor(
     // private val filterEtfListUseCase: FilterEtfListUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<ExploreUiState>(ExploreUiState.Idle)
-    val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<ExploreData>>(UiState.Idle)
+    val uiState: StateFlow<UiState<ExploreData>> = _uiState.asStateFlow()
+
+    // 필터 상태 (UiState와 별도로 관리 — 필터 변경이 전체 로딩을 트리거하지 않도록)
+    private val _filterState = MutableStateFlow(EtfFilterState())
+    val filterState: StateFlow<EtfFilterState> = _filterState.asStateFlow()
 
     init {
-        // 화면 진입 시 자동으로 데이터 로드할 경우 여기서 호출
-        // loadData()
+        loadEtfList()
     }
 
-    fun loadData() {
+    fun loadEtfList() {
         viewModelScope.launch {
-            _uiState.update { ExploreUiState.Loading }
+            _uiState.update { UiState.Loading }
 
-            // TODO: 실제 데이터 로드
-            // when (val result = etfRepository.getEtfList()) {
-            //     is BaseResult.Success -> _uiState.update { ExploreUiState.Success(result.data) }
-            //     is BaseResult.Error   -> _uiState.update { ExploreUiState.Error(result.error.message) }
+            // TODO: 1분 polling Flow 구독
+            // etfRepository.getEtfList().collect { etfList ->
+            //     val uiModels = etfList.map { it.toEtfListItemUiModel() }
+            //     val filtered = filterEtfListUseCase(etfList, _filterState.value)
+            //         .map { it.toEtfListItemUiModel() }
+            //     _uiState.update {
+            //         UiState.Success(
+            //             ExploreData(
+            //                 etfList = uiModels,
+            //                 filteredList = filtered,
+            //                 filter = _filterState.value
+            //             )
+            //         )
+            //     }
             // }
         }
     }
 
-    // TODO: 이벤트 핸들러 추가
-    // fun onSomethingClick() { ... }
+    fun onQueryChanged(query: String) {
+        _filterState.update { it.copy(query = query) }
+        applyFilter()
+    }
+
+    fun onRiskLevelToggled(level: Int) {
+        _filterState.update {
+            val updated = if (level in it.riskLevels) it.riskLevels - level
+            else it.riskLevels + level
+            it.copy(riskLevels = updated)
+        }
+        applyFilter()
+    }
+
+    fun onAssetClassSelected(assetClass: String?) {
+        _filterState.update { it.copy(assetClass = assetClass) }
+        applyFilter()
+    }
+
+    fun onStrategySelected(strategy: String?) {
+        _filterState.update { it.copy(strategy = strategy) }
+        applyFilter()
+    }
+
+    fun onLikeToggled(ticker: String) {
+        viewModelScope.launch {
+            // TODO: etfRepository.toggleLike(ticker)
+        }
+    }
+
+    private fun applyFilter() {
+        val current = _uiState.value
+        if (current !is UiState.Success) return
+
+        // TODO: filterEtfListUseCase 적용
+        // val filtered = filterEtfListUseCase(rawEtfList, _filterState.value)
+        //     .map { it.toEtfListItemUiModel() }
+        // _uiState.update { UiState.Success(current.data.copy(filteredList = filtered)) }
+    }
 }
+
+// ─────────────────────────────────────────
+// 화면 데이터 모델
+// ─────────────────────────────────────────
+
+data class ExploreData(
+    val etfList: List<EtfListItemUiModel>,
+    val filteredList: List<EtfListItemUiModel>,  // 필터/검색 적용된 결과
+    val filter: EtfFilterState                   // 현재 적용된 필터 상태
+)
+
+data class EtfListItemUiModel(
+    val ticker: String,
+    val name: String,
+    val currentPrice: Long,
+    val changeRate: Double,
+    val riskLevel: Int,
+    val isLiked: Boolean
+)

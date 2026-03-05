@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore
+package com.d102.wye.presentation.strategy
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,9 +21,10 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 
 @Composable
-fun ExploreScreen(
-    onEtfClick: (ticker: String) -> Unit,
-    viewModel: ExploreViewModel = hiltViewModel()
+fun StrategyScreen(
+    onStrategyClick: (strategyId: Long) -> Unit,
+    onCompareClick: () -> Unit,
+    viewModel: StrategyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -36,24 +37,26 @@ fun ExploreScreen(
         }
     }
 
-    ExploreScreenContent(
+    StrategyScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onEtfClick = onEtfClick
+        onStrategyClick = onStrategyClick,
+        onCompareClick = onCompareClick
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExploreScreenContent(
-    uiState: UiState<ExploreData>,
+private fun StrategyScreenContent(
+    uiState: UiState<StrategyListData>,
     snackbarHostState: SnackbarHostState,
-    onEtfClick: (ticker: String) -> Unit
+    onStrategyClick: (strategyId: Long) -> Unit,
+    onCompareClick: () -> Unit
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            WyeTopBar(title = "탐색")
+            WyeTopBar(title = "나의 전략")
         }
     ) { innerPadding ->
         Box(
@@ -67,9 +70,9 @@ private fun ExploreScreenContent(
                 }
 
                 is UiState.Success -> {
-                    // TODO: ETF 리스트 + 필터 UI 구현
+                    // TODO: 저장된 전략 목록 카드 UI 구현
                     Text(
-                        text = "ETF ${uiState.data.etfList.size}개",
+                        text = "전략 ${uiState.data.strategies.size}개",
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }

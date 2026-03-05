@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore
+package com.d102.wye.presentation.simulation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,11 +20,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.entry.SimulationEntryData
+import com.d102.wye.presentation.simulation.entry.SimulationViewModel
 
 @Composable
-fun ExploreScreen(
-    onEtfClick: (ticker: String) -> Unit,
-    viewModel: ExploreViewModel = hiltViewModel()
+fun SimulationScreen(
+    onStartClick: () -> Unit,           // 시뮬레이션 설정 화면으로 이동
+    onBundleClick: (bundleId: Int) -> Unit, // 꾸러미 선택
+    viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -36,24 +40,26 @@ fun ExploreScreen(
         }
     }
 
-    ExploreScreenContent(
+    SimulationScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
-        onEtfClick = onEtfClick
+        onStartClick = onStartClick,
+        onBundleClick = onBundleClick
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExploreScreenContent(
-    uiState: UiState<ExploreData>,
+private fun SimulationScreenContent(
+    uiState: UiState<SimulationEntryData>,
     snackbarHostState: SnackbarHostState,
-    onEtfClick: (ticker: String) -> Unit
+    onStartClick: () -> Unit,
+    onBundleClick: (bundleId: Int) -> Unit
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            WyeTopBar(title = "탐색")
+            WyeTopBar(title = "시뮬레이션")
         }
     ) { innerPadding ->
         Box(
@@ -67,9 +73,9 @@ private fun ExploreScreenContent(
                 }
 
                 is UiState.Success -> {
-                    // TODO: ETF 리스트 + 필터 UI 구현
+                    // TODO: 안내 페이지 + 사전 구성 꾸러미 UI 구현
                     Text(
-                        text = "ETF ${uiState.data.etfList.size}개",
+                        text = "시뮬레이션 진입 화면",
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
