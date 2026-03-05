@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.news import NewsArticle
 from app.config import get_settings
 from app.utils.dedup import DuplicateChecker
+from app.scrapers.keywords import get_category_by_keyword
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -151,6 +152,9 @@ class NaverNewsScraper:
         # 출처 추출 (URL에서)
         source_name = self._extract_source(source_url)
 
+        # 검색 키워드로 카테고리 자동 할당
+        category = get_category_by_keyword(keyword)
+
         return NewsArticle(
             title=title,
             content=description if len(description) > 50 else None,  # API snippet → content (본문 크롤링 시 덮어씀)
@@ -158,7 +162,7 @@ class NaverNewsScraper:
             # keywords는 LLM이 생성
             source=source_name,
             source_url=source_url,
-            category="금융",
+            category=category,
             published_at=published_at
         )
 

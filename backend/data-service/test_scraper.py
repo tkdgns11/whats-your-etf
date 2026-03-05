@@ -27,6 +27,7 @@ async def test_google_news():
         for news in news_list:
             print(f"\n- 제목: {news.title[:50]}...")
             print(f"  출처: {news.source}")
+            print(f"  카테고리: {news.category} ({news.category_name})")
             print(f"  content 길이: {len(news.content) if news.content else 0}자")
             print(f"  content_summary: {news.content_summary}")
             print(f"  keywords: {news.keywords}")
@@ -105,8 +106,8 @@ async def show_results():
             content_len = len(news.content) if news.content else 0
             has_full_content = "✅" if content_len > 500 else "⚠️"
 
-            print(f"{has_full_content} [{news.source}] {news.title[:45]}...")
-            print(f"   content: {content_len}자 | content_summary: {news.content_summary}")
+            print(f"{has_full_content} [{news.category_name}] [{news.source}] {news.title[:40]}...")
+            print(f"   category: {news.category} | content: {content_len}자")
             print()
 
     finally:

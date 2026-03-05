@@ -424,10 +424,10 @@ Authorization: Bearer {accessToken}
   3. LLM 분석 (뉴스 본문 또는 snippet 입력)
      → keywords: 핵심 키워드 배열 (4~6개)
      → content_summary: AI 요약 (bullets 3개)
-     → industry_influence: 산업(group_code) 매핑 + 관련도 + 감성
+     → impact_analysis: 회사/산업 영향 분석 (target_type, impact_score, impact_reason)
   4. 저장
      → news_article: keywords, content_summary (JSONB)
-     → news_industry_influence: 산업코드 + 관련도 + 감성
+     → news_impact: 뉴스→회사/산업 1차 영향 분석 결과
   5. 관심 ETF 보유 사용자에게 알림 발송
 
 [Step 2: 장 마감 후 - 일 1회 배치]
@@ -453,9 +453,19 @@ Authorization: Bearer {accessToken}
       "금리 인상 사이클 종료 기대감에 나스닥 등 주요 기술주들이 강세"
     ]
   },
-  "industry_influence": [
-    {"group_code": "IT_SEMI", "relevance": 0.85, "sentiment": "POSITIVE"},
-    {"group_code": "IT_ELEC", "relevance": 0.72, "sentiment": "POSITIVE"}
+  "impact_analysis": [
+    {
+      "target_type": "COMPANY",
+      "stock_code": "005930",
+      "impact_score": 0.72,
+      "impact_reason": "AI 반도체 수요 증가로 삼성전자 HBM 사업 수혜 기대"
+    },
+    {
+      "target_type": "INDUSTRY",
+      "industry_code": "032601",
+      "impact_score": 0.85,
+      "impact_reason": "금리 동결로 반도체 업종 투자 심리 개선"
+    }
   ]
 }
 ```

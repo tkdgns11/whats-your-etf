@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.models.news import NewsArticle
 from app.config import get_settings
 from app.utils.dedup import DuplicateChecker
+from app.utils.spam_filter import is_spam
+from app.scrapers.keywords import get_category_by_keyword
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -46,53 +48,76 @@ class GoogleNewsScraper:
         await self.client.aclose()
         self.dedup_checker.clear_cache()
 
-    async def scrape_by_keyword(self, keyword: str, max_items: int = 5) -> int:
-        """특정 키워드로 뉴스 수집"""
+    async def scrape_by_keyword(self, keyword: str, max_items: int = 5) -> dict:
+        """
+        특정 키워드로 뉴스 수집
+
+        Returns:
+            {"saved": int, "spam": int, "duplicate": int}
+        """
         url = f"{self.BASE_URL}?q={keyword}&hl=ko&gl=KR&ceid=KR:ko"
+        stats = {"saved": 0, "spam": 0, "duplicate": 0}
 
         try:
             response = await self.client.get(url, follow_redirects=True)
             response.raise_for_status()
         except httpx.HTTPError as e:
             logger.error(f"HTTP 요청 실패: {e}")
-            return 0
+            return stats
 
         soup = BeautifulSoup(response.text, "xml")
         items = soup.find_all("item")
 
-        count = 0
         for item in items[:max_items]:
             try:
                 news = await self._parse_item(item, keyword)
-                if news:
-                    # 중복 체크
-                    if not self.dedup_checker.is_duplicate(news.title, news.source_url):
-                        self.db.add(news)
-                        self.db.commit()
-                        count += 1
+                if news is None:
+                    # Spam filter에서 걸러짐
+                    stats["spam"] += 1
+                    continue
+
+                # 중복 체크
+                if self.dedup_checker.is_duplicate(news.title, news.source_url):
+                    stats["duplicate"] += 1
+                    continue
+
+                self.db.add(news)
+                self.db.commit()
+                stats["saved"] += 1
+
             except Exception as e:
                 logger.error(f"뉴스 파싱 실패: {e}")
                 self.db.rollback()
                 continue
 
-        return count
+        return stats
 
-    async def scrape_keywords(self, keywords: list, max_per_keyword: int = 5) -> int:
-        """여러 키워드로 뉴스 수집"""
-        total_count = 0
+    async def scrape_keywords(self, keywords: list, max_per_keyword: int = 5) -> dict:
+        """
+        여러 키워드로 뉴스 수집
+
+        Returns:
+            {"saved": int, "spam": int, "duplicate": int}
+        """
+        total_stats = {"saved": 0, "spam": 0, "duplicate": 0}
 
         for keyword in keywords:
             try:
-                count = await self.scrape_by_keyword(keyword, max_per_keyword)
-                total_count += count
-                logger.info(f"[Google][{keyword}] {count}건 수집")
+                stats = await self.scrape_by_keyword(keyword, max_per_keyword)
+                total_stats["saved"] += stats["saved"]
+                total_stats["spam"] += stats["spam"]
+                total_stats["duplicate"] += stats["duplicate"]
+
+                logger.info(f"[Google][{keyword}] 저장:{stats['saved']} 스팸:{stats['spam']} 중복:{stats['duplicate']}")
                 await asyncio.sleep(1)  # Rate limit
             except Exception as e:
                 logger.error(f"[Google][{keyword}] 크롤링 실패: {e}")
                 continue
 
-        logger.info(f"[Google] 총 {total_count}건 수집 완료")
-        return total_count
+        logger.info(
+            f"[Google] 총 저장:{total_stats['saved']} 스팸:{total_stats['spam']} 중복:{total_stats['duplicate']}"
+        )
+        return total_stats
 
     async def _parse_item(self, item, keyword: str) -> Optional[NewsArticle]:
         """RSS item을 NewsArticle로 변환"""
@@ -106,19 +131,26 @@ class GoogleNewsScraper:
             return None
 
         title = title_tag.get_text(strip=True)
-        google_link = link_tag.get_text(strip=True)
 
-        # Google 리다이렉트 URL에서 실제 기사 URL 추출
-        actual_url = await self._resolve_google_redirect(google_link)
-        logger.debug(f"URL 변환: {google_link[:50]}... → {actual_url[:50]}...")
-
-        # description에서 HTML 태그 제거 (RSS snippet)
+        # description 먼저 추출 (스팸 필터용)
         description = ""
         if desc_tag:
             desc_soup = BeautifulSoup(desc_tag.get_text(), "html.parser")
             description = desc_soup.get_text(strip=True)
             if len(description) > 500:
                 description = description[:497] + "..."
+
+        # Spam Filter 체크
+        spam_result = is_spam(title, description)
+        if spam_result.is_spam:
+            logger.debug(f"[Spam] {title[:50]}... ({spam_result.reason}: {spam_result.matched_keyword})")
+            return None
+
+        google_link = link_tag.get_text(strip=True)
+
+        # Google 리다이렉트 URL에서 실제 기사 URL 추출
+        actual_url = await self._resolve_google_redirect(google_link)
+        logger.debug(f"URL 변환: {google_link[:50]}... → {actual_url[:50]}...")
 
         # 발행일 파싱
         published_at = None
@@ -136,6 +168,9 @@ class GoogleNewsScraper:
             # URL에서 도메인 추출하여 언론사명 매핑
             source_name = self._extract_source_from_url(actual_url)
 
+        # 검색 키워드로 카테고리 자동 할당
+        category = get_category_by_keyword(keyword)
+
         return NewsArticle(
             title=title,
             content=description if description else None,  # RSS snippet → content (본문 크롤링 시 덮어씀)
@@ -143,7 +178,7 @@ class GoogleNewsScraper:
             # keywords는 LLM이 생성
             source=source_name,
             source_url=actual_url,  # 실제 기사 URL 저장
-            category="금융",
+            category=category,
             published_at=published_at
         )
 

@@ -14,9 +14,16 @@ class NewsArticle(Base):
     source = Column(String(100))                    # 언론사명
     source_url = Column(String(1000), nullable=False, unique=True)  # 원본 URL
     thumbnail_url = Column(String(1000))            # 썸네일 이미지 URL
-    category = Column(String(50), default="금융")   # 금융 / ETF / 경제
+    category = Column(String(50), default="NEWS_ETC")  # NEWS_SEMI, NEWS_IT 등
     keywords = Column(JSONB)                        # 키워드 배열 ["반도체", "ETF"]
     published_at = Column(TIMESTAMP(timezone=True))
     view_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    @property
+    def category_name(self) -> str:
+        """카테고리 코드 → 이름 변환"""
+        # 순환 참조 방지를 위해 lazy import
+        from app.scrapers.keywords import NEWS_CATEGORIES
+        return NEWS_CATEGORIES.get(self.category, self.category or "기타")

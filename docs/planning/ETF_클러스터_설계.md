@@ -47,7 +47,7 @@ ETF : 섹터 분포 시각화 = 1 : 1
 
 ETF 유형에 따라 다른 분류 방식을 적용합니다.
 
-| ETF 유형 | breakdown_type | 분류 방식 | 예시 |
+| ETF 유형 | cluster_type | 분류 방식 | 예시 |
 |----------|----------------|-----------|------|
 | **테마 ETF** (반도체, 2차전지) | SUB_SECTOR | 세부 섹터 | 세라믹, 공정장비, 팹리스, 메모리 |
 | **시장 ETF** (KODEX 200, KOSPI) | GROUP_CODE | 그룹코드 (13개) | IT_SW, FINANCE, MANUFACTURING |
@@ -57,15 +57,15 @@ ETF 유형에 따라 다른 분류 방식을 적용합니다.
 
 ## 3. 테이블 구조
 
-### 3.1 etf_sector_breakdown
+### 3.1 etf_sector_cluster
 
 ```sql
-CREATE TABLE "etf_sector_breakdown" (
+CREATE TABLE "etf_sector_cluster" (
     "id" BIGSERIAL PRIMARY KEY,
     "etf_id" BIGINT NOT NULL,
 
     -- 분류 타입
-    "breakdown_type" VARCHAR(20) NOT NULL,    -- 'GROUP_CODE' / 'INDUSTRY' / 'SUB_SECTOR'
+    "cluster_type" VARCHAR(20) NOT NULL,    -- 'GROUP_CODE' / 'INDUSTRY' / 'SUB_SECTOR'
 
     -- 산업분류 (KSIC 기반)
     "industry_code" VARCHAR(10),              -- KSIC 코드 (C26, K64 등)
@@ -95,8 +95,8 @@ CREATE TABLE "etf_sector_breakdown" (
         REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_sector_breakdown_etf" ON "etf_sector_breakdown"("etf_id");
-CREATE INDEX "idx_sector_breakdown_date" ON "etf_sector_breakdown"("etf_id", "base_date" DESC);
+CREATE INDEX "idx_sector_breakdown_etf" ON "etf_sector_cluster"("etf_id");
+CREATE INDEX "idx_sector_breakdown_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
 ```
 
 ### 3.2 컬럼 설명
@@ -105,7 +105,7 @@ CREATE INDEX "idx_sector_breakdown_date" ON "etf_sector_breakdown"("etf_id", "ba
 |------|------|------|
 | id | BIGSERIAL | PK |
 | etf_id | BIGINT | ETF FK |
-| breakdown_type | VARCHAR(20) | 분류 타입: GROUP_CODE / INDUSTRY / SUB_SECTOR |
+| cluster_type | VARCHAR(20) | 분류 타입: GROUP_CODE / INDUSTRY / SUB_SECTOR |
 | industry_code | VARCHAR(10) | KSIC 산업코드 |
 | industry_name | VARCHAR(100) | 산업명 |
 | group_code | VARCHAR(20) | 그룹코드 (13개) |
@@ -189,7 +189,7 @@ GET /api/etf/123/sector-breakdown
 {
   "etf_id": 123,
   "etf_name": "KODEX 200",
-  "breakdown_type": "GROUP_CODE",
+  "cluster_type": "GROUP_CODE",
   "base_date": "2024-01-15",
   "center": {
     "x": 0.5,
@@ -518,7 +518,7 @@ fun getSectorIcon(sectorName: String): ImageVector {
          │
          ▼ 집계 + 좌표계산
 ┌──────────────────────┐
-│ etf_sector_breakdown │  ETF별 섹터 분포 + 좌표 저장
+│ etf_sector_cluster │  ETF별 섹터 분포 + 좌표 저장
 └──────────────────────┘
          │
          ▼ API
@@ -534,25 +534,25 @@ fun getSectorIcon(sectorName: String): ImageVector {
 ### 8.1 섹터 분석 배치 (일 1회)
 
 ```python
-async def update_etf_sector_breakdown():
+async def update_etf_sector_cluster():
     """ETF별 구성종목 섹터 분포 집계 + 좌표 계산"""
 
     for etf in get_active_etfs():
         # 1. 구성종목 조회
         compositions = get_compositions(etf.id)
 
-        # 2. ETF 유형에 따라 breakdown_type 결정
-        breakdown_type = determine_breakdown_type(etf)
+        # 2. ETF 유형에 따라 cluster_type 결정
+        cluster_type = determine_cluster_type(etf)
 
         # 3. 종목 → 산업/섹터 매핑 및 집계
-        sectors = aggregate_by_sector(compositions, breakdown_type)
+        sectors = aggregate_by_sector(compositions, cluster_type)
 
         # 4. 좌표 계산 (UMAP 또는 원형 배치)
         sectors = calculate_sector_positions(sectors)
 
         # 5. 기존 데이터 삭제 후 새로 저장
         delete_old_breakdown(etf.id)
-        save_sector_breakdown(etf.id, breakdown_type, sectors)
+        save_sector_breakdown(etf.id, cluster_type, sectors)
 ```
 
 ---
@@ -561,10 +561,10 @@ async def update_etf_sector_breakdown():
 
 ```
 ┌─────────────┐     1:N      ┌─────────────────────┐
-│     etf     │ ◄─────────── │  etf_sector_breakdown│
+│     etf     │ ◄─────────── │  etf_sector_cluster│
 ├─────────────┤              ├─────────────────────┤
 │ id (PK)     │              │ etf_id (FK)         │
-│ name        │              │ breakdown_type      │
+│ name        │              │ cluster_type      │
 │ category    │              │ group_code          │
 │ ...         │              │ sub_sector          │
 └─────────────┘              │ weight_pct          │
@@ -585,7 +585,7 @@ async def update_etf_sector_breakdown():
 data class EtfSectorBreakdownResponse(
     @SerializedName("etf_id") val etfId: Long,
     @SerializedName("etf_name") val etfName: String,
-    @SerializedName("breakdown_type") val breakdownType: String,
+    @SerializedName("cluster_type") val breakdownType: String,
     @SerializedName("base_date") val baseDate: String,
     val center: CenterPoint,
     val sectors: List<SectorItem>

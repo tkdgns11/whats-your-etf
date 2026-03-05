@@ -119,10 +119,20 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| email | string | O | 이메일 주소 |
-| password | string | O | 비밀번호 (8자 이상, 영문+숫자+특수문자) |
-| passwordConfirm | string | O | 비밀번호 확인 |
-| nickname | string | O | 닉네임 (2~20자) |
+| email | string | O | 이메일 주소 (최대 255자) |
+| password | string | O | 비밀번호 (아래 상세 참조) |
+| passwordConfirm | string | O | 비밀번호 확인 (password와 동일해야 함) |
+| nickname | string | O | 닉네임 (2~20자, 한글/영문/숫자만 허용) |
+
+**비밀번호 규칙**
+| 항목 | 값 |
+|------|-----|
+| 전송 방식 | **평문 전송** (HTTPS 필수, 서버에서 BCrypt 해시 처리) |
+| 최소 길이 | 8자 |
+| 최대 길이 | 72자 (BCrypt 제한) |
+| 필수 조건 | 영문 + 숫자 + 특수문자 조합 |
+| 허용 특수문자 | `!@#$%^&*()_+-=[]{}|;':\",./<>?` |
+| 정규식 | `^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;':\",./<>?]).{8,72}$` |
 
 **Response**
 ```json
@@ -252,6 +262,11 @@ Content-Type: application/json
   "password": "password123!"
 }
 ```
+
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| email | string | O | 이메일 주소 |
+| password | string | O | 비밀번호 (평문 전송, 최대 72자) |
 
 **Response**
 ```json
@@ -417,6 +432,13 @@ Content-Type: application/json
   "newPasswordConfirm": "newPassword456!"
 }
 ```
+
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| email | string | O | 이메일 주소 |
+| token | string | O | 비밀번호 재설정 토큰 |
+| newPassword | string | O | 새 비밀번호 (회원가입 비밀번호 규칙과 동일) |
+| newPasswordConfirm | string | O | 새 비밀번호 확인 |
 
 **Response**
 ```json

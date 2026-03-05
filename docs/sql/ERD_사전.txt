@@ -10,16 +10,19 @@ refresh_token             리프레시토큰
 password_reset_token      비밀번호재설정토큰
 email_verification_token  이메일인증토큰
 login_history             로그인이력
+category                  공통카테고리(뉴스/포트폴리오분류)
 news_source               뉴스소스(언론사)관리
 news_article              뉴스기사
 news_etf_influence        뉴스ETF영향력매핑
-news_industry_influence   뉴스산업영향력매핑(2단계분석중간테이블)
+news_impact               뉴스영향분석(뉴스→회사/산업1차매핑)
 ai_prompt                 AI프롬프트관리
 portfolio_ai_feedback     포트폴리오AI피드백
 user_favorite_etf         관심ETF
 user_holding_etf          보유ETF(마이데이터)
-etf_alert                 ETF알림
-notification_setting      알림설정
+alert_type                알림유형코드테이블
+alert_message_template    알림메시지템플릿(버전관리)
+user_alert                사용자알림(통합)
+user_notification_setting 사용자알림설정(유형별ON/OFF)
 fcm_token                 FCM토큰
 etf_sector_breakdown      ETF섹터분포(구성종목산업별집계)
 industry_classification   산업분류코드(셀프참조트리)
@@ -63,6 +66,15 @@ login_at                  로그인일시
 ip_address                IP주소
 device_info               기기정보
 
+【 속성명 (공통 카테고리) 】
+--------------------------------------------------------------------------------
+code                      카테고리코드 (PK, NEWS_MACRO, PORTFOLIO_DIVIDEND 등)
+type                      카테고리유형 (NEWS/PORTFOLIO/ETF)
+name                      카테고리명 ("금리/거시경제", "배당형")
+description               설명
+display_order             노출순서
+is_active                 활성여부
+
 【 속성명 (뉴스 소스) 】
 --------------------------------------------------------------------------------
 name                      언론사명
@@ -96,11 +108,14 @@ actual_change_rate        뉴스발행후ETF실제변동률
 verified_at               검증시점 (장마감후)
 is_verified               실제데이터로검증됨여부
 
-【 속성명 (뉴스-산업 영향력) 】
+【 속성명 (뉴스 영향 분석) 】
 --------------------------------------------------------------------------------
-industry_code             산업분류코드 (FK)
-relevance_score           관련성점수 (0~1)
-sentiment                 감성분석 (POSITIVE/NEGATIVE/NEUTRAL)
+news_id                   뉴스ID (FK→news_article)
+target_type               영향대상유형 (COMPANY/INDUSTRY)
+company_id                회사ID (FK→company_info, target_type=COMPANY일때)
+industry_code             산업분류코드 (FK→industry_classification, target_type=INDUSTRY일때)
+impact_score              영향도점수 (-1.00~+1.00, 부정~긍정)
+impact_reason             영향도사유 ("AI 반도체 투자 확대로 실적 개선 기대")
 
 【 속성명 (AI 피드백) 】
 --------------------------------------------------------------------------------
@@ -125,15 +140,39 @@ quantity                  보유수량
 avg_price                 평균매입가
 synced_at                 동기화시점
 
-【 속성명 (알림) 】
+【 속성명 (알림 유형 코드) 】
 --------------------------------------------------------------------------------
-alert_type                알림유형
-message                   메시지
-etf_listing_alert         ETF상장알림설정
-etf_delisting_alert       ETF상장폐지알림설정
-portfolio_rebalance_alert 포트폴리오리밸런싱알림설정 (예정+완료)
-portfolio_return_alert    포트폴리오수익률알림설정 (5%, 10%)
-news_alert                뉴스알림설정
+code                      알림유형코드 (PK)
+name                      알림유형명
+category                  알림카테고리 (ETF/PORTFOLIO/NEWS/SYSTEM)
+display_order             노출순서
+
+【 속성명 (알림 메시지 템플릿) 】
+--------------------------------------------------------------------------------
+alert_type_code           알림유형코드 (FK→alert_type)
+version                   버전 (v1.0, v1.1)
+title_template            제목템플릿 ("신규 ETF 상장 알림")
+message_template          메시지템플릿 ("{etf_name} ETF가 {date}에 상장 예정입니다.")
+variables                 사용가능변수목록 (JSON배열)
+is_active                 활성버전여부
+
+【 속성명 (사용자 알림) 】
+--------------------------------------------------------------------------------
+alert_type_code           알림유형코드 (FK→alert_type)
+reference_type            참조대상유형 (ETF/PORTFOLIO/NEWS/DISCLOSURE)
+reference_id              참조대상ID (다형성FK)
+title                     알림제목
+message                   알림메시지
+is_read                   읽음여부
+read_at                   읽은시각
+
+【 속성명 (사용자 알림 설정) 】
+--------------------------------------------------------------------------------
+alert_type_code           알림유형코드 (FK→alert_type)
+is_enabled                알림활성화여부
+
+【 속성명 (FCM 토큰) 】
+--------------------------------------------------------------------------------
 device_type               기기타입
 
 【 속성명 (공통 - 기타) 】
@@ -269,15 +308,39 @@ LOW                       저위험
 MEDIUM                    중위험
 HIGH                      고위험
 
---- alert_type (알림유형) ---
-LISTING                   ETF신규상장
-DELISTING_SCHEDULED       ETF상장폐지예정 (공시확정시)
-DELISTING_COMPLETED       ETF상장폐지완료
-REBALANCING_SCHEDULED     ETF리밸런싱예정 (공시확정시)
-REBALANCING_COMPLETED     ETF리밸런싱완료
-RETURN_5PCT               수익률5%도달
-RETURN_10PCT              수익률10%도달
-NEWS_RELATED              관련뉴스발행 (관심ETF관련)
+--- alert_type.code (알림유형코드) ---
+ETF_LISTING               ETF신규상장
+ETF_DELISTING_SCHEDULED   ETF상장폐지예정
+ETF_DELISTING_COMPLETED   ETF상장폐지완료
+ETF_REBALANCING           ETF리밸런싱
+PORTFOLIO_RETURN_5PCT     포트폴리오수익률5%도달
+PORTFOLIO_RETURN_10PCT    포트폴리오수익률10%도달
+PORTFOLIO_LOSS_5PCT       포트폴리오손실률-5%도달
+PORTFOLIO_LOSS_10PCT      포트폴리오손실률-10%도달
+NEWS_ETF_RELATED          관심ETF관련뉴스
+NEWS_PORTFOLIO_RELATED    포트폴리오관련뉴스
+SYSTEM_ANNOUNCEMENT       시스템공지
+
+--- alert_type.category (알림카테고리) ---
+ETF                       ETF관련알림
+PORTFOLIO                 포트폴리오관련알림
+NEWS                      뉴스관련알림
+SYSTEM                    시스템알림
+
+--- reference_type (참조대상유형) ---
+ETF                       ETF테이블참조
+PORTFOLIO                 portfolios테이블참조
+NEWS                      news_article테이블참조
+DISCLOSURE                etf_disclosure테이블참조
+
+--- category.type (카테고리유형) ---
+NEWS                      뉴스카테고리
+PORTFOLIO                 포트폴리오카테고리
+ETF                       ETF카테고리
+
+--- news_impact.target_type (영향대상유형) ---
+COMPANY                   회사 (company_info참조)
+INDUSTRY                  산업 (industry_classification참조)
 
 --- device_type (기기타입) ---
 ANDROID                   안드로이드

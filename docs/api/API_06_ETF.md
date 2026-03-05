@@ -34,12 +34,12 @@ GET /api/v1/etf?page=0&size=20&strategyType=INDEX&sortBy=totalAsset
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| page | int | X | 페이지 번호 (기본 0) |
-| size | int | X | 페이지 크기 (기본 20) |
-| strategyType | string | X | 전략 유형 (MARKET/THEME/DIVIDEND/BOND/DERIVATIVE) |
-| sector | string | X | 섹터 필터 (group_code: IT_SEMI, IT_ELEC, BIO 등 22개) |
-| riskGrade | string | X | 위험등급 (HIGH_RISK/MODERATE/STABLE) |
-| sortBy | string | X | 정렬 기준 (aum/expenseRatio/name/changeRate) |
+| page | int | X | 페이지 번호 (기본 0, 최소 0) |
+| size | int | X | 페이지 크기 (기본 20, 최소 1, 최대 100) |
+| strategyType | string | X | 전략 유형: `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
+| sector | string | X | 섹터 필터 (group_code, 최대 20자): IT_SEMI, IT_ELEC, BIO 등 22개 |
+| riskGrade | string | X | 위험등급: `HIGH_RISK` / `MODERATE` / `STABLE` |
+| sortBy | string | X | 정렬 기준: `aum` / `expenseRatio` / `name` / `changeRate` |
 
 **Response**
 ```json
@@ -189,9 +189,9 @@ GET /api/v1/etf/search?keyword=코덱스&strategyType=INDEX
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| keyword | string | O | 검색어 (ETF명, 티커) |
-| strategyType | string | X | 전략 유형 필터 |
-| issuer | string | X | 운용사 필터 |
+| keyword | string | O | 검색어 (ETF명/티커, 2~100자) |
+| strategyType | string | X | 전략 유형 필터: `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
+| issuer | string | X | 운용사 필터 (최대 50자): KODEX, TIGER, KBSTAR 등 |
 
 **Response**
 ```json

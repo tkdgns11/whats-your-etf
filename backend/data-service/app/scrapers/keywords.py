@@ -521,3 +521,151 @@ def get_industry_group_codes() -> list:
 
 # 총 키워드 수
 TOTAL_KEYWORD_COUNT = len(get_all_keywords())
+
+
+# =============================================
+# 뉴스 카테고리 정의 (14개)
+# =============================================
+
+# 카테고리 코드 → 이름 매핑
+NEWS_CATEGORIES = {
+    "NEWS_SEMI": "반도체",
+    "NEWS_IT": "IT/전자",
+    "NEWS_BIO": "바이오/의약",
+    "NEWS_AUTO": "자동차",
+    "NEWS_CHEM": "화학/소재",
+    "NEWS_ENERGY": "에너지",
+    "NEWS_FINANCE": "금융",
+    "NEWS_CONSTRUCT": "건설/부동산",
+    "NEWS_CONSUMER": "소비재",
+    "NEWS_TELECOM": "통신/미디어",
+    "NEWS_TRANSPORT": "운송/물류",
+    "NEWS_INDUSTRY": "산업재",
+    "NEWS_ETC": "기타",
+    "NEWS_MARKET": "시장/경제",
+}
+
+# 카테고리 → 키워드 매핑 (크롤링 키워드 → 카테고리)
+CATEGORY_KEYWORD_MAP = {
+    # 투자테마 13개
+    "NEWS_SEMI": SEMI_KEYWORDS,
+    "NEWS_IT": ELEC_KEYWORDS + SW_KEYWORDS,
+    "NEWS_BIO": BIO_KEYWORDS,
+    "NEWS_AUTO": AUTO_KEYWORDS,
+    "NEWS_CHEM": CHEM_KEYWORDS + STEEL_KEYWORDS,
+    "NEWS_ENERGY": ENERGY_KEYWORDS,
+    "NEWS_FINANCE": FINANCE_KEYWORDS + INSURANCE_KEYWORDS,
+    "NEWS_CONSTRUCT": CONSTRUCT_KEYWORDS,
+    "NEWS_CONSUMER": CONSUMER_KEYWORDS + RETAIL_KEYWORDS + FOOD_KEYWORDS,
+    "NEWS_TELECOM": TELECOM_KEYWORDS,
+    "NEWS_TRANSPORT": TRANSPORT_KEYWORDS + SHIPBUILD_KEYWORDS,
+    "NEWS_INDUSTRY": MACHINERY_KEYWORDS + DEFENSE_KEYWORDS,
+    "NEWS_ETC": AGRI_KEYWORDS + MINING_KEYWORDS,
+    # 시장/경제
+    "NEWS_MARKET": (
+        ETF_KEYWORDS + MARKET_KEYWORDS + INTEREST_RATE_KEYWORDS +
+        FOREX_KEYWORDS + ECONOMY_KEYWORDS + GLOBAL_KEYWORDS + INVESTMENT_KEYWORDS
+    ),
+}
+
+# 키워드 → 카테고리 역매핑 (빠른 조회용)
+KEYWORD_TO_CATEGORY = {}
+for category, keywords in CATEGORY_KEYWORD_MAP.items():
+    for keyword in keywords:
+        # 첫 번째 매칭 카테고리 사용 (우선순위: 투자테마 > 시장/경제)
+        if keyword not in KEYWORD_TO_CATEGORY:
+            KEYWORD_TO_CATEGORY[keyword] = category
+
+
+def get_category_by_keyword(keyword: str) -> str:
+    """
+    키워드로 뉴스 카테고리 조회
+
+    1. 정확히 일치하는 키워드 먼저 찾기
+    2. 없으면 검색어에 포함된 키워드로 매칭 (투자테마 우선)
+    """
+    # 1. 정확히 일치
+    if keyword in KEYWORD_TO_CATEGORY:
+        return KEYWORD_TO_CATEGORY[keyword]
+
+    # 2. 검색어에 포함된 키워드 찾기
+    keyword_lower = keyword.lower()
+    matched_categories = []
+
+    for kw, cat in KEYWORD_TO_CATEGORY.items():
+        if kw.lower() in keyword_lower:
+            matched_categories.append((kw, cat))
+
+    if not matched_categories:
+        return "NEWS_ETC"
+
+    # 투자테마(NEWS_MARKET 제외) 우선, 그 다음 가장 긴 키워드 매칭
+    for kw, cat in sorted(matched_categories, key=lambda x: (-len(x[0]), x[1] == "NEWS_MARKET")):
+        if cat != "NEWS_MARKET":
+            return cat
+
+    # 투자테마 없으면 NEWS_MARKET 반환
+    return matched_categories[0][1]
+
+
+def get_category_by_keywords(keywords: list) -> str:
+    """
+    여러 키워드로 뉴스 카테고리 조회 (가장 많이 매칭된 카테고리)
+
+    Args:
+        keywords: 뉴스에서 추출한 키워드 목록
+
+    Returns:
+        가장 적합한 카테고리 코드
+    """
+    if not keywords:
+        return "NEWS_ETC"
+
+    category_counts = {}
+    for keyword in keywords:
+        category = KEYWORD_TO_CATEGORY.get(keyword)
+        if category:
+            category_counts[category] = category_counts.get(category, 0) + 1
+
+    if not category_counts:
+        return "NEWS_ETC"
+
+    # 가장 많이 매칭된 카테고리 반환
+    return max(category_counts, key=category_counts.get)
+
+
+def get_category_by_text(title: str, content: str = "") -> str:
+    """
+    뉴스 제목/본문에서 카테고리 추출
+
+    Args:
+        title: 뉴스 제목
+        content: 뉴스 본문 (선택)
+
+    Returns:
+        카테고리 코드
+    """
+    text = f"{title} {content}".lower()
+
+    category_scores = {}
+    for category, keywords in CATEGORY_KEYWORD_MAP.items():
+        score = 0
+        for keyword in keywords:
+            if keyword.lower() in text:
+                # 제목에 있으면 가중치 2배
+                if keyword.lower() in title.lower():
+                    score += 2
+                else:
+                    score += 1
+        if score > 0:
+            category_scores[category] = score
+
+    if not category_scores:
+        return "NEWS_ETC"
+
+    return max(category_scores, key=category_scores.get)
+
+
+def get_all_news_categories() -> dict:
+    """모든 뉴스 카테고리 목록 반환"""
+    return NEWS_CATEGORIES.copy()

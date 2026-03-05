@@ -175,7 +175,7 @@ CREATE TABLE "news_article" (
     "source" VARCHAR(100),                        -- 언론사명
     "source_url" VARCHAR(1000) NOT NULL UNIQUE,   -- 원본 URL
     "thumbnail_url" VARCHAR(1000),
-    "category" VARCHAR(50) DEFAULT '금융',         -- 금융 / ETF / 경제
+    "category" VARCHAR(50) DEFAULT 'NEWS_ETC',     -- NEWS_SEMI/NEWS_IT/NEWS_BIO/NEWS_AUTO/NEWS_CHEM/NEWS_ENERGY/NEWS_FINANCE/NEWS_CONSTRUCT/NEWS_CONSUMER/NEWS_TELECOM/NEWS_TRANSPORT/NEWS_INDUSTRY/NEWS_ETC/NEWS_MARKET
     "keywords" JSONB,                             -- 검색 키워드 배열
     "published_at" TIMESTAMP,
     "view_count" INTEGER DEFAULT 0,
@@ -284,6 +284,38 @@ CREATE TABLE "ai_prompt" (
 
 CREATE INDEX "idx_prompt_active" ON "ai_prompt"("name", "is_active") WHERE "is_active" = TRUE;
 
+-- 알림 유형 코드 테이블
+CREATE TABLE "alert_type" (
+    "code" VARCHAR(30) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
+    "name" VARCHAR(100) NOT NULL,                -- "ETF 신규 상장"
+    "category" VARCHAR(30) NOT NULL,             -- ETF / PORTFOLIO / NEWS / SYSTEM
+    "description" VARCHAR(200),                  -- 알림 설명
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "display_order" INTEGER DEFAULT 0,           -- 노출 순서
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE "alert_type" IS '알림 유형 코드 테이블 (확장 가능한 코드성 테이블)';
+
+-- 알림 메시지 템플릿 (버전 관리)
+CREATE TABLE "alert_message_template" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "alert_type_code" VARCHAR(30) NOT NULL,      -- alert_type FK
+    "version" VARCHAR(20) NOT NULL,              -- 'v1.0', 'v1.1'
+    "title_template" VARCHAR(200) NOT NULL,      -- "신규 ETF 상장 알림"
+    "message_template" TEXT NOT NULL,            -- "{etf_name} ETF가 {date}에 상장 예정입니다."
+    "variables" JSONB,                           -- ["etf_name", "date"] - 사용 가능한 변수 목록
+    "description" VARCHAR(200),                  -- 변경 사항 메모
+    "is_active" BOOLEAN DEFAULT FALSE,           -- 현재 활성 버전
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_alert_template_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE,
+    CONSTRAINT "uk_alert_template_version" UNIQUE ("alert_type_code", "version")
+);
+
+CREATE INDEX "idx_alert_template_active" ON "alert_message_template"("alert_type_code", "is_active") WHERE "is_active" = TRUE;
+
+COMMENT ON TABLE "alert_message_template" IS '알림 메시지 템플릿 (버전 관리, ai_prompt와 유사)';
+
 -- 포트폴리오 AI 피드백
 CREATE TABLE "portfolio_ai_feedback" (
     "id" BIGSERIAL PRIMARY KEY,
@@ -305,22 +337,22 @@ CREATE TABLE "portfolio_ai_feedback" (
 CREATE INDEX "idx_ai_feedback_user" ON "portfolio_ai_feedback"("user_id");
 CREATE INDEX "idx_ai_feedback_created" ON "portfolio_ai_feedback"("created_at" DESC);
 
--- 알림 설정
-CREATE TABLE "notification_setting" (
+-- 사용자별 알림 설정 (alert_type 코드 참조)
+CREATE TABLE "user_notification_setting" (
     "id" BIGSERIAL PRIMARY KEY,
-    "user_id" BIGINT NOT NULL UNIQUE,
-    -- ETF 알림
-    "etf_listing_alert" BOOLEAN DEFAULT TRUE,          -- ETF 상장 알림
-    "etf_delisting_alert" BOOLEAN DEFAULT TRUE,        -- ETF 상장폐지 알림 (예정+완료)
-    -- 포트폴리오 알림
-    "portfolio_rebalance_alert" BOOLEAN DEFAULT TRUE,  -- 리밸런싱 알림 (예정+완료)
-    "portfolio_return_alert" BOOLEAN DEFAULT TRUE,     -- 수익률 알림 (5%, 10%)
-    -- 뉴스 알림
-    "news_alert" BOOLEAN DEFAULT TRUE,                 -- 관심 ETF 관련 뉴스
+    "user_id" BIGINT NOT NULL,
+    "alert_type_code" VARCHAR(30) NOT NULL,           -- alert_type FK
+    "is_enabled" BOOLEAN DEFAULT TRUE,                -- 알림 활성화 여부
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_notification_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+    CONSTRAINT "fk_notification_setting_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_notification_setting_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE,
+    CONSTRAINT "uk_user_alert_type" UNIQUE ("user_id", "alert_type_code")
 );
+
+CREATE INDEX "idx_notification_setting_user" ON "user_notification_setting"("user_id");
+
+COMMENT ON TABLE "user_notification_setting" IS '사용자별 알림 설정 (유형별 ON/OFF)';
 
 -- FCM 토큰 (푸시 알림용)
 CREATE TABLE "fcm_token" (
@@ -459,29 +491,38 @@ CREATE TABLE "user_holding_etf" (
 
 CREATE INDEX "idx_holding_user" ON "user_holding_etf"("user_id");
 
--- ETF 알림
-CREATE TABLE "etf_alert" (
+-- 사용자 알림 (통합 알림 테이블)
+CREATE TABLE "user_alert" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "etf_id" BIGINT,                              -- ETF 테이블 FK (NULL이면 전체 알림)
-    "alert_type" VARCHAR(30) NOT NULL,            -- LISTING / DELISTING_SCHEDULED / DELISTING_COMPLETED / REBALANCING_SCHEDULED / REBALANCING_COMPLETED / RETURN_5PCT / RETURN_10PCT / NEWS_RELATED
+    "alert_type_code" VARCHAR(30) NOT NULL,       -- alert_type FK
+    -- 참조 대상 (다형성)
+    "reference_type" VARCHAR(30),                 -- ETF / PORTFOLIO / NEWS / DISCLOSURE (NULL이면 시스템 알림)
+    "reference_id" BIGINT,                        -- 참조 대상 ID (etf.id / portfolios.id / news_article.id 등)
+    -- 알림 내용
     "title" VARCHAR(200) NOT NULL,
     "message" TEXT,
+    -- 상태
     "is_read" BOOLEAN DEFAULT FALSE,
+    "read_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_alert_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE SET NULL
+    CONSTRAINT "fk_user_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_user_alert_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_alert_user" ON "etf_alert"("user_id");
-CREATE INDEX "idx_alert_created" ON "etf_alert"("created_at" DESC);
-CREATE INDEX "idx_alert_unread" ON "etf_alert"("user_id", "is_read") WHERE "is_read" = FALSE;
+CREATE INDEX "idx_user_alert_user" ON "user_alert"("user_id");
+CREATE INDEX "idx_user_alert_type" ON "user_alert"("alert_type_code");
+CREATE INDEX "idx_user_alert_created" ON "user_alert"("created_at" DESC);
+CREATE INDEX "idx_user_alert_unread" ON "user_alert"("user_id", "is_read") WHERE "is_read" = FALSE;
+CREATE INDEX "idx_user_alert_ref" ON "user_alert"("reference_type", "reference_id");
+
+COMMENT ON TABLE "user_alert" IS '사용자 알림 (ETF/포트폴리오/뉴스/시스템 통합)';
 
 -- ETF 섹터 분포 (구성종목 산업별 집계)
-CREATE TABLE "etf_sector_breakdown" (
+CREATE TABLE "etf_sector_cluster" (
     "id" BIGSERIAL PRIMARY KEY,
     "etf_id" BIGINT NOT NULL,
-    "breakdown_type" VARCHAR(20) NOT NULL,        -- GROUP_CODE / INDUSTRY / SUB_SECTOR
+    "cluster_type" VARCHAR(20) NOT NULL,        -- GROUP_CODE / INDUSTRY / SUB_SECTOR
     "industry_code" VARCHAR(10),                  -- KSIC 산업코드
     "industry_name" VARCHAR(100),                 -- 산업명
     "group_code" VARCHAR(20),                     -- 그룹코드 (13개)
@@ -496,11 +537,11 @@ CREATE TABLE "etf_sector_breakdown" (
     "distance_to_center" DECIMAL(10,6),           -- ETF 중심까지 거리
     "base_date" DATE NOT NULL,                    -- 기준일
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_sector_breakdown_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
+    CONSTRAINT "fk_sector_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_sector_breakdown_etf" ON "etf_sector_breakdown"("etf_id");
-CREATE INDEX "idx_sector_breakdown_date" ON "etf_sector_breakdown"("etf_id", "base_date" DESC);
+CREATE INDEX "idx_sector_cluster_etf" ON "etf_sector_cluster"("etf_id");
+CREATE INDEX "idx_sector_cluster_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
 
 -- ETF 구성종목
 CREATE TABLE "etf_compositions" (
@@ -549,4 +590,44 @@ CREATE TABLE "portfolio_etfs" (
     CONSTRAINT "fk_portfolio_etf_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
+
+-- =============================================
+-- 4. 초기 데이터 (코드 테이블)
+-- =============================================
+
+-- 알림 유형 코드 초기 데이터
+INSERT INTO "alert_type" ("code", "name", "category", "description", "display_order") VALUES
+-- ETF 관련
+('ETF_LISTING', 'ETF 신규 상장', 'ETF', '새로운 ETF가 상장되었습니다', 1),
+('ETF_DELISTING_SCHEDULED', 'ETF 상장폐지 예정', 'ETF', 'ETF 상장폐지가 예정되어 있습니다', 2),
+('ETF_DELISTING_COMPLETED', 'ETF 상장폐지 완료', 'ETF', 'ETF 상장폐지가 완료되었습니다', 3),
+('ETF_REBALANCING', 'ETF 리밸런싱', 'ETF', 'ETF 구성종목이 변경되었습니다', 4),
+-- 포트폴리오 관련
+('PORTFOLIO_RETURN_5PCT', '포트폴리오 수익률 5%', 'PORTFOLIO', '포트폴리오 수익률이 5%에 도달했습니다', 10),
+('PORTFOLIO_RETURN_10PCT', '포트폴리오 수익률 10%', 'PORTFOLIO', '포트폴리오 수익률이 10%에 도달했습니다', 11),
+('PORTFOLIO_LOSS_5PCT', '포트폴리오 손실률 -5%', 'PORTFOLIO', '포트폴리오 손실률이 -5%에 도달했습니다', 12),
+('PORTFOLIO_LOSS_10PCT', '포트폴리오 손실률 -10%', 'PORTFOLIO', '포트폴리오 손실률이 -10%에 도달했습니다', 13),
+-- 뉴스 관련
+('NEWS_ETF_RELATED', '관심 ETF 뉴스', 'NEWS', '관심 ETF와 관련된 뉴스가 있습니다', 20),
+('NEWS_PORTFOLIO_RELATED', '포트폴리오 관련 뉴스', 'NEWS', '보유 포트폴리오와 관련된 뉴스가 있습니다', 21),
+-- 시스템
+('SYSTEM_ANNOUNCEMENT', '시스템 공지', 'SYSTEM', '서비스 공지사항', 30);
+
+-- 알림 메시지 템플릿 초기 데이터
+INSERT INTO "alert_message_template" ("alert_type_code", "version", "title_template", "message_template", "variables", "is_active") VALUES
+-- ETF 관련
+('ETF_LISTING', 'v1.0', '신규 ETF 상장 알림', '{etf_name} ETF가 {date}에 상장 예정입니다.', '["etf_name", "date"]', TRUE),
+('ETF_DELISTING_SCHEDULED', 'v1.0', 'ETF 상장폐지 예정', '관심 ETF ''{etf_name}''가 {date}에 상장폐지 예정입니다.', '["etf_name", "date"]', TRUE),
+('ETF_DELISTING_COMPLETED', 'v1.0', 'ETF 상장폐지 완료', '관심 ETF ''{etf_name}''가 상장폐지되었습니다.', '["etf_name"]', TRUE),
+('ETF_REBALANCING', 'v1.0', 'ETF 리밸런싱 완료', '관심 ETF ''{etf_name}'' 구성종목이 변경되었습니다.', '["etf_name"]', TRUE),
+-- 포트폴리오 관련
+('PORTFOLIO_RETURN_5PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +5%를 달성했습니다!', '["portfolio_name"]', TRUE),
+('PORTFOLIO_RETURN_10PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +10%를 달성했습니다!', '["portfolio_name"]', TRUE),
+('PORTFOLIO_LOSS_5PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -5%에 도달했습니다.', '["portfolio_name"]', TRUE),
+('PORTFOLIO_LOSS_10PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -10%에 도달했습니다.', '["portfolio_name"]', TRUE),
+-- 뉴스 관련
+('NEWS_ETF_RELATED', 'v1.0', '관심 ETF 뉴스', '관심 ETF ''{etf_name}'' 관련 뉴스: {news_title}', '["etf_name", "news_title"]', TRUE),
+('NEWS_PORTFOLIO_RELATED', 'v1.0', '포트폴리오 관련 뉴스', '''{portfolio_name}'' 관련 뉴스가 있습니다: {news_title}', '["portfolio_name", "news_title"]', TRUE),
+-- 시스템
+('SYSTEM_ANNOUNCEMENT', 'v1.0', '{title}', '{message}', '["title", "message"]', TRUE);
 
