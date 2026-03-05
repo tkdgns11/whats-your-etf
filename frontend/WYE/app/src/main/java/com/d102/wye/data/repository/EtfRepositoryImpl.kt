@@ -1,6 +1,6 @@
 package com.d102.wye.data.repository
 
-import com.d102.wye.core.service.EtfApiService
+import com.d102.wye.data.remote.api.EtfApiService
 import com.d102.wye.domain.model.Etf
 import com.d102.wye.domain.repository.EtfRepository
 import kotlinx.coroutines.flow.Flow

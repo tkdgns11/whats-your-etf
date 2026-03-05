@@ -1,6 +1,8 @@
 package com.d102.wye.core.di
 
+import com.d102.wye.data.repository.AuthRepositoryImpl
 import com.d102.wye.data.repository.EtfRepositoryImpl
+import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
 import dagger.Binds
 import dagger.Module
@@ -28,4 +30,10 @@ abstract class RepositoryModule {
     abstract fun bindEtfRepository(
         impl: EtfRepositoryImpl
     ): EtfRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
 }

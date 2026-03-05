@@ -13,13 +13,6 @@ import java.net.SocketTimeoutException
 /**
  * 모든 RepositoryImpl의 공통 베이스
  *
- * 사용법:
- * class EtfRepositoryImpl @Inject constructor(...) : BaseRepository() {
- *     override suspend fun getEtfList() = safeApiCall {
- *         etfApiService.getEtfList()
- *     }
- * }
- *
  * safeApiCall vs directApiCall:
  * - safeApiCall    : 서버가 BaseResponse<T> 래퍼로 응답할 때 사용
  * - directApiCall  : BaseResponse 없이 T를 바로 응답할 때 사용 (파일 다운로드 등)

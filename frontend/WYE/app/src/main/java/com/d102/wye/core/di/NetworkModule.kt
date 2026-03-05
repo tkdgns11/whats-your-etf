@@ -3,7 +3,7 @@ package com.d102.wye.core.di
 import com.d102.wye.core.app.Constants
 import com.d102.wye.core.network.AuthTokenInterceptor
 import com.d102.wye.core.network.TokenRefreshInterceptor
-import com.d102.wye.core.service.EtfApiService
+import com.d102.wye.data.remote.api.EtfApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module

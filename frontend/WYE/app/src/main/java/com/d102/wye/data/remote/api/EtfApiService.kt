@@ -1,4 +1,4 @@
-package com.d102.wye.core.service
+package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import retrofit2.Response
