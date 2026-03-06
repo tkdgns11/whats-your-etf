@@ -1,5 +1,5 @@
 """ETF 공시 모델 (상장폐지, 정리매매, 투자유의 등)"""
-from sqlalchemy import Column, BigInteger, Text, String, Date, TIMESTAMP, func, Enum
+from sqlalchemy import Column, BigInteger, Text, String, Date, TIMESTAMP, func
 from app.database import Base
 import enum
 
@@ -15,9 +15,9 @@ class DisclosureType(str, enum.Enum):
 
 class EtfDisclosure(Base):
     """ETF 공시 정보 테이블"""
-    __tablename__ = "etf_disclosures"
+    __tablename__ = "etf_disclosure"
 
-    disclosure_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     # ETF 정보
     etf_code = Column(String(20), nullable=False, index=True)  # 종목코드

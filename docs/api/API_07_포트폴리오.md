@@ -95,12 +95,12 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| name | string | O | 포트폴리오 이름 (최대 50자) |
-| description | string | X | 포트폴리오 설명 |
-| totalInvestment | number | O | 총 투자금액 |
-| etfs | array | O | ETF 구성 (최소 1개) |
-| etfs[].etfId | number | O | ETF ID |
-| etfs[].weightPct | number | O | 비중 (%) |
+| name | string | O | 포트폴리오 이름 (1~100자, 한글/영문/숫자/공백 허용) |
+| description | string | X | 포트폴리오 설명 (최대 1000자) |
+| totalInvestment | number | O | 총 투자금액 (최소 10,000원, 최대 100억원) |
+| etfs | array | O | ETF 구성 (최소 1개, 최대 20개) |
+| etfs[].etfId | number | O | ETF ID (양수 정수) |
+| etfs[].weightPct | number | O | 비중 (0.001~100.000, 소수점 3자리, 합계 100 필수) |
 
 **Response**
 ```json
@@ -190,9 +190,11 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| name | string | X | 포트폴리오 이름 |
-| description | string | X | 포트폴리오 설명 |
-| totalInvestment | number | X | 총 투자금액 |
+| name | string | X | 포트폴리오 이름 (1~100자) |
+| description | string | X | 포트폴리오 설명 (최대 1000자) |
+| totalInvestment | number | X | 총 투자금액 (최소 10,000원, 최대 100억원) |
+
+> 최소 1개 이상의 필드를 포함해야 합니다.
 
 **Response**
 ```json

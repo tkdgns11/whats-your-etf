@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 // ── 브랜드 색상 ──────────────────────────────────
 val PrimaryGreen      = Color(0xFF3A6E45)   // 짙은 숲 초록       — 앱바 타이틀, 활성 탭, 버튼, 포인트 컬러
 val PrimaryGreenDark  = Color(0xFF2D4B3A)   // 더 어두운 올리브 초록 — 버튼 누름 상태, 오버레이
+val KakaoYellow       = Color(0xFFFEE500)   // 카카오 노랑         — 카카오 로그인 버튼
 
 // ── 배경 ──────────────────────────────────────────────────────
 val Background        = Color(0xFFFFFFFF)   // 흰색               — 앱 전체 배경

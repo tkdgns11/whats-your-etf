@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     naver_client_id: str = ""
     naver_client_secret: str = ""
 
+    # OpenAI API
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-3.5-turbo
+    openai_max_tokens: int = 1000
+    openai_temperature: float = 0.3
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

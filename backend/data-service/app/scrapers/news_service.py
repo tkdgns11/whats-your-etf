@@ -3,6 +3,7 @@ import logging
 import asyncio
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.scrapers.news_scraper import GoogleNewsScraper
 from app.scrapers.naver_scraper import NaverNewsScraper
@@ -147,13 +148,13 @@ class NewsCollectionService:
         """
         from datetime import datetime, timedelta
 
-        # 최근 1시간 내 수집된 뉴스 중 본문 없는 것
+        # 최근 1시간 내 수집된 뉴스 중 본문이 짧은 것 (RSS snippet만 있는 경우)
         cutoff = datetime.now() - timedelta(hours=1)
 
         news_to_enrich = self.db.query(NewsArticle).filter(
             NewsArticle.created_at >= cutoff,
-            (NewsArticle.content_summary == None) |
-            (NewsArticle.content_summary == "")
+            (NewsArticle.content == None) |
+            (func.length(NewsArticle.content) < 500)  # 500자 미만이면 본문 크롤링 시도
         ).limit(limit).all()
 
         enriched_count = 0

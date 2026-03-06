@@ -40,7 +40,7 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/api/v1/auth/oauth/kakao/callback"
+            redirect-uri: http://localhost:8080/api/v1/auth/oauth/kakao/callback
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             scope:
