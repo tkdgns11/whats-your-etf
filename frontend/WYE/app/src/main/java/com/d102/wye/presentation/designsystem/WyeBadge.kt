@@ -5,12 +5,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,8 +37,9 @@ enum class WyeBadgeStyle { FILLED, OUTLINED }
  */
 @Composable
 fun WyeBadge(
-    label: String,
     modifier: Modifier = Modifier,
+    label: String,
+    textStyle: TextStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
     color: Color = BadgeConservative,
     style: WyeBadgeStyle = WyeBadgeStyle.FILLED,
     textColor: Color = if (style == WyeBadgeStyle.FILLED) TextOnColored else color,
@@ -50,8 +53,7 @@ fun WyeBadge(
     Text(
         text = label,
         color = textColor,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
+        style = textStyle,
         modifier = modifier
             .clip(shape)
             .then(bgModifier)
@@ -83,30 +85,12 @@ fun WyeCountBadge(
     }
 }
 
-// ── 미리 정의된 카테고리 뱃지 ─────────────────────────────────────
-
-object InvestmentType {
-    val CONSERVATIVE        = BadgeConservative        // 안정형
-    val CONSERVATIVE_GROWTH = BadgeConservativeGrowth  // 안정추구형
-    val NEUTRAL             = BadgeNeutral             // 위험중립형
-    val ACTIVE              = BadgeActive              // 적극투자형
-    val AGGRESSIVE          = BadgeAggressive          // 공격투자형
-
-    val CONSERVATIVE_FONT        = BadgeConservativeFont        // 안정형 글꼴
-    val CONSERVATIVE_GROWTH_FONT = BadgeConservativeGrowthFont  // 안정추구형 글꼴
-    val NEUTRAL_FONT             = BadgeNeutralFont             // 위험중립형 글꼴
-    val ACTIVE_FONT              = BadgeActiveFont              // 적극투자형 글꼴
-    val AGGRESSIVE_FONT          = BadgeAggressiveFont          // 공격투자형 글꼴
-}
-
 // ────────────────────────────────────────────────────────────────
 //  선택형 칩 (투자 성향 선택 등)
 // ────────────────────────────────────────────────────────────────
 
 /**
  * 선택형 칩
- *
- * 투자 성향, 투자 기간 등 여러 항목 중 하나(또는 여러 개)를 고르는 UI.
  * - 미선택: 흰 배경 + 회색 테두리
  * - 선택됨: 초록 배경 + 흰 텍스트
  *
@@ -117,10 +101,11 @@ object InvestmentType {
  */
 @Composable
 fun WyeSelectableChip(
+    modifier: Modifier = Modifier,
     label: String,
+    textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
     description: String? = null,
 ) {
     val shape = RoundedCornerShape(12.dp)
@@ -141,9 +126,8 @@ fun WyeSelectableChip(
     ) {
         Text(
             text = label,
+            style = textStyle.copy(fontWeight = FontWeight.SemiBold),
             color = titleColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
         if (description != null) {
@@ -151,9 +135,7 @@ fun WyeSelectableChip(
             Text(
                 text = description,
                 color = descColor,
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 15.sp,
+                style = textStyle.copy(fontSize = 11.sp),
             )
         }
     }
@@ -170,11 +152,11 @@ private fun WyeBadgePreview() {
     ) {
         // Filled 스타일
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            WyeBadge("안정형",     color = InvestmentType.CONSERVATIVE,        textColor = InvestmentType.CONSERVATIVE_FONT)
-            WyeBadge("안정추구형", color = InvestmentType.CONSERVATIVE_GROWTH,  textColor = InvestmentType.CONSERVATIVE_GROWTH_FONT)
-            WyeBadge("위험중립형", color = InvestmentType.NEUTRAL,              textColor = InvestmentType.NEUTRAL_FONT)
-            WyeBadge("적극투자형", color = InvestmentType.ACTIVE,               textColor = InvestmentType.ACTIVE_FONT)
-            WyeBadge("공격투자형", color = InvestmentType.AGGRESSIVE,           textColor = InvestmentType.AGGRESSIVE_FONT)
+            WyeBadge(label = "안정형",     color = InvestmentTypeColor.CONSERVATIVE,        textColor = InvestmentTypeColor.CONSERVATIVE_FONT)
+            WyeBadge(label = "안정추구형", color = InvestmentTypeColor.CONSERVATIVE_GROWTH,  textColor = InvestmentTypeColor.CONSERVATIVE_GROWTH_FONT)
+            WyeBadge(label = "위험중립형", color = InvestmentTypeColor.NEUTRAL,              textColor = InvestmentTypeColor.NEUTRAL_FONT)
+            WyeBadge(label = "적극투자형", color = InvestmentTypeColor.ACTIVE,               textColor = InvestmentTypeColor.ACTIVE_FONT)
+            WyeBadge(label = "공격투자형", color = InvestmentTypeColor.AGGRESSIVE,           textColor = InvestmentTypeColor.AGGRESSIVE_FONT)
         }
     }
 }
@@ -222,4 +204,21 @@ private fun WyeSelectableChipPreview() {
             Spacer(Modifier.weight(1f))
         }
     }
+}
+
+
+// ── 미리 정의된 카테고리 뱃지 ─────────────────────────────────────
+
+object InvestmentTypeColor {
+    val CONSERVATIVE        = BadgeConservative        // 안정형
+    val CONSERVATIVE_GROWTH = BadgeConservativeGrowth  // 안정추구형
+    val NEUTRAL             = BadgeNeutral             // 위험중립형
+    val ACTIVE              = BadgeActive              // 적극투자형
+    val AGGRESSIVE          = BadgeAggressive          // 공격투자형
+
+    val CONSERVATIVE_FONT        = BadgeConservativeFont        // 안정형 글꼴
+    val CONSERVATIVE_GROWTH_FONT = BadgeConservativeGrowthFont  // 안정추구형 글꼴
+    val NEUTRAL_FONT             = BadgeNeutralFont             // 위험중립형 글꼴
+    val ACTIVE_FONT              = BadgeActiveFont              // 적극투자형 글꼴
+    val AGGRESSIVE_FONT          = BadgeAggressiveFont          // 공격투자형 글꼴
 }

@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -39,10 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.R
+import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.BackGroundLightGreen
-import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
@@ -171,18 +169,11 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
             }
 
             // 포트폴리오 만들기 버튼
-            Button(
-                onClick = onMakePortfolioClick,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    text = "포트폴리오 만들기",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+            WyePrimaryButton(
+                text = "포트폴리오 만들기",
+                style = MaterialTheme.typography.labelLarge,
+                onClick = onMakePortfolioClick
+            )
         }
     }
 }
