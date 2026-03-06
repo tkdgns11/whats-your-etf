@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.home.HomeScreen
@@ -45,13 +46,21 @@ fun AppNavGraph(
                         popUpTo(Route.Login.route) { inclusive = true }
                     }
                 },
-                onSignupClick = { navController.navigate(Route.Signup.route) },
+                onJoinClick = { navController.navigate(Route.Join.route) },
                 onForgotPasswordClick = { navController.navigate(Route.PasswordReset.route) }
             )
         }
 
-        composable(Route.Signup.route) {
-//            SignupScreen(navController = navController)
+        composable(Route.Join.route) {
+            JoinScreen(
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.popBackStack() },
+                onStartClick = {
+                    navController.navigate(Route.Home.route) {
+                        popUpTo(Route.Login.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Route.PasswordReset.route) {

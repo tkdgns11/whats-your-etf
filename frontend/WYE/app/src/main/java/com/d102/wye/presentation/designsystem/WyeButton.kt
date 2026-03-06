@@ -9,7 +9,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d102.wye.presentation.theme.KakaoYellow
 import com.d102.wye.presentation.theme.PrimaryGreen
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextOnColored
 
 /**
@@ -82,6 +84,33 @@ fun WyeTextButton(
     }
 }
 
+/**
+ * 카카오 버튼 — 카카오 로그인 전용 버튼
+ */
+@Composable
+fun WyeKakaoButton(
+    text: String = "카카오 로그인",
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = KakaoYellow,
+            contentColor = TextPrimary,
+            disabledContainerColor = KakaoYellow.copy(alpha = 0.4f),
+            disabledContentColor = TextPrimary.copy(alpha = 0.6f),
+        ),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
 // ── Preview ─────────────────────────────────────────────────────
 
 @Preview(showBackground = true, backgroundColor = 0xFFF5F0E8)
@@ -98,6 +127,7 @@ private fun WyeButtonPreview() {
             WyePrimaryButton("저장", onClick = {}, modifier = Modifier.weight(1f))
             WyeOutlinedButton("취소", onClick = {}, modifier = Modifier.weight(1f))
         }
+        WyeKakaoButton(onClick = {})
         WyeTextButton("전체보기", onClick = {})
     }
 }

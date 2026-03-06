@@ -27,7 +27,7 @@ sealed class Route(val route: String) {
     // ─────────────────────────────────────────
 
     object Login : Route("login")
-    object Signup : Route("signup")
+    object Join : Route("join")
     object PasswordReset : Route("password_reset")
 
     // ─────────────────────────────────────────
