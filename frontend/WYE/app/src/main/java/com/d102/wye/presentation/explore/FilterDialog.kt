@@ -4,30 +4,49 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.tooling.preview.Preview
 import com.d102.wye.domain.state.EtfFilterState
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeSelectableChip
-import com.d102.wye.presentation.theme.*
+import com.d102.wye.presentation.theme.TextPrimary
+import com.d102.wye.presentation.theme.TextSecondary
 import com.d102.wye.presentation.theme.WYETheme
 
 @Composable
@@ -51,7 +70,10 @@ fun FilterDialog(
         ) {
             Column {
                 // 헤더
-                FilterDialogHeader(onReset = { onFilterChanged(EtfFilterState()) }, onDismiss = onDismiss)
+                FilterDialogHeader(
+                    onReset = { onFilterChanged(EtfFilterState()) },
+                    onDismiss = onDismiss
+                )
 
                 // 필터 섹션들 (스크롤)
                 Column(
@@ -66,7 +88,7 @@ fun FilterDialog(
                     // 위험 분류
                     FilterSection(title = "위험 분류") {
                         val riskItems = listOf(
-                            Triple(1, "안정형",    "예금 보호 확정\n금리 추구형"),
+                            Triple(1, "안정형", "예금 보호 확정\n금리 추구형"),
                             Triple(2, "안정추구형", "투자원금 손실\n최소화"),
                             Triple(3, "위험중립형", "투자에 따른\n수익·손실 인지"),
                             Triple(4, "적극투자형", "높은 수익 위해\n위험 감수"),
@@ -79,7 +101,15 @@ fun FilterDialog(
                                     label = label,
                                     description = desc,
                                     selected = level in filter.riskLevels,
-                                    onClick = { onFilterChanged(filter.copy(riskLevels = filter.riskLevels.toggle(level))) },
+                                    onClick = {
+                                        onFilterChanged(
+                                            filter.copy(
+                                                riskLevels = filter.riskLevels.toggle(
+                                                    level
+                                                )
+                                            )
+                                        )
+                                    },
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -91,7 +121,15 @@ fun FilterDialog(
                                     label = label,
                                     description = desc,
                                     selected = level in filter.riskLevels,
-                                    onClick = { onFilterChanged(filter.copy(riskLevels = filter.riskLevels.toggle(level))) },
+                                    onClick = {
+                                        onFilterChanged(
+                                            filter.copy(
+                                                riskLevels = filter.riskLevels.toggle(
+                                                    level
+                                                )
+                                            )
+                                        )
+                                    },
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -121,7 +159,10 @@ fun FilterDialog(
                     // 배당률
                     FilterSection(title = "배당률") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("0 - 5%" to "0-5", "5 - 10%" to "5-10").forEach { (label, value) ->
+                            listOf(
+                                "0 - 5%" to "0-5",
+                                "5 - 10%" to "5-10"
+                            ).forEach { (label, value) ->
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.dividendRateRange == value,
@@ -147,10 +188,15 @@ fun FilterDialog(
                     // 파생상품
                     FilterSection(title = "파생상품") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            WyeSelectableChip("O", filter.hasDerivative == true,
-                                { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == true) null else true)) })
-                            WyeSelectableChip("X", filter.hasDerivative == false,
-                                { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == false) null else false)) })
+                            WyeSelectableChip(
+                                label = "O",
+                                selected = filter.hasDerivative == true,
+                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == true) null else true)) }
+                            )
+                            WyeSelectableChip(
+                                label = "X",
+                                selected = filter.hasDerivative == false,
+                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == false) null else false)) })
                         }
                     }
 
@@ -173,9 +219,15 @@ fun FilterDialog(
                     // P/E
                     FilterSection(title = "P/E") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("10배 이하" to "under10", "10 - 20배" to "10-20", "20배 이상" to "over20").forEach { (label, value) ->
-                                WyeSelectableChip(label, filter.peRange == value,
-                                    { onFilterChanged(filter.copy(peRange = if (filter.peRange == value) null else value)) })
+                            listOf(
+                                "10배 이하" to "under10",
+                                "10 - 20배" to "10-20",
+                                "20배 이상" to "over20"
+                            ).forEach { (label, value) ->
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = filter.peRange == value,
+                                    onClick = { onFilterChanged(filter.copy(peRange = if (filter.peRange == value) null else value)) })
                             }
                         }
                     }
@@ -183,9 +235,15 @@ fun FilterDialog(
                     // P/B
                     FilterSection(title = "P/B") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("1배 미만" to "under1", "1 - 3배" to "1-3", "3배 이상" to "over3").forEach { (label, value) ->
-                                WyeSelectableChip(label, filter.pbRange == value,
-                                    { onFilterChanged(filter.copy(pbRange = if (filter.pbRange == value) null else value)) })
+                            listOf(
+                                "1배 미만" to "under1",
+                                "1 - 3배" to "1-3",
+                                "3배 이상" to "over3"
+                            ).forEach { (label, value) ->
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = filter.pbRange == value,
+                                    onClick = { onFilterChanged(filter.copy(pbRange = if (filter.pbRange == value) null else value)) })
                             }
                         }
                     }
@@ -193,9 +251,15 @@ fun FilterDialog(
                     // ROE
                     FilterSection(title = "ROE") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("5% 미만" to "under5", "5 - 15%" to "5-15", "15% 이상" to "over15").forEach { (label, value) ->
-                                WyeSelectableChip(label, filter.roeRange == value,
-                                    { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) })
+                            listOf(
+                                "5% 미만" to "under5",
+                                "5 - 15%" to "5-15",
+                                "15% 이상" to "over15"
+                            ).forEach { (label, value) ->
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = filter.roeRange == value,
+                                    onClick = { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) })
                             }
                         }
                     }
@@ -203,9 +267,15 @@ fun FilterDialog(
                     // 운용보수
                     FilterSection(title = "운용보수(수수료)") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("0.05% 미만" to "under0.05", "0.05 - 0.5%" to "0.05-0.5", "0.5% 이상" to "over0.5").forEach { (label, value) ->
-                                WyeSelectableChip(label, filter.expenseRatioRange == value,
-                                    { onFilterChanged(filter.copy(expenseRatioRange = if (filter.expenseRatioRange == value) null else value)) })
+                            listOf(
+                                "0.05% 미만" to "under0.05",
+                                "0.05 - 0.5%" to "0.05-0.5",
+                                "0.5% 이상" to "over0.5"
+                            ).forEach { (label, value) ->
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = filter.expenseRatioRange == value,
+                                    onClick = { onFilterChanged(filter.copy(expenseRatioRange = if (filter.expenseRatioRange == value) null else value)) })
                             }
                         }
                     }
@@ -213,9 +283,15 @@ fun FilterDialog(
                     // 순자산액
                     FilterSection(title = "순자산액") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("100억 미만" to "under100", "100 - 1000억" to "100-1000", "1000억 이상" to "over1000").forEach { (label, value) ->
-                                WyeSelectableChip(label, filter.netAssetRange == value,
-                                    { onFilterChanged(filter.copy(netAssetRange = if (filter.netAssetRange == value) null else value)) })
+                            listOf(
+                                "100억 미만" to "under100",
+                                "100 - 1000억" to "100-1000",
+                                "1000억 이상" to "over1000"
+                            ).forEach { (label, value) ->
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = filter.netAssetRange == value,
+                                    onClick = { onFilterChanged(filter.copy(netAssetRange = if (filter.netAssetRange == value) null else value)) })
                             }
                         }
                     }
@@ -304,7 +380,15 @@ private fun ThemeFilterSection(
                         WyeSelectableChip(
                             label = theme,
                             selected = theme in filter.themes,
-                            onClick = { onFilterChanged(filter.copy(themes = filter.themes.toggle(theme))) },
+                            onClick = {
+                                onFilterChanged(
+                                    filter.copy(
+                                        themes = filter.themes.toggle(
+                                            theme
+                                        )
+                                    )
+                                )
+                            },
                         )
                     }
                 }
@@ -369,10 +453,14 @@ private fun LockedFilterSection(
                 exit = shrinkVertically(),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WyeSelectableChip("O", selected == true,
-                        { onChanged(if (selected == true) null else true) })
-                    WyeSelectableChip("X", selected == false,
-                        { onChanged(if (selected == false) null else false) })
+                    WyeSelectableChip(
+                        label = "O",
+                        selected = selected == true,
+                        onClick = { onChanged(if (selected == true) null else true) })
+                    WyeSelectableChip(
+                        label = "X",
+                        selected = selected == false,
+                        onClick = { onChanged(if (selected == false) null else false) })
                 }
             }
         }
@@ -393,7 +481,7 @@ private fun FilterDialogPreview() {
         hasDerivative = false,
     )
     val riskItems = listOf(
-        Triple(1, "안정형",    "예금 보호 확정\n금리 추구형"),
+        Triple(1, "안정형", "예금 보호 확정\n금리 추구형"),
         Triple(2, "안정추구형", "투자원금 손실\n최소화"),
         Triple(3, "위험중립형", "투자에 따른\n수익·손실 인지"),
         Triple(4, "적극투자형", "높은 수익 위해\n위험 감수"),
@@ -414,12 +502,24 @@ private fun FilterDialogPreview() {
                     FilterSection(title = "위험 분류") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             riskItems.take(3).forEach { (level, label, desc) ->
-                                WyeSelectableChip(label = label, selected = level in filter.riskLevels, onClick = {}, modifier = Modifier.weight(1f), description = desc)
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = level in filter.riskLevels,
+                                    onClick = {},
+                                    modifier = Modifier.weight(1f),
+                                    description = desc
+                                )
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             riskItems.drop(3).forEach { (level, label, desc) ->
-                                WyeSelectableChip(label = label, selected = level in filter.riskLevels, onClick = {}, modifier = Modifier.weight(1f), description = desc)
+                                WyeSelectableChip(
+                                    label = label,
+                                    selected = level in filter.riskLevels,
+                                    onClick = {},
+                                    modifier = Modifier.weight(1f),
+                                    description = desc
+                                )
                             }
                             Spacer(Modifier.weight(1f))
                         }
@@ -427,65 +527,149 @@ private fun FilterDialogPreview() {
                     FilterSection(title = "투자 전략") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("시장 대표", "테마형", "배당형", "채권형").forEach { s ->
-                                WyeSelectableChip(label = s, selected = filter.strategy == s, onClick = {})
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = filter.strategy == s,
+                                    onClick = {})
                             }
                         }
                     }
                     FilterSection(title = "투자 테마") {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("전자 / IT", "바이오 / 의약", "에너지 / 유틸리티", "자동차", "화학 / 소재", "철강 / 금속", "식품 / 음료", "금융", "건설", "운송", "유통 / 소매", "통신 / 미디어", "기타").forEach { t ->
-                                WyeSelectableChip(label = t, selected = t in filter.themes, onClick = {})
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                "전자 / IT",
+                                "바이오 / 의약",
+                                "에너지 / 유틸리티",
+                                "자동차",
+                                "화학 / 소재",
+                                "철강 / 금속",
+                                "식품 / 음료",
+                                "금융",
+                                "건설",
+                                "운송",
+                                "유통 / 소매",
+                                "통신 / 미디어",
+                                "기타"
+                            ).forEach { t ->
+                                WyeSelectableChip(
+                                    label = t,
+                                    selected = t in filter.themes,
+                                    onClick = {})
                             }
                         }
                     }
                     FilterSection(title = "배당률") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("0 - 5%", "5 - 10%").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf("0 - 5%", "5 - 10%").forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     FilterSection(title = "배당주기") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("월", "반기", "분기", "년").forEach { s ->
-                                WyeSelectableChip(label = s, selected = filter.dividendCycle == s, onClick = {})
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = filter.dividendCycle == s,
+                                    onClick = {})
                             }
                         }
                     }
                     FilterSection(title = "파생상품") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            WyeSelectableChip(label = "O", selected = filter.hasDerivative == true, onClick = {})
-                            WyeSelectableChip(label = "X", selected = filter.hasDerivative == false, onClick = {})
+                            WyeSelectableChip(
+                                label = "O",
+                                selected = filter.hasDerivative == true,
+                                onClick = {})
+                            WyeSelectableChip(
+                                label = "X",
+                                selected = filter.hasDerivative == false,
+                                onClick = {})
                         }
                     }
-                    LockedFilterSection(title = "레버리지", locked = filter.hasDerivative != true, selected = filter.hasLeverage, onChanged = {})
-                    LockedFilterSection(title = "인버스", locked = filter.hasDerivative != true, selected = filter.hasInverse, onChanged = {})
+                    LockedFilterSection(
+                        title = "레버리지",
+                        locked = filter.hasDerivative != true,
+                        selected = filter.hasLeverage,
+                        onChanged = {})
+                    LockedFilterSection(
+                        title = "인버스",
+                        locked = filter.hasDerivative != true,
+                        selected = filter.hasInverse,
+                        onChanged = {})
                     FilterSection(title = "P/E") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("10배 이하", "10 - 20배", "20배 이상").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf("10배 이하", "10 - 20배", "20배 이상").forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     FilterSection(title = "P/B") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("1배 미만", "1 - 3배", "3배 이상").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf("1배 미만", "1 - 3배", "3배 이상").forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     FilterSection(title = "ROE") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("5% 미만", "5 - 15%", "15% 이상").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf("5% 미만", "5 - 15%", "15% 이상").forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     FilterSection(title = "운용보수(수수료)") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("0.05% 미만", "0.05 - 0.5%", "0.5% 이상").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf(
+                                "0.05% 미만",
+                                "0.05 - 0.5%",
+                                "0.5% 이상"
+                            ).forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     FilterSection(title = "순자산액") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("100억 미만", "100 - 1000억", "1000억 이상").forEach { s -> WyeSelectableChip(label = s, selected = false, onClick = {}) }
+                            listOf(
+                                "100억 미만",
+                                "100 - 1000억",
+                                "1000억 이상"
+                            ).forEach { s ->
+                                WyeSelectableChip(
+                                    label = s,
+                                    selected = false,
+                                    onClick = {})
+                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-                WyePrimaryButton(text = "42개의 결과 보기", onClick = {}, modifier = Modifier.fillMaxWidth().padding(16.dp))
+                WyePrimaryButton(
+                    text = "42개의 결과 보기",
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
             }
         }
     }

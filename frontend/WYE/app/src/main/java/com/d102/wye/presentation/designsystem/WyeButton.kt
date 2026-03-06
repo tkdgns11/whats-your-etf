@@ -1,15 +1,31 @@
 package com.d102.wye.presentation.designsystem
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d102.wye.presentation.theme.KakaoYellow
 import com.d102.wye.presentation.theme.PrimaryGreen
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextOnColored
 
 /**
@@ -24,6 +40,7 @@ fun WyePrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    style: TextStyle = MaterialTheme.typography.bodyMedium
 ) {
     Button(
         onClick = onClick,
@@ -35,10 +52,10 @@ fun WyePrimaryButton(
             disabledContainerColor = PrimaryGreen.copy(alpha = 0.4f),
             disabledContentColor = TextOnColored.copy(alpha = 0.6f),
         ),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = text, style = style)
     }
 }
 
@@ -50,17 +67,21 @@ fun WyeOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    verticalPaddingValues: Dp = 14.dp,
+    borderColor: Color = PrimaryGreen,
     enabled: Boolean = true,
+    style: TextStyle = MaterialTheme.typography.bodyMedium
 ) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(width = 1.dp, color = borderColor),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryGreen),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = verticalPaddingValues),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = text, style = style)
     }
 }
 
@@ -72,13 +93,41 @@ fun WyeTextButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodySmall
 ) {
     TextButton(
         onClick = onClick,
         colors = ButtonDefaults.textButtonColors(contentColor = PrimaryGreen),
         modifier = modifier,
     ) {
-        Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(text = text, style = style)
+    }
+}
+
+/**
+ * 카카오 버튼 — 카카오 로그인 전용 버튼
+ */
+@Composable
+fun WyeKakaoButton(
+    text: String = "카카오 로그인",
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = KakaoYellow,
+            contentColor = TextPrimary,
+            disabledContainerColor = KakaoYellow.copy(alpha = 0.4f),
+            disabledContentColor = TextPrimary.copy(alpha = 0.6f),
+        ),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -98,6 +147,7 @@ private fun WyeButtonPreview() {
             WyePrimaryButton("저장", onClick = {}, modifier = Modifier.weight(1f))
             WyeOutlinedButton("취소", onClick = {}, modifier = Modifier.weight(1f))
         }
+        WyeKakaoButton(onClick = {})
         WyeTextButton("전체보기", onClick = {})
     }
 }

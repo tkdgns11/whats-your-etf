@@ -8,18 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.d102.wye.presentation.designsystem.BottomNavTab
-import com.d102.wye.presentation.designsystem.WyeBottomNavBar
-
-private val tabRoutes = mapOf(
-    BottomNavTab.HOME       to Route.Home.route,
-    BottomNavTab.EXPLORE    to Route.Explore.route,
-    BottomNavTab.SIMULATION to Route.Simulation.route,
-    BottomNavTab.STRATEGY   to Route.Strategy.route,
-    BottomNavTab.MYPAGE     to Route.MyPage.route,
-)
-
-private val bottomNavRoutes = tabRoutes.values.toSet()
 
 @Composable
 fun AppScaffold(
@@ -29,18 +17,17 @@ fun AppScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute in bottomNavRoutes
-    val selectedTab = tabRoutes.entries.firstOrNull { it.value == currentRoute }?.key
-        ?: BottomNavTab.HOME
+    val showBottomBar = currentRoute in BottomNavTab.routes
+    val selectedTab = BottomNavTab.fromRoute(currentRoute)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
-                WyeBottomNavBar(
+                BottomNavBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
-                        navController.navigate(tabRoutes[tab]!!) {
+                        navController.navigate(tab.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }

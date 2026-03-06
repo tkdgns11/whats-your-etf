@@ -1,46 +1,108 @@
 package com.d102.wye.presentation.auth.login
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.presentation.auth.login.component.LoginFooterLinks
+import com.d102.wye.presentation.auth.login.component.LoginFormSection
+import com.d102.wye.presentation.auth.login.component.LoginHeader
+import com.d102.wye.presentation.auth.login.component.LoginSocialSection
+import com.d102.wye.presentation.theme.SurfaceVariant
+import com.d102.wye.presentation.theme.WYETheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
-    onSignupClick: () -> Unit,
+    onJoinClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
-
+    viewModel: LoginViewModel = hiltViewModel()
 ) {
-    // AppScaffold가 이미 innerPadding을 NavHost에 적용하고 있음
-    // 여기서 Scaffold를 또 쓰면 패딩 이중 적용 → Column + TopAppBar 조합으로 대신
-    Column(modifier = Modifier.fillMaxSize()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        TopAppBar(
-            title = { Text("로그인") }
-            // 로그인 화면은 뒤로가기 없음 → navigationIcon 생략
-            // 필요 시: navigationIcon = { IconButton(...) { Icon(...) } }
-        )
+    LaunchedEffect(viewModel) {
+        viewModel.loginEvent.collect { event ->
+            when (event) {
+                LoginEvent.LoginSuccess -> onLoginSuccess()
+            }
+        }
+    }
 
-        // TopBar 아래 콘텐츠 영역 — 전체 패딩 16dp
+    LoginScreenContent(
+        uiState = uiState,
+        onEmailChanged = viewModel::onEmailChanged,
+        onPasswordChanged = viewModel::onPasswordChanged,
+        onPasswordVisibilityToggle = viewModel::onPasswordVisibilityToggle,
+        onLoginClick = viewModel::onLoginClick,
+        onJoinClick = onJoinClick,
+        onForgotPasswordClick = onForgotPasswordClick
+    )
+}
+
+@Composable
+private fun LoginScreenContent(
+    uiState: LoginUiState,
+    onEmailChanged: (String) -> Unit,
+    onPasswordChanged: (String) -> Unit,
+    onPasswordVisibilityToggle: () -> Unit,
+    onLoginClick: () -> Unit,
+    onJoinClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SurfaceVariant)
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        LoginHeader(lowerWaveColor = SurfaceVariant)
+
+        Spacer(modifier = Modifier.height(14.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            // TODO: 실제 UI 구현
-            Text("이메일 입력")
-            Text("비밀번호 입력")
-            Text("로그인 버튼")
+            LoginFormSection(
+                uiState = uiState,
+                onEmailChanged = onEmailChanged,
+                onPasswordChanged = onPasswordChanged,
+                onPasswordVisibilityToggle = onPasswordVisibilityToggle,
+                onLoginClick = onLoginClick
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            LoginSocialSection(
+                onKakaoLoginClick = {
+                    // TODO: 카카오 로그인 SDK 및 백엔드 연동
+                }
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            LoginFooterLinks(
+                onJoinClick = onJoinClick,
+                onForgotPasswordClick = onForgotPasswordClick
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

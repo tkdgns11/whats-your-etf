@@ -12,7 +12,8 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON001", "서버 내부 오류가 발생했습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON002", "잘못된 입력값입니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON003", "리소스를 찾을 수 없습니다."),
-
+    BIND_ERROR(HttpStatus.BAD_REQUEST, "COMMON4", "바인딩 에러가 발생했습니다"),
+    ARGUMENT_NOT_VALID(HttpStatus.BAD_REQUEST, "COMMON5", "파라미터가 유효하지 않습니다."),
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH001", "인증이 필요합니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 토큰입니다."),

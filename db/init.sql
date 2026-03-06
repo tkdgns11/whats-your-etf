@@ -38,7 +38,6 @@ CREATE TABLE "user" (
     "email" VARCHAR(100) NOT NULL UNIQUE,
     "password" VARCHAR(255),                      -- 비밀번호 (nullable, 소셜만 사용 시 NULL)
     "nickname" VARCHAR(50) UNIQUE,                -- 닉네임 (신규 가입 시 이메일로 설정)
-    "role" VARCHAR(20) DEFAULT 'USER',            -- USER / ADMIN
     "is_active" BOOLEAN DEFAULT TRUE,
     "last_login_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -48,7 +47,7 @@ CREATE TABLE "user" (
 -- ETF 목록 (국내 상장 ETF ~800종)
 CREATE TABLE "etf" (
     "id" BIGSERIAL PRIMARY KEY,
-    "ticker" VARCHAR(20) UNIQUE NOT NULL,         -- ETF 코드 (069500, 102110 등)
+    "stock_code" VARCHAR(20) UNIQUE NOT NULL,         -- ETF 코드 (069500, 102110 등)
     "name" VARCHAR(200) NOT NULL,                 -- KODEX 200, TIGER 200 등
     -- 분류
     "category" VARCHAR(50),                       -- 국내주식형/해외주식형/채권형/원자재형/통화형 등
@@ -71,13 +70,14 @@ CREATE TABLE "etf" (
     "avg_per" DECIMAL(8,2),                       -- 가중평균 P/E
     "avg_pbr" DECIMAL(8,2),                       -- 가중평균 P/B
     "avg_roe" DECIMAL(8,2),                       -- 가중평균 ROE (%)
-    -- 위험 분류 (변동성 기반, 배치 계산: 일일수익률 표준편차 × √252)
-    "risk_grade" VARCHAR(20),                     -- HIGH_RISK/MODERATE/STABLE
-    "volatility_1y" DECIMAL(8,4),                 -- 최근 1년 변동성 (%)
+    -- 위험 지표
+    "risk_grade" VARCHAR(20),                     -- 위험등급 (HIGH_RISK/MODERATE/STABLE), volatility_1y 기반 산출
+    "volatility_1y" DECIMAL(8,4),                 -- 1년 변동성 (%, 일일수익률 표준편차 × √252 연율화)
     -- 생애주기
     "listing_date" DATE,
     "delisted_date" DATE,                         -- 상장폐지일 (NULL이면 현재 상장 중)
     "is_active" BOOLEAN DEFAULT TRUE,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -100,6 +100,7 @@ CREATE TABLE "company_info" (
     "industry_group" VARCHAR(50),                -- 대분류 그룹명 (반도체, 전자/IT 등)
 
     -- 기업 개요
+    "description" TEXT,                          -- 회사 설명/사업 내용
     "listing_date" DATE,                         -- 상장일
     "fiscal_month" INTEGER,                      -- 결산월 (12 = 12월 결산)
     "ceo_name" VARCHAR(100),                     -- 대표자명
@@ -130,7 +131,7 @@ COMMENT ON TABLE "company_info" IS '상장 회사 정보 (ETF 구성종목 JOIN�
 -- 주식 일별 시세
 CREATE TABLE "stock_prices" (
     "id" BIGSERIAL PRIMARY KEY,
-    "stock_code" VARCHAR(20) NOT NULL,            -- company_info.stock_code 참조
+    "company_id" BIGINT NOT NULL,                 -- company_info.id FK
     "trade_date" DATE NOT NULL,
     "open" DECIMAL(14,2),                         -- 시가
     "high" DECIMAL(14,2),                         -- 고가
@@ -138,45 +139,43 @@ CREATE TABLE "stock_prices" (
     "close" DECIMAL(14,2),                        -- 종가
     "volume" BIGINT,                              -- 거래량
     "change_rate" DECIMAL(8,4),                   -- 등락률
-    UNIQUE("stock_code", "trade_date"),
-    CONSTRAINT "fk_stock_prices_company" FOREIGN KEY ("stock_code") REFERENCES "company_info"("stock_code") ON DELETE CASCADE
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE("company_id", "trade_date"),
+    CONSTRAINT "fk_stock_prices_company" FOREIGN KEY ("company_id") REFERENCES "company_info"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_stock_prices_code_date" ON "stock_prices"("stock_code", "trade_date" DESC);
+CREATE INDEX "idx_stock_prices_company_date" ON "stock_prices"("company_id", "trade_date" DESC);
 
--- ETF 태그 정의
-CREATE TABLE "etf_tag" (
+-- 뉴스 소스 (언론사) 관리
+CREATE TABLE "news_source" (
     "id" BIGSERIAL PRIMARY KEY,
-    "name" VARCHAR(50) NOT NULL UNIQUE,           -- 태그명 (공격형, 안전형, 배당 등)
-    "category" VARCHAR(30),                       -- RISK / SECTOR / THEME
-    "color" VARCHAR(7),                           -- HEX 색상 코드
-    "description" VARCHAR(200),
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ETF 클러스터 정보
-CREATE TABLE "etf_cluster" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "cluster_name" VARCHAR(100),                  -- 클러스터 이름 (AI 생성)
-    "cluster_label" INTEGER NOT NULL,             -- HDBSCAN 클러스터 라벨
-    "center_x" DECIMAL(10,6),                     -- 2D 좌표 X (UMAP)
-    "center_y" DECIMAL(10,6),                     -- 2D 좌표 Y (UMAP)
-    "etf_count" INTEGER DEFAULT 0,
-    "avg_return_1m" DECIMAL(8,4),                 -- 1개월 평균 수익률
-    "avg_volatility" DECIMAL(8,4),                -- 평균 변동성
+    "name" VARCHAR(50) NOT NULL,                  -- 언론사명 (한국경제, 서울경제 등)
+    "domain" VARCHAR(100) NOT NULL UNIQUE,        -- 도메인 (hankyung.com, sedaily.com 등)
+    "is_content_available" BOOLEAN DEFAULT TRUE,  -- 본문 크롤링 가능 여부
+    "last_success_at" TIMESTAMP,                  -- 마지막 본문 크롤링 성공 시점
+    "last_failure_at" TIMESTAMP,                  -- 마지막 본문 크롤링 실패 시점
+    "failure_count" INTEGER DEFAULT 0,            -- 연속 실패 횟수
+    "css_selector" TEXT,                          -- 본문 CSS 선택자
+    "notes" TEXT,                                 -- 비고 (차단 사유 등)
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX "idx_news_source_domain" ON "news_source"("domain");
+CREATE INDEX "idx_news_source_available" ON "news_source"("is_content_available") WHERE "is_content_available" = TRUE;
+
+COMMENT ON TABLE "news_source" IS '뉴스 소스 (언론사) 관리 - 본문 크롤링 가능 여부 자동 관리';
 
 -- 뉴스 기사
 CREATE TABLE "news_article" (
     "id" BIGSERIAL PRIMARY KEY,
     "title" VARCHAR(500) NOT NULL,
-    "content_summary" TEXT,                       -- 요약 (500자 이내)
+    "content" TEXT,                               -- 뉴스 본문 전체
+    "content_summary" JSONB,                      -- AI 요약 {"bullets": ["요약1", "요약2", "요약3"]}
     "source" VARCHAR(100),                        -- 언론사명
     "source_url" VARCHAR(1000) NOT NULL UNIQUE,   -- 원본 URL
     "thumbnail_url" VARCHAR(1000),
-    "category" VARCHAR(50) DEFAULT '금융',         -- 금융 / ETF / 경제
+    "category" VARCHAR(50) DEFAULT 'NEWS_ETC',     -- NEWS_SEMI/NEWS_IT/NEWS_BIO/NEWS_AUTO/NEWS_CHEM/NEWS_ENERGY/NEWS_FINANCE/NEWS_CONSTRUCT/NEWS_CONSUMER/NEWS_TELECOM/NEWS_TRANSPORT/NEWS_INDUSTRY/NEWS_ETC/NEWS_MARKET
     "keywords" JSONB,                             -- 검색 키워드 배열
     "published_at" TIMESTAMP,
     "view_count" INTEGER DEFAULT 0,
@@ -271,37 +270,89 @@ CREATE TABLE "login_history" (
     CONSTRAINT "fk_login_history_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
 );
 
+-- AI 프롬프트 관리
+CREATE TABLE "ai_prompt" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "name" VARCHAR(50) NOT NULL,                  -- 'portfolio_feedback', 'etf_analysis'
+    "version" VARCHAR(20) NOT NULL,               -- 'v1.0', 'v1.1'
+    "prompt_template" TEXT NOT NULL,              -- 프롬프트 내용
+    "description" VARCHAR(200),                   -- 변경 사항 메모
+    "is_active" BOOLEAN DEFAULT FALSE,            -- 현재 활성 버전
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "uk_prompt_version" UNIQUE ("name", "version")
+);
+
+CREATE INDEX "idx_prompt_active" ON "ai_prompt"("name", "is_active") WHERE "is_active" = TRUE;
+
+-- 알림 유형 코드 테이블
+CREATE TABLE "alert_type" (
+    "code" VARCHAR(30) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
+    "name" VARCHAR(100) NOT NULL,                -- "ETF 신규 상장"
+    "category" VARCHAR(30) NOT NULL,             -- ETF / PORTFOLIO / NEWS / SYSTEM
+    "description" VARCHAR(200),                  -- 알림 설명
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "display_order" INTEGER DEFAULT 0,           -- 노출 순서
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE "alert_type" IS '알림 유형 코드 테이블 (확장 가능한 코드성 테이블)';
+
+-- 알림 메시지 템플릿 (버전 관리)
+CREATE TABLE "alert_message_template" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "alert_type_code" VARCHAR(30) NOT NULL,      -- alert_type FK
+    "version" VARCHAR(20) NOT NULL,              -- 'v1.0', 'v1.1'
+    "title_template" VARCHAR(200) NOT NULL,      -- "신규 ETF 상장 알림"
+    "message_template" TEXT NOT NULL,            -- "{etf_name} ETF가 {date}에 상장 예정입니다."
+    "variables" JSONB,                           -- ["etf_name", "date"] - 사용 가능한 변수 목록
+    "description" VARCHAR(200),                  -- 변경 사항 메모
+    "is_active" BOOLEAN DEFAULT FALSE,           -- 현재 활성 버전
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_alert_template_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE,
+    CONSTRAINT "uk_alert_template_version" UNIQUE ("alert_type_code", "version")
+);
+
+CREATE INDEX "idx_alert_template_active" ON "alert_message_template"("alert_type_code", "is_active") WHERE "is_active" = TRUE;
+
+COMMENT ON TABLE "alert_message_template" IS '알림 메시지 템플릿 (버전 관리, ai_prompt와 유사)';
+
 -- 포트폴리오 AI 피드백
 CREATE TABLE "portfolio_ai_feedback" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
     "portfolio_snapshot_id" BIGINT,               -- 포트폴리오 스냅샷 ID
-    "bull_review" TEXT,                           -- 강세 관점 리뷰
-    "bear_review" TEXT,                           -- 약세 관점 리뷰
-    "overall_score" DECIMAL(3,1),                 -- 종합 점수 (0.0 ~ 10.0)
-    "risk_level" VARCHAR(20),                     -- LOW / MEDIUM / HIGH
-    "recommendation" TEXT,                        -- 추천 사항
+    "prompt_id" BIGINT,                           -- 사용된 프롬프트 FK
+    -- 진단 결과 헤드라인
+    "headline" VARCHAR(100),                      -- "공격적인 수익 추구!"
+    "sub_headline" VARCHAR(200),                  -- "기술주 중심의 로켓 포트폴리오"
+    "keywords" JSONB,                             -- ["기술주집중", "고변동성", "성장중심"]
+    -- 상세 분석
+    "analysis" TEXT,                              -- 종합 분석 결과 (요약 상세)
     "llm_model" VARCHAR(50),                      -- 사용된 LLM 모델
-    "prompt_version" VARCHAR(20),                 -- 프롬프트 버전
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_ai_feedback_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+    CONSTRAINT "fk_ai_feedback_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_ai_feedback_prompt" FOREIGN KEY ("prompt_id") REFERENCES "ai_prompt"("id")
 );
 
 CREATE INDEX "idx_ai_feedback_user" ON "portfolio_ai_feedback"("user_id");
 CREATE INDEX "idx_ai_feedback_created" ON "portfolio_ai_feedback"("created_at" DESC);
 
--- 알림 설정
-CREATE TABLE "notification_setting" (
+-- 사용자별 알림 설정 (alert_type 코드 참조)
+CREATE TABLE "user_notification_setting" (
     "id" BIGSERIAL PRIMARY KEY,
-    "user_id" BIGINT NOT NULL UNIQUE,
-    "etf_listing_alert" BOOLEAN DEFAULT TRUE,     -- ETF 상장 알림
-    "etf_delisting_alert" BOOLEAN DEFAULT TRUE,   -- ETF 상장폐지 알림
-    "portfolio_alert" BOOLEAN DEFAULT TRUE,       -- 포트폴리오 알림
-    "news_alert" BOOLEAN DEFAULT TRUE,            -- 뉴스 알림
+    "user_id" BIGINT NOT NULL,
+    "alert_type_code" VARCHAR(30) NOT NULL,           -- alert_type FK
+    "is_enabled" BOOLEAN DEFAULT TRUE,                -- 알림 활성화 여부
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_notification_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+    CONSTRAINT "fk_notification_setting_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_notification_setting_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE,
+    CONSTRAINT "uk_user_alert_type" UNIQUE ("user_id", "alert_type_code")
 );
+
+CREATE INDEX "idx_notification_setting_user" ON "user_notification_setting"("user_id");
+
+COMMENT ON TABLE "user_notification_setting" IS '사용자별 알림 설정 (유형별 ON/OFF)';
 
 -- FCM 토큰 (푸시 알림용)
 CREATE TABLE "fcm_token" (
@@ -318,12 +369,12 @@ CREATE TABLE "fcm_token" (
 CREATE INDEX "idx_fcm_user" ON "fcm_token"("user_id");
 CREATE INDEX "idx_fcm_token" ON "fcm_token"("token");
 
--- 꾸러미 (시스템 제공 예시 포트폴리오)
+-- 꾸러미 (시스템 제공 예시 포트폴리오 - ETF 목록만 추천, 비중은 사용자 결정)
 CREATE TABLE "preset_portfolios" (
     "id" BIGSERIAL PRIMARY KEY,
     "name" VARCHAR(100) NOT NULL,                 -- "배당 성장형 꾸러미"
-    "description" TEXT,
-    "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE
+    "short_description" VARCHAR(200),             -- 카드에 표시할 짧은 설명
+    "description" TEXT,                           -- 상세 설명
     "category" VARCHAR(50),                       -- 배당/성장/안정/테마 등
     "display_order" INTEGER DEFAULT 0,            -- 노출 순서
     "is_active" BOOLEAN DEFAULT TRUE,
@@ -331,12 +382,12 @@ CREATE TABLE "preset_portfolios" (
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 꾸러미 ETF 구성
+-- 꾸러미 ETF 구성 (ETF 목록만, 비중은 사용자 결정)
 CREATE TABLE "preset_portfolio_etfs" (
     "id" BIGSERIAL PRIMARY KEY,
     "preset_portfolio_id" BIGINT NOT NULL,
     "etf_id" BIGINT NOT NULL,
-    "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("preset_portfolio_id", "etf_id"),
     CONSTRAINT "fk_preset_portfolio" FOREIGN KEY ("preset_portfolio_id") REFERENCES "preset_portfolios"("id") ON DELETE CASCADE,
     CONSTRAINT "fk_preset_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
@@ -350,13 +401,13 @@ CREATE TABLE "portfolios" (
     "description" TEXT,
     -- 설정
     "invest_amount" DECIMAL(18,2),                -- 투자 금액
-    "risk_level" VARCHAR(20),                     -- CONSERVATIVE/MODERATE/AGGRESSIVE (사용자 선택)
     -- 저장 시점 스냅샷
     "snapshot_etfs" JSONB,                        -- 저장 시점 ETF 구성 + 비중
     "snapshot_metrics" JSONB,                     -- 저장 시점 시뮬 지표
     -- 알림
     "is_alert_enabled" BOOLEAN DEFAULT FALSE,     -- 알림 허용 여부
     "current_return" DECIMAL(8,4),                -- 현재 수익률
+    "prev_close_value" DECIMAL(18,2),             -- 전일 종가 (포트폴리오 평가액)
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_portfolio_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
@@ -373,9 +424,18 @@ CREATE TABLE "news_etf_influence" (
     "id" BIGSERIAL PRIMARY KEY,
     "news_id" BIGINT NOT NULL,
     "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
+    -- 영향력 점수
     "influence_score" DECIMAL(5,4),               -- 영향력 점수 (0.0000 ~ 1.0000)
     "influence_type" VARCHAR(20),                 -- POSITIVE / NEGATIVE / NEUTRAL
-    "analysis_reason" TEXT,                       -- LLM 분석 사유
+    -- 타임라인용 (UI 표시)
+    "timeline_title" VARCHAR(100),                -- "연준 기준금리 동결 발표"
+    "timeline_summary" VARCHAR(200),              -- "시장 예상치 부합, 기술주 중심 반등세"
+    -- 상세 분석
+    "analysis_reason" TEXT,                       -- 상세 분석 근거
+    -- 실제 데이터 기반 검증
+    "actual_change_rate" DECIMAL(8,4),            -- 뉴스 발행 후 ETF 실제 변동률
+    "verified_at" TIMESTAMP,                      -- 검증 시점 (장 마감 후)
+    "is_verified" BOOLEAN DEFAULT FALSE,          -- 실제 데이터로 검증됨
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_news_influence_news" FOREIGN KEY ("news_id") REFERENCES "news_article"("id") ON DELETE CASCADE,
     CONSTRAINT "fk_news_influence_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
@@ -384,6 +444,22 @@ CREATE TABLE "news_etf_influence" (
 
 CREATE INDEX "idx_news_etf_etf" ON "news_etf_influence"("etf_id");
 CREATE INDEX "idx_news_etf_influence_score" ON "news_etf_influence"("influence_score" DESC);
+
+-- 뉴스-산업 영향력 (1차 분석: 뉴스 → 산업 매핑)
+CREATE TABLE "news_industry_influence" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "news_id" BIGINT NOT NULL,
+    "industry_code" VARCHAR(10) NOT NULL,         -- industry_classification FK
+    "relevance_score" DECIMAL(5,4),               -- 0.0 ~ 1.0 (관련도)
+    "sentiment" VARCHAR(20),                      -- POSITIVE / NEGATIVE / NEUTRAL
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_news_industry_news" FOREIGN KEY ("news_id") REFERENCES "news_article"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_news_industry_code" FOREIGN KEY ("industry_code") REFERENCES "industry_classification"("code") ON DELETE CASCADE,
+    CONSTRAINT "uk_news_industry" UNIQUE ("news_id", "industry_code")
+);
+
+CREATE INDEX "idx_news_industry_news" ON "news_industry_influence"("news_id");
+CREATE INDEX "idx_news_industry_code" ON "news_industry_influence"("industry_code");
 
 -- 관심 ETF (좋아요)
 CREATE TABLE "user_favorite_etf" (
@@ -415,72 +491,76 @@ CREATE TABLE "user_holding_etf" (
 
 CREATE INDEX "idx_holding_user" ON "user_holding_etf"("user_id");
 
--- ETF 알림
-CREATE TABLE "etf_alert" (
+-- 사용자 알림 (통합 알림 테이블)
+CREATE TABLE "user_alert" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "etf_id" BIGINT,                              -- ETF 테이블 FK (NULL이면 전체 알림)
-    "alert_type" VARCHAR(30) NOT NULL,            -- LISTING / DELISTING / PRICE_CHANGE
+    "alert_type_code" VARCHAR(30) NOT NULL,       -- alert_type FK
+    -- 참조 대상 (다형성)
+    "reference_type" VARCHAR(30),                 -- ETF / PORTFOLIO / NEWS / DISCLOSURE (NULL이면 시스템 알림)
+    "reference_id" BIGINT,                        -- 참조 대상 ID (etf.id / portfolios.id / news_article.id 등)
+    -- 알림 내용
     "title" VARCHAR(200) NOT NULL,
     "message" TEXT,
+    -- 상태
     "is_read" BOOLEAN DEFAULT FALSE,
+    "read_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_alert_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE SET NULL
+    CONSTRAINT "fk_user_alert_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_user_alert_type" FOREIGN KEY ("alert_type_code") REFERENCES "alert_type"("code") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_alert_user" ON "etf_alert"("user_id");
-CREATE INDEX "idx_alert_created" ON "etf_alert"("created_at" DESC);
-CREATE INDEX "idx_alert_unread" ON "etf_alert"("user_id", "is_read") WHERE "is_read" = FALSE;
+CREATE INDEX "idx_user_alert_user" ON "user_alert"("user_id");
+CREATE INDEX "idx_user_alert_type" ON "user_alert"("alert_type_code");
+CREATE INDEX "idx_user_alert_created" ON "user_alert"("created_at" DESC);
+CREATE INDEX "idx_user_alert_unread" ON "user_alert"("user_id", "is_read") WHERE "is_read" = FALSE;
+CREATE INDEX "idx_user_alert_ref" ON "user_alert"("reference_type", "reference_id");
 
--- ETF-태그 매핑
-CREATE TABLE "etf_tag_mapping" (
+COMMENT ON TABLE "user_alert" IS '사용자 알림 (ETF/포트폴리오/뉴스/시스템 통합)';
+
+-- ETF 섹터 분포 (구성종목 산업별 집계)
+CREATE TABLE "etf_sector_cluster" (
     "id" BIGSERIAL PRIMARY KEY,
-    "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
-    "tag_id" BIGINT NOT NULL,
-    "confidence" DECIMAL(3,2) DEFAULT 1.00,       -- 태그 신뢰도 (0.00 ~ 1.00)
+    "etf_id" BIGINT NOT NULL,
+    "cluster_type" VARCHAR(20) NOT NULL,        -- GROUP_CODE / INDUSTRY / SUB_SECTOR
+    "industry_code" VARCHAR(10),                  -- KSIC 산업코드
+    "industry_name" VARCHAR(100),                 -- 산업명
+    "group_code" VARCHAR(20),                     -- 그룹코드 (13개)
+    "group_name" VARCHAR(50),                     -- 그룹명
+    "sub_sector" VARCHAR(100),                    -- 세부 섹터명 (테마ETF용)
+    "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%)
+    "stock_count" INTEGER,                        -- 해당 섹터 종목 수
+    -- 시각화 좌표 (UMAP)
+    "pos_x" DECIMAL(10,6),                        -- 버블 X 좌표
+    "pos_y" DECIMAL(10,6),                        -- 버블 Y 좌표
+    "radius" DECIMAL(10,6),                       -- 버블 반지름
+    "distance_to_center" DECIMAL(10,6),           -- ETF 중심까지 거리
+    "base_date" DATE NOT NULL,                    -- 기준일
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_tag_mapping_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_tag_mapping_tag" FOREIGN KEY ("tag_id") REFERENCES "etf_tag"("id") ON DELETE CASCADE,
-    CONSTRAINT "uk_etf_tag" UNIQUE ("etf_id", "tag_id")
+    CONSTRAINT "fk_sector_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_etf_tag_etf" ON "etf_tag_mapping"("etf_id");
-CREATE INDEX "idx_etf_tag_tag" ON "etf_tag_mapping"("tag_id");
-
--- ETF 클러스터 매핑
-CREATE TABLE "etf_cluster_mapping" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "etf_id" BIGINT NOT NULL UNIQUE,              -- ETF 테이블 FK
-    "cluster_id" BIGINT NOT NULL,
-    "pos_x" DECIMAL(10,6),                        -- UMAP 좌표 X
-    "pos_y" DECIMAL(10,6),                        -- UMAP 좌표 Y
-    "distance_to_center" DECIMAL(10,6),           -- 클러스터 중심과의 거리
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_cluster_mapping_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_cluster_mapping" FOREIGN KEY ("cluster_id") REFERENCES "etf_cluster"("id") ON DELETE CASCADE
-);
-
-CREATE INDEX "idx_cluster_mapping_etf" ON "etf_cluster_mapping"("etf_id");
-CREATE INDEX "idx_cluster_mapping_cluster" ON "etf_cluster_mapping"("cluster_id");
+CREATE INDEX "idx_sector_cluster_etf" ON "etf_sector_cluster"("etf_id");
+CREATE INDEX "idx_sector_cluster_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
 
 -- ETF 구성종목
 CREATE TABLE "etf_compositions" (
     "id" BIGSERIAL PRIMARY KEY,
     "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
-    "component_ticker" VARCHAR(20),               -- 구성 종목 코드 (company_info.stock_code 참조)
+    "company_id" BIGINT,                          -- company_info FK (NULL = 현금/기타)
+    "component_stock_code" VARCHAR(20),           -- 종목코드 또는 CASH/ETC 등
     "weight_pct" DECIMAL(6,3),                    -- 비중 (%)
     "base_date" DATE NOT NULL,
-    UNIQUE("etf_id", "component_ticker", "base_date"),
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE("etf_id", "component_stock_code", "base_date"),
     CONSTRAINT "fk_composition_etf" FOREIGN KEY ("etf_id")
         REFERENCES "etf"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_composition_component" FOREIGN KEY ("component_ticker")
-        REFERENCES "company_info"("stock_code") ON DELETE SET NULL
+    CONSTRAINT "fk_composition_company" FOREIGN KEY ("company_id")
+        REFERENCES "company_info"("id") ON DELETE SET NULL
 );
 
 CREATE INDEX "idx_etf_compositions_etf" ON "etf_compositions"("etf_id", "base_date" DESC);
-CREATE INDEX "idx_etf_compositions_component" ON "etf_compositions"("component_ticker");
+CREATE INDEX "idx_etf_compositions_company" ON "etf_compositions"("company_id");
 
 -- ETF 일별 시세 (클러스터링 + 백테스트용)
 CREATE TABLE "etf_prices" (
@@ -491,6 +571,7 @@ CREATE TABLE "etf_prices" (
     "nav" DECIMAL(14,2),                          -- 순자산가치
     "volume" BIGINT,
     "change_rate" DECIMAL(8,4),                   -- 등락률: (당일종가 - 전일종가) / 전일종가 * 100
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("etf_id", "trade_date"),
     CONSTRAINT "fk_etf_prices_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
@@ -503,58 +584,50 @@ CREATE TABLE "portfolio_etfs" (
     "portfolio_id" BIGINT NOT NULL,
     "etf_id" BIGINT NOT NULL,                     -- ETF 테이블 FK
     "weight_pct" DECIMAL(6,3) NOT NULL,           -- 비중 (%, 합 = 100)
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("portfolio_id", "etf_id"),
     CONSTRAINT "fk_portfolio_etf_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE,
     CONSTRAINT "fk_portfolio_etf_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
+
 -- =============================================
--- 4. 시뮬레이션/전략 테이블
+-- 4. 초기 데이터 (코드 테이블)
 -- =============================================
 
--- 시뮬레이션 (백테스트 요청)
-CREATE TABLE "simulations" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "portfolio_id" BIGINT NOT NULL,
-    "user_id" BIGINT NOT NULL,
-    -- 백테스트 설정
-    "start_date" DATE NOT NULL,
-    "end_date" DATE NOT NULL,
-    "initial_amount" DECIMAL(18,2) NOT NULL,      -- 초기 투자 금액
-    "rebalance_period" VARCHAR(20) DEFAULT 'MONTHLY', -- MONTHLY/QUARTERLY/YEARLY/NONE
-    -- 결과
-    "final_amount" DECIMAL(18,2),
-    "total_return" DECIMAL(8,4),                  -- 총 수익률
-    "annualized_return" DECIMAL(8,4),             -- 연환산 수익률 (CAGR)
-    "max_drawdown" DECIMAL(8,4),                  -- 최대 낙폭 (MDD)
-    "sharpe_ratio" DECIMAL(8,4),                  -- 샤프 비율
-    "volatility" DECIMAL(8,4),                    -- 변동성
-    -- 벤치마크 비교
-    "benchmark_ticker" VARCHAR(20) DEFAULT '069500', -- KODEX 200
-    "benchmark_return" DECIMAL(8,4),
-    "alpha" DECIMAL(8,4),                         -- 초과 수익률
-    -- 메타
-    "status" VARCHAR(20) DEFAULT 'PENDING',       -- PENDING/RUNNING/COMPLETED/FAILED
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "completed_at" TIMESTAMP,
-    CONSTRAINT "fk_simulation_portfolio" FOREIGN KEY ("portfolio_id") REFERENCES "portfolios"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_simulation_user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
-);
+-- 알림 유형 코드 초기 데이터
+INSERT INTO "alert_type" ("code", "name", "category", "description", "display_order") VALUES
+-- ETF 관련
+('ETF_LISTING', 'ETF 신규 상장', 'ETF', '새로운 ETF가 상장되었습니다', 1),
+('ETF_DELISTING_SCHEDULED', 'ETF 상장폐지 예정', 'ETF', 'ETF 상장폐지가 예정되어 있습니다', 2),
+('ETF_DELISTING_COMPLETED', 'ETF 상장폐지 완료', 'ETF', 'ETF 상장폐지가 완료되었습니다', 3),
+('ETF_REBALANCING', 'ETF 리밸런싱', 'ETF', 'ETF 구성종목이 변경되었습니다', 4),
+-- 포트폴리오 관련
+('PORTFOLIO_RETURN_5PCT', '포트폴리오 수익률 5%', 'PORTFOLIO', '포트폴리오 수익률이 5%에 도달했습니다', 10),
+('PORTFOLIO_RETURN_10PCT', '포트폴리오 수익률 10%', 'PORTFOLIO', '포트폴리오 수익률이 10%에 도달했습니다', 11),
+('PORTFOLIO_LOSS_5PCT', '포트폴리오 손실률 -5%', 'PORTFOLIO', '포트폴리오 손실률이 -5%에 도달했습니다', 12),
+('PORTFOLIO_LOSS_10PCT', '포트폴리오 손실률 -10%', 'PORTFOLIO', '포트폴리오 손실률이 -10%에 도달했습니다', 13),
+-- 뉴스 관련
+('NEWS_ETF_RELATED', '관심 ETF 뉴스', 'NEWS', '관심 ETF와 관련된 뉴스가 있습니다', 20),
+('NEWS_PORTFOLIO_RELATED', '포트폴리오 관련 뉴스', 'NEWS', '보유 포트폴리오와 관련된 뉴스가 있습니다', 21),
+-- 시스템
+('SYSTEM_ANNOUNCEMENT', '시스템 공지', 'SYSTEM', '서비스 공지사항', 30);
 
-CREATE INDEX "idx_simulations_portfolio" ON "simulations"("portfolio_id", "status");
-CREATE INDEX "idx_simulations_user" ON "simulations"("user_id", "created_at" DESC);
-
--- 시뮬레이션 일별 결과 (백테스트 차트용)
-CREATE TABLE "simulation_daily" (
-    "id" BIGSERIAL PRIMARY KEY,
-    "simulation_id" BIGINT NOT NULL,
-    "trade_date" DATE NOT NULL,
-    "portfolio_value" DECIMAL(18,2),              -- 포트폴리오 평가액
-    "benchmark_value" DECIMAL(18,2),              -- 벤치마크 평가액
-    "daily_return" DECIMAL(8,6),                  -- 일별 수익률
-    "cumulative_return" DECIMAL(8,4),             -- 누적 수익률
-    "drawdown" DECIMAL(8,4),                      -- 낙폭
-    UNIQUE("simulation_id", "trade_date"),
-    CONSTRAINT "fk_simulation_daily" FOREIGN KEY ("simulation_id") REFERENCES "simulations"("id") ON DELETE CASCADE
-);
+-- 알림 메시지 템플릿 초기 데이터
+INSERT INTO "alert_message_template" ("alert_type_code", "version", "title_template", "message_template", "variables", "is_active") VALUES
+-- ETF 관련
+('ETF_LISTING', 'v1.0', '신규 ETF 상장 알림', '{etf_name} ETF가 {date}에 상장 예정입니다.', '["etf_name", "date"]', TRUE),
+('ETF_DELISTING_SCHEDULED', 'v1.0', 'ETF 상장폐지 예정', '관심 ETF ''{etf_name}''가 {date}에 상장폐지 예정입니다.', '["etf_name", "date"]', TRUE),
+('ETF_DELISTING_COMPLETED', 'v1.0', 'ETF 상장폐지 완료', '관심 ETF ''{etf_name}''가 상장폐지되었습니다.', '["etf_name"]', TRUE),
+('ETF_REBALANCING', 'v1.0', 'ETF 리밸런싱 완료', '관심 ETF ''{etf_name}'' 구성종목이 변경되었습니다.', '["etf_name"]', TRUE),
+-- 포트폴리오 관련
+('PORTFOLIO_RETURN_5PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +5%를 달성했습니다!', '["portfolio_name"]', TRUE),
+('PORTFOLIO_RETURN_10PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +10%를 달성했습니다!', '["portfolio_name"]', TRUE),
+('PORTFOLIO_LOSS_5PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -5%에 도달했습니다.', '["portfolio_name"]', TRUE),
+('PORTFOLIO_LOSS_10PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -10%에 도달했습니다.', '["portfolio_name"]', TRUE),
+-- 뉴스 관련
+('NEWS_ETF_RELATED', 'v1.0', '관심 ETF 뉴스', '관심 ETF ''{etf_name}'' 관련 뉴스: {news_title}', '["etf_name", "news_title"]', TRUE),
+('NEWS_PORTFOLIO_RELATED', 'v1.0', '포트폴리오 관련 뉴스', '''{portfolio_name}'' 관련 뉴스가 있습니다: {news_title}', '["portfolio_name", "news_title"]', TRUE),
+-- 시스템
+('SYSTEM_ANNOUNCEMENT', 'v1.0', '{title}', '{message}', '["title", "message"]', TRUE);
 

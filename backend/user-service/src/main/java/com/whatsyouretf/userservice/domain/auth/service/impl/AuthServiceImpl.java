@@ -1,9 +1,10 @@
-package com.whatsyouretf.userservice.domain.auth.service;
+package com.whatsyouretf.userservice.domain.auth.service.impl;
 
-import com.whatsyouretf.userservice.common.exception.CustomException;
+import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.util.JwtTokenUtil;
 import com.whatsyouretf.userservice.domain.auth.dto.AuthResponse;
+import com.whatsyouretf.userservice.domain.auth.service.AuthService;
 import com.whatsyouretf.userservice.domain.user.entity.RefreshToken;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.entity.UserSocialAccount;
@@ -17,114 +18,72 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OAuth2Service {
+public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final UserSocialAccountRepository socialAccountRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenUtil jwtTokenUtil;
 
-    @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
-    private String kakaoClientId;
-
-    @Value("${spring.security.oauth2.client.registration.kakao.client-secret}")
-    private String kakaoClientSecret;
-
-    @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
-    private String kakaoRedirectUri;
+    @Value("${jwt.access-token-validity}")
+    private Long accessTokenValidity;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    /**
-     * Kakao OAuth 로그인 처리
-     */
+    @Override
     @Transactional
-    public AuthResponse processKakaoCallback(String code) {
-        // 1. Access Token 발급
-        String kakaoAccessToken = getKakaoAccessToken(code);
+    public AuthResponse processKakaoLogin(String accessToken) {
+        // 1. 카카오에서 사용자 정보 조회
+        Map<String, Object> userInfo = getKakaoUserInfo(accessToken);
 
-        // 2. 사용자 정보 조회
-        Map<String, Object> userInfo = getKakaoUserInfo(kakaoAccessToken);
+        // 2. 사용자 찾기 또는 생성
+        AtomicBoolean isNewUser = new AtomicBoolean(false);
+        User user = findOrCreateUser(userInfo, SocialProvider.KAKAO, isNewUser);
 
-        // 3. 사용자 찾기 또는 생성
-        User user = findOrCreateUser(userInfo, SocialProvider.KAKAO);
-
-        // 4. 로그인 처리
+        // 3. 로그인 처리
         user.updateLastLogin();
 
-        // 5. JWT 토큰 발급
-        return generateAuthResponse(user);
+        // 4. JWT 토큰 발급
+        return generateAuthResponse(user, isNewUser.get(), "KAKAO");
     }
 
-    /**
-     * Refresh Token으로 Access Token 재발급
-     */
+    @Override
     @Transactional
     public AuthResponse refreshToken(String refreshTokenValue) {
         // 1. Refresh Token 유효성 검증
         if (!jwtTokenUtil.validateToken(refreshTokenValue) || !jwtTokenUtil.isRefreshToken(refreshTokenValue)) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
         // 2. DB에서 Refresh Token 조회
         RefreshToken refreshToken = refreshTokenRepository
                 .findValidToken(refreshTokenValue, LocalDateTime.now())
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_TOKEN));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
 
         // 3. 기존 토큰 폐기
         refreshToken.revoke();
 
-        // 4. 새 토큰 발급
+        // 4. 새 Access Token만 발급
         User user = refreshToken.getUser();
-        return generateAuthResponse(user);
+        String newAccessToken = jwtTokenUtil.createAccessToken(user.getId());
+
+        return AuthResponse.ofRefresh(newAccessToken, accessTokenValidity / 1000);
     }
 
-    /**
-     * 로그아웃 (Refresh Token 폐기)
-     */
+    @Override
     @Transactional
     public void logout(Long userId) {
         refreshTokenRepository.revokeAllByUserId(userId);
-    }
-
-    private String getKakaoAccessToken(String code) {
-        String tokenUrl = "https://kauth.kakao.com/oauth/token";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", kakaoClientId);
-        params.add("client_secret", kakaoClientSecret);
-        params.add("redirect_uri", kakaoRedirectUri);
-        params.add("code", code);
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
-            Map<String, Object> body = response.getBody();
-
-            if (body == null || !body.containsKey("access_token")) {
-                throw new CustomException(ErrorCode.OAUTH_FAILED);
-            }
-
-            return (String) body.get("access_token");
-        } catch (Exception e) {
-            log.error("Failed to get Kakao access token: {}", e.getMessage());
-            throw new CustomException(ErrorCode.OAUTH_FAILED);
-        }
+        log.info("User logged out: {}", userId);
     }
 
     @SuppressWarnings("unchecked")
@@ -143,12 +102,12 @@ public class OAuth2Service {
             return response.getBody();
         } catch (Exception e) {
             log.error("Failed to get Kakao user info: {}", e.getMessage());
-            throw new CustomException(ErrorCode.OAUTH_FAILED);
+            throw new BusinessException(ErrorCode.OAUTH_FAILED);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private User findOrCreateUser(Map<String, Object> userInfo, SocialProvider provider) {
+    private User findOrCreateUser(Map<String, Object> userInfo, SocialProvider provider, AtomicBoolean isNewUser) {
         String providerUserId = String.valueOf(userInfo.get("id"));
 
         // 1. 기존 소셜 계정으로 찾기
@@ -156,6 +115,8 @@ public class OAuth2Service {
                 .findByProviderAndProviderUserIdWithUser(provider, providerUserId)
                 .map(UserSocialAccount::getUser)
                 .orElseGet(() -> {
+                    isNewUser.set(true);
+
                     // 2. 사용자 정보 추출
                     Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
                     Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
@@ -173,7 +134,7 @@ public class OAuth2Service {
                     if (user == null) {
                         user = User.builder()
                                 .email(email != null ? email : providerUserId + "@kakao.user")
-                                .nickname(nickname)
+                                .nickname(nickname != null ? nickname : "user_" + providerUserId.substring(0, 8))
                                 .profileImage(profileImage)
                                 .build();
                         user = userRepository.save(user);
@@ -193,7 +154,7 @@ public class OAuth2Service {
                 });
     }
 
-    private AuthResponse generateAuthResponse(User user) {
+    private AuthResponse generateAuthResponse(User user, boolean isNewUser, String provider) {
         String accessToken = jwtTokenUtil.createAccessToken(user.getId());
         String refreshTokenValue = jwtTokenUtil.createRefreshToken(user.getId());
 
@@ -208,6 +169,13 @@ public class OAuth2Service {
                 .build();
         refreshTokenRepository.save(refreshToken);
 
-        return AuthResponse.of(accessToken, refreshTokenValue, user);
+        return AuthResponse.of(
+                accessToken,
+                refreshTokenValue,
+                accessTokenValidity / 1000,  // 밀리초 -> 초
+                isNewUser,
+                user,
+                provider
+        );
     }
 }

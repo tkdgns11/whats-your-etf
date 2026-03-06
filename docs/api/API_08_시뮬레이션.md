@@ -80,11 +80,13 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| portfolioId | number | O | 시뮬레이션할 포트폴리오 ID |
-| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD) |
-| endDate | string | O | 시뮬레이션 종료일 (YYYY-MM-DD) |
-| initialAmount | number | O | 초기 투자금액 |
-| rebalancingCycle | string | X | 리밸런싱 주기 (NONE/MONTHLY/QUARTERLY/YEARLY) |
+| portfolioId | number | O | 시뮬레이션할 포트폴리오 ID (양수 정수) |
+| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD, 최소 2010-01-01) |
+| endDate | string | O | 시뮬레이션 종료일 (YYYY-MM-DD, startDate 이후, 오늘 이전) |
+| initialAmount | number | O | 초기 투자금액 (최소 10,000원, 최대 100억원) |
+| rebalancingCycle | string | X | 리밸런싱 주기: `NONE` / `MONTHLY` / `QUARTERLY` / `YEARLY` (기본값: NONE) |
+
+> 시뮬레이션 기간은 최소 1개월, 최대 10년입니다.
 
 **Response**
 ```json
@@ -208,10 +210,10 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| portfolioIds | array | O | 비교할 포트폴리오 ID 목록 (최대 5개) |
-| startDate | string | O | 시뮬레이션 시작일 |
-| endDate | string | O | 시뮬레이션 종료일 |
-| initialAmount | number | O | 초기 투자금액 |
+| portfolioIds | array | O | 비교할 포트폴리오 ID 목록 (최소 2개, 최대 5개, 양수 정수) |
+| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD, 최소 2010-01-01) |
+| endDate | string | O | 시뮬레이션 종료일 (YYYY-MM-DD, startDate 이후, 오늘 이전) |
+| initialAmount | number | O | 초기 투자금액 (최소 10,000원, 최대 100억원) |
 
 **Response**
 ```json

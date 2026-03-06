@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
         log.error("CustomException: {} - {}", e.getCode(), e.getMessage());
         return ResponseEntity
                 .status(e.getStatus())
-                .body(ApiResponse.error(e.getMessage()));
+                .body(ApiResponse.error(e.getMessage(), e.getCode()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
         log.error("Validation Error: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(message, ErrorCode.ARGUMENT_NOT_VALID));
     }
 
     @ExceptionHandler(BindException.class)
@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
         log.error("Bind Error: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(message, ErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     @ExceptionHandler(Exception.class)
@@ -52,6 +52,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled Exception: ", e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("서버 내부 오류가 발생했습니다."));
+                .body(ApiResponse.error("서버 내부 오류가 발생했습니다.", ErrorCode.INTERNAL_SERVER_ERROR));
     }
 }

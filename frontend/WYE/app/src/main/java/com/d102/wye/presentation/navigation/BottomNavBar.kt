@@ -1,72 +1,65 @@
 package com.d102.wye.presentation.navigation
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
+import androidx.compose.ui.unit.sp
+import com.d102.wye.presentation.theme.NavActive
+import com.d102.wye.presentation.theme.NavInactive
+import com.d102.wye.presentation.theme.NavInactiveLabel
+import com.d102.wye.presentation.theme.SurfaceWhite
 
 /**
- * 앱 하단 네비게이션 바
+ * What's Your ETF 하단 내비게이션 바
  *
- * TODO: 디자인 확정 후 색상/스타일 교체
- *       현재는 Material3 기본 스타일 임시 사용
+ * 아이콘 selected/unselected 구분 없이 단일 아이콘 사용
+ * 선택 여부는 NavActive/NavInactive 색상으로만 구분
  *
- * @param currentDestination 현재 활성화된 NavDestination (계층 비교용)
- * @param navController      탭 클릭 시 이동에 사용
+ * @param selectedTab    현재 선택된 탭
+ * @param onTabSelected  탭 클릭 콜백
  */
 @Composable
 fun BottomNavBar(
-    currentDestination: NavDestination?,
-    navController: NavHostController
+    selectedTab: BottomNavTab = BottomNavTab.HOME,
+    onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     NavigationBar(
-        tonalElevation = 0.dp,
-        // TODO: 디자인 컬러로 교체
-        containerColor = Color.White
+        containerColor = SurfaceWhite,
+        tonalElevation = 0.dp
     ) {
-        BottomNavItem.entries.forEach { item ->
-            // 현재 route가 해당 탭의 route 계층에 포함되어 있으면 selected
-            val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+        BottomNavTab.entries.forEach { tab ->
+            val selected = tab == selectedTab
 
             NavigationBarItem(
                 selected = selected,
-                onClick = {
-                    navController.navigate(item.route) {
-                        // 백스택에 Bottom Nav 화면이 쌓이지 않도록
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        // 같은 탭 재클릭 시 중복 적재 방지
-                        launchSingleTop = true
-                        // 이전에 저장된 상태 복원
-                        restoreState = true
-                    }
-                },
+                onClick = { onTabSelected(tab) },
                 icon = {
                     Icon(
-                        painter = painterResource(id = item.iconRes),
-                        contentDescription = item.label
+                        painter = painterResource(tab.iconRes),
+                        contentDescription = tab.label,
+                        modifier = Modifier.size(20.dp)
                     )
                 },
                 label = {
-                    Text(text = item.label)
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelSmall
+                    )
                 },
-                // TODO: 디자인 컬러로 교체
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF1A73E8),
-                    selectedTextColor = Color(0xFF1A73E8),
-                    unselectedIconColor = Color(0xFF9E9E9E),
-                    unselectedTextColor = Color(0xFF9E9E9E),
-                    indicatorColor = Color(0xFFE8F0FE)
+                    selectedIconColor = NavActive,
+                    selectedTextColor = NavActive,
+                    unselectedIconColor = NavInactive,
+                    unselectedTextColor = NavInactiveLabel,
+                    indicatorColor = SurfaceWhite
                 )
             )
         }
