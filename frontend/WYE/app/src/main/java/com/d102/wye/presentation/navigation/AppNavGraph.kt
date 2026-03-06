@@ -14,7 +14,7 @@ import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
-import com.d102.wye.presentation.simulation.SimulationScreen
+import com.d102.wye.presentation.simulation.entry.SimulationScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
 
 /**
@@ -77,8 +77,7 @@ fun AppNavGraph(
 
         composable(Route.Simulation.route) {
             SimulationScreen(
-                onStartClick = { navController.navigate(Route.SimulationSetup.route) },
-                onBundleClick = { }
+                onMakePortfolioClick = { navController.navigate(Route.SimulationSetup.route) },
             )
         }
 
