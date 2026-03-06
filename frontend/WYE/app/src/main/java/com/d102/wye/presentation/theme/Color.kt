@@ -47,5 +47,12 @@ val BadgeAggressive         = Color(0xFFFFE9E2)   // 빨강  — 공격투자형
 val NavActive         = PrimaryGreen
 val NavInactive       = IconInactive
 
+// ── 뱃지 글꼴 (위험도 낮음 → 높음) ──────────────────────
+val BadgeConservativeFont      = Color(0xFF0D47A1)   // 파랑     — 안정형
+val BadgeConservativeGrowthFont = Color(0xFF01579B)   // 파랑    — 안정추구형
+val BadgeNeutralFont            = Color(0xFF8A5B00)   // 노랑  — 위험중립형
+val BadgeActiveFont             = Color(0xFF8B3A2A)   // 빨강  — 적극투자형
+val BadgeAggressiveFont         = Color(0xFF7A1F2A)   // 빨강  — 공격투자형
+
 // ── 구분선 (하위 호환) ────────────────────────────────────────
 val SurfaceDivider    = Divider
