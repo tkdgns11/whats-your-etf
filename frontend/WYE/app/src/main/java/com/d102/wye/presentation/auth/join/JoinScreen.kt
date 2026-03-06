@@ -6,15 +6,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,7 +26,6 @@ import com.d102.wye.presentation.theme.WYETheme
 @Composable
 fun JoinScreen(
     onBackClick: () -> Unit,
-    onCloseClick: () -> Unit,
     onStartClick: () -> Unit,
     viewModel: JoinViewModel = hiltViewModel()
 ) {
@@ -42,7 +36,6 @@ fun JoinScreen(
         onBackClick = {
             if (uiState.currentStep == JoinStep.NICKNAME) onBackClick() else viewModel.onBackClick()
         },
-        onCloseClick = onCloseClick,
         onStartClick = onStartClick,
         onNicknameChanged = viewModel::onNicknameChanged,
         onEmailChanged = viewModel::onEmailChanged,
@@ -60,7 +53,6 @@ fun JoinScreen(
 private fun JoinScreenContent(
     uiState: JoinUiState,
     onBackClick: () -> Unit,
-    onCloseClick: () -> Unit,
     onStartClick: () -> Unit,
     onNicknameChanged: (String) -> Unit,
     onEmailChanged: (String) -> Unit,
@@ -77,19 +69,7 @@ private fun JoinScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (uiState.currentStep == JoinStep.SUCCESS) {
-            WyeTopBar(
-                title = "",
-                actions = {
-                    IconButton(onClick = onCloseClick) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "닫기"
-                        )
-                    }
-                }
-            )
-        } else {
+        if (uiState.currentStep != JoinStep.SUCCESS) {
             WyeTopBar(
                 title = "",
                 onBackClick = onBackClick

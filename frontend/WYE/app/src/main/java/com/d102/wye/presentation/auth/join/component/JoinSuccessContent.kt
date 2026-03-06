@@ -29,6 +29,9 @@ import com.d102.wye.presentation.theme.TextSecondary
 fun JoinSuccessContent(
     email: String
 ) {
+    Spacer(modifier = Modifier.height(60.dp))
+
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
