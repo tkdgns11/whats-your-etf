@@ -17,6 +17,7 @@ import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.simulation.entry.SimulationScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
+import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 
 /**
  * 앱 전체 NavGraph
@@ -116,14 +117,9 @@ fun AppNavGraph(
             arguments = listOf(
                 navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType }
             )
-        ) { backStackEntry ->
-            val ticker =
-                backStackEntry.arguments?.getString(Route.EtfDetail.ARG_TICKER) ?: return@composable
-//            EtfDetailScreen(
-//                ticker = ticker,
-//                navController = navController
-//            )
-        }
+        ) {
+    EtfDetailScreen(onBack = { navController.popBackStack() })
+}
 
         // ─────────────────────────────────────────
         // 뉴스 상세 (newsId 파라미터)
