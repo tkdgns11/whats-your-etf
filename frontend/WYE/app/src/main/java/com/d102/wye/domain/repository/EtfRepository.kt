@@ -1,12 +1,16 @@
 package com.d102.wye.domain.repository
 
+import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.model.EtfDetail
+import com.d102.wye.domain.model.EtfPeriodReturn
+import com.d102.wye.domain.model.EtfReturnChart
 import kotlinx.coroutines.flow.Flow
 
-/**
- * domain/repository/ 에는 인터페이스만 작성한다
- */
 interface EtfRepository {
-    fun getEtfList(): Flow<List<Etf>>                       // 1분 polling
-//    suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail>
+    fun getEtfList(): Flow<List<Etf>>
+    suspend fun toggleLike(ticker: String): BaseResult<Boolean>
+    suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail>
+    suspend fun getEtfReturnChart(ticker: String, period: String): BaseResult<EtfReturnChart>
+    suspend fun getEtfPeriodReturn(ticker: String): BaseResult<EtfPeriodReturn>
 }
