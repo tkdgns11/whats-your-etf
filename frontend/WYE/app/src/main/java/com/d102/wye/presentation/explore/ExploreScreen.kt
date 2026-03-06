@@ -1,82 +1,394 @@
 package com.d102.wye.presentation.explore
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.domain.state.EtfFilterState
+import com.d102.wye.presentation.designsystem.EtfListItem
+import com.d102.wye.presentation.designsystem.WyeSearchBar
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.theme.*
 
 @Composable
 fun ExploreScreen(
     onEtfClick: (ticker: String) -> Unit,
-    viewModel: ExploreViewModel = hiltViewModel()
+    viewModel: ExploreViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val filterState by viewModel.filterState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFilterDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState) {
         if (uiState is UiState.Error) {
-            snackbarHostState.showSnackbar(
-                message = (uiState as UiState.Error).message
-            )
+            snackbarHostState.showSnackbar((uiState as UiState.Error).message)
         }
     }
 
-    ExploreScreenContent(
-        uiState = uiState,
-        snackbarHostState = snackbarHostState,
-        onEtfClick = onEtfClick
-    )
-}
+    if (showFilterDialog) {
+        val resultCount = activeFilterCount(filterState)
+        FilterDialog(
+            filter = filterState,
+            resultCount = resultCount,
+            onFilterChanged = viewModel::onFilterChanged,
+            onApply = { showFilterDialog = false },
+            onDismiss = { showFilterDialog = false },
+        )
+    }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExploreScreenContent(
-    uiState: UiState<ExploreData>,
-    snackbarHostState: SnackbarHostState,
-    onEtfClick: (ticker: String) -> Unit
-) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            WyeTopBar(title = "탐색")
-        }
+        topBar = { WyeTopBar(title = "탐색") },
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
         ) {
-            when (uiState) {
-                is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+            SearchRow(
+                query = filterState.query,
+                searchScope = filterState.searchScope,
+                onQueryChanged = viewModel::onQueryChanged,
+                onSearchScopeSelected = viewModel::onSearchScopeSelected,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            QuickFilterRow(
+                filterState = filterState,
+                onFilterIconClick = { showFilterDialog = true },
+                onFilterChanged = viewModel::onFilterChanged,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 4.dp),
+            )
+            SortRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
 
-                is UiState.Success -> {
-                    // TODO: ETF 리스트 + 필터 UI 구현
-                    Text(
-                        text = "ETF ${uiState.data.etfList.size}개",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+            when (val state = uiState) {
+                is UiState.Loading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { CircularProgressIndicator() }
+
+                is UiState.Success -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(state.data.filteredList, key = { it.ticker }) { etf ->
+                        EtfListItem(
+                            name = etf.name,
+                            ticker = etf.ticker,
+                            currentPrice = etf.currentPrice,
+                            changeRate = etf.changeRate,
+                            changeAmount = etf.changeAmount,
+                            riskLevel = etf.riskLevel,
+                            isLiked = etf.isLiked,
+                            onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
+                            onClick = { onEtfClick(etf.ticker) },
+                        )
+                    }
                 }
 
                 is UiState.Error -> Unit
-
                 UiState.Idle -> Unit
+            }
+        }
+    }
+}
+
+// ── 검색 + 검색범위 드롭다운 ────────────────────────────────────
+
+private data class SearchScopeOption(val label: String, val value: String?)
+
+@Composable
+private fun SearchRow(
+    query: String,
+    searchScope: String?,
+    onQueryChanged: (String) -> Unit,
+    onSearchScopeSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scopeOptions = listOf(
+        SearchScopeOption("전체", null),
+        SearchScopeOption("ETF 종목명", "etf"),
+        SearchScopeOption("주식명", "stock"),
+    )
+    val selectedLabel = scopeOptions.firstOrNull { it.value == searchScope }?.label ?: "전체"
+    val placeholder = when (searchScope) {
+        "etf"   -> "ETF 종목명 검색"
+        "stock" -> "주식명 검색"
+        else    -> "ETF 종목명 또는 주식명 검색"
+    }
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier,
+    ) {
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(SurfaceVariant)
+                    .clickable { expanded = true }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    text = selectedLabel,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = TextSecondary,
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                scopeOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onSearchScopeSelected(option.value)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        WyeSearchBar(
+            query = query,
+            onQueryChange = onQueryChanged,
+            placeholder = placeholder,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+// ── 빠른 필터 칩 ───────────────────────────────────────────────
+
+private fun activeFilterCount(f: EtfFilterState): Int =
+    f.riskLevels.size +
+    f.themes.size +
+    listOfNotNull(f.strategy, f.dividendRateRange, f.dividendCycle,
+        f.peRange, f.pbRange, f.roeRange, f.expenseRatioRange, f.netAssetRange,
+        f.hasDerivative?.let { "" },
+        f.hasLeverage?.let { "" },
+        f.hasInverse?.let { "" }).size
+
+private fun buildActiveChips(f: EtfFilterState): List<Pair<String, EtfFilterState>> {
+    val chips = mutableListOf<Pair<String, EtfFilterState>>()
+
+    val riskLabels = mapOf(1 to "안정형", 2 to "안정추구형", 3 to "위험중립형", 4 to "적극투자형", 5 to "공격투자형")
+    f.riskLevels.forEach { level ->
+        riskLabels[level]?.let { label ->
+            chips += label to f.copy(riskLevels = f.riskLevels - level)
+        }
+    }
+    f.strategy?.let { chips += it to f.copy(strategy = null, themes = emptySet()) }
+    f.themes.forEach { theme -> chips += theme to f.copy(themes = f.themes - theme) }
+
+    val dividendLabels = mapOf("0-5" to "배당률 0~5%", "5-10" to "배당률 5~10%")
+    f.dividendRateRange?.let { chips += (dividendLabels[it] ?: it) to f.copy(dividendRateRange = null) }
+
+    val cycleLabels = mapOf("월" to "배당 월", "분기" to "배당 분기", "반기" to "배당 반기", "년" to "배당 연")
+    f.dividendCycle?.let { chips += (cycleLabels[it] ?: it) to f.copy(dividendCycle = null) }
+
+    f.hasDerivative?.let { v ->
+        chips += "파생상품 ${if (v) "O" else "X"}" to f.copy(
+            hasDerivative = null,
+            hasLeverage = null,
+            hasInverse = null,
+        )
+    }
+    f.hasLeverage?.let { v -> chips += "레버리지 ${if (v) "O" else "X"}" to f.copy(hasLeverage = null) }
+    f.hasInverse?.let { v -> chips += "인버스 ${if (v) "O" else "X"}" to f.copy(hasInverse = null) }
+
+    val peLabels = mapOf("under10" to "PER 10 미만", "10-20" to "PER 10~20", "over20" to "PER 20 초과")
+    f.peRange?.let { chips += (peLabels[it] ?: it) to f.copy(peRange = null) }
+
+    val pbLabels = mapOf("under1" to "PBR 1 미만", "1-3" to "PBR 1~3", "over3" to "PBR 3 초과")
+    f.pbRange?.let { chips += (pbLabels[it] ?: it) to f.copy(pbRange = null) }
+
+    val roeLabels = mapOf("under5" to "ROE 5% 미만", "5-15" to "ROE 5~15%", "over15" to "ROE 15% 초과")
+    f.roeRange?.let { chips += (roeLabels[it] ?: it) to f.copy(roeRange = null) }
+
+    val expLabels = mapOf("under0.05" to "보수 0.05% 미만", "0.05-0.5" to "보수 0.05~0.5%", "over0.5" to "보수 0.5% 초과")
+    f.expenseRatioRange?.let { chips += (expLabels[it] ?: it) to f.copy(expenseRatioRange = null) }
+
+    val netLabels = mapOf("under100" to "순자산 100억 미만", "100-1000" to "순자산 100~1000억", "over1000" to "순자산 1000억 초과")
+    f.netAssetRange?.let { chips += (netLabels[it] ?: it) to f.copy(netAssetRange = null) }
+
+    return chips
+}
+
+@Composable
+private fun QuickFilterRow(
+    filterState: EtfFilterState,
+    onFilterIconClick: () -> Unit,
+    onFilterChanged: (EtfFilterState) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val filterCount = activeFilterCount(filterState)
+    val activeChips = buildActiveChips(filterState)
+    val hasNoFilters = activeChips.isEmpty()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        BadgedBox(
+            badge = {
+                if (filterCount > 0) {
+                    Badge { Text("$filterCount") }
+                }
+            },
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(SurfaceVariant)
+                    .clickable(onClick = onFilterIconClick),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "상세 필터",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+
+        if (hasNoFilters) {
+            QuickChip("전체", true, onClick = {})
+        } else {
+            if (filterCount > 0) {
+                Text(
+                    text = "초기화",
+                    fontSize = 13.sp,
+                    color = TextSecondary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onFilterChanged(EtfFilterState()) }
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                )
+            }
+            activeChips.forEach { (label, nextState) ->
+                ActiveFilterChip(label = label, onRemove = { onFilterChanged(nextState) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        text = label,
+        color = if (selected) TextOnColored else TextPrimary,
+        fontSize = 14.sp,
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (selected) PrimaryGreen else SurfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    )
+}
+
+@Composable
+private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(PrimaryGreen)
+            .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+    ) {
+        Text(
+            text = label,
+            color = TextOnColored,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.width(2.dp))
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "필터 제거",
+            tint = TextOnColored,
+            modifier = Modifier
+                .size(16.dp)
+                .clickable(onClick = onRemove),
+        )
+    }
+}
+
+// ── 정렬 ───────────────────────────────────────────────────────
+
+@Composable
+private fun SortRow(modifier: Modifier = Modifier) {
+    val sortOptions = listOf("거래량 순", "등락률 순", "시가총액 순")
+    var expanded by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(sortOptions[0]) }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { expanded = true }
+                    .padding(vertical = 4.dp, horizontal = 2.dp),
+            ) {
+                Text(selected, fontSize = 13.sp, color = TextSecondary)
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = TextSecondary,
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                sortOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = { selected = option; expanded = false },
+                    )
+                }
             }
         }
     }
