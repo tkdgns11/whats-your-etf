@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.R
+import com.d102.wye.domain.model.EtfBundle
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
@@ -45,12 +46,13 @@ import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
 fun SimulationScreen(
-    onMakePortfolioClick: () -> Unit,           // 시뮬레이션 설정 화면으로 이동
-    onBundleClick: (bundleId: Int) -> Unit, // 꾸러미 선택
+    onMakePortfolioClick: () -> Unit,
     viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedBundle by viewModel.selectedBundleDetail.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
 
     LaunchedEffect(uiState) {
         if (uiState is UiState.Error) {
@@ -60,22 +62,33 @@ fun SimulationScreen(
         }
     }
 
+    selectedBundle?.let { bundle ->
+        BundleDetailDialog(
+            bundle = bundle,
+            onDismiss = { viewModel.onBundleDialogDismiss() },
+            onStartSimulation = {
+                viewModel.onBundleDialogDismiss()
+                onMakePortfolioClick()
+            }
+        )
+    }
+
     SimulationScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onMakePortfolioClick = onMakePortfolioClick,
-        onBundleClick = onBundleClick
+        onBundleClick = { viewModel.onBundleClick(it) }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SimulationScreenContent(
-    uiState: UiState<SimulationEntryData>,
+    uiState: UiState<SimulationEntryData>,  // ViewModel 내부 클래스라 경로 수정
     snackbarHostState: SnackbarHostState,
     onMakePortfolioClick: () -> Unit,
-    onBundleClick: (bundleId: Int) -> Unit
-) {
+    onBundleClick: (EtfBundle) -> Unit   // ← 타입 교체
+){
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -113,7 +126,7 @@ private fun SimulationScreenContent(
                             if (uiState is UiState.Success) {
                                 RecommendedBundlesSection(
                                     bundles = uiState.data.bundles,
-                                    onBundleClick = { onBundleClick }
+                                    onBundleClick = onBundleClick
                                 )
                             }
                         }
@@ -180,9 +193,10 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
 
 @Composable
 fun RecommendedBundlesSection(
-    bundles: List<EtfBundleUiModel>,
-    onBundleClick: (EtfBundleUiModel) -> Unit
-) {
+    bundles: List<EtfBundle>,
+    onBundleClick: (EtfBundle) -> Unit
+)
+ {
     Column {
         Text(
             text = "막막하다면? 추천 ETF 꾸러미로 시작하기",

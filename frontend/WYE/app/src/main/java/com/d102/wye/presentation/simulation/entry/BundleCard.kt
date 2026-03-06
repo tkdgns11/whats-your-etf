@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d102.wye.domain.model.EtfBundle
 import com.d102.wye.presentation.designsystem.WyeBadge
 import com.d102.wye.presentation.designsystem.WyeOutlinedButton
 import com.d102.wye.presentation.designsystem.WyeOutlinedCard
@@ -28,7 +29,7 @@ import com.d102.wye.presentation.theme.TextTertiary
 
 
 @Composable
-fun BundleCard(bundle: EtfBundleUiModel, onClick: () -> Unit) {
+fun BundleCard(bundle: EtfBundle, onClick: () -> Unit) {
     WyeOutlinedCard(
         modifier = Modifier.width(230.dp)
     ) {
@@ -54,7 +55,7 @@ fun BundleCard(bundle: EtfBundleUiModel, onClick: () -> Unit) {
 
         // 설명
         Text(
-            text = bundle.description,
+            text = bundle.summary,
             fontSize = 13.sp,
             color = TextTertiary,
             maxLines = 2

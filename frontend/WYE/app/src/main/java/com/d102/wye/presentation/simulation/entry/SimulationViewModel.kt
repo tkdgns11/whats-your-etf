@@ -2,6 +2,9 @@ package com.d102.wye.presentation.simulation.entry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.model.BundleEtfItem
+import com.d102.wye.domain.model.EtfBundle
+import com.d102.wye.domain.model.EtfBundleDetail
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -21,8 +24,8 @@ class SimulationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<SimulationEntryData>>(UiState.Idle)
     val uiState: StateFlow<UiState<SimulationEntryData>> = _uiState.asStateFlow()
 
-    private val _selectedBundle = MutableStateFlow<EtfBundleUiModel?>(null)
-    val selectedBundle: StateFlow<EtfBundleUiModel?> = _selectedBundle.asStateFlow()
+    private val _selectedBundleDetail = MutableStateFlow<EtfBundleDetail?>(null)
+    val selectedBundleDetail: StateFlow<EtfBundleDetail?> = _selectedBundleDetail.asStateFlow()
 
     init {
         loadBundles()
@@ -30,59 +33,66 @@ class SimulationViewModel @Inject constructor(
 
     fun loadBundles() {
         viewModelScope.launch {
-            // 로딩 상태를 잠깐 보여주기 위한 처리 (실제 통신 느낌 내기)
             _uiState.update { UiState.Loading }
-            delay(500) // 0.5초 대기
 
-            // 이미지 UI 기반 목(Mock) 데이터 생성
+            // EtfBundleUiModel → EtfBundle로 교체
             val mockData = listOf(
-                EtfBundleUiModel(
+                EtfBundle(
                     id = 1,
                     name = "안전제일 배당왕",
-                    description = "꾸준한 현금흐름을 원한다면",
-                    tags = listOf("배당", "저변동성"),
+                    summary = "꾸준한 현금흐름을 원한다면",
+                    tags = listOf("배당", "저변동성")
                 ),
-                EtfBundleUiModel(
+                EtfBundle(
                     id = 2,
                     name = "빅테크 로켓",
-                    description = "나스닥 대장주 위주의 강력한 성장",
-                    tags = listOf("기술주"),
+                    summary = "나스닥 대장주 위주의 강력한 성장",
+                    tags = listOf("기술주")
                 ),
-                EtfBundleUiModel(
+                EtfBundle(
                     id = 3,
                     name = "올웨더 방어막",
-                    description = "어떤 경제 위기에도 흔들림 없이",
-                    tags = listOf("식품주", "저변동성"),
+                    summary = "어떤 경제 위기에도 흔들림 없이",
+                    tags = listOf("식품주", "저변동성")
                 )
             )
 
-            // 성공 상태로 데이터 방출
             _uiState.update {
                 UiState.Success(SimulationEntryData(bundles = mockData))
             }
         }
     }
 
-    fun onBundleClick(bundle: EtfBundleUiModel) {
-        _selectedBundle.update { bundle }
+    fun onBundleClick(bundle: EtfBundle) {
+        viewModelScope.launch {
+            // 나중에 API로 상세 조회
+            // val detail = repository.getBundleDetail(bundle.id)
+            // _selectedBundleDetail.update { detail }
+
+            // 지금은 Mock
+            _selectedBundleDetail.update {
+                EtfBundleDetail(
+                    id = bundle.id,
+                    name = bundle.name,
+                    description = "하락장에서도 든든하게 계좌를 지켜주는 고배당 ETF 위주의 방어형 포트폴리오입니다.",
+                    etfItems = listOf(
+                        BundleEtfItem("SCHD", "Schwab US Dividend Equity"),
+                        BundleEtfItem("SPY", "S&P 500 ETF Trust"),
+                        BundleEtfItem("TLT", "20+ Year Treasury Bond")
+                    )
+                )
+            }
+        }
     }
 
     fun onBundleDialogDismiss() {
-        _selectedBundle.update { null }
+        viewModelScope.launch {
+            delay(100L)
+            _selectedBundleDetail.update { null }
+        }
     }
 }
 
-// ─────────────────────────────────────────
-// 화면 데이터 모델
-// ─────────────────────────────────────────
-
 data class SimulationEntryData(
-    val bundles: List<EtfBundleUiModel>  // 사전 구성 꾸러미 목록
-)
-
-data class EtfBundleUiModel(
-    val id: Int,
-    val name: String,
-    val description: String,
-    val tags: List<String>
+    val bundles: List<EtfBundle>        // 목록용
 )

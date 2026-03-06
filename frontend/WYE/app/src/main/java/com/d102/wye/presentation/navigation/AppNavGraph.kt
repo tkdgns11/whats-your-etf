@@ -78,7 +78,6 @@ fun AppNavGraph(
         composable(Route.Simulation.route) {
             SimulationScreen(
                 onMakePortfolioClick = { navController.navigate(Route.SimulationSetup.route) },
-                onBundleClick = { }
             )
         }
 
