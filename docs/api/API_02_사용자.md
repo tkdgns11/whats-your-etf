@@ -69,8 +69,8 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| nickname | string | X | 닉네임 (2~20자) |
-| profileImage | string | X | 프로필 이미지 URL |
+| nickname | string | X | 닉네임 (2~50자, 한글/영문/숫자만 허용) |
+| profileImage | string | X | 프로필 이미지 URL (최대 500자) |
 
 **Response**
 ```json
@@ -117,6 +117,12 @@ Content-Type: application/json
 }
 ```
 
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| currentPassword | string | O | 현재 비밀번호 (평문 전송, 최대 72자) |
+| newPassword | string | O | 새 비밀번호 (인증 API 비밀번호 규칙 참조) |
+| newPasswordConfirm | string | O | 새 비밀번호 확인 |
+
 **Response**
 ```json
 {
@@ -155,8 +161,8 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| password | string | X | 비밀번호 (이메일 로그인 시 필수) |
-| reason | string | X | 탈퇴 사유 |
+| password | string | 조건부 | 비밀번호 (이메일 로그인 시 필수, 평문 전송, 최대 72자) |
+| reason | string | X | 탈퇴 사유 (최대 500자) |
 
 **Response**
 ```json
@@ -214,7 +220,7 @@ Authorization: Bearer {accessToken}
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| ticker | string | O | ETF 종목 코드 |
+| ticker | string | O | ETF 종목 코드 (6자리 숫자, 예: 069500) |
 
 **Response**
 ```json

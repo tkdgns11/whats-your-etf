@@ -3,10 +3,18 @@ import httpx
 import logging
 import re
 from bs4 import BeautifulSoup
-from typing import Optional
+from typing import Optional, Tuple
 from urllib.parse import urlparse
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ContentResult:
+    """본문 크롤링 결과"""
+    content: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
 
 class ContentScraper:
@@ -15,10 +23,11 @@ class ContentScraper:
 
     지원 언론사:
     - 한국경제 (hankyung.com)
-    - 매일경제 (mk.co.kr)
-    - 연합뉴스 (yna.co.kr)
-    - 조선비즈 (biz.chosun.com)
-    - 머니투데이 (mt.co.kr)
+    - 서울경제 (sedaily.com)
+    - 이데일리 (edaily.co.kr)
+    - 뉴스1 (news1.kr)
+    - 이투데이 (etoday.co.kr)
+    - 비즈워치 (bizwatch.co.kr)
     """
 
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -34,43 +43,46 @@ class ContentScraper:
     async def close(self):
         await self.client.aclose()
 
-    async def extract_content(self, url: str) -> Optional[str]:
+    async def extract_content(self, url: str) -> ContentResult:
         """
-        URL에서 기사 본문 추출
+        URL에서 기사 본문 및 썸네일 추출
 
         Returns:
-            본문 텍스트 (최대 2000자) 또는 None
+            ContentResult(content, thumbnail_url)
         """
         if not url:
-            return None
+            return ContentResult()
 
         domain = self._get_domain(url)
         extractor = self._get_extractor(domain)
 
         if not extractor:
             logger.debug(f"지원하지 않는 언론사: {domain}")
-            return None
+            return ContentResult()
 
         try:
             response = await self.client.get(url)
             response.raise_for_status()
             html = response.text
-            content = extractor(html)
 
+            # 본문 추출
+            content = extractor(html)
             if content:
-                # 정제 및 길이 제한
                 content = self._clean_content(content)
                 if len(content) > 2000:
                     content = content[:1997] + "..."
 
-            return content
+            # 썸네일 추출 (og:image)
+            thumbnail_url = self._extract_og_image(html)
+
+            return ContentResult(content=content, thumbnail_url=thumbnail_url)
 
         except httpx.HTTPError as e:
             logger.error(f"본문 크롤링 실패 [{url}]: {e}")
-            return None
+            return ContentResult()
         except Exception as e:
             logger.error(f"본문 파싱 실패 [{url}]: {e}")
-            return None
+            return ContentResult()
 
     def _get_domain(self, url: str) -> str:
         """URL에서 도메인 추출"""
@@ -82,18 +94,16 @@ class ContentScraper:
         extractors = {
             "www.hankyung.com": self._extract_hankyung,
             "hankyung.com": self._extract_hankyung,
-            "www.mk.co.kr": self._extract_mk,
-            "mk.co.kr": self._extract_mk,
-            "www.yna.co.kr": self._extract_yna,
-            "yna.co.kr": self._extract_yna,
-            "biz.chosun.com": self._extract_chosunbiz,
-            "www.mt.co.kr": self._extract_mt,
-            "mt.co.kr": self._extract_mt,
-            "news.mt.co.kr": self._extract_mt,
             "www.sedaily.com": self._extract_sedaily,
             "sedaily.com": self._extract_sedaily,
             "www.edaily.co.kr": self._extract_edaily,
             "edaily.co.kr": self._extract_edaily,
+            "www.news1.kr": self._extract_news1,
+            "news1.kr": self._extract_news1,
+            "www.etoday.co.kr": self._extract_etoday,
+            "etoday.co.kr": self._extract_etoday,
+            "www.bizwatch.co.kr": self._extract_bizwatch,
+            "bizwatch.co.kr": self._extract_bizwatch,
         }
 
         for key, extractor in extractors.items():
@@ -125,6 +135,32 @@ class ContentScraper:
 
         return content.strip()
 
+    def _extract_og_image(self, html: str) -> Optional[str]:
+        """Open Graph 이미지 추출"""
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # og:image 메타 태그
+            og_image = soup.find('meta', property='og:image')
+            if og_image and og_image.get('content'):
+                return og_image['content']
+
+            # twitter:image 메타 태그 (폴백)
+            twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
+            if twitter_image and twitter_image.get('content'):
+                return twitter_image['content']
+
+            # article:image (일부 언론사)
+            article_image = soup.find('meta', property='article:image')
+            if article_image and article_image.get('content'):
+                return article_image['content']
+
+            return None
+
+        except Exception as e:
+            logger.debug(f"og:image 추출 실패: {e}")
+            return None
+
     # ==================== 언론사별 추출 함수 ====================
 
     def _extract_hankyung(self, html: str) -> Optional[str]:
@@ -142,78 +178,6 @@ class ContentScraper:
             # 불필요한 요소 제거
             for tag in article.find_all(['script', 'style', 'iframe', 'figure']):
                 tag.decompose()
-            return article.get_text(strip=True)
-
-        return None
-
-    def _extract_mk(self, html: str) -> Optional[str]:
-        """매일경제 본문 추출"""
-        soup = BeautifulSoup(html, 'html.parser')
-
-        article = soup.find('div', {'itemprop': 'articleBody'})
-        if not article:
-            article = soup.find('div', class_='news_cnt_detail_wrap')
-        if not article:
-            article = soup.find('div', id='article_body')
-
-        if article:
-            for tag in article.find_all(['script', 'style', 'iframe', 'figure', 'aside']):
-                tag.decompose()
-            return article.get_text(strip=True)
-
-        return None
-
-    def _extract_yna(self, html: str) -> Optional[str]:
-        """연합뉴스 본문 추출"""
-        soup = BeautifulSoup(html, 'html.parser')
-
-        article = soup.find('article', class_='story-news')
-        if not article:
-            article = soup.find('div', class_='article')
-        if not article:
-            article = soup.find('div', id='articleWrap')
-
-        if article:
-            # 본문 p 태그들만 추출
-            paragraphs = article.find_all('p')
-            if paragraphs:
-                texts = [p.get_text(strip=True) for p in paragraphs]
-                return ' '.join(texts)
-            return article.get_text(strip=True)
-
-        return None
-
-    def _extract_chosunbiz(self, html: str) -> Optional[str]:
-        """조선비즈 본문 추출"""
-        soup = BeautifulSoup(html, 'html.parser')
-
-        article = soup.find('div', class_='article-body')
-        if not article:
-            article = soup.find('section', class_='article-body')
-        if not article:
-            article = soup.find('div', id='news_body_area')
-
-        if article:
-            for tag in article.find_all(['script', 'style', 'iframe', 'figure']):
-                tag.decompose()
-            return article.get_text(strip=True)
-
-        return None
-
-    def _extract_mt(self, html: str) -> Optional[str]:
-        """머니투데이 본문 추출"""
-        soup = BeautifulSoup(html, 'html.parser')
-
-        article = soup.find('div', id='textBody')
-        if not article:
-            article = soup.find('div', class_='news_body')
-        if not article:
-            article = soup.find('article', class_='view_text')
-
-        if article:
-            for tag in article.find_all(['script', 'style', 'iframe', 'div', 'figure']):
-                if tag.name == 'div' and 'view_text' not in tag.get('class', []):
-                    tag.decompose()
             return article.get_text(strip=True)
 
         return None
@@ -248,10 +212,61 @@ class ContentScraper:
 
         return None
 
+    def _extract_news1(self, html: str) -> Optional[str]:
+        """뉴스1 본문 추출"""
+        soup = BeautifulSoup(html, 'html.parser')
+
+        article = soup.find('div', class_='detail')
+        if not article:
+            article = soup.find('div', id='articles_detail')
+        if not article:
+            article = soup.find('article', class_='content')
+
+        if article:
+            for tag in article.find_all(['script', 'style', 'iframe', 'figure', 'aside']):
+                tag.decompose()
+            return article.get_text(strip=True)
+
+        return None
+
+    def _extract_etoday(self, html: str) -> Optional[str]:
+        """이투데이 본문 추출"""
+        soup = BeautifulSoup(html, 'html.parser')
+
+        article = soup.find('div', class_='articleView')
+        if not article:
+            article = soup.find('div', id='newsContent')
+        if not article:
+            article = soup.find('div', class_='news_body_area')
+
+        if article:
+            for tag in article.find_all(['script', 'style', 'iframe', 'figure', 'aside']):
+                tag.decompose()
+            return article.get_text(strip=True)
+
+        return None
+
+    def _extract_bizwatch(self, html: str) -> Optional[str]:
+        """비즈워치 본문 추출"""
+        soup = BeautifulSoup(html, 'html.parser')
+
+        article = soup.find('div', class_='article-body')
+        if not article:
+            article = soup.find('div', id='article-body')
+        if not article:
+            article = soup.find('div', class_='news-content')
+
+        if article:
+            for tag in article.find_all(['script', 'style', 'iframe', 'figure', 'aside']):
+                tag.decompose()
+            return article.get_text(strip=True)
+
+        return None
+
 
 async def enrich_news_content(news_article, content_scraper: ContentScraper) -> bool:
     """
-    뉴스 기사에 본문 추가
+    뉴스 기사에 본문 및 썸네일 추가
 
     Args:
         news_article: NewsArticle 객체
@@ -263,10 +278,15 @@ async def enrich_news_content(news_article, content_scraper: ContentScraper) -> 
     if not news_article.source_url:
         return False
 
-    content = await content_scraper.extract_content(news_article.source_url)
+    result = await content_scraper.extract_content(news_article.source_url)
 
-    if content and len(content) > 100:  # 의미있는 본문인 경우만
-        news_article.content_summary = content
+    # 썸네일 저장 (본문 유무와 관계없이)
+    if result.thumbnail_url:
+        news_article.thumbnail_url = result.thumbnail_url
+
+    # 본문 저장
+    if result.content and len(result.content) > 100:
+        news_article.content = result.content
         return True
 
     return False

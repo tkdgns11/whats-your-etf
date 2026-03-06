@@ -60,12 +60,12 @@ Content-Type: application/json
 |-------|------|------|------|
 | portfolioSnapshotId | long | X | 저장된 포트폴리오 스냅샷 ID |
 | portfolio | object | O | 포트폴리오 구성 정보 |
-| portfolio.totalAmount | long | O | 총 투자금액 |
-| portfolio.investmentType | string | O | 투자 유형 (LUMP_SUM: 관망형, DCA: 적립형) |
-| portfolio.etfs | array | O | ETF 목록 |
-| portfolio.etfs[].ticker | string | O | ETF 종목 코드 |
-| portfolio.etfs[].name | string | O | ETF 이름 |
-| portfolio.etfs[].weight | int | O | 비중 (%) |
+| portfolio.totalAmount | long | O | 총 투자금액 (최소 10,000원, 최대 100억원) |
+| portfolio.investmentType | string | O | 투자 유형: `LUMP_SUM` (관망형) / `DCA` (적립형) |
+| portfolio.etfs | array | O | ETF 목록 (최소 1개, 최대 20개) |
+| portfolio.etfs[].ticker | string | O | ETF 종목 코드 (6자리 숫자) |
+| portfolio.etfs[].name | string | O | ETF 이름 (최대 200자) |
+| portfolio.etfs[].weight | int | O | 비중 (%, 1~100, 합계 100 필수) |
 
 **Response**
 ```json
@@ -252,8 +252,8 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| rating | string | O | HELPFUL / NOT_HELPFUL |
-| comment | string | X | 추가 코멘트 (500자 이내) |
+| rating | string | O | 평가: `HELPFUL` (도움됨) / `NOT_HELPFUL` (도움안됨) |
+| comment | string | X | 추가 코멘트 (최대 500자, 한글/영문/숫자/특수문자 허용) |
 
 **Response**
 ```json
