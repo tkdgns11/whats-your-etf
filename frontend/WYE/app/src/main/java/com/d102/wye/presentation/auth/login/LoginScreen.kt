@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,7 +22,6 @@ import com.d102.wye.presentation.auth.login.component.LoginFormSection
 import com.d102.wye.presentation.auth.login.component.LoginHeader
 import com.d102.wye.presentation.auth.login.component.LoginSocialSection
 import com.d102.wye.presentation.theme.SurfaceVariant
-import com.d102.wye.presentation.theme.WYETheme
 
 @Composable
 fun LoginScreen(
@@ -44,10 +42,10 @@ fun LoginScreen(
 
     LoginScreenContent(
         uiState = uiState,
-        onEmailChanged = viewModel::onEmailChanged,
-        onPasswordChanged = viewModel::onPasswordChanged,
-        onPasswordVisibilityToggle = viewModel::onPasswordVisibilityToggle,
-        onLoginClick = viewModel::onLoginClick,
+        onEmailChanged = { viewModel.onEmailChanged(it) },
+        onPasswordChanged = { viewModel.onPasswordChanged(it) },
+        onPasswordVisibilityToggle = { viewModel.onPasswordVisibilityToggle() },
+        onLoginClick = { viewModel.onLoginClick() },
         onJoinClick = onJoinClick,
         onForgotPasswordClick = onForgotPasswordClick
     )
