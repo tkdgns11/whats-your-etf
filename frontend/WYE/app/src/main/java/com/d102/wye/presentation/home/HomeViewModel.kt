@@ -30,7 +30,7 @@ class HomeViewModel @Inject constructor(
 
     fun loadHomeData() {
         viewModelScope.launch {
-            _uiState.update { UiState.Loading }
+//            _uiState.update { UiState.Loading }
 
             // TODO: 세 가지 데이터 병렬 로드
             // coroutineScope {

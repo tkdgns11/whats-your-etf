@@ -10,12 +10,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
-import com.d102.wye.presentation.simulation.SimulationScreen
+import com.d102.wye.presentation.simulation.entry.SimulationScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
 
 /**
@@ -52,15 +51,15 @@ fun AppNavGraph(
         }
 
         composable(Route.Join.route) {
-            JoinScreen(
-                onBackClick = { navController.popBackStack() },
-                onCloseClick = { navController.popBackStack() },
-                onStartClick = {
-                    navController.navigate(Route.Home.route) {
-                        popUpTo(Route.Login.route) { inclusive = true }
-                    }
-                }
-            )
+//            JoinScreen(
+//                onBackClick = { navController.popBackStack() },
+//                onCloseClick = { navController.popBackStack() },
+//                onStartClick = {
+//                    navController.navigate(Route.Home.route) {
+//                        popUpTo(Route.Login.route) { inclusive = true }
+//                    }
+//                }
+//            )
         }
 
         composable(Route.PasswordReset.route) {
@@ -86,8 +85,7 @@ fun AppNavGraph(
 
         composable(Route.Simulation.route) {
             SimulationScreen(
-                onStartClick = { navController.navigate(Route.SimulationSetup.route) },
-                onBundleClick = { }
+                onMakePortfolioClick = { navController.navigate(Route.SimulationSetup.route) },
             )
         }
 
