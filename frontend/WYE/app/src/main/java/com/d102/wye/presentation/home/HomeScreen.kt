@@ -66,9 +66,6 @@ private fun HomeScreenContent(
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            WyeTopBar(title = "홈")
-        }
     ) { innerPadding ->
         Box(
             modifier = Modifier
