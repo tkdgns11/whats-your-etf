@@ -2,14 +2,6 @@ package com.d102.wye.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
-//val Purple80 = Color(0xFFD0BCFF)
-//val PurpleGrey80 = Color(0xFFCCC2DC)
-//val Pink80 = Color(0xFFEFB8C8)
-//
-//val Purple40 = Color(0xFF6650a4)
-//val PurpleGrey40 = Color(0xFF625b71)
-//val Pink40 = Color(0xFF7D5260)
-
 // ── 브랜드 색상 ──────────────────────────────────
 val PrimaryGreen      = Color(0xFF3A6E45)   // 짙은 숲 초록       — 앱바 타이틀, 활성 탭, 버튼, 포인트 컬러
 val PrimaryGreenDark  = Color(0xFF2D4B3A)   // 더 어두운 올리브 초록 — 버튼 누름 상태, 오버레이
@@ -47,16 +39,16 @@ val BadgeNeutral            = Color(0xFFFFF4E0)   // 노랑  — 위험중립형
 val BadgeActive             = Color(0xFFFFE9E2)   // 빨강  — 적극투자형
 val BadgeAggressive         = Color(0xFFFFE9E2)   // 빨강  — 공격투자형
 
+// ── 하단 내비게이션 ────────────────────────────────────────────
+val NavActive         = PrimaryGreen
+val NavInactive       = IconInactive
+
 // ── 뱃지 글꼴 (위험도 낮음 → 높음) ──────────────────────
 val BadgeConservativeFont      = Color(0xFF0D47A1)   // 파랑     — 안정형
 val BadgeConservativeGrowthFont = Color(0xFF01579B)   // 파랑    — 안정추구형
 val BadgeNeutralFont            = Color(0xFF8A5B00)   // 노랑  — 위험중립형
 val BadgeActiveFont             = Color(0xFF8B3A2A)   // 빨강  — 적극투자형
 val BadgeAggressiveFont         = Color(0xFF7A1F2A)   // 빨강  — 공격투자형
-
-// ── 하단 내비게이션 ────────────────────────────────────────────
-val NavActive         = PrimaryGreen
-val NavInactive       = IconInactive
 
 // ── 구분선 (하위 호환) ────────────────────────────────────────
 val SurfaceDivider    = Divider
