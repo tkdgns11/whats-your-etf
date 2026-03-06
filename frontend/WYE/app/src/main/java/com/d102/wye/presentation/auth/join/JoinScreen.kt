@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,7 +20,6 @@ import com.d102.wye.presentation.auth.join.component.JoinSuccessContent
 import com.d102.wye.presentation.auth.join.component.JoinVerificationStep
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeTopBar
-import com.d102.wye.presentation.theme.WYETheme
 
 @Composable
 fun JoinScreen(
@@ -37,15 +35,15 @@ fun JoinScreen(
             if (uiState.currentStep == JoinStep.NICKNAME) onBackClick() else viewModel.onBackClick()
         },
         onStartClick = onStartClick,
-        onNicknameChanged = viewModel::onNicknameChanged,
-        onEmailChanged = viewModel::onEmailChanged,
-        onVerificationCodeChanged = viewModel::onVerificationCodeChanged,
-        onPasswordChanged = viewModel::onPasswordChanged,
-        onPasswordConfirmChanged = viewModel::onPasswordConfirmChanged,
-        onPasswordVisibilityToggle = viewModel::onPasswordVisibilityToggle,
-        onPasswordConfirmVisibilityToggle = viewModel::onPasswordConfirmVisibilityToggle,
-        onNextClick = viewModel::onNextClick,
-        onResendCodeClick = viewModel::onResendCodeClick
+        onNicknameChanged = { viewModel.onNicknameChanged(it) },
+        onEmailChanged = { viewModel.onEmailChanged(it) },
+        onVerificationCodeChanged = { viewModel.onVerificationCodeChanged(it) },
+        onPasswordChanged = { viewModel.onPasswordChanged(it) },
+        onPasswordConfirmChanged = { viewModel.onPasswordConfirmChanged(it) },
+        onPasswordVisibilityToggle = { viewModel.onPasswordVisibilityToggle() },
+        onPasswordConfirmVisibilityToggle = { viewModel.onPasswordConfirmVisibilityToggle() },
+        onNextClick = { viewModel.onNextClick() },
+        onResendCodeClick = { viewModel.onResendCodeClick() }
     )
 }
 
