@@ -18,7 +18,15 @@ sealed class Route(val route: String) {
 
     object Home : Route("home")
     object Explore : Route("explore")
+
+    // ─────────────────────────────────────────
+    // 시뮬레이션 화면
+    // ─────────────────────────────────────────
+
     object Simulation : Route("simulation")
+    object SimulationEntry : Route("simulation_entry")
+    object SimulationAddStock : Route("simulation_add_stock")
+
     object Strategy : Route("strategy")
     object MyPage : Route("mypage")
 
@@ -53,14 +61,7 @@ sealed class Route(val route: String) {
         }
     }
 
-    // ─────────────────────────────────────────
-    // 시뮬레이션 서브 화면
-    // ─────────────────────────────────────────
 
-    object SimulationEntry : Route("simulation_entry")
-    object SimulationSetup : Route("simulation_setup")
-    object SimulationAddStock : Route("simulation_add_stock")
-    object SimulationResult : Route("simulation_result")
 
     // ─────────────────────────────────────────
     // 나의전략 서브 화면
