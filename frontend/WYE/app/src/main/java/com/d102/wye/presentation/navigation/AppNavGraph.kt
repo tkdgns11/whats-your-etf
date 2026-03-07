@@ -18,7 +18,7 @@ import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
-import com.d102.wye.presentation.simulation.progress.SimulationSetupScreen
+import com.d102.wye.presentation.simulation.progress.SimulationScreen
 
 /**
  * 앱 전체 NavGraph
@@ -145,7 +145,7 @@ fun AppNavGraph(
         // ─────────────────────────────────────────
 
         composable(Route.Simulation.route) {
-            SimulationSetupScreen(
+            SimulationScreen(
                 onBackClick = { navController.popBackStack() },
                 onAddEtfClick = {}
             )
