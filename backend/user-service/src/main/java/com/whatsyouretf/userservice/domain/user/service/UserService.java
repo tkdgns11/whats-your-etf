@@ -1,7 +1,6 @@
 package com.whatsyouretf.userservice.domain.user.service;
 
-import com.whatsyouretf.userservice.domain.user.dto.UserResponse;
-import com.whatsyouretf.userservice.domain.user.dto.UserUpdateRequest;
+import com.whatsyouretf.userservice.domain.user.dto.*;
 
 public interface UserService {
 
@@ -29,4 +28,38 @@ public interface UserService {
      * 회원 탈퇴
      */
     void deactivateUser(Long userId);
+
+    // ==================== 관심 ETF ====================
+
+    /**
+     * 관심 ETF 목록 조회
+     */
+    FavoriteEtfListResponse getFavoriteEtfs(Long userId);
+
+    /**
+     * 관심 ETF 추가
+     */
+    void addFavoriteEtf(Long userId, Long etfId);
+
+    /**
+     * 관심 ETF 삭제
+     */
+    void removeFavoriteEtf(Long userId, Long etfId);
+
+    /**
+     * 관심 ETF 여부 확인
+     */
+    boolean isFavoriteEtf(Long userId, Long etfId);
+
+    // ==================== 보유 ETF (마이데이터) ====================
+
+    /**
+     * 보유 ETF 목록 조회
+     */
+    HoldingEtfListResponse getHoldingEtfs(Long userId);
+
+    /**
+     * 마이데이터 동기화 (Mock)
+     */
+    HoldingEtfListResponse syncMyData(Long userId);
 }
