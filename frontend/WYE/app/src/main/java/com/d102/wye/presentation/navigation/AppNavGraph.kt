@@ -106,7 +106,8 @@ fun AppNavGraph(
         composable(Route.Strategy.route) {
             StrategyScreen(
                 onStrategyClick = { id -> navController.navigate(Route.StrategyDetail(id).route) },
-                onCompareClick = { navController.navigate(Route.StrategyCompare.route) }
+                onCompareClick = { navController.navigate(Route.StrategyCompare.route) },
+                onCreateFirstStrategyClick = {navController.navigate(Route.Simulation.route)}
             )
         }
 
