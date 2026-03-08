@@ -20,7 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -31,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
+import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
@@ -47,6 +51,11 @@ fun SimulationScreen(
     val resultState by viewModel.resultState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val showAiDialog by viewModel.showAiDialog.collectAsStateWithLifecycle()
+    val aiDiagnosisState by viewModel.aiDiagnosisState.collectAsStateWithLifecycle()
+
+    var showDictionaryDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(resultState) {
         if (resultState is UiState.Error) {
             snackbarHostState.showSnackbar(
@@ -55,18 +64,33 @@ fun SimulationScreen(
         }
     }
 
+    if (showAiDialog) {
+        AiDiagnosisDialog(
+            uiState = aiDiagnosisState,
+            onDismiss = { viewModel.onAiDialogDismiss() }
+        )
+    }
+
+    if (showDictionaryDialog) {
+        InvestmentDictionaryDialog(
+            onDismiss = { showDictionaryDialog = false }
+        )
+    }
+
     SimulationSetupScreenContent(
         formState = formState,
         resultState = resultState,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
-        onTabSelected = viewModel::onTabSelected,
-        onOverlayToggled = viewModel::onOverlayToggled,
-        onInvestmentTypeSelected = viewModel::onInvestmentTypeSelected,
-        onAmountChanged = viewModel::onAmountChanged,
-        onPeriodChanged = viewModel::onPeriodChanged,
+        onTabSelected = { viewModel.onTabSelected(it) },
+        onOverlayToggled = { viewModel.onOverlayToggled(it) },
+        onInvestmentTypeSelected = { viewModel.onInvestmentTypeSelected(it) },
+        onAmountChanged = { viewModel.onAmountChanged(it) },
+        onPeriodChanged = { viewModel.onPeriodChanged(it) },
         onAddEtfClick = onAddEtfClick,
-        onPortfolioItemRemoved = viewModel::onPortfolioItemRemoved
+        onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
+        onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
+        onDictionaryClick = { showDictionaryDialog = true }
     )
 }
 
@@ -82,7 +106,9 @@ private fun SimulationSetupScreenContent(
     onAmountChanged: (String) -> Unit,
     onPeriodChanged: (String) -> Unit,
     onAddEtfClick: () -> Unit,
-    onPortfolioItemRemoved: (String) -> Unit
+    onPortfolioItemRemoved: (String) -> Unit,
+    onAiDiagnosisClick: () -> Unit,
+    onDictionaryClick: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.background(Color.White),
@@ -118,19 +144,21 @@ private fun SimulationSetupScreenContent(
                 onTabSelected = onTabSelected
             )
 
+            // 1. 결과 및 차트
+            SimulationResultSection(
+                formState = formState,
+                resultState = resultState,
+                onOverlayToggled = onOverlayToggled,
+                onAiDiagnosisClick = onAiDiagnosisClick,
+                onDictionaryClick = onDictionaryClick
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
             ) {
-                // 1. 결과 및 차트
-                SimulationResultSection(
-                    formState = formState,
-                    resultState = resultState,
-                    onOverlayToggled = onOverlayToggled
-                )
-
                 // 2. 투자 설정
                 InvestmentSetupSection(
                     formState = formState,

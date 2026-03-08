@@ -68,6 +68,7 @@ fun WyeOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     verticalPaddingValues: Dp = 14.dp,
+    textColor: Color = PrimaryGreen,
     borderColor: Color = PrimaryGreen,
     enabled: Boolean = true,
     style: TextStyle = MaterialTheme.typography.bodyMedium

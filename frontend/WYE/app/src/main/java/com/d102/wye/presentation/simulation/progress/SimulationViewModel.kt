@@ -2,9 +2,11 @@ package com.d102.wye.presentation.simulation.progress
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.model.AiDiagnosisResult
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +20,21 @@ class SimulationSetupViewModel @Inject constructor(
     // private val simulationRepository: SimulationRepository
 ) : ViewModel() {
 
+    // 투자 설정 상태
     private val _formState = MutableStateFlow(SimulationFormState())
     val formState: StateFlow<SimulationFormState> = _formState.asStateFlow()
 
+    // 결과 상태
     private val _resultState = MutableStateFlow<UiState<SimulationResult>>(UiState.Idle)
     val resultState: StateFlow<UiState<SimulationResult>> = _resultState.asStateFlow()
 
+    // AI 진단 다이얼로그 표시 여부
+    private val _showAiDialog = MutableStateFlow(false)
+    val showAiDialog: StateFlow<Boolean> = _showAiDialog.asStateFlow()
+
+    // AI 진단 API 통신 상태
+    private val _aiDiagnosisState = MutableStateFlow<UiState<AiDiagnosisResult>>(UiState.Idle)
+    val aiDiagnosisState: StateFlow<UiState<AiDiagnosisResult>> = _aiDiagnosisState.asStateFlow()
 
     fun onTabSelected(index: Int) {
         _formState.update { it.copy(selectedTabIndex = index) }
@@ -58,6 +69,47 @@ class SimulationSetupViewModel @Inject constructor(
             it.copy(portfolioItems = it.portfolioItems.filter { item -> item.ticker != ticker })
         }
         calculateSimulation()
+    }
+
+    fun onAiDiagnosisClick() {
+        _showAiDialog.value = true
+        fetchAiDiagnosis()
+    }
+
+    fun onAiDialogDismiss() {
+        _showAiDialog.value = false
+        // 다이얼로그를 닫을 때 상태를 초기화할지, 캐싱해둘지 결정
+        // _aiDiagnosisState.value = UiState.Idle
+    }
+
+    private fun fetchAiDiagnosis() {
+        // 이미 로딩 중이거나 성공했다면 중복 호출 방지 (필요에 따라 뺄 수 있음)
+        if (_aiDiagnosisState.value is UiState.Loading || _aiDiagnosisState.value is UiState.Success) {
+            return
+        }
+
+        viewModelScope.launch {
+            _aiDiagnosisState.update { UiState.Loading }
+
+            // TODO: 실제 AI 진단 API 통신 로직 연결
+            // when (val result = aiRepository.getDiagnosis(portfolio = _formState.value.portfolioItems)) {
+            //     is BaseResult.Success -> _aiDiagnosisState.update { UiState.Success(result.data.toAiDiagnosisResult()) }
+            //     is BaseResult.Error   -> _aiDiagnosisState.update { UiState.Error(result.error.message) }
+            // }
+
+            // 임시 딜레이 및 목데이터 연동 (테스트용)
+            delay(1500)
+            _aiDiagnosisState.update {
+                UiState.Success(
+                    AiDiagnosisResult(
+                        mainTitle = "공격적인 수익 추구!",
+                        subTitle = "기술주 중심의 로켓 포트폴리오 \uD83D\uDE80",
+                        tags = listOf("기술주집중", "고변동성", "성장중심"),
+                        feedback = "현재 포트폴리오는 특정 섹터에 집중되어 있어 시장 상황에 따른 변동성이 매우 큽니다. 장기적인 안정을 위해 자산의 일부를 배당형 ETF로 분산투자하는 것을 고려해보세요."
+                    )
+                )
+            }
+        }
     }
 
     // ── 계산 ────────────────────────────────
@@ -115,5 +167,8 @@ data class SimulationFormState(
 data class SimulationResult(
     val estimatedFinalAsset: String,
     val yieldRate: String,
-    val totalInvestment: String
+    val totalInvestment: String,
+    val per: String,
+    val pbr: String,
+    val roe: String
 )
