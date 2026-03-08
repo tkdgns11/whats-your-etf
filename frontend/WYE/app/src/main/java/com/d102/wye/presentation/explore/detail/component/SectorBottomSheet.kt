@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.explore.detail.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,14 +21,21 @@ import com.d102.wye.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SectorBottomSheet(sector: EtfSector, onDismiss: () -> Unit) {
+fun SectorBottomSheet(
+    sector: EtfSector,
+    onDismiss: () -> Unit,
+    onStockClick: (String) -> Unit = {},
+) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Background) {
-        SectorBottomSheetContent(sector = sector)
+        SectorBottomSheetContent(sector = sector, onStockClick = onStockClick)
     }
 }
 
 @Composable
-fun SectorBottomSheetContent(sector: EtfSector) {
+fun SectorBottomSheetContent(
+    sector: EtfSector,
+    onStockClick: (String) -> Unit = {},
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,15 +47,23 @@ fun SectorBottomSheetContent(sector: EtfSector) {
         Text("${sector.name} 산업", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
         HorizontalDivider(color = Divider)
         Text("주요 구성 종목", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
-        sector.stocks.forEach { StockProgressItem(it) }
+        sector.stocks.forEach { stock ->
+            StockProgressItem(
+                stock = stock,
+                onClick = if (stock.ticker.isNotBlank()) { { onStockClick(stock.ticker) } } else null,
+            )
+        }
         if (sector.aiAnalysis.isNotBlank()) AiAnalysisBox(sector.aiAnalysis)
         Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun StockProgressItem(stock: SectorStock) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun StockProgressItem(stock: SectorStock, onClick: (() -> Unit)? = null) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -94,7 +110,7 @@ private fun SectorBottomSheetPreview() {
         sector = EtfSector(
             name = "반도체", percentage = 28.4,
             stocks = listOf(
-                SectorStock("삼성전자", 25.0), SectorStock("SK하이닉스", 15.2),
+                SectorStock("삼성전자", 25.0, "005930"), SectorStock("SK하이닉스", 15.2, "000660"),
                 SectorStock("LG에너지솔루션", 8.4), SectorStock("삼성바이오로직스", 5.8), SectorStock("현대차", 4.2),
             ),
             aiAnalysis = "반도체 섹터의 높은 기여도로 인해 IT 업황 회복 시 강한 반등이 예상됩니다.",

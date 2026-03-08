@@ -1,0 +1,358 @@
+package com.d102.wye.presentation.explore.stock
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.domain.model.RelatedStock
+import com.d102.wye.domain.model.Stock
+import com.d102.wye.domain.model.StockEtf
+import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.theme.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StockDetailScreen(
+    onBack: () -> Unit,
+    onEtfListClick: (String) -> Unit,
+    onEtfClick: (String) -> Unit,
+    onRelatedStockClick: (String) -> Unit,
+    viewModel: StockDetailViewModel = hiltViewModel(),
+) {
+    val stockState by viewModel.stockState.collectAsStateWithLifecycle()
+
+    Scaffold(
+        containerColor = Background,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("종목 상세 분석", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Background),
+            )
+        },
+    ) { innerPadding ->
+        when (val state = stockState) {
+            is UiState.Loading -> Box(
+                Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) { CircularProgressIndicator(color = PrimaryGreen) }
+
+            is UiState.Success -> StockDetailContent(
+                stock = state.data,
+                onEtfListClick = { onEtfListClick(state.data.ticker) },
+                onEtfClick = onEtfClick,
+                onRelatedStockClick = onRelatedStockClick,
+                modifier = Modifier.padding(innerPadding),
+            )
+
+            is UiState.Error -> Box(
+                Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center,
+            ) { Text(state.message, color = TextSecondary) }
+
+            UiState.Idle -> Unit
+        }
+    }
+}
+
+@Composable
+private fun StockDetailContent(
+    stock: Stock,
+    onEtfListClick: () -> Unit,
+    onEtfClick: (String) -> Unit,
+    onRelatedStockClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+    ) {
+        Spacer(Modifier.height(8.dp))
+
+        // ── 종목명 + 티커 ──────────────────────────────────────────
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stock.name, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(stock.ticker, fontSize = 14.sp, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // ── 태그 칩 ───────────────────────────────────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            stock.tags.forEach { tag -> TagChip(tag) }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ── 시가총액 + 현재가 카드 ────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            MarketCapCard(marketCap = stock.marketCap, modifier = Modifier.weight(1f).fillMaxHeight())
+            CurrentPriceCard(
+                price = stock.currentPrice,
+                changeAmount = stock.changeAmount,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+
+        Spacer(Modifier.height(28.dp))
+
+        // ── 회사 개요 ─────────────────────────────────────────────
+        SectionHeader(icon = { Icon(Icons.Outlined.Description, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "회사 개요")
+        Spacer(Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceVariant)
+                .padding(16.dp),
+        ) {
+            Text(stock.description, fontSize = 14.sp, color = TextSecondary, lineHeight = 22.sp)
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // ── 포함된 ETF ────────────────────────────────────────────
+        SectionHeader(icon = { Icon(Icons.Outlined.AccountBalance, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목이 포함되어있는 ETF")
+        Spacer(Modifier.height(16.dp))
+
+        stock.containedEtfs.take(3).forEach { etf ->
+            EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
+            Spacer(Modifier.height(16.dp))
+        }
+
+        // 전체보기 버튼
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "포함된 ETF 전체보기",
+                fontSize = 14.sp,
+                color = TextSecondary,
+                modifier = Modifier.clickable(onClick = onEtfListClick),
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // ── 함께 등장하는 종목 ────────────────────────────────────
+        SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
+        Spacer(Modifier.height(16.dp))
+
+        stock.relatedStocks.forEach { related ->
+            RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
+            HorizontalDivider(color = Divider)
+        }
+
+        Spacer(Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun TagChip(label: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(SurfaceCard)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(label, fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun MarketCapCard(marketCap: Long, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceCard)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text("시가총액", fontSize = 12.sp, color = TextSecondary)
+        Text(
+            formatMarketCap(marketCap),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary,
+        )
+    }
+}
+
+@Composable
+private fun CurrentPriceCard(price: Long, changeAmount: Long, modifier: Modifier = Modifier) {
+    val isRise = changeAmount >= 0
+    val changeColor = if (isRise) EtfRise else EtfFall
+    val sign = if (isRise) "▲" else "▼"
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceCard)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text("현재가", fontSize = 12.sp, color = TextSecondary)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                "%,d원".format(price),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+            )
+            Text(
+                "$sign%,d".format(kotlin.math.abs(changeAmount)),
+                fontSize = 12.sp,
+                color = changeColor,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(icon: @Composable () -> Unit, title: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        icon()
+        Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+    }
+}
+
+@Composable
+private fun EtfWeightItem(etf: StockEtf, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Text(etf.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text("비중", fontSize = 11.sp, color = TextSecondary)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "${etf.manager} · ${etf.ticker}",
+                fontSize = 12.sp,
+                color = TextSecondary,
+            )
+            Text(
+                "${"%.1f".format(etf.weight)}%",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+            )
+        }
+        // 프로그레스바
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(SurfaceVariant),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth((etf.weight / 100.0).toFloat().coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(PrimaryGreen),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RelatedStockItem(stock: RelatedStock, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        // 2글자 약어 아바타
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(SurfaceVariant),
+        ) {
+            Text(
+                stock.name.take(2),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(stock.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(stock.description, fontSize = 12.sp, color = TextSecondary)
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+private fun formatMarketCap(marketCap: Long): String {
+    val jo  = marketCap / 1_000_000_000_000L
+    val eok = (marketCap % 1_000_000_000_000L) / 100_000_000L
+    return when {
+        jo > 0 && eok > 0 -> "${jo}조 ${"%,d".format(eok)}억원"
+        jo > 0             -> "${jo}조원"
+        eok > 0            -> "${"%,d".format(eok)}억원"
+        else               -> "%,d원".format(marketCap)
+    }
+}

@@ -4,14 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.domain.model.EtfDetail
 import com.d102.wye.presentation.explore.detail.component.ClusterTab
 import com.d102.wye.presentation.explore.detail.component.EtfDetailInfoTab
 import com.d102.wye.presentation.model.UiState
@@ -21,6 +22,7 @@ import com.d102.wye.presentation.theme.*
 @Composable
 fun EtfDetailScreen(
     onBack: () -> Unit,
+    onStockClick: (String) -> Unit = {},
     viewModel: EtfDetailViewModel = hiltViewModel(),
 ) {
     val detailState by viewModel.detailState.collectAsStateWithLifecycle()
@@ -28,14 +30,14 @@ fun EtfDetailScreen(
     val tabs = listOf("클러스터", "ETF 상세보기")
 
     Scaffold(
+        containerColor = Background,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (detailState is UiState.Success)
-                            (detailState as UiState.Success<EtfDetail>).data.ticker
-                        else "ETF 상세",
+                        text = "ETF 상세",
                         fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
                     )
                 },
                 navigationIcon = {
@@ -43,6 +45,7 @@ fun EtfDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
                     }
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Background),
             )
         },
     ) { innerPadding ->
@@ -52,11 +55,20 @@ fun EtfDetailScreen(
                 selectedTabIndex = selectedTab,
                 containerColor = Background,
                 contentColor = PrimaryGreen,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        height = 2.dp,
+                        color = PrimaryGreen,
+                    )
+                },
             ) {
                 tabs.forEachIndexed { idx, title ->
                     Tab(
                         selected = selectedTab == idx,
                         onClick = { selectedTab = idx },
+                        selectedContentColor = PrimaryGreen,
+                        unselectedContentColor = TextSecondary,
                         text = {
                             Text(
                                 text = title,
@@ -76,7 +88,7 @@ fun EtfDetailScreen(
 
                 is UiState.Success -> {
                     when (selectedTab) {
-                        0 -> ClusterTab(detail = state.data, viewModel = viewModel)
+                        0 -> ClusterTab(detail = state.data, viewModel = viewModel, onStockClick = onStockClick)
                         1 -> EtfDetailInfoTab(detail = state.data, viewModel = viewModel)
                     }
                 }

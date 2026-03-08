@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.explore
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Tune
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -149,33 +152,59 @@ private fun SearchRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier,
     ) {
+        val scopeActive = searchScope != null
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceVariant)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (scopeActive) PrimaryGreen.copy(alpha = 0.08f) else SurfaceVariant)
+                    .then(if (scopeActive) Modifier.border(1.dp, PrimaryGreen.copy(alpha = 0.5f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable { expanded = true }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
             ) {
                 Text(
                     text = selectedLabel,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = if (scopeActive) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (scopeActive) PrimaryGreen else TextPrimary,
                 )
-                Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = TextSecondary,
+                    modifier = Modifier.size(14.dp),
+                    tint = if (scopeActive) PrimaryGreen else TextSecondary,
                 )
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 8.dp,
+            ) {
                 scopeOptions.forEach { option ->
+                    val isSelected = option.value == searchScope
                     DropdownMenuItem(
-                        text = { Text(option.label) },
+                        text = {
+                            Text(
+                                text = option.label,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) PrimaryGreen else TextPrimary,
+                            )
+                        },
+                        trailingIcon = {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = PrimaryGreen,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        },
                         onClick = {
                             onSearchScopeSelected(option.value)
                             expanded = false
@@ -370,22 +399,54 @@ private fun SortRow(modifier: Modifier = Modifier) {
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
                 modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(SurfaceVariant)
                     .clickable { expanded = true }
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
             ) {
-                Text(selected, fontSize = 13.sp, color = TextSecondary)
+                Text(
+                    text = selected,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
+                )
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                     tint = TextSecondary,
                 )
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 8.dp,
+            ) {
                 sortOptions.forEach { option ->
+                    val isSelected = selected == option
                     DropdownMenuItem(
-                        text = { Text(option) },
+                        text = {
+                            Text(
+                                text = option,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) PrimaryGreen else TextPrimary,
+                            )
+                        },
+                        trailingIcon = {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = PrimaryGreen,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        },
                         onClick = { selected = option; expanded = false },
                     )
                 }

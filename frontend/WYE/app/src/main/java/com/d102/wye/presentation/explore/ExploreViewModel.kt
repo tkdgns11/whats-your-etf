@@ -43,7 +43,7 @@ class ExploreViewModel @Inject constructor(
 //            }
 
             mockEtfList = listOf(
-                EtfListItemUiModel("KODEX200", "KODEX 200", 32_450, 1.24, 400, 1, true),
+                EtfListItemUiModel("KODEX200", "KODEX 200", 32_450, 1.24, 400, 1, false),
                 EtfListItemUiModel("TIGER나스닥", "TIGER 미국나스닥100", 104_820, 2.15, 2_210, 1, false),
                 EtfListItemUiModel("ACESP500", "ACE 미국S&P500", 15_340, 0.85, 130, 1, false),
                 EtfListItemUiModel("SOL배당", "SOL 미국배당다우존스", 10_120, 0.42, 45, 3, false),
@@ -76,9 +76,10 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun onLikeToggled(ticker: String) {
-        viewModelScope.launch {
-            etfRepository.toggleLike(ticker)
+        mockEtfList = mockEtfList.map {
+            if (it.ticker == ticker) it.copy(isLiked = !it.isLiked) else it
         }
+        applyFilter()
     }
 
     private fun applyFilter() {
