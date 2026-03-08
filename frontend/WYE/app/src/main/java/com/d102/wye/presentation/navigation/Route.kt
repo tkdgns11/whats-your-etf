@@ -76,6 +76,25 @@ sealed class Route(val route: String) {
     object StrategyCompare : Route("strategy_compare")
 
     // ─────────────────────────────────────────
+    // 종목 상세 (ticker로 단건 조회)
+    // ─────────────────────────────────────────
+
+    data class StockDetail(val ticker: String) : Route("stock_detail/$ticker") {
+        companion object {
+            const val ROUTE_PATTERN = "stock_detail/{ticker}"
+            const val ARG_TICKER = "ticker"
+        }
+    }
+
+    // 종목에 포함된 ETF 전체 목록
+    data class StockEtfList(val ticker: String) : Route("stock_etf_list/$ticker") {
+        companion object {
+            const val ROUTE_PATTERN = "stock_etf_list/{ticker}"
+            const val ARG_TICKER = "ticker"
+        }
+    }
+
+    // ─────────────────────────────────────────
     // 알림
     // ─────────────────────────────────────────
 
