@@ -1,6 +1,25 @@
 package com.d102.wye.presentation.explore.detail.component
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.tween
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,11 +32,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,6 +59,7 @@ import kotlin.math.sin
 fun ClusterTab(
     detail: EtfDetail,
     viewModel: EtfDetailViewModel,
+    onStockClick: (String) -> Unit = {},
 ) {
     var selectedSector by remember { mutableStateOf<EtfSector?>(null) }
 
@@ -42,35 +67,77 @@ fun ClusterTab(
         SectorBottomSheet(
             sector = selectedSector!!,
             onDismiss = { selectedSector = null },
+            onStockClick = onStockClick,
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        // 위험등급 뱃지 + 이름
-        EtfHeader(detail = detail)
+    // 화면 높이 기준으로 차트 크기를 자동 결정
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenH = maxHeight
 
-        // 클러스터 버블 차트
-        ClusterBubbleChart(
-            ticker = detail.ticker,
-            sectors = detail.sectors,
-            onSectorClick = { selectedSector = it },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(320.dp),
-        )
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            // 첫 화면: 클러스터 + 영향종목 제목·첫 항목까지 딱 맞게
+            Column(modifier = Modifier.height(screenH)) {
+                // 차트 영역 (spacedBy 적용)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    EtfHeader(detail = detail)
 
-        // 현재 가격 / 거래량 카드
-        PriceVolumeRow(detail = detail)
+                    ClusterBubbleChart(
+                        ticker = detail.ticker,
+                        sectors = detail.sectors,
+                        onSectorClick = { selectedSector = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    )
 
-        // 영향 종목
-        InfluentialStocksSection(stocks = detail.influentialStocks)
+                    PriceVolumeRow(detail = detail)
+                }
+
+                // 영향 종목 peek — spacedBy 밖에 분리하여 다른 종목과 동일한 레이아웃 유지
+                HorizontalDivider(color = Divider)
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Text(
+                        text = "현재 이 ETF에 영향을 많이 끼치는 종목은?",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp, bottom = 4.dp),
+                    )
+                    if (detail.influentialStocks.isNotEmpty()) {
+                        InfluentialStockItem(
+                            stock = detail.influentialStocks.first(),
+                            onClick = { onStockClick(detail.influentialStocks.first().ticker) },
+                        )
+                    }
+                }
+            }
+
+            // 스크롤하면 나타나는 나머지 종목들
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 20.dp),
+            ) {
+                detail.influentialStocks.drop(1).forEach { stock ->
+                    HorizontalDivider(color = Divider)
+                    InfluentialStockItem(stock = stock, onClick = { onStockClick(stock.ticker) })
+                }
+            }
+        }
     }
 }
 
@@ -94,37 +161,99 @@ private fun ClusterBubbleChart(
     onSectorClick: (EtfSector) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    val centerScale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "centerBubble",
+    )
+
+    // 무한 펄스 애니메이션
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "pulseProgress",
+    )
+
+    val displaySectors = sectors.take(6)
+    val angleStep = 360.0 / displaySectors.size.coerceAtLeast(1)
+    val orbitRadius = 130.dp
+
+    // 비중 기반 버블 크기 계산 (80dp ~ 105dp)
+    val maxPct = displaySectors.maxOfOrNull { it.percentage } ?: 1.0
+    val minPct = displaySectors.minOfOrNull { it.percentage } ?: 0.0
+
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // 배경 연결선 (선택사항 - 생략 가능)
+            val cx = size.width / 2
+            val cy = size.height / 2
+
+            // 펄스 링 (3개 단계 차이)
+            val maxRingR = 80.dp.toPx()
+            for (i in 0..2) {
+                val progress = (pulseProgress + i / 3f) % 1f
+                val ringR = maxRingR * progress
+                val alpha = (1f - progress) * 0.45f
+                drawCircle(
+                    color = PrimaryGreen,
+                    radius = ringR,
+                    center = Offset(cx, cy),
+                    alpha = alpha,
+                    style = Stroke(width = 2.5f),
+                )
+            }
         }
+
         // 중앙 ETF 버블
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(110.dp)
+                .size(120.dp)
+                .scale(centerScale)
+                .shadow(elevation = 12.dp, shape = CircleShape, clip = false)
                 .clip(CircleShape)
                 .background(PrimaryGreen),
         ) {
+            // "KODEX200" → "KODEX\n200" 처럼 문자/숫자 경계에서 줄바꿈
+            val displayTicker = ticker.replace(Regex("(?<=[A-Za-z가-힣])(?=\\d)|(?<=\\d)(?=[A-Za-z가-힣])| "), "\n")
             Text(
-                text = ticker,
+                text = displayTicker,
                 color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
+                lineHeight = 22.sp,
+                modifier = Modifier.padding(horizontal = 12.dp),
             )
         }
-        // 주변 섹터 버블 (최대 6개)
-        val displaySectors = sectors.take(6)
-        val angleStep = 360.0 / displaySectors.size.coerceAtLeast(1)
-        val radius = 120.dp
+
+        // 주변 섹터 버블 (순차 팝-인 + float)
         displaySectors.forEachIndexed { idx, sector ->
             val angleDeg = idx * angleStep - 90.0
             val angleRad = Math.toRadians(angleDeg)
-            val x = (radius.value * cos(angleRad)).dp
-            val y = (radius.value * sin(angleRad)).dp
+            val x = (orbitRadius.value * cos(angleRad)).dp
+            val y = (orbitRadius.value * sin(angleRad)).dp
+
+            val normalized = if (maxPct > minPct) {
+                ((sector.percentage - minPct) / (maxPct - minPct)).toFloat()
+            } else 0.5f
+            val bubbleSize = (80 + normalized * 25).dp
+
             SectorBubble(
                 sector = sector,
+                index = idx,
+                visible = visible,
+                bubbleSize = bubbleSize,
                 onClick = { onSectorClick(sector) },
                 modifier = Modifier.offset(x = x, y = y),
             )
@@ -135,20 +264,90 @@ private fun ClusterBubbleChart(
 @Composable
 private fun SectorBubble(
     sector: EtfSector,
+    index: Int,
+    visible: Boolean,
+    bubbleSize: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    // 순차 팝-인
+    var triggered by remember { mutableStateOf(false) }
+    LaunchedEffect(visible) {
+        if (visible) {
+            delay(index * 60L)
+            triggered = true
+        }
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (triggered) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "sectorBubble$index",
+    )
+
+    // 버블마다 다른 주기/위상으로 위아래 float
+    val floatTransition = rememberInfiniteTransition(label = "float$index")
+    val floatY by floatTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800 + index * 200),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(index * 300),
+        ),
+        label = "floatY$index",
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(80.dp)
-            .clip(CircleShape)
-            .background(SurfaceVariant)
-            .clickable(onClick = onClick),
+            .offset(y = floatY.dp)
+            .scale(scale),
     ) {
-        Text(sector.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary, textAlign = TextAlign.Center)
-        Text("${"%.1f".format(sector.percentage)}%", fontSize = 10.sp, color = TextSecondary)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .size(bubbleSize)
+                .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable(onClick = onClick),
+        ) {
+            // 버블 크기 기준으로 아이콘·텍스트 비례 조정
+            // 컨텐츠 폭을 버블의 68%로 제한 → 원 가장자리와 자연스러운 여백 확보
+            val contentWidth = bubbleSize * 0.68f
+            val iconSize = bubbleSize * 0.28f
+            val nameFontSize = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
+            val pctFontSize = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
+
+            Icon(
+                imageVector = sectorIcon(sector.name),
+                contentDescription = sector.name,
+                tint = PrimaryGreen,
+                modifier = Modifier.size(iconSize),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = sector.name,
+                fontSize = nameFontSize,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(contentWidth),
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "${"%.1f".format(sector.percentage)}%",
+                fontSize = pctFontSize,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(contentWidth),
+            )
+        }
     }
 }
 
@@ -161,12 +360,13 @@ private fun PriceVolumeRow(detail: EtfDetail) {
         InfoCard(
             label = "현재 가격",
             value = "%,d원".format(detail.currentPrice),
-            valueColor = if (detail.changeRate >= 0) EtfRise else EtfFall,
+            valueColor = PrimaryGreen,
             modifier = Modifier.weight(1f),
         )
         InfoCard(
             label = "거래량",
             value = formatVolume(detail.volume),
+            valueColor = PrimaryGreen,
             modifier = Modifier.weight(1f),
         )
     }
@@ -182,7 +382,7 @@ private fun InfoCard(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceVariant)
+            .background(BackGroundLightGreen)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -208,10 +408,11 @@ private fun InfluentialStocksSection(stocks: List<InfluentialStock>) {
 }
 
 @Composable
-private fun InfluentialStockItem(stock: InfluentialStock) {
+private fun InfluentialStockItem(stock: InfluentialStock, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -236,6 +437,17 @@ private fun InfluentialStockItem(stock: InfluentialStock) {
             Text("$sign${"%.1f".format(stock.changeRate)}%", fontSize = 12.sp, color = changeColor)
         }
     }
+}
+
+// 섹터명 키워드 → 아이콘 매핑
+private fun sectorIcon(name: String): ImageVector = when {
+    name.contains("반도체") || name.contains("IT") || name.contains("기술") || name.contains("테크") -> Icons.Filled.Memory
+    name.contains("화학") || name.contains("소재") || name.contains("바이오") -> Icons.Filled.Science
+    name.contains("금융") || name.contains("은행") || name.contains("보험") -> Icons.Filled.AccountBalance
+    name.contains("자동차") || name.contains("운송") || name.contains("모빌리티") -> Icons.Filled.DirectionsCar
+    name.contains("서비스") || name.contains("통신") || name.contains("미디어") -> Icons.Filled.Language
+    name.contains("의료") || name.contains("헬스") || name.contains("제약") -> Icons.Filled.MedicalServices
+    else -> Icons.Filled.Star
 }
 
 private fun riskToBadge(level: Int) = when (level) {

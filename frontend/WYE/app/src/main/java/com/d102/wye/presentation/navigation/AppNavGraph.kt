@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.navigation
+﻿package com.d102.wye.presentation.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
 import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
@@ -19,6 +20,8 @@ import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
+import com.d102.wye.presentation.explore.stock.StockDetailScreen
+import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 
 /**
  * 앱 전체 NavGraph
@@ -65,7 +68,16 @@ fun AppNavGraph(
         }
 
         composable(Route.PasswordReset.route) {
-//            PasswordResetScreen(navController = navController)
+            PasswordResetScreen(
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.popBackStack() },
+                onLoginClick = {
+                    navController.navigate(Route.Login.route) {
+                        popUpTo(Route.PasswordReset.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         // ─────────────────────────────────────────
@@ -119,8 +131,42 @@ fun AppNavGraph(
                 navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType }
             )
         ) {
-    EtfDetailScreen(onBack = { navController.popBackStack() })
-}
+            EtfDetailScreen(
+                onBack = { navController.popBackStack() },
+                onStockClick = { ticker -> navController.navigate(Route.StockDetail(ticker).route) },
+            )
+        }
+
+        // ─────────────────────────────────────────
+        // 종목 상세 (ticker 파라미터)
+        // ─────────────────────────────────────────
+
+        composable(
+            route = Route.StockDetail.ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(Route.StockDetail.ARG_TICKER) { type = NavType.StringType }
+            )
+        ) {
+            StockDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEtfListClick = { ticker -> navController.navigate(Route.StockEtfList(ticker).route) },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onRelatedStockClick = { ticker -> navController.navigate(Route.StockDetail(ticker).route) },
+            )
+        }
+
+        // 종목에 포함된 ETF 전체 목록
+        composable(
+            route = Route.StockEtfList.ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(Route.StockEtfList.ARG_TICKER) { type = NavType.StringType }
+            )
+        ) {
+            StockEtfListScreen(
+                onBack = { navController.popBackStack() },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+            )
+        }
 
         // ─────────────────────────────────────────
         // 뉴스 상세 (newsId 파라미터)
