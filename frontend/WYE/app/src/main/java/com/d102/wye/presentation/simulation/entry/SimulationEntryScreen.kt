@@ -45,9 +45,9 @@ import com.d102.wye.presentation.theme.BackGroundLightGreen
 import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
-fun SimulationScreen(
+fun SimulationEntryScreen(
     onMakePortfolioClick: () -> Unit,
-    viewModel: SimulationViewModel = hiltViewModel()
+    viewModel: SimulationEntryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedBundle by viewModel.selectedBundleDetail.collectAsStateWithLifecycle()
@@ -84,10 +84,10 @@ fun SimulationScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SimulationScreenContent(
-    uiState: UiState<SimulationEntryData>,  // ViewModel 내부 클래스라 경로 수정
+    uiState: UiState<SimulationEntryData>,
     snackbarHostState: SnackbarHostState,
     onMakePortfolioClick: () -> Unit,
-    onBundleClick: (EtfBundle) -> Unit   // ← 타입 교체
+    onBundleClick: (EtfBundle) -> Unit
 ){
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

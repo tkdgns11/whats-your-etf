@@ -16,9 +16,10 @@ import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
-import com.d102.wye.presentation.simulation.entry.SimulationScreen
+import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.strategy.StrategyScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
+import com.d102.wye.presentation.simulation.progress.SimulationScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 
@@ -96,9 +97,9 @@ fun AppNavGraph(
             )
         }
 
-        composable(Route.Simulation.route) {
-            SimulationScreen(
-                onMakePortfolioClick = { navController.navigate(Route.SimulationSetup.route) },
+        composable(Route.SimulationEntry.route) {
+            SimulationEntryScreen(
+                onMakePortfolioClick = { navController.navigate(Route.Simulation.route) },
             )
         }
 
@@ -186,11 +187,14 @@ fun AppNavGraph(
         }
 
         // ─────────────────────────────────────────
-        // 시뮬레이션 서브 화면
+        // 시뮬레이션 진행 화면
         // ─────────────────────────────────────────
 
-        composable(Route.SimulationSetup.route) {
-//            SimulationSetupScreen(navController = navController)
+        composable(Route.Simulation.route) {
+            SimulationScreen(
+                onBackClick = { navController.popBackStack() },
+                onAddEtfClick = {}
+            )
         }
 
 
@@ -214,4 +218,3 @@ fun AppNavGraph(
 
     }
 }
-

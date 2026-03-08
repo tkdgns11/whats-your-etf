@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SimulationViewModel @Inject constructor(
+class SimulationEntryViewModel @Inject constructor(
     // TODO: Repository 주입
     // private val simulationRepository: SimulationRepository
 ) : ViewModel() {

@@ -36,9 +36,11 @@ import com.d102.wye.presentation.theme.TextOnColored
  */
 @Composable
 fun WyePrimaryButton(
+    modifier: Modifier = Modifier,
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    backgroundColor: Color = PrimaryGreen,
+    textColor: Color = TextOnColored,
     enabled: Boolean = true,
     style: TextStyle = MaterialTheme.typography.bodyMedium
 ) {
@@ -47,8 +49,8 @@ fun WyePrimaryButton(
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryGreen,
-            contentColor = TextOnColored,
+            containerColor = backgroundColor,
+            contentColor = textColor,
             disabledContainerColor = PrimaryGreen.copy(alpha = 0.4f),
             disabledContentColor = TextOnColored.copy(alpha = 0.6f),
         ),
@@ -68,6 +70,7 @@ fun WyeOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     verticalPaddingValues: Dp = 14.dp,
+    textColor: Color = PrimaryGreen,
     borderColor: Color = PrimaryGreen,
     enabled: Boolean = true,
     style: TextStyle = MaterialTheme.typography.bodyMedium
@@ -140,14 +143,14 @@ private fun WyeButtonPreview() {
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        WyePrimaryButton("시뮬레이션 시작", onClick = {})
-        WyePrimaryButton("비활성화 버튼", onClick = {}, enabled = false)
-        WyeOutlinedButton("나중에 하기", onClick = {})
+        WyePrimaryButton(text = "시뮬레이션 시작", onClick = {})
+        WyePrimaryButton(text = "비활성화 버튼", onClick = {}, enabled = false)
+        WyeOutlinedButton(text = "나중에 하기", onClick = {})
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            WyePrimaryButton("저장", onClick = {}, modifier = Modifier.weight(1f))
-            WyeOutlinedButton("취소", onClick = {}, modifier = Modifier.weight(1f))
+            WyePrimaryButton(text = "저장", onClick = {}, modifier = Modifier.weight(1f))
+            WyeOutlinedButton(text = "취소", onClick = {}, modifier = Modifier.weight(1f))
         }
         WyeKakaoButton(onClick = {})
-        WyeTextButton("전체보기", onClick = {})
+        WyeTextButton(text = "전체보기", onClick = {})
     }
 }

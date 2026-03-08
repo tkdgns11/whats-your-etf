@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +24,7 @@ import com.d102.wye.presentation.designsystem.WyeOutlinedCard
 import com.d102.wye.presentation.theme.IconBackGroundOrange
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextTertiary
 
 
@@ -50,7 +50,7 @@ fun BundleCard(bundle: EtfBundle, onClick: () -> Unit) {
             text = bundle.name,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = TextPrimary
         )
 
         // 설명

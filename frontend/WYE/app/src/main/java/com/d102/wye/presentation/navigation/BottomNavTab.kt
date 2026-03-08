@@ -27,7 +27,7 @@ enum class BottomNavTab(
     SIMULATION(
         label = "시뮬레이션",
         iconRes = R.drawable.ic_nav_simulation,
-        route = Route.Simulation.route
+        route = Route.SimulationEntry.route
     ),
     STRATEGY(
         label = "나의 전략",
