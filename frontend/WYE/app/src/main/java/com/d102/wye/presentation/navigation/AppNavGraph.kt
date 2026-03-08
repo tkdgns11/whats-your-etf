@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.navigation
+﻿package com.d102.wye.presentation.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
 import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.explore.ExploreScreen
@@ -66,7 +67,16 @@ fun AppNavGraph(
         }
 
         composable(Route.PasswordReset.route) {
-//            PasswordResetScreen(navController = navController)
+            PasswordResetScreen(
+                onBackClick = { navController.popBackStack() },
+                onCloseClick = { navController.popBackStack() },
+                onLoginClick = {
+                    navController.navigate(Route.Login.route) {
+                        popUpTo(Route.PasswordReset.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         // ─────────────────────────────────────────
@@ -204,3 +214,4 @@ fun AppNavGraph(
 
     }
 }
+
