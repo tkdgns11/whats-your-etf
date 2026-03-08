@@ -1,5 +1,6 @@
 package com.d102.wye.presentation.designsystem
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.theme.Background
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -31,7 +33,6 @@ private fun BaseTopBar(
     TopAppBar(
         modifier = modifier,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Background,
             navigationIconContentColor = PrimaryGreen,
             actionIconContentColor = PrimaryGreen,
         ),
@@ -51,6 +52,7 @@ private fun BaseTopBar(
                 letterSpacing = if (isBrandTitle) (-0.5).sp else 0.sp,
             )
         },
+        windowInsets = WindowInsets(0.dp),
         actions = { actions() },
     )
 }
