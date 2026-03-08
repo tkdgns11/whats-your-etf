@@ -1,40 +1,43 @@
 package com.d102.wye.presentation.home
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.designsystem.WyeTopBar
-import com.d102.wye.presentation.model.NewsUiModel
+import com.d102.wye.presentation.designsystem.HomeTopBar
+import com.d102.wye.presentation.home.component.HomePortfolioTab
+import com.d102.wye.presentation.home.component.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.theme.PrimaryGreen
 
 @Composable
 fun HomeScreen(
     onNewsClick: (newsId: Long) -> Unit,
     onEtfClick: (ticker: String) -> Unit,
+    onNewsMoreClick: () -> Unit = {},
+    onPortfolioMoreClick: () -> Unit = {},
+    onBookmarkClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,115 +55,115 @@ fun HomeScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onNewsClick = onNewsClick,
-        onEtfClick = onEtfClick
+        onEtfClick = onEtfClick,
+        onNewsMoreClick = onNewsMoreClick,
+        onPortfolioMoreClick = onPortfolioMoreClick,
+        onBookmarkClick = onBookmarkClick,
+        onNotificationClick = onNotificationClick
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
     uiState: UiState<HomeData>,
     snackbarHostState: SnackbarHostState,
     onNewsClick: (newsId: Long) -> Unit,
-    onEtfClick: (ticker: String) -> Unit
+    onEtfClick: (ticker: String) -> Unit,
+    onNewsMoreClick: () -> Unit,
+    onPortfolioMoreClick: () -> Unit,
+    onBookmarkClick: () -> Unit,
+    onNotificationClick: () -> Unit
 ) {
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("거래량 TOP 10", "내 포트폴리오")
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            HomeTopBar(
+                onBookmarkClick = onBookmarkClick,
+                onNotificationClick = onNotificationClick
+            )
+
+            HomeTabRow(
+                selectedTabIndex = selectedTabIndex,
+                tabTitles = tabTitles,
+                onTabSelected = { selectedTabIndex = it }
+            )
+
             when (uiState) {
                 is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                is UiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            Top10ChartSection(
-                                etfList = uiState.data.top10Etfs,
-                                onEtfClick = onEtfClick
-                            )
-                        }
-
-                        item {
-                            PortfolioReturnCard(returnRate = uiState.data.portfolioReturnRate)
-                        }
-
-                        item { Text(text = "ETF 시장 뉴스") }
-
-                        items(
-                            items = uiState.data.newsList,
-                            key = { it.id }
-                        ) { news ->
-                            NewsItem(
-                                news = news,
-                                onClick = { onNewsClick(news.id) }
-                            )
-                        }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
 
-                is UiState.Error -> Unit // Snackbar로 처리
+                is UiState.Success -> {
+                    when (selectedTabIndex) {
+                        0 -> HomeTop10Tab(
+                            top10Etfs = uiState.data.top10Etfs,
+                            newsList = uiState.data.newsList,
+                            onEtfClick = onEtfClick,
+                            onNewsClick = onNewsClick,
+                            onNewsMoreClick = onNewsMoreClick
+                        )
+
+                        1 -> HomePortfolioTab(
+                            portfolio = uiState.data.portfolio,
+                            newsList = uiState.data.newsList,
+                            onNewsClick = onNewsClick,
+                            onNewsMoreClick = onNewsMoreClick,
+                            onPortfolioMoreClick = onPortfolioMoreClick
+                        )
+                    }
+                }
+
+                is UiState.Error -> Unit
 
                 UiState.Idle -> Unit
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
-
 @Composable
-private fun Top10ChartSection(
-    etfList: List<Top10EtfUiModel>,
-    onEtfClick: (ticker: String) -> Unit
+private fun HomeTabRow(
+    selectedTabIndex: Int,
+    tabTitles: List<String>,
+    onTabSelected: (Int) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "일일 매매량 TOP 10")
-            Spacer(modifier = Modifier.height(8.dp))
-            // TODO: 차트 라이브러리 연동
-            Text(text = "차트 영역 (${etfList.size}개)")
-        }
-    }
-}
-
-@Composable
-private fun PortfolioReturnCard(returnRate: Double?) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "내 포트폴리오 수익률")
-            Spacer(modifier = Modifier.height(8.dp))
-            if (returnRate != null) {
-                // TODO: 수익률 추이 그래프
-                Text(text = "${returnRate}%")
-            } else {
-                Text(text = "포트폴리오를 설정해주세요")
-            }
-        }
-    }
-}
-
-@Composable
-private fun NewsItem(
-    news: NewsUiModel,
-    onClick: () -> Unit
-) {
-    Card(
+    TabRow(
+        selectedTabIndex = selectedTabIndex,
         modifier = Modifier.fillMaxWidth(),
-        onClick = onClick
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = PrimaryGreen,
+        indicator = { tabPositions ->
+            TabRowDefaults.SecondaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                color = PrimaryGreen
+            )
+        }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = news.title)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = news.summary)
-            Text(text = news.publishedAt)
+        tabTitles.forEachIndexed { index, title ->
+            Tab(
+                selected = selectedTabIndex == index,
+                onClick = { onTabSelected(index) },
+                selectedContentColor = PrimaryGreen,
+                unselectedContentColor = PrimaryGreen.copy(alpha = 0.6f),
+                text = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            )
         }
     }
 }
