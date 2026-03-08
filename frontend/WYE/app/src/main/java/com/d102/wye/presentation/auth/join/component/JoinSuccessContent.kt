@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.theme.BadgeConservative
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -67,7 +68,8 @@ fun JoinSuccessContent(
         Text(
             text = "이제 나만의 ETF 포트폴리오를 만들고\n미래 자산을 시뮬레이션해 보세요.",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = TextSecondary,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(28.dp))
