@@ -45,19 +45,337 @@ ETF : 섹터 분포 시각화 = 1 : 1
 
 ## 2. 분류 체계
 
-ETF 유형에 따라 다른 분류 방식을 적용합니다.
+ETF의 `category`에 따라 다른 분류 방식을 적용합니다.
 
-| ETF 유형 | cluster_type | 분류 방식 | 예시 |
-|----------|----------------|-----------|------|
-| **테마 ETF** (반도체, 2차전지) | SUB_SECTOR | 세부 섹터 | 세라믹, 공정장비, 팹리스, 메모리 |
-| **시장 ETF** (KODEX 200, KOSPI) | GROUP_CODE | 그룹코드 (13개) | IT_SW, FINANCE, MANUFACTURING |
-| **섹터 ETF** (금융, 헬스케어) | INDUSTRY | 중분류 산업코드 | 은행, 증권, 보험, 제약, 바이오 |
+| category | sector 예시 | cluster_type | 버블 예시 |
+|----------|-------------|--------------|-----------|
+| **시장형** | - | GROUP_CODE | 반도체, 금융, 바이오, 자동차... |
+| **테마형** | 반도체, 2차전지 | SUB_SECTOR | 메모리, 장비, 팹리스... |
+| **테마형** | 금융, 헬스케어 | INDUSTRY | 은행, 증권, 보험... |
+| **배당형** | - | GROUP_CODE | 금융, 통신, 유틸리티... |
+| 채권형/파생형 | - | - | 클러스터 시각화 제외 |
+
+**제약조건**: 국내 주식을 구성종목으로 가진 ETF만 클러스터 시각화 가능
+
+### 2.1 cluster_type에 따른 집계 방식
+
+#### 핵심 원리
+
+`company_info.industry_code`에는 **Level 3 소분류**(표준 KSIC)를 입력합니다.
+클러스터링 시 ETF 유형에 따라 **다른 수준으로 변환/집계**하여 버블 차트를 생성합니다.
+
+> **역할 분담**
+> - 팀원: `company_info.industry_code`에 소분류(Level 3) 매핑
+> - 클러스터링 로직: 소분류 → 세분류(Level 4) 변환 (테마 ETF용)
+
+```
+company_info.industry_code (Level 3 소분류, 표준 KSIC)
+         │
+         ▼
+industry_classification 테이블 JOIN
+         │
+         ├─── cluster_type = GROUP_CODE ──→ group_code로 집계 (22개 그룹)
+         │
+         ├─── cluster_type = SUB_SECTOR ──→ 소분류 → 세분류 변환 후 표시 (커스텀 매핑)
+         │
+         └─── cluster_type = INDUSTRY ───→ parent_code로 집계 (중분류)
+```
+
+#### 예시: 동일한 company_info 데이터로 다른 결과
+
+**company_info + stock 테이블 (팀원이 입력 - Level 3 소분류, 공공데이터 API 형식):**
+```
+[stock 테이블]
+┌──────────────┬──────────┬────────────┐
+│ ticker       │ company_id│ market_type│
+├──────────────┼──────────┼────────────┤
+│ 005930       │ 1        │ KOSPI      │
+│ 000660       │ 2        │ KOSPI      │
+│ 042700       │ 3        │ KOSDAQ     │
+└──────────────┴──────────┴────────────┘
+
+[company_info 테이블]
+┌──────────────┬──────────┬───────────────┐
+│ id           │ 회사명    │ industry_code │
+├──────────────┼──────────┼───────────────┤
+│ 1            │ 삼성전자  │ C26100        │  ← 반도체 제조업
+│ 2            │ SK하이닉스│ C26100        │  ← 반도체 제조업
+│ 3            │ 한미반도체│ C26100        │  ← 반도체 제조업
+│ 4            │ HPSP     │ C26100        │  ← 반도체 제조업
+│ 5            │ NAVER    │ J63100        │  ← 정보서비스업
+│ 6            │ KB금융   │ K64100        │  ← 은행 및 저축기관
+└──────────────┴──────────┴───────────────┘
+```
+
+**industry_classification (seed.sql) - 공공데이터 API 형식:**
+```
+┌───────────┬─────────────────┬───────┬────────────┬──────────────┐
+│ code      │ name            │ level │ group_code │ parent_code  │
+├───────────┼─────────────────┼───────┼────────────┼──────────────┤
+│ C26100    │ 반도체 제조업    │ 3     │ IT_SEMI    │ 26           │
+│ C26200    │ 전자부품 제조업  │ 3     │ IT_ELEC    │ 26           │
+│ SEMI_MEM  │ 메모리 반도체    │ 4     │ IT_SEMI    │ C26100       │  ← 커스텀 세분류
+│ SEMI_HBM  │ HBM             │ 4     │ IT_SEMI    │ C26100       │  ← 커스텀 세분류
+│ SEMI_EQP  │ 반도체 장비      │ 4     │ IT_SEMI    │ C26100       │  ← 커스텀 세분류
+│ J63100    │ 정보서비스업     │ 3     │ IT_SW      │ 63           │
+│ K64100    │ 은행 및 저축기관 │ 3     │ FINANCE    │ 64           │
+└───────────┴─────────────────┴───────┴────────────┴──────────────┘
+```
+
+> **SUB_SECTOR 클러스터링 시**: 소분류(C26100) → 세분류(SEMI_MEM, SEMI_HBM) 변환
+> **변환 방식**: 하이브리드 (수동 매핑 테이블 + 기본 매핑)
+
+#### ETF 구성종목 → 섹터 매핑 (클러스터 태그용)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    클러스터 매핑 흐름                             │
+├─────────────────────────────────────────────────────────────────┤
+│  etf_stock_composition (ETF 구성종목)                            │
+│         │                                                       │
+│         ▼                                                       │
+│  etf_stock_cluster_mapping (섹터 매핑)                           │
+│  ├── etf_id                                                     │
+│  ├── composition_id (FK → etf_stock_composition)                │
+│  ├── sector_code (FK → industry_classification Level 4)         │
+│  └── source (MANUAL / AI)                                       │
+│                                                                 │
+│  예시:                                                          │
+│  ├─ 반도체ETF + 삼성전자 → sector_code: SEMI_MEM                 │
+│  ├─ 반도체ETF + SK하이닉스 → sector_code: SEMI_HBM               │
+│  └─ 모바일ETF + 삼성전자 → sector_code: MOBILE                   │
+│                                                                 │
+│  ※ 같은 회사도 ETF에 따라 다른 섹터로 매핑 가능                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**관련 테이블:**
+- `etf_stock_cluster_mapping`: ETF 주식 구성종목의 섹터 매핑
+- `etf_other_cluster_mapping`: ETF 비주식 구성종목(선물/채권)의 섹터 매핑
+
+---
+
+#### Case 1: KODEX 200 (시장 ETF) → cluster_type = GROUP_CODE
+
+**group_code로 집계 → 큰 산업군으로 묶음**
+
+```
+┌────────────┬────────────┬────────┐
+│ group_code │ group_name │ 비중   │
+├────────────┼────────────┼────────┤
+│ IT_SEMI    │ 반도체     │ 55%   │  ← 삼성전자+SK하이닉스+한미반도체+HPSP
+│ IT_SW      │ 소프트웨어 │ 15%   │  ← NAVER
+│ FINANCE    │ 금융       │ 20%   │  ← KB금융
+└────────────┴────────────┴────────┘
+
+버블 차트:
+        반도체 (55%)
+           ●
+
+   소프트웨어 ●     ● 금융
+     (15%)         (20%)
+```
+
+---
+
+#### Case 2: KODEX 반도체 (테마 ETF) → cluster_type = SUB_SECTOR
+
+**소분류 → 세분류 변환 후 표시 → 반도체 내 세부 분류**
+
+```
+[변환 과정]
+etf_stock_cluster_mapping (ETF별 섹터 매핑)
+┌──────────┬──────────────┬─────────────────┐
+│ etf_id   │ composition_id│ sector_code     │
+├──────────┼──────────────┼─────────────────┤
+│ 1 (반도체)│ 101 (삼성전자)│ SEMI_MEM        │  ← 메모리 반도체
+│ 1 (반도체)│ 102 (SK하닉) │ SEMI_HBM        │  ← HBM
+│ 1 (반도체)│ 103 (한미반) │ SEMI_EQP        │  ← 반도체 장비
+│ 1 (반도체)│ 104 (솔브레인)│ SEMI_MAT        │  ← 반도체 소재
+└──────────┴──────────────┴─────────────────┘
+※ 변환 로직: etf_stock_cluster_mapping 테이블에서 ETF별 섹터 매핑 조회
+
+[집계 결과]
+┌───────────────┬─────────────────┬────────┐
+│ sub_sector    │ name            │ 비중   │
+├───────────────┼─────────────────┼────────┤
+│ SEMI_MEM      │ 메모리 반도체    │ 30%   │
+│ SEMI_HBM      │ HBM             │ 25%   │
+│ SEMI_EQP      │ 반도체 장비      │ 18%   │
+└───────────────┴─────────────────┴────────┘
+
+버블 차트:
+        메모리 (30%)
+           ●
+
+      HBM ●     ● 장비
+    (25%)       (18%)
+```
+
+---
+
+#### Case 3: KODEX 금융 (섹터 ETF) → cluster_type = INDUSTRY
+
+**parent_code(중분류)로 집계 → 금융 내 세부 업종**
+
+```
+┌──────────────┬────────────────┬────────┐
+│ parent_code  │ name           │ 비중   │
+├──────────────┼────────────────┼────────┤
+│ 116401       │ 은행           │ 40%   │
+│ 116402       │ 증권/투자      │ 30%   │
+│ 116501       │ 보험           │ 20%   │
+└──────────────┴────────────────┴────────┘
+
+버블 차트:
+        은행 (40%)
+           ●
+
+      증권 ●     ● 보험
+    (30%)       (20%)
+```
+
+---
+
+### 2.2 cluster_type 결정 로직
+
+> **TODO**: `etf.sector`와 `industry_classification` 매핑 방식 결정 필요
+> - 현재: `etf.sector`는 텍스트 값 (반도체, 금융 등)
+> - 문제: ETF 테마는 산업분류와 1:1 매핑 안 될 수 있음 (예: 미래차, 메타버스)
+> - 팀원 데이터 확인 후 FK 매핑 여부 결정
+
+`etf` 테이블의 2가지 필드를 사용하여 cluster_type을 결정합니다:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ETF 테이블 필드                               │
+├─────────────────┬───────────────────────────────────────────────────┤
+│ category        │ 시장형, 테마형, 배당형, 채권형, 파생형              │
+│                 │ → cluster_type 결정의 주요 기준                    │
+├─────────────────┼───────────────────────────────────────────────────┤
+│ sector          │ 반도체, 2차전지, AI, 금융, 바이오, 자동차...        │
+│                 │ → 테마형 ETF의 세부 분류 (테마형일 때만 사용)        │
+└─────────────────┴───────────────────────────────────────────────────┘
+```
+
+#### 결정 로직
+
+```python
+def determine_cluster_type(etf) -> str | None:
+    """ETF 유형에 따라 cluster_type 결정"""
+
+    # 시장형 ETF (KODEX 200, KOSPI 등) → 22개 그룹코드로 집계
+    if etf.category == "시장형":
+        return "GROUP_CODE"
+
+    # 테마형 ETF → sector에 따라 다른 집계 방식
+    elif etf.category == "테마형":
+        # 좁은 테마 (반도체, 2차전지 등) → 세분류로 상세 표시
+        narrow_themes = ["반도체", "2차전지", "AI", "로봇", "자동차"]
+        if etf.sector in narrow_themes:
+            return "SUB_SECTOR"
+
+        # 넓은 섹터 (금융, 헬스케어 등) → 중분류로 표시
+        broad_sectors = ["금융", "헬스케어", "에너지", "소비재"]
+        if etf.sector in broad_sectors:
+            return "INDUSTRY"
+
+        # 기타 테마 → 기본 세분류
+        return "SUB_SECTOR"
+
+    # 배당형 ETF → 어떤 산업군에서 배당을 주는지
+    elif etf.category == "배당형":
+        return "GROUP_CODE"
+
+    # 채권형, 파생형 → 클러스터 시각화 제외
+    else:
+        return None
+```
+
+#### 적용 예시
+
+| ETF | category | sector | cluster_type | 버블 표시 |
+|-----|----------|--------|--------------|-----------|
+| KODEX 200 | 시장형 | - | GROUP_CODE | 반도체, 금융, 바이오... |
+| KODEX 반도체 | 테마형 | 반도체 | SUB_SECTOR | 메모리, 장비, 팹리스... |
+| KODEX 금융 | 테마형 | 금융 | INDUSTRY | 은행, 증권, 보험... |
+| KODEX 고배당 | 배당형 | - | GROUP_CODE | 금융, 통신, 유틸리티... |
+| KODEX 국채 | 채권형 | - | **null** | (클러스터 없음) |
+| KODEX 레버리지 | 파생형 | - | **null** | (클러스터 없음) |
+
+### 2.3 집계 쿼리 예시
+
+```sql
+-- GROUP_CODE 집계 (시장 ETF)
+SELECT
+    ic.group_code,
+    ic.group_name,
+    SUM(esc.weight_pct) as total_weight,
+    COUNT(*) as stock_count
+FROM etf_stock_composition esc
+JOIN stock s ON s.id = esc.stock_id
+JOIN company_info ci ON ci.id = s.company_id
+JOIN industry_classification ic ON ic.code = ci.industry_code
+WHERE esc.etf_id = :etf_id
+GROUP BY ic.group_code, ic.group_name
+ORDER BY total_weight DESC;
+
+-- SUB_SECTOR 집계 (테마 ETF: 반도체, 2차전지 등)
+-- etf_stock_cluster_mapping 테이블 사용
+SELECT
+    escm.sector_code as sub_sector,
+    ic.name as sub_sector_name,
+    SUM(esc.weight_pct) as total_weight,
+    COUNT(*) as stock_count
+FROM etf_stock_cluster_mapping escm
+JOIN etf_stock_composition esc ON esc.id = escm.composition_id
+JOIN industry_classification ic ON ic.code = escm.sector_code
+WHERE escm.etf_id = :etf_id
+GROUP BY escm.sector_code, ic.name
+ORDER BY total_weight DESC;
+
+-- INDUSTRY 집계 (섹터 ETF: 금융, 헬스케어 등)
+SELECT
+    ic.parent_code as industry_code,
+    parent_ic.name as industry_name,
+    SUM(esc.weight_pct) as total_weight,
+    COUNT(*) as stock_count
+FROM etf_stock_composition esc
+JOIN stock s ON s.id = esc.stock_id
+JOIN company_info ci ON ci.id = s.company_id
+JOIN industry_classification ic ON ic.code = ci.industry_code
+JOIN industry_classification parent_ic ON parent_ic.code = ic.parent_code
+WHERE esc.etf_id = :etf_id
+GROUP BY ic.parent_code, parent_ic.name
+ORDER BY total_weight DESC;
+```
 
 ---
 
 ## 3. 테이블 구조
 
-### 3.1 etf_sector_cluster
+### 3.1 테이블 관계
+
+```
+┌─────────────────────────────┐
+│ etf_stock_cluster_mapping   │  개별 구성종목 → 섹터 매핑 (원본)
+├─────────────────────────────┤
+│ composition_id (FK)         │  ← etf_stock_composition
+│ sector_code                 │  ← industry_classification (Level 4)
+└──────────────┬──────────────┘
+               │ GROUP BY sector_code
+               ▼
+┌─────────────────────────────┐
+│ etf_sector_cluster          │  섹터별 집계 + 시각화 좌표 (결과)
+├─────────────────────────────┤
+│ sub_sector / group_code     │
+│ weight_pct (합계)           │
+│ stock_count (개수)          │
+│ pos_x, pos_y, radius        │  ← 버블 차트 좌표
+└─────────────────────────────┘
+```
+
+### 3.2 etf_sector_cluster
 
 ```sql
 CREATE TABLE "etf_sector_cluster" (
@@ -91,12 +409,12 @@ CREATE TABLE "etf_sector_cluster" (
     "base_date" DATE NOT NULL,                -- 기준일
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "fk_sector_breakdown_etf" FOREIGN KEY ("etf_id")
+    CONSTRAINT "fk_sector_cluster_etf" FOREIGN KEY ("etf_id")
         REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
-CREATE INDEX "idx_sector_breakdown_etf" ON "etf_sector_cluster"("etf_id");
-CREATE INDEX "idx_sector_breakdown_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
+CREATE INDEX "idx_sector_cluster_etf" ON "etf_sector_cluster"("etf_id");
+CREATE INDEX "idx_sector_cluster_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
 ```
 
 ### 3.2 컬럼 설명
@@ -184,7 +502,7 @@ def calculate_sector_positions(sectors: list) -> list:
 ### 5.1 ETF 섹터 분포 조회
 
 ```json
-GET /api/etf/123/sector-breakdown
+GET /api/v1/etf/123/sector-cluster
 
 {
   "etf_id": 123,
@@ -197,7 +515,7 @@ GET /api/etf/123/sector-breakdown
   },
   "sectors": [
     {
-      "group_code": "IT_SW",
+      "group_code": "IT_SEMI",
       "group_name": "반도체",
       "weight_pct": 28.4,
       "stock_count": 15,
@@ -239,8 +557,10 @@ GET /api/etf/123/sector-breakdown
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("androidx.compose.foundation:foundation:1.6.0")
-    implementation("androidx.compose.ui:ui-graphics:1.6.0")
+    // Compose BOM으로 버전 통일 관리
+    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.ui:ui-graphics")
 }
 ```
 
@@ -466,13 +786,15 @@ object ClusterCoordinateUtils {
      */
     fun getSectorColor(groupCode: String): Color {
         return when (groupCode) {
-            "IT_SW" -> Color(0xFF2196F3)
-            "FINANCE" -> Color(0xFF4CAF50)
-            "MANUFACTURING" -> Color(0xFFFF9800)
-            "CONSUMER" -> Color(0xFFE91E63)
-            "ENERGY" -> Color(0xFF9C27B0)
-            "HEALTHCARE" -> Color(0xFF00BCD4)
-            "AUTO" -> Color(0xFF795548)
+            "IT_SEMI" -> Color(0xFF2196F3)     // 반도체 - 파랑
+            "IT_SW" -> Color(0xFF03A9F4)       // 소프트웨어 - 하늘
+            "IT_ELEC" -> Color(0xFF00BCD4)     // 전자 - 청록
+            "FINANCE" -> Color(0xFF4CAF50)    // 금융 - 초록
+            "MANUFACTURING" -> Color(0xFFFF9800) // 제조 - 주황
+            "CONSUMER" -> Color(0xFFE91E63)   // 소비재 - 분홍
+            "ENERGY" -> Color(0xFF9C27B0)     // 에너지 - 보라
+            "HEALTHCARE" -> Color(0xFF009688) // 헬스케어 - 청록
+            "AUTO" -> Color(0xFF795548)       // 자동차 - 갈색
             else -> Color(0xFF607D8B)
         }
     }
@@ -502,8 +824,13 @@ fun getSectorIcon(sectorName: String): ImageVector {
 ## 7. 데이터 흐름
 
 ```
+┌─────────────────────────┐
+│ etf_stock_composition   │  구성종목 (삼성전자 15%, SK하이닉스 10%...)
+└────────┬────────────────┘
+         │
+         ▼ JOIN
 ┌──────────────────┐
-│ etf_compositions │  구성종목 (삼성전자 15%, SK하이닉스 10%...)
+│      stock       │  주식 → 회사 연결
 └────────┬─────────┘
          │
          ▼ JOIN
@@ -511,17 +838,27 @@ fun getSectorIcon(sectorName: String): ImageVector {
 │   company_info   │  종목 → 산업코드 매핑
 └────────┬─────────┘
          │
-         ▼ JOIN
-┌──────────────────────┐
-│ industry_classification │  산업코드 → group_code 매핑
-└────────┬────────────────┘
-         │
-         ▼ 집계 + 좌표계산
-┌──────────────────────┐
-│ etf_sector_cluster │  ETF별 섹터 분포 + 좌표 저장
-└──────────────────────┘
-         │
-         ▼ API
+         ├─── [시장/배당형 ETF] ─────────────────────────────┐
+         │                                                    │
+         ▼ JOIN                                               │
+┌──────────────────────┐                                     │
+│ industry_classification │  산업코드 → group_code 매핑       │
+└────────┬────────────────┘                                  │
+         │                                                    │
+         │                                                    │
+┌────────┴─── [테마형 ETF] ──────────────────────────────────┼───┐
+│                                                            │   │
+▼                                                            │   │
+┌─────────────────────────────┐                              │   │
+│ etf_stock_cluster_mapping   │  구성종목별 세분류 매핑        │   │
+└────────┬────────────────────┘                              │   │
+         │                                                    │   │
+         ▼ 집계 + 좌표계산 ◄──────────────────────────────────┘   │
+┌──────────────────────┐                                         │
+│ etf_sector_cluster   │  ETF별 섹터 분포 + 좌표 저장             │
+└────────┬─────────────┘                                         │
+         │                                                        │
+         ▼ API ◄─────────────────────────────────────────────────┘
 ┌──────────────────────┐
 │   Android Compose    │  버블 클러스터 렌더링
 └──────────────────────┘
@@ -551,8 +888,8 @@ async def update_etf_sector_cluster():
         sectors = calculate_sector_positions(sectors)
 
         # 5. 기존 데이터 삭제 후 새로 저장
-        delete_old_breakdown(etf.id)
-        save_sector_breakdown(etf.id, cluster_type, sectors)
+        delete_old_cluster(etf.id)
+        save_sector_cluster(etf.id, cluster_type, sectors)
 ```
 
 ---
@@ -581,11 +918,11 @@ async def update_etf_sector_cluster():
 ### 10.1 API Response 모델
 
 ```kotlin
-// dto/EtfSectorBreakdownResponse.kt
-data class EtfSectorBreakdownResponse(
+// dto/EtfSectorClusterResponse.kt
+data class EtfSectorClusterResponse(
     @SerializedName("etf_id") val etfId: Long,
     @SerializedName("etf_name") val etfName: String,
-    @SerializedName("cluster_type") val breakdownType: String,
+    @SerializedName("cluster_type") val clusterType: String,
     @SerializedName("base_date") val baseDate: String,
     val center: CenterPoint,
     val sectors: List<SectorItem>
@@ -626,7 +963,7 @@ sealed interface EtfClusterUiState {
 data class EtfClusterData(
     val etfId: Long,
     val etfName: String,
-    val breakdownType: String,
+    val clusterType: String,
     val baseDate: String,
     val sectors: List<SectorBubble>,
     val selectedSector: SectorBubble? = null
@@ -668,7 +1005,7 @@ class EtfClusterViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = EtfClusterUiState.Loading
 
-            etfRepository.getEtfSectorBreakdown(etfId)
+            etfRepository.getEtfSectorCluster(etfId)
                 .onSuccess { response ->
                     _uiState.value = EtfClusterUiState.Success(
                         data = response.toUiModel()
@@ -708,11 +1045,11 @@ class EtfClusterViewModel @Inject constructor(
 }
 
 // Response → UiModel 변환
-private fun EtfSectorBreakdownResponse.toUiModel(): EtfClusterData {
+private fun EtfSectorClusterResponse.toUiModel(): EtfClusterData {
     return EtfClusterData(
         etfId = etfId,
         etfName = etfName,
-        breakdownType = breakdownType,
+        clusterType = clusterType,
         baseDate = baseDate,
         sectors = sectors.map { sector ->
             SectorBubble(

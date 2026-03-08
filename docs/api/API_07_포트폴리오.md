@@ -95,12 +95,28 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| name | string | O | 포트폴리오 이름 (1~100자, 한글/영문/숫자/공백 허용) |
-| description | string | X | 포트폴리오 설명 (최대 1000자) |
+| name | string | O | 포트폴리오 이름 |
+| description | string | X | 포트폴리오 설명 |
 | totalInvestment | number | O | 총 투자금액 (최소 10,000원, 최대 100억원) |
 | etfs | array | O | ETF 구성 (최소 1개, 최대 20개) |
 | etfs[].etfId | number | O | ETF ID (양수 정수) |
 | etfs[].weightPct | number | O | 비중 (0.001~100.000, 소수점 3자리, 합계 100 필수) |
+
+**name 규칙**
+| 항목 | 값 |
+|------|-----|
+| 최소 길이 | 1자 |
+| 최대 길이 | 100자 |
+| 허용 문자 | 한글, 영문, 숫자, 공백, 특수문자(-_) |
+| 정규식 | `^[가-힣a-zA-Z0-9\s\-_]{1,100}$` |
+
+**description 규칙**
+| 항목 | 값 |
+|------|-----|
+| 최대 길이 | 1000자 (DB: TEXT) |
+| 허용 문자 | 모든 문자 |
+| 필수 여부 | 선택 |
+| 비고 | XSS 필터링 적용 |
 
 **Response**
 ```json
@@ -273,6 +289,9 @@ Authorization: Bearer {accessToken}
 
 ### 7. 포트폴리오 ETF 추가
 
+> **비중 정책**: ETF 추가 후 전체 비중 합계가 정확히 100%여야 합니다.
+> 클라이언트에서 기존 ETF 비중을 먼저 조정한 후 추가해야 합니다.
+
 **Request**
 ```
 POST /api/v1/portfolios/1/etfs
@@ -286,6 +305,11 @@ Content-Type: application/json
 }
 ```
 
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| etfId | number | O | 추가할 ETF ID |
+| weightPct | number | O | 비중 (0.001~100.000, 추가 후 합계 100% 필수) |
+
 **Response**
 ```json
 {
@@ -297,6 +321,8 @@ Content-Type: application/json
 ---
 
 ### 8. 포트폴리오 ETF 비중 수정
+
+> **비중 정책**: 전체 ETF 비중 합계가 정확히 100%여야 합니다. (100% 미만, 초과 모두 불가)
 
 **Request**
 ```
@@ -327,6 +353,12 @@ Content-Type: application/json
 }
 ```
 
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| etfs | array | O | ETF 비중 목록 |
+| etfs[].etfId | number | O | ETF ID |
+| etfs[].weightPct | number | O | 비중 (0.001~100.000, 합계 100% 필수) |
+
 **Response**
 ```json
 {
@@ -338,6 +370,9 @@ Content-Type: application/json
 ---
 
 ### 9. 포트폴리오 ETF 삭제
+
+> **비중 정책**: 삭제 후 남은 ETF 비중 합계가 100%여야 합니다.
+> 클라이언트에서 남은 ETF 비중을 먼저 조정한 후 삭제해야 합니다.
 
 **Request**
 ```

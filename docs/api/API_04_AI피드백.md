@@ -253,7 +253,15 @@ Content-Type: application/json
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
 | rating | string | O | 평가: `HELPFUL` (도움됨) / `NOT_HELPFUL` (도움안됨) |
-| comment | string | X | 추가 코멘트 (최대 500자, 한글/영문/숫자/특수문자 허용) |
+| comment | string | X | 추가 코멘트 |
+
+**comment 규칙**
+| 항목 | 값 |
+|------|-----|
+| 최대 길이 | 500자 |
+| 허용 문자 | 한글, 영문, 숫자, 공백, 특수문자 |
+| 필수 여부 | 선택 |
+| 비고 | XSS 필터링 적용 |
 
 **Response**
 ```json
@@ -286,7 +294,7 @@ Content-Type: application/json
    - 섹터 분포
 
 2. **시장 컨텍스트 수집**
-   - 최근 관련 뉴스 (news_etf_influence 테이블)
+   - 최근 관련 뉴스 (news_stock_mapping → etf_stock_composition 기반)
    - 시장 지표 (금리, 환율 등)
 
 3. **LLM 프롬프트 구성**
@@ -329,4 +337,3 @@ Content-Type: application/json
 | AI004 | REVIEW_PROCESSING | 리뷰 분석 중 |
 | AI005 | ALREADY_RATED | 이미 평가한 리뷰 |
 | AI006 | AI_SERVICE_UNAVAILABLE | AI 서비스 일시 불가 |
-| AI007 | RATE_LIMIT_EXCEEDED | 요청 한도 초과 |

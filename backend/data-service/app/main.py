@@ -460,33 +460,33 @@ async def get_etf_sector_cluster(
         raise HTTPException(status_code=404, detail="ETF를 찾을 수 없습니다.")
 
     # 섹터 분포 조회 (비중 내림차순)
-    breakdowns = db.query(ETFSectorCluster)\
+    clusters = db.query(ETFSectorCluster)\
         .filter(ETFSectorCluster.etf_id == etf_id)\
         .order_by(ETFSectorCluster.weight_pct.desc())\
         .all()
 
-    if not breakdowns:
+    if not clusters:
         raise HTTPException(status_code=404, detail="섹터 분포 데이터가 없습니다.")
 
     # 응답 생성
     sectors = []
-    for bd in breakdowns:
+    for sc in clusters:
         sectors.append(SectorItem(
-            group_code=bd.group_code,
-            group_name=bd.group_name,
-            weight_pct=float(bd.weight_pct) if bd.weight_pct else 0,
-            stock_count=bd.stock_count,
-            pos_x=float(bd.pos_x) if bd.pos_x else None,
-            pos_y=float(bd.pos_y) if bd.pos_y else None,
-            radius=float(bd.radius) if bd.radius else None,
-            distance_to_center=float(bd.distance_to_center) if bd.distance_to_center else None
+            group_code=sc.group_code,
+            group_name=sc.group_name,
+            weight_pct=float(sc.weight_pct) if sc.weight_pct else 0,
+            stock_count=sc.stock_count,
+            pos_x=float(sc.pos_x) if sc.pos_x else None,
+            pos_y=float(sc.pos_y) if sc.pos_y else None,
+            radius=float(sc.radius) if sc.radius else None,
+            distance_to_center=float(sc.distance_to_center) if sc.distance_to_center else None
         ))
 
     return SectorClusterResponse(
         etf_id=etf.id,
         etf_name=etf.name,
-        cluster_type=breakdowns[0].cluster_type if breakdowns else "GROUP_CODE",
-        base_date=str(breakdowns[0].base_date) if breakdowns and breakdowns[0].base_date else None,
+        cluster_type=clusters[0].cluster_type if clusters else "GROUP_CODE",
+        base_date=str(clusters[0].base_date) if clusters and clusters[0].base_date else None,
         center=CenterPoint(),
         sectors=sectors
     )
@@ -510,32 +510,32 @@ async def get_all_sector_clusters(
 
     results = []
     for etf in etfs:
-        breakdowns = db.query(ETFSectorCluster)\
+        clusters = db.query(ETFSectorCluster)\
             .filter(ETFSectorCluster.etf_id == etf.id)\
             .order_by(ETFSectorCluster.weight_pct.desc())\
             .all()
 
-        if not breakdowns:
+        if not clusters:
             continue
 
         sectors = []
-        for bd in breakdowns:
+        for sc in clusters:
             sectors.append(SectorItem(
-                group_code=bd.group_code,
-                group_name=bd.group_name,
-                weight_pct=float(bd.weight_pct) if bd.weight_pct else 0,
-                stock_count=bd.stock_count,
-                pos_x=float(bd.pos_x) if bd.pos_x else None,
-                pos_y=float(bd.pos_y) if bd.pos_y else None,
-                radius=float(bd.radius) if bd.radius else None,
-                distance_to_center=float(bd.distance_to_center) if bd.distance_to_center else None
+                group_code=sc.group_code,
+                group_name=sc.group_name,
+                weight_pct=float(sc.weight_pct) if sc.weight_pct else 0,
+                stock_count=sc.stock_count,
+                pos_x=float(sc.pos_x) if sc.pos_x else None,
+                pos_y=float(sc.pos_y) if sc.pos_y else None,
+                radius=float(sc.radius) if sc.radius else None,
+                distance_to_center=float(sc.distance_to_center) if sc.distance_to_center else None
             ))
 
         results.append(SectorClusterResponse(
             etf_id=etf.id,
             etf_name=etf.name,
-            cluster_type=breakdowns[0].cluster_type,
-            base_date=str(breakdowns[0].base_date) if breakdowns[0].base_date else None,
+            cluster_type=clusters[0].cluster_type,
+            base_date=str(clusters[0].base_date) if clusters[0].base_date else None,
             center=CenterPoint(),
             sectors=sectors
         ))

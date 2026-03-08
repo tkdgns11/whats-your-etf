@@ -15,12 +15,10 @@
 | PUT | `/me/password` | 비밀번호 변경 | O |
 | DELETE | `/me` | 회원 탈퇴 | O |
 | GET | `/me/favorites` | 관심 ETF 목록 조회 | O |
-| POST | `/me/favorites/{ticker}` | 관심 ETF 추가 | O |
-| DELETE | `/me/favorites/{ticker}` | 관심 ETF 삭제 | O |
+| POST | `/me/favorites/{etfId}` | 관심 ETF 추가 | O |
+| DELETE | `/me/favorites/{etfId}` | 관심 ETF 삭제 | O |
 | GET | `/me/holdings` | 보유 ETF 목록 조회 (마이데이터) | O |
 | POST | `/me/holdings/sync` | 마이데이터 동기화 | O |
-| GET | `/me/notifications` | 알림 설정 조회 | O |
-| PUT | `/me/notifications` | 알림 설정 변경 | O |
 
 ---
 
@@ -42,7 +40,6 @@ Authorization: Bearer {accessToken}
     "id": 1,
     "email": "hong@gmail.com",
     "nickname": "홍길동",
-    "profileImage": "https://...",
     "loginProvider": "KAKAO",
     "hasPassword": false,
     "createdAt": "2025-01-10T10:00:00Z"
@@ -62,15 +59,13 @@ Content-Type: application/json
 ```
 ```json
 {
-  "nickname": "길동이",
-  "profileImage": "https://..."
+  "nickname": "길동이"
 }
 ```
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| nickname | string | X | 닉네임 (2~50자, 한글/영문/숫자만 허용) |
-| profileImage | string | X | 프로필 이미지 URL (최대 500자) |
+| nickname | string | X | 닉네임 (2~20자, 한글/영문/숫자만 허용, 정규식: `^[가-힣a-zA-Z0-9]{2,20}$`) |
 
 **Response**
 ```json
@@ -80,7 +75,6 @@ Content-Type: application/json
     "id": 1,
     "email": "hong@gmail.com",
     "nickname": "길동이",
-    "profileImage": "https://...",
     "loginProvider": "KAKAO"
   },
   "message": "프로필이 수정되었습니다."
@@ -214,13 +208,13 @@ Authorization: Bearer {accessToken}
 
 **Request**
 ```
-POST /api/v1/users/me/favorites/069500
+POST /api/v1/users/me/favorites/{etfId}
 Authorization: Bearer {accessToken}
 ```
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| ticker | string | O | ETF 종목 코드 (6자리 숫자, 예: 069500) |
+| etfId | number | O | ETF ID (양수 정수) |
 
 **Response**
 ```json
@@ -228,6 +222,7 @@ Authorization: Bearer {accessToken}
   "success": true,
   "message": "관심 ETF에 추가되었습니다.",
   "data": {
+    "etfId": 1,
     "ticker": "069500",
     "name": "KODEX 200"
   }
@@ -251,7 +246,7 @@ Authorization: Bearer {accessToken}
 
 **Request**
 ```
-DELETE /api/v1/users/me/favorites/069500
+DELETE /api/v1/users/me/favorites/{etfId}
 Authorization: Bearer {accessToken}
 ```
 
@@ -337,56 +332,6 @@ Authorization: Bearer {accessToken}
     "code": "MYDATA_NOT_CONNECTED",
     "message": "마이데이터 연동이 필요합니다."
   }
-}
-```
-
----
-
-### 10. 알림 설정 조회
-
-**Request**
-```
-GET /api/v1/users/me/notifications
-Authorization: Bearer {accessToken}
-```
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "etfListingAlert": true,
-    "etfDelistingAlert": true,
-    "portfolioAlert": true,
-    "newsAlert": false
-  }
-}
-```
-
----
-
-### 11. 알림 설정 변경
-
-**Request**
-```
-PUT /api/v1/users/me/notifications
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-```
-```json
-{
-  "etfListingAlert": true,
-  "etfDelistingAlert": true,
-  "portfolioAlert": false,
-  "newsAlert": true
-}
-```
-
-**Response**
-```json
-{
-  "success": true,
-  "message": "알림 설정이 변경되었습니다."
 }
 ```
 

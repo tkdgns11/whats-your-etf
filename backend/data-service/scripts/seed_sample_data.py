@@ -22,7 +22,7 @@ def create_tables():
     """테이블 생성 (없으면)"""
     from app.database import Base
     from app.models.company import IndustryClassification, CompanyInfo
-    from app.models.etf import ETF, ETFComposition, ETFSectorBreakdown, ETFPrice
+    from app.models.etf import ETF, ETFComposition, ETFSectorCluster, ETFPrice
 
     Base.metadata.create_all(bind=engine)
     print("테이블 생성 완료")

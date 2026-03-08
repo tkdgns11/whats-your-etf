@@ -57,7 +57,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@kakao.com",
       "nickname": "홍길동",
-      "profileImage": "https://...",
       "loginProvider": "KAKAO"
     }
   }
@@ -78,7 +77,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@kakao.com",
       "nickname": "카카오닉네임",
-      "profileImage": "https://...",
       "loginProvider": "KAKAO"
     }
   }
@@ -195,7 +193,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@gmail.com",
       "nickname": "홍길동",
-      "profileImage": null,
       "loginProvider": "EMAIL"
     }
   },
@@ -280,7 +277,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@gmail.com",
       "nickname": "홍길동",
-      "profileImage": "https://...",
       "loginProvider": "EMAIL"
     }
   }

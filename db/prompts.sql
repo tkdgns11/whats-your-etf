@@ -209,6 +209,53 @@ ETF 변동률: {actual_change_rate}%
 );
 
 
+-- =============================================
+-- 4. ETF 섹터 영향력 분석 프롬프트
+-- =============================================
+
+INSERT INTO ai_prompt (name, version, prompt_template, description, is_active)
+VALUES (
+    'sector_impact_analysis',
+    'v1.0',
+    '당신은 ETF 섹터 분석 전문가입니다. ETF 내 특정 섹터의 영향력과 특징을 분석해주세요.
+
+## 분석 규칙
+
+1. **analysis**: 2~3문장으로 핵심 분석 (100자 내외)
+   - 섹터 집중도와 리스크
+   - 해당 섹터가 ETF에 미치는 영향
+   - 투자 시 유의점
+
+## 입력 형식
+
+```
+[ETF 정보]
+ETF명: {etf_name}
+ETF 유형: {category}
+
+[섹터 정보]
+섹터명: {sector_name}
+섹터 비중: {weight_pct}%
+종목 수: {stock_count}개
+
+[주요 구성 종목]
+{stock_list}
+```
+
+## 출력 형식 (JSON)
+
+```json
+{
+  "analysis": "반도체 섹터의 높은 기여도로 인해 IT 업황 회복 시 강한 반등이 예상됩니다. 단, 상위 2개 종목 비중이 80% 이상으로 집중도가 높은 점을 유의하세요."
+}
+```
+
+반드시 위 JSON 형식으로만 응답해주세요.',
+    'ETF 내 특정 섹터 영향력 분석 - 클러스터 클릭 시 표시',
+    true
+);
+
+
 -- 확인
 SELECT id, name, version, is_active, LEFT(description, 50) as description
 FROM ai_prompt

@@ -17,7 +17,7 @@
 | GET | `/search` | ETF 검색 | X |
 | GET | `/clusters` | ETF 클러스터 목록 조회 | X |
 | GET | `/clusters/{clusterId}` | 클러스터별 ETF 조회 | X |
-| GET | `/{etfId}/sector-breakdown` | ETF 섹터 분포 조회 | X |
+| GET | `/{etfId}/sector-cluster` | ETF 섹터 분포 조회 | X |
 | GET | `/{etfId}/timeline` | ETF 뉴스 타임라인 조회 | X |
 | GET | `/recommend` | ETF 추천 | O |
 
@@ -36,7 +36,7 @@ GET /api/v1/etf?page=0&size=20&strategyType=INDEX&sortBy=totalAsset
 |-----------|------|------|------|
 | page | int | X | 페이지 번호 (기본 0, 최소 0) |
 | size | int | X | 페이지 크기 (기본 20, 최소 1, 최대 100) |
-| strategyType | string | X | 전략 유형: `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
+| strategyType | string | X | 전략 유형: `INDEX` / `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
 | sector | string | X | 섹터 필터 (group_code, 최대 20자): IT_SEMI, IT_ELEC, BIO 등 22개 |
 | riskGrade | string | X | 위험등급: `HIGH_RISK` / `MODERATE` / `STABLE` |
 | sortBy | string | X | 정렬 기준: `aum` / `expenseRatio` / `name` / `changeRate` |
@@ -190,7 +190,7 @@ GET /api/v1/etf/search?keyword=코덱스&strategyType=INDEX
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
 | keyword | string | O | 검색어 (ETF명/티커, 2~100자) |
-| strategyType | string | X | 전략 유형 필터: `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
+| strategyType | string | X | 전략 유형 필터: `INDEX` / `MARKET` / `THEME` / `DIVIDEND` / `BOND` / `DERIVATIVE` |
 | issuer | string | X | 운용사 필터 (최대 50자): KODEX, TIGER, KBSTAR 등 |
 
 **Response**
@@ -296,7 +296,7 @@ ETF 구성종목의 산업분류(group_code) 기반 섹터 분포
 
 **Request**
 ```
-GET /api/v1/etf/1/sector-breakdown
+GET /api/v1/etf/1/sector-cluster
 ```
 
 **Response**
@@ -308,7 +308,7 @@ GET /api/v1/etf/1/sector-breakdown
     "ticker": "069500",
     "name": "KODEX 200",
     "baseDate": "2025-01-31",
-    "sectorBreakdown": [
+    "sectorCluster": [
       {
         "groupCode": "IT_SEMI",
         "groupName": "반도체",
@@ -346,17 +346,16 @@ GET /api/v1/etf/1/sector-breakdown
 ---
 
 ### 9. ETF 뉴스 타임라인 조회
-ETF에 영향을 미친 뉴스를 타임라인 형태로 조회 (실제 가격 변동 검증 포함)
+ETF 구성종목 관련 뉴스를 타임라인 형태로 조회 (news_stock_mapping 기반)
 
 **Request**
 ```
-GET /api/v1/etf/1/timeline?limit=10&verifiedOnly=true
+GET /api/v1/etf/1/timeline?size=10
 ```
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| limit | int | X | 조회 개수 (기본 10, 최대 50) |
-| verifiedOnly | boolean | X | 검증된 뉴스만 조회 (기본 false) |
+| size | int | X | 조회 개수 (기본 10, 최대 50) |
 
 **Response**
 ```json
@@ -369,29 +368,25 @@ GET /api/v1/etf/1/timeline?limit=10&verifiedOnly=true
     "timeline": [
       {
         "newsId": 123,
-        "title": "연준 기준금리 동결 발표",
+        "title": "삼성전자, HBM 대규모 수주 성공",
         "source": "한국경제",
         "publishedAt": "2025-01-17T09:30:00Z",
-        "timelineTitle": "연준 금리 동결",
-        "timelineSummary": "시장 예상치 부합, 기술주 중심 반등세",
-        "influenceType": "POSITIVE",
-        "influenceScore": 0.75,
-        "actualChangeRate": 1.82,
-        "isVerified": true,
-        "verifiedAt": "2025-01-17T18:00:00Z"
+        "relatedStock": {
+          "stockCode": "005930",
+          "companyName": "삼성전자",
+          "weightPct": 25.5
+        }
       },
       {
         "newsId": 118,
-        "title": "미중 반도체 갈등 고조",
+        "title": "SK하이닉스, AI 반도체 신제품 출시",
         "source": "연합뉴스",
         "publishedAt": "2025-01-16T14:00:00Z",
-        "timelineTitle": "미중 반도체 갈등",
-        "timelineSummary": "수출 규제 강화 우려로 IT주 하락",
-        "influenceType": "NEGATIVE",
-        "influenceScore": 0.68,
-        "actualChangeRate": -1.25,
-        "isVerified": true,
-        "verifiedAt": "2025-01-16T18:00:00Z"
+        "relatedStock": {
+          "stockCode": "000660",
+          "companyName": "SK하이닉스",
+          "weightPct": 8.2
+        }
       }
     ],
     "totalCount": 45
@@ -472,4 +467,4 @@ ETF 구성종목의 산업분류에 사용되는 22개 group_code:
 | ETF001 | ETF_NOT_FOUND | ETF를 찾을 수 없음 |
 | ETF002 | ETF_PRICE_NOT_FOUND | ETF 가격 정보를 찾을 수 없음 |
 | ETF003 | ETF_COMPOSITION_NOT_FOUND | ETF 구성종목 정보를 찾을 수 없음 |
-| ETF004 | SECTOR_BREAKDOWN_NOT_FOUND | ETF 섹터 분포 정보를 찾을 수 없음 |
+| ETF004 | SECTOR_CLUSTER_NOT_FOUND | ETF 섹터 분포 정보를 찾을 수 없음 |

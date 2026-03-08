@@ -1,5 +1,25 @@
 # 뉴스-ETF 영향력 분석 설계
 
+> ⚠️ **문서 폐기 안내** (2025-03-08)
+>
+> 이 문서는 **기존 LLM 기반 뉴스 분석 방식**을 설명합니다.
+> 현재 시스템은 **네이버 증권 종목뉴스 방식**으로 변경되었습니다.
+>
+> **현재 방식:**
+> - 네이버가 이미 뉴스-종목 매핑을 해놓음 (LLM 분석 불필요)
+> - `news_stock_mapping` 테이블 사용
+> - ETF 관련 뉴스 = ETF 구성종목(`etf_stock_composition`)의 뉴스
+>
+> **참고 문서:**
+> - `docs/api/API_03_뉴스.md` - 현재 뉴스 API 명세
+> - `docs/planning/WhatsYourETF_기획안.md` 4.3절 - 현재 뉴스 설계
+>
+> 아래 내용은 **참고용으로만 보존**합니다.
+
+---
+
+# [폐기됨] 기존 LLM 기반 뉴스 분석 설계
+
 > 뉴스 기사가 어떤 회사/산업/ETF에 영향을 미치는지 분석하는 기능 설계 문서
 
 ---
@@ -18,9 +38,9 @@
 |------|------|
 | **All-LLM 분석** | GPT-4o가 직접 모든 뉴스 분석 (품질 우선) |
 | **Spam Filter** | Whitelist + Blacklist 키워드로 명백한 스팸 제거 |
-| **Constrained Selection** | LLM이 우리 DB 목록에서만 "선택" (Hallucination 방지) |
-| **1:N 영향 매핑** | 뉴스 하나가 여러 회사/산업에 각각 다른 영향도로 매핑 |
+| **ETF 직접 매핑** | 뉴스 → ETF 직접 연결 (news_etf_influence) |
 | **타임라인 검증** | ETF 타임라인은 장 마감 후 검증된 데이터만 표시 |
+| **키워드/요약 저장** | news_article에 keywords, content_summary 저장 |
 
 ### 1.3 왜 All-LLM인가?
 
@@ -43,14 +63,36 @@ app/
 │   ├── news_impact_analyzer.py  # GPT-4o 분석 서비스 (Constrained LLM)
 │   └── llm_service.py           # OpenAI API 래퍼
 ├── scrapers/
-│   └── news_scraper.py      # Google News RSS 크롤러 + Spam Filter
+│   ├── google_scraper.py    # Google News RSS 크롤러
+│   ├── naver_scraper.py     # Naver News API 크롤러
+│   ├── content_scraper.py   # 본문 + 썸네일(og:image) 크롤러
+│   └── keywords.py          # 14개 카테고리 + 키워드 매핑
 ├── utils/
 │   └── spam_filter.py       # Spam Filter (Whitelist/Blacklist)
 └── schedulers/
     └── scheduler.py         # APScheduler 스케줄러
 ```
 
-### 1.5 화면 예시
+### 1.5 뉴스 카테고리 (14개)
+
+| 코드 | 이름 | 키워드 예시 |
+|------|------|-------------|
+| NEWS_SEMI | 반도체 | 반도체, HBM, 파운드리, 메모리 |
+| NEWS_IT | IT/전자 | IT, 전자, 소프트웨어, AI |
+| NEWS_BIO | 바이오/의약 | 바이오, 제약, 신약 |
+| NEWS_AUTO | 자동차 | 자동차, 전기차, 배터리 |
+| NEWS_CHEM | 화학/소재 | 화학, 철강, 소재 |
+| NEWS_ENERGY | 에너지 | 에너지, 태양광, 원자력 |
+| NEWS_FINANCE | 금융 | 금융, 은행, 보험 |
+| NEWS_CONSTRUCT | 건설/부동산 | 건설, 부동산, 인프라 |
+| NEWS_CONSUMER | 소비재 | 소비재, 유통, 식품 |
+| NEWS_TELECOM | 통신/미디어 | 통신, 미디어, 엔터 |
+| NEWS_TRANSPORT | 운송/물류 | 운송, 물류, 항공 |
+| NEWS_INDUSTRY | 산업재 | 기계, 조선, 방산 |
+| NEWS_ETC | 기타 | (매칭 안됨) |
+| NEWS_MARKET | 시장/경제 | 금리, 환율, 코스피, 연준 |
+
+### 1.6 화면 예시
 
 **뉴스 상세 - 관련 ETF (실시간)**
 ```
@@ -85,11 +127,14 @@ app/
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  경제 뉴스 RSS 수집                                          │
-│  - 정기 크롤링: 10분마다 (우선순위 키워드)                     │
-│  - 전체 크롤링: 1시간마다 (모든 키워드)                        │
-│  - Google News + Naver News                                 │
-│  - ~100개/일 (중복 제거 후)                                  │
+│  경제 뉴스 수집                                               │
+│  [메인] Naver News API (naver_scraper.py)                    │
+│    - n.news.naver.com URL → 본문 크롤링 성공률 높음 (15개)    │
+│    - originallink → 언론사명 추출                            │
+│  [보조] Google News RSS (google_scraper.py)                  │
+│    - 본문 크롤링 가능한 6개 언론사만 사용                      │
+│  - 정기 크롤링: 10분마다 / 전체 크롤링: 1시간마다              │
+│  - 키워드별 카테고리 자동 할당 (14개)                         │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -97,44 +142,94 @@ app/
 │  - Whitelist: 경제 키워드 있으면 무조건 통과                  │
 │  - Blacklist: 스포츠/연예/날씨/광고 등 스팸 제거              │
 │  - 패턴 매칭: [광고], [스포츠] 등                            │
-│  - ~90개 통과                                               │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  본문 크롤링 + 썸네일 추출                                    │
-│  - content_scraper.py (og:image 포함)                       │
-│  - 본문 없어도 RSS snippet으로 LLM 분석 가능                  │
+│  본문 크롤링 + 썸네일 추출 (content_scraper.py)               │
+│  - Naver News: 15개 언론사 (n.news.naver.com 통합 구조)       │
+│  - Google News: 6개 언론사 (직접 크롤링 가능한 곳만)          │
+│  - 썸네일: og:image / twitter:image 메타태그 추출             │
+│  - ⚠️ 본문 크롤링 실패 시 → LLM 분석 대상 제외               │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  GPT-4o 분석 (NewsImpactAnalyzer)                            │
-│  - 입력: 뉴스 제목/본문 + 관심 ETF 회사 + 상위 100개 회사      │
-│  - LLM이 DB 목록에서 관련 회사/산업 "선택" (Constrained)      │
-│  - 출력: impacts[] + summary[] + keywords[]                 │
+│  GPT-4o 분석 (NewsAnalyzer)                                  │
+│  - 대상: 본문(content)이 있는 뉴스만                          │
+│  - 입력: 뉴스 제목/본문                                      │
+│  - 출력: keywords[] + content_summary (bullets)              │
 │  - 비용: ~$0.40/일 ≈ $12/월                                 │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  DB 저장                                                    │
 │  - news_article: 뉴스 기본 정보 + content_summary + keywords │
-│  - news_impact: 회사/산업별 영향도 (1:N)                     │
-│  - 관련 없는 뉴스: impacts = [] (저장은 하되 매핑 없음)        │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  장 마감 후 ETF 영향 검증                                     │
+│  - 뉴스 카테고리/키워드 기반 관련 ETF 매핑                    │
+│  - 실제 ETF 주가 변동률 확인                                  │
+│  - news_etf_influence 저장 (is_verified=TRUE)                │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  알림 발송                                                   │
-│  - user_holding_etf → etf → etf_composition → company_info  │
-│  - news_impact와 조인 → 관련 사용자에게 알림                  │
+│  - user_holding_etf → etf → news_etf_influence              │
+│  - 관련 사용자에게 알림                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Spam Filter
+## 3. 썸네일 추출
+
+### 3.1 추출 방식
+
+본문 크롤링 시 `og:image` 메타태그에서 썸네일 URL 추출:
+
+```python
+def _extract_og_image(self, html: str) -> Optional[str]:
+    """Open Graph 이미지 추출"""
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # 1순위: og:image
+    og_image = soup.find('meta', property='og:image')
+    if og_image and og_image.get('content'):
+        return og_image['content']
+
+    # 2순위: twitter:image
+    twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
+    if twitter_image and twitter_image.get('content'):
+        return twitter_image['content']
+
+    return None
+```
+
+### 3.2 저장 필드
+
+| 테이블 | 컬럼 | 타입 |
+|--------|------|------|
+| news_article | thumbnail_url | VARCHAR(1000) |
+
+### 3.3 처리 흐름
+
+```
+content_scraper.extract_content(url)
+    │
+    ├── 본문 추출 → news_article.content
+    │
+    └── 썸네일 추출 → news_article.thumbnail_url
+            │
+            └── og:image / twitter:image 메타태그
+```
+
+---
+
+## 4. Spam Filter
 
 > 명백한 스팸만 제거하고, 나머지는 GPT-4o가 판단
 
-### 3.1 구현 (`app/utils/spam_filter.py`)
+### 4.1 구현 (`app/utils/spam_filter.py`)
 
 ```python
 # 스팸 키워드 (Blacklist)
@@ -186,7 +281,7 @@ def is_spam(title: str, description: str = None) -> FilterResult:
     """
 ```
 
-### 3.2 왜 Whitelist가 필요한가?
+### 4.2 왜 Whitelist가 필요한가?
 
 | 케이스 | 제목 | Blacklist만 | Whitelist 포함 |
 |--------|------|------------|----------------|
@@ -196,7 +291,7 @@ def is_spam(title: str, description: str = None) -> FilterResult:
 
 **Whitelist 우선순위로 경제 뉴스 놓치지 않음. 애매한 건 GPT-4o가 판단.**
 
-### 3.3 news_scraper.py 연동
+### 4.3 news_scraper.py 연동
 
 ```python
 from app.utils.spam_filter import is_spam
@@ -213,7 +308,7 @@ async def _parse_item(self, item, keyword: str) -> Optional[NewsArticle]:
     return NewsArticle(...)
 ```
 
-### 3.4 수집 통계 반환
+### 4.4 수집 통계 반환
 
 ```python
 async def scrape_by_keyword(self, keyword: str, max_items: int = 5) -> dict:
@@ -225,175 +320,97 @@ async def scrape_by_keyword(self, keyword: str, max_items: int = 5) -> dict:
 
 ---
 
-## 4. GPT-4o 분석 (Constrained LLM)
+## 5. GPT-4o 분석 (뉴스 요약 및 키워드 추출)
 
-### 4.1 핵심 원칙: "생성" 아닌 "선택"
+### 5.1 핵심 원칙
 
-| 나쁜 예 | 좋은 예 |
-|---------|---------|
-| "이 뉴스의 산업 분류를 알려주세요" | "아래 목록에서 관련된 것을 선택하세요" |
-| LLM이 새로운 분류 만들 수 있음 | 우리 DB에 있는 값만 선택 가능 |
-| Hallucination 위험 | **Hallucination 방지** |
+| 원칙 | 설명 |
+|------|------|
+| **요약 중심** | 뉴스 핵심 내용을 3개 bullet point로 요약 |
+| **키워드 추출** | 투자 관련 핵심 키워드 4~6개 추출 |
+| **JSON 출력** | 구조화된 형식으로 출력하여 파싱 용이 |
 
-### 4.2 구현 (`app/services/news_impact_analyzer.py`)
+### 5.2 프롬프트 예시
+
+> ai_prompt 테이블의 'news_analysis' 프롬프트 참조
 
 ```python
-# 시스템 프롬프트
-SYSTEM_PROMPT = """당신은 금융 뉴스 분석 전문가입니다.
-뉴스 기사를 분석하여 관련된 회사와 산업을 아래 목록에서만 선택하고, 각각의 영향도를 평가합니다.
-
-## 규칙
-1. **반드시 제공된 목록에서만 선택** (목록에 없으면 선택 불가)
-2. 직접 언급된 것 + 간접 영향 받는 것 모두 포함
-3. 영향도 점수: -1.0(매우 부정) ~ +1.0(매우 긍정)
-4. 관련 없으면 빈 배열 반환
-5. 요약은 3개 이내 bullet point로
-
-## 출력 형식 (JSON)
+# 출력 형식 (JSON)
 {
-  "impacts": [
-    {"target": "삼성전자", "type": "company", "score": 0.7, "reason": "AI 반도체 투자 확대"},
-    {"target": "IT_SEMI", "type": "industry", "score": 0.5, "reason": "반도체 업황 개선 기대"}
-  ],
-  "summary": [
-    "삼성전자가 AI 반도체에 10조원 투자 발표",
-    "2025년까지 생산능력 2배 확대 계획"
-  ],
-  "keywords": ["AI반도체", "삼성전자", "투자확대"]
-}"""
-
-
-class NewsImpactAnalyzer:
-    def __init__(self, db: Session):
-        self.db = db
-        self.llm = LLMService(db)
-        self._companies_cache = None
-        self._industries_cache = None
-
-    def _load_companies(self) -> List[Dict]:
-        """회사 목록 로드 (캐싱)"""
-        # 관심 ETF 포함 회사 + 상위 100개
-        if self._companies_cache is None:
-            companies = self.db.query(CompanyInfo).filter(
-                CompanyInfo.is_active == True
-            ).all()
-            self._companies_cache = [
-                {"id": c.id, "name": c.stock_name, "code": c.stock_code, "group": c.industry_group}
-                for c in companies
-            ]
-        return self._companies_cache
-
-    def _build_user_message(self, news: NewsArticle) -> str:
-        """프롬프트 입력 메시지 생성"""
-        companies = self._load_companies()
-        industries = self._load_industries()
-
-        content = news.content or ""
-        if len(content) > 1000:
-            content = content[:1000] + "..."
-
-        # 회사 목록 (상위 100개)
-        company_list = "\n".join([
-            f"- {c['name']} ({c['code']}, {c['group'] or '기타'})"
-            for c in companies[:100]
-        ])
-
-        # 산업 목록
-        industry_list = "\n".join([
-            f"- {ind['code']}: {ind['name']}"
-            for ind in industries
-        ])
-
-        return f"""[뉴스]
-제목: {news.title}
-본문: {content}
-출처: {news.source}
-발행일: {news.published_at}
-
-[회사 목록] - 이 중에서만 선택
-{company_list}
-
-[산업 목록] - 이 중에서만 선택 (group_code 사용)
-{industry_list}
-
-위 뉴스를 분석하여 관련 회사/산업과 영향도를 JSON으로 출력하세요."""
-```
-
-### 4.3 회사 목록 전달 전략
-
-| 전략 | 토큰 | 장점 | 단점 |
-|------|------|------|------|
-| 전체 2000개 | ~4000 | 모든 회사 분석 | 비용 증가 |
-| **상위 100개** | ~400 | 비용 절약 | 소형주 놓침 |
-| 관심 ETF 회사 | 가변 | 사용자 맞춤 | 구현 복잡 |
-
-**현재 구현**: 상위 100개 (시가총액 기준)
-**향후 개선**: 관심 ETF 포함 회사 + 상위 100개
-
-### 4.4 1:N 영향 매핑 예시
-
-```
-뉴스: "TSMC HBM 생산 확대, 삼성전자 추격 어려워"
-
-LLM 분석 결과:
-{
-  "impacts": [
-    {"target": "TSMC", "type": "company", "score": 0.8, "reason": "HBM 시장 점유율 확대"},
-    {"target": "삼성전자", "type": "company", "score": -0.3, "reason": "경쟁 심화로 점유율 하락 우려"},
-    {"target": "SK하이닉스", "type": "company", "score": 0.2, "reason": "HBM 수요 증가 수혜"},
-    {"target": "반도체", "type": "industry", "score": 0.4, "reason": "HBM 시장 전체 성장"}
-  ],
-  ...
+  "keywords": ["금리동결", "나스닥", "빅테크", "반도체"],
+  "content_summary": {
+    "bullets": [
+      "핵심 사실 요약 (50자 내외)",
+      "영향 및 의미 설명 (50자 내외)",
+      "향후 전망 또는 투자 시사점 (50자 내외)"
+    ]
+  },
+  "industry_influence": [
+    {"group_code": "IT_SEMI", "relevance": 0.85, "sentiment": "POSITIVE"},
+    {"group_code": "IT_ELEC", "relevance": 0.60, "sentiment": "POSITIVE"}
+  ]
 }
 ```
 
+### 5.3 ETF 영향도 매핑 흐름
+
+```
+뉴스: "TSMC HBM 생산 확대, 삼성전자 추격 어려워"
+          │
+          ▼ GPT-4o 분석
+┌─────────────────────────────────────┐
+│ news_article 업데이트                │
+│ ├─ keywords: ["HBM", "TSMC", ...]  │
+│ └─ content_summary: {bullets: [...]}│
+│ └─ industry_influence (참고용)       │
+└─────────────────────────────────────┘
+          │
+          ▼ 장 마감 후 ETF 매핑 (별도 배치)
+┌─────────────────────────────────────┐
+│ news_etf_influence                   │
+│ ├─ etf_id: 45 (반도체 ETF)           │
+│ │   influence_type: POSITIVE        │
+│ │   actual_change_rate: +1.24%      │
+│ └─ is_verified: TRUE                │
+└─────────────────────────────────────┘
+```
+
 **포인트:**
-- 같은 뉴스에서 회사별로 다른 영향도
-- 직접 언급(TSMC) + 간접 영향(삼성전자, SK하이닉스) 모두 캡처
-- 산업 전체 영향도 별도 산정
+- 뉴스 분석 시점에는 keywords, summary만 저장
+- ETF 영향도는 장 마감 후 실제 주가 데이터로 검증 후 저장
+- news_etf_influence는 검증된 데이터만 표시
 
 ---
 
-## 5. 테이블 구조
+## 6. 테이블 구조
 
-### 5.1 news_impact (1차 분석: 뉴스 → 회사/산업)
+### 6.1 news_article (뉴스 기본 정보 + AI 분석 결과)
 
 ```sql
-CREATE TABLE "news_impact" (
+CREATE TABLE "news_article" (
     "id" BIGSERIAL PRIMARY KEY,
-    "news_id" BIGINT NOT NULL,
-
-    -- 영향 대상 (둘 중 하나)
-    "target_type" VARCHAR(20) NOT NULL,       -- 'COMPANY' | 'INDUSTRY'
-    "company_id" BIGINT,                      -- company_info FK (target_type='COMPANY')
-    "industry_code" VARCHAR(20),              -- industry_classification FK (target_type='INDUSTRY')
-
-    -- 영향도
-    "impact_score" DECIMAL(3,2) NOT NULL,     -- -1.00 ~ +1.00
-    "impact_reason" VARCHAR(200),             -- "AI 반도체 투자 확대로 실적 개선 기대"
-
+    "title" VARCHAR(500) NOT NULL,
+    "content" TEXT,                               -- 뉴스 본문 전체
+    "content_summary" JSONB,                      -- AI 핵심 요약 {"bullets": ["...", "...", "..."]}
+    "source" VARCHAR(100),                        -- 언론사명
+    "source_url" VARCHAR(1000) NOT NULL UNIQUE,   -- 원본 URL
+    "thumbnail_url" VARCHAR(1000),
+    "category_code" VARCHAR(30),                  -- category FK (NEWS_MACRO, NEWS_SEMI 등)
+    "keywords" JSONB,                             -- 키워드 태그 ["금리동결", "나스닥", "빅테크"]
+    "published_at" TIMESTAMP,
+    "view_count" INTEGER DEFAULT 0,
+    "is_active" BOOLEAN DEFAULT TRUE,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "fk_news_impact_news" FOREIGN KEY ("news_id")
-        REFERENCES "news_article"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_news_impact_company" FOREIGN KEY ("company_id")
-        REFERENCES "company_info"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_news_impact_industry" FOREIGN KEY ("industry_code")
-        REFERENCES "industry_classification"("code") ON DELETE CASCADE,
-    CONSTRAINT "chk_target" CHECK (
-        (target_type = 'COMPANY' AND company_id IS NOT NULL AND industry_code IS NULL) OR
-        (target_type = 'INDUSTRY' AND industry_code IS NOT NULL AND company_id IS NULL)
-    )
+    CONSTRAINT "fk_news_category" FOREIGN KEY ("category_code") REFERENCES "category"("code")
 );
 
 -- 인덱스
-CREATE INDEX idx_news_impact_news ON news_impact(news_id);
-CREATE INDEX idx_news_impact_company ON news_impact(company_id) WHERE company_id IS NOT NULL;
-CREATE INDEX idx_news_impact_industry ON news_impact(industry_code) WHERE industry_code IS NOT NULL;
-CREATE INDEX idx_news_impact_score ON news_impact(impact_score);
+CREATE INDEX idx_news_published ON news_article(published_at DESC);
+CREATE INDEX idx_news_category ON news_article(category_code);
+CREATE INDEX idx_news_keywords ON news_article USING GIN(keywords);
 ```
 
-### 5.2 news_etf_influence (2차 분석: 검증된 ETF 영향)
+### 6.2 news_etf_influence (검증된 ETF 영향)
 
 ```sql
 CREATE TABLE "news_etf_influence" (
@@ -427,7 +444,7 @@ CREATE TABLE "news_etf_influence" (
 );
 ```
 
-### 5.3 테이블 관계
+### 6.3 테이블 관계
 
 ```
 ┌─────────────┐
@@ -436,41 +453,157 @@ CREATE TABLE "news_etf_influence" (
 │ id (PK)     │
 │ title       │
 │ content     │
-│ keywords    │ ← LLM 생성
+│ keywords    │ ← LLM 생성 (JSONB)
 │ content_summary │ ← LLM 생성 (JSONB bullets)
+│ category_code │ ← 뉴스 카테고리 (NEWS_SEMI 등)
 └──────┬──────┘
        │
-       │ 1:N
-       ▼
-┌────────────────────────┐
-│ news_impact            │
-├────────────────────────┤
-│ news_id (FK)           │
-│ target_type            │ ← 'COMPANY' or 'INDUSTRY'
-│ company_id (FK)        │───────► company_info
-│ industry_code (FK)     │───────► industry_classification
-│ impact_score           │ ← -1.0 ~ +1.0
-│ impact_reason          │
-└────────────────────────┘
-       │
-       │ 장 마감 후 검증
+       │ 1:N (장 마감 후 ETF 매핑)
        ▼
 ┌─────────────────────┐
 │ news_etf_influence  │
 ├─────────────────────┤
 │ news_id (FK)        │
 │ etf_id (FK)         │───────► etf
-│ influence_score     │
+│ influence_score     │ ← 0.0 ~ 1.0
+│ influence_type      │ ← POSITIVE / NEGATIVE / NEUTRAL
+│ timeline_title      │ ← 타임라인 제목
+│ timeline_summary    │ ← 타임라인 요약
 │ actual_change_rate  │ ← 실제 ETF 변동률
-│ is_verified         │
+│ is_verified         │ ← 검증 여부
 └─────────────────────┘
 ```
 
+**핵심 변경점:**
+- `news_impact` 테이블 제거 → 직접 `news_etf_influence`로 매핑
+- 뉴스 분석 결과는 `news_article.keywords`, `news_article.content_summary`에 저장
+- ETF 영향도는 장 마감 후 실제 주가 데이터 기반으로 검증
+
+### 6.4 news_etf_influence 장중/장외 처리 흐름
+
+> news_impact는 뉴스 수집 즉시 생성되지만, news_etf_influence는 **주가 데이터가 필요**하므로 장 운영 시간에 따라 처리가 달라집니다.
+
+#### 처리 흐름 요약
+
+| 뉴스 발행 시점 | INSERT 시점 | UPDATE (검증) 시점 |
+|---------------|-------------|-------------------|
+| **장중** (09:00~15:30) | 즉시 (현재가 기준) | 당일 장 마감 후 (15:30~) |
+| **장 외** (15:30~익일 09:00) | 익일 장 시작 후 (09:00~) | 익일 장 마감 후 (15:30~) |
+| **주말/공휴일** | 다음 거래일 장 시작 후 | 다음 거래일 장 마감 후 |
+
+#### 상세 흐름
+
+```
+[Case 1: 장중 뉴스]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+09:00                    09:30                    15:30
+  │                        │                        │
+  ├── 장 시작 ─────────────┼────────────────────────┤── 장 마감
+                           │                        │
+                       뉴스 발행                     │
+                           │                        │
+                           ▼                        │
+                    ┌─────────────┐                 │
+                    │ INSERT      │                 │
+                    │ - 현재가 기준│                 │
+                    │ - is_verified=FALSE           │
+                    └─────────────┘                 │
+                                                    ▼
+                                             ┌─────────────┐
+                                             │ UPDATE      │
+                                             │ - 종가 기준  │
+                                             │ - actual_change_rate 계산
+                                             │ - is_verified=TRUE
+                                             └─────────────┘
+
+
+[Case 2: 장 외 뉴스]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+15:30          22:00                09:00                15:30
+  │              │                    │                    │
+  ├── 장 마감 ───┼────────────────────┼── 익일 장 시작 ────┤── 익일 장 마감
+                 │                    │                    │
+             뉴스 발행                 │                    │
+                 │                    │                    │
+                 │ (대기)             ▼                    │
+                 │             ┌─────────────┐             │
+                 │             │ INSERT      │             │
+                 │             │ - 시가 기준  │             │
+                 │             │ - is_verified=FALSE       │
+                 │             └─────────────┘             │
+                 │                                         ▼
+                 │                                  ┌─────────────┐
+                 │                                  │ UPDATE      │
+                 │                                  │ - 종가 기준  │
+                 │                                  │ - actual_change_rate
+                 │                                  │ - is_verified=TRUE
+                 │                                  └─────────────┘
+
+
+[Case 3: 주말/공휴일 뉴스]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+금요일 15:30        토요일 10:00        월요일 09:00        월요일 15:30
+     │                  │                   │                   │
+     ├── 장 마감 ───────┼───────────────────┼── 장 시작 ────────┤── 장 마감
+                        │                   │                   │
+                    뉴스 발행               │                   │
+                        │                   │                   │
+                        │ (대기)            ▼                   │
+                        │            ┌─────────────┐            │
+                        │            │ INSERT      │            │
+                        │            │ - 시가 기준  │            │
+                        │            └─────────────┘            │
+                        │                                       ▼
+                        │                                ┌─────────────┐
+                        │                                │ UPDATE      │
+                        │                                │ - 종가 기준  │
+                        │                                └─────────────┘
+```
+
+#### 스케줄러 작업
+
+| 작업 | 실행 시점 | 설명 |
+|------|----------|------|
+| `insert_etf_influence_job` | 장 시작 후 (09:05) | 장 외 발행 뉴스 중 미처리 건 INSERT |
+| `update_etf_influence_job` | 장 마감 후 (15:35) | is_verified=FALSE 건 UPDATE |
+
+#### 구현 예시
+
+```python
+async def insert_etf_influence_job():
+    """장 시작 후: 미처리 뉴스 → ETF 영향 INSERT"""
+    # 1. news_impact 있지만 news_etf_influence 없는 뉴스 조회
+    # 2. news_impact → etf_compositions 조인 → ETF 매핑
+    # 3. 현재 시가로 influence_score 계산
+    # 4. INSERT (is_verified=FALSE)
+    pass
+
+async def update_etf_influence_job():
+    """장 마감 후: 미검증 건 → 실제 변동률로 UPDATE"""
+    # 1. is_verified=FALSE인 news_etf_influence 조회
+    # 2. 종가 대비 actual_change_rate 계산
+    # 3. UPDATE (is_verified=TRUE, verified_at=NOW())
+    pass
+```
+
+#### 뉴스 상세 페이지 "관련 ETF" 표시
+
+| 데이터 소스 | 사용 시점 | 설명 |
+|------------|----------|------|
+| `news_impact` → ETF 유추 | 항상 | 회사/산업 기반으로 관련 ETF 표시 |
+| `news_etf_influence` | INSERT 후 | 실제 주가 기반 영향도 표시 |
+
+> 장 외 뉴스도 `news_impact` 기반으로 "관련 ETF"는 즉시 표시 가능.
+> `news_etf_influence`는 실제 주가 데이터 기반의 정확한 영향도 제공용.
+
 ---
 
-## 6. 스케줄러 (`app/schedulers/scheduler.py`)
+## 7. 스케줄러 (`app/schedulers/scheduler.py`)
 
-### 6.1 스케줄 구성
+### 7.1 스케줄 구성
 
 | 작업 | 주기 | 설명 |
 |------|------|------|
@@ -480,7 +613,7 @@ CREATE TABLE "news_etf_influence" (
 | **ETF 검증** | 매일 16:00 | 장 마감 후 영향도 검증 |
 | **KRX 공시** | 매일 09:00 | KIND 공시 체크 |
 
-### 6.2 뉴스 수집 작업
+### 7.2 뉴스 수집 작업
 
 ```python
 async def scrape_news_job():
@@ -511,7 +644,7 @@ async def scrape_news_job():
         db.close()
 ```
 
-### 6.3 GPT-4o 분석 작업
+### 7.3 GPT-4o 분석 작업
 
 ```python
 async def analyze_news_job():
@@ -547,50 +680,37 @@ async def analyze_news_job():
         db.close()
 ```
 
-### 6.4 분석 결과 저장 (`_save_impacts`)
+### 7.4 분석 결과 저장
 
 ```python
-def _save_impacts(self, news: NewsArticle, result: AnalysisResult):
-    """분석 결과를 DB에 저장"""
-    companies = {c["name"]: c["id"] for c in self._load_companies()}
-    industries = {ind["code"]: ind["code"] for ind in self._load_industries()}
+def _save_analysis(self, news: NewsArticle, result: AnalysisResult):
+    """분석 결과를 news_article에 저장"""
 
-    for impact in result.impacts or []:
-        target = impact.get("target")
-        target_type = impact.get("type", "").upper()
-        score = max(-1.0, min(1.0, float(impact.get("score", 0))))
-        reason = impact.get("reason", "")
-
-        if target_type == "COMPANY" and target in companies:
-            news_impact = NewsImpact(
-                news_id=news.id,
-                target_type="COMPANY",
-                company_id=companies[target],
-                impact_score=score,
-                impact_reason=reason[:200]
-            )
-            self.db.add(news_impact)
-
-        elif target_type == "INDUSTRY" and target in industries:
-            news_impact = NewsImpact(
-                news_id=news.id,
-                target_type="INDUSTRY",
-                industry_code=target,
-                impact_score=score,
-                impact_reason=reason[:200]
-            )
-            self.db.add(news_impact)
-
-    # keywords, summary 저장
+    # keywords 저장
     if result.keywords:
         news.keywords = result.keywords
+
+    # content_summary 저장
     if result.summary:
         news.content_summary = {"bullets": result.summary}
 
     self.db.commit()
 ```
 
-### 6.5 ETF 영향도 검증 (매일 16:00)
+### 7.5 ETF 영향 매핑 (별도 배치 작업)
+
+```python
+async def map_news_to_etf_job():
+    """장 마감 후: 뉴스 → ETF 영향 매핑"""
+
+    # 1. 오늘 발행된 미매핑 뉴스 조회
+    # 2. 뉴스 카테고리/키워드 기반 관련 ETF 탐색
+    # 3. 실제 ETF 주가 변동률 계산
+    # 4. news_etf_influence INSERT (is_verified=TRUE)
+    pass
+```
+
+### 7.5 ETF 영향도 검증 (매일 16:00)
 
 ```python
 async def verify_news_etf_job():
@@ -602,53 +722,65 @@ async def verify_news_etf_job():
 
 ---
 
-## 7. 사용자 관련 뉴스 조회
+## 8. 사용자 관련 뉴스 조회
 
-### 7.1 내 포트폴리오 관련 뉴스 쿼리
+### 8.1 내 포트폴리오 관련 뉴스 쿼리
 
 ```sql
--- 내 보유 ETF 관련 뉴스 (회사/산업 매칭)
+-- 내 보유 ETF 관련 뉴스 (ETF 영향 기반)
 SELECT DISTINCT
     n.id,
     n.title,
     n.content_summary,
     n.thumbnail_url,
     n.published_at,
-    ni.impact_score,
-    ni.impact_reason,
-    ni.target_type,
-    CASE
-        WHEN ni.target_type = 'COMPANY' THEN ci.stock_name
-        WHEN ni.target_type = 'INDUSTRY' THEN ic.name
-    END as target_name
+    n.keywords,
+    nei.influence_score,
+    nei.influence_type,
+    nei.actual_change_rate
 FROM news_article n
-JOIN news_impact ni ON n.id = ni.news_id
-LEFT JOIN company_info ci ON ni.company_id = ci.id
-LEFT JOIN industry_classification ic ON ni.industry_code = ic.code
-WHERE n.id IN (SELECT DISTINCT news_id FROM news_impact)  -- 영향 분석된 뉴스만
-  AND (
-    -- 내 ETF 구성종목과 매칭 (회사)
-    (ni.target_type = 'COMPANY' AND ni.company_id IN (
-        SELECT ec.company_id
-        FROM user_holding_etf uhe
-        JOIN etf_compositions ec ON uhe.etf_id = ec.etf_id
-        WHERE uhe.user_id = :user_id
-    ))
-    OR
-    -- 내 ETF 산업과 매칭 (산업)
-    (ni.target_type = 'INDUSTRY' AND ni.industry_code IN (
-        SELECT ic2.code
-        FROM user_holding_etf uhe
-        JOIN etf_sector_breakdown esb ON uhe.etf_id = esb.etf_id
-        JOIN industry_classification ic2 ON ic2.group_code = esb.group_code
-        WHERE uhe.user_id = :user_id
-    ))
+JOIN news_etf_influence nei ON n.id = nei.news_id
+WHERE nei.is_verified = TRUE
+  AND nei.etf_id IN (
+    SELECT etf_id FROM user_holding_etf WHERE user_id = :user_id
   )
 ORDER BY n.published_at DESC
 LIMIT 20;
 ```
 
-### 7.2 API 응답 예시
+### 8.2 카테고리 기반 관련 뉴스 쿼리 (실시간)
+
+```sql
+-- 내 보유 ETF 섹터와 관련된 뉴스 (검증 전 실시간)
+SELECT DISTINCT
+    n.id,
+    n.title,
+    n.content_summary,
+    n.thumbnail_url,
+    n.published_at,
+    n.keywords
+FROM news_article n
+WHERE n.category_code IN (
+    -- ETF 섹터 → 뉴스 카테고리 매핑
+    SELECT DISTINCT
+        CASE esc.group_code
+            WHEN 'IT_SEMI' THEN 'NEWS_SEMI'
+            WHEN 'IT_ELEC' THEN 'NEWS_IT'
+            WHEN 'BIO' THEN 'NEWS_BIO'
+            WHEN 'AUTO' THEN 'NEWS_AUTO'
+            WHEN 'FINANCE' THEN 'NEWS_FINANCE'
+            -- ... 기타 매핑
+        END
+    FROM user_holding_etf uhe
+    JOIN etf_sector_cluster esc ON uhe.etf_id = esc.etf_id
+    WHERE uhe.user_id = :user_id
+      AND esc.weight_pct >= 10  -- 10% 이상 비중인 섹터만
+)
+ORDER BY n.published_at DESC
+LIMIT 20;
+```
+
+### 8.3 API 응답 예시
 
 ```json
 GET /api/v1/news/my-portfolio?limit=10
@@ -663,14 +795,11 @@ GET /api/v1/news/my-portfolio?limit=10
         "2025년까지 생산능력 2배 확대 계획",
         "경쟁사 대비 기술 격차 확대 전망"
       ],
+      "keywords": ["AI반도체", "삼성전자", "투자확대"],
       "thumbnailUrl": "https://...",
       "publishedAt": "2025-01-17T09:30:00Z",
-      "impacts": [
-        {"target": "삼성전자", "type": "company", "score": 0.7},
-        {"target": "반도체", "type": "industry", "score": 0.5}
-      ],
       "relatedEtfs": [
-        {"id": 45, "name": "KODEX 반도체", "changeRate": 1.24}
+        {"id": 45, "name": "KODEX 반도체", "changeRate": 1.24, "influenceType": "POSITIVE"}
       ]
     }
   ]
@@ -679,7 +808,7 @@ GET /api/v1/news/my-portfolio?limit=10
 
 ---
 
-## 8. 비용 추정
+## 9. 비용 추정
 
 | 항목 | 수치 |
 |------|------|
@@ -691,7 +820,7 @@ GET /api/v1/news/my-portfolio?limit=10
 | GPT-4o 비용 | 입력 $2.5/1M, 출력 $10/1M |
 | **예상 일일 비용** | **~$0.40/일 ≈ $12/월** |
 
-### 8.1 비용 최적화 팁
+### 9.1 비용 최적화 팁
 
 ```
 1. 본문 전체 대신 RSS snippet + 제목만 전달 (500 토큰 vs 2000 토큰)
@@ -701,9 +830,9 @@ GET /api/v1/news/my-portfolio?limit=10
 
 ---
 
-## 9. 품질 보장 전략
+## 10. 품질 보장 전략
 
-### 9.1 Hallucination 방지
+### 10.1 Hallucination 방지
 
 | 전략 | 설명 |
 |------|------|
@@ -711,7 +840,7 @@ GET /api/v1/news/my-portfolio?limit=10
 | **JSON 출력 강제** | 파싱 가능한 구조화된 출력 |
 | **Ground Truth 기반** | 모든 결과가 DB에 존재하는 값 |
 
-### 9.2 일관성 보장
+### 10.2 일관성 보장
 
 | 전략 | 설명 |
 |------|------|
@@ -719,7 +848,7 @@ GET /api/v1/news/my-portfolio?limit=10
 | **정해진 분류 체계** | industry_classification 기반 |
 | **검증 프로세스** | 장 마감 후 실제 주가로 검증 |
 
-### 9.3 검증 가능성
+### 10.3 검증 가능성
 
 ```
 모든 분석 결과 추적 가능:
@@ -730,35 +859,35 @@ GET /api/v1/news/my-portfolio?limit=10
 
 ---
 
-## 10. 요약
+## 11. 요약
 
 | 항목 | 값 |
 |------|-----|
-| **수집 방식** | Google News + Naver News (10분/1시간 주기) |
+| **수집 방식** | [메인] Naver News API + [보조] Google News RSS |
+| **카테고리** | 14개 (투자테마 13 + 시장/경제) - `keywords.py` |
+| **본문 크롤링** | Naver 15개 + Google 6개 (본문 없으면 LLM 분석 제외) |
+| **썸네일 추출** | og:image / twitter:image 메타태그 |
 | **Spam Filter** | Whitelist + Blacklist + 패턴 매칭 (`spam_filter.py`) |
 | **분석 방식** | All-LLM (GPT-4o가 직접 분석) |
-| **분석 서비스** | `NewsImpactAnalyzer` (Constrained LLM) |
-| **회사 목록** | 관심 ETF 회사 + 상위 100개 |
-| **Constrained Selection** | LLM이 DB 목록에서만 선택 (Hallucination 방지) |
-| **영향 매핑** | 1:N (뉴스 → 여러 회사/산업) |
-| **영향도 형식** | -1.0 ~ +1.0 (부정~긍정) |
-| **저장 테이블** | news_impact (1차), news_etf_influence (검증 후) |
+| **분석 서비스** | `NewsAnalyzer` (키워드/요약 추출) |
+| **분석 결과 저장** | news_article.keywords, news_article.content_summary |
+| **ETF 영향 매핑** | 장 마감 후 검증 → news_etf_influence |
 | **스케줄러** | APScheduler (정기10분, 전체1시간, AI15분, ETF검증16:00) |
 | **월 비용** | ~$12 |
-| **장점** | 단순 구현, 높은 품질, 맥락 이해, 유지보수 최소화 |
+| **장점** | 단순 구현, 높은 품질, 검증된 ETF 영향도 제공 |
 
 ---
 
-## 11. 테스트
+## 12. 테스트
 
-### 11.1 Spam Filter 테스트
+### 12.1 Spam Filter 테스트
 
 ```bash
 cd C:\SSAFY\project2team\backend\data-service
 python -m app.utils.spam_filter
 ```
 
-### 11.2 GPT-4o 분석 테스트
+### 12.2 GPT-4o 분석 테스트
 
 ```bash
 cd C:\SSAFY\project2team\backend\data-service

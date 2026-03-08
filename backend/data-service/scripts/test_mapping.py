@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy import text
 from app.database import SessionLocal
 from app.models.company import IndustryClassification, CompanyInfo
-from app.models.etf import ETF, ETFComposition, ETFSectorBreakdown
+from app.models.etf import ETF, ETFComposition, ETFSectorCluster
 
 
 def test_company_industry_mapping(db):
