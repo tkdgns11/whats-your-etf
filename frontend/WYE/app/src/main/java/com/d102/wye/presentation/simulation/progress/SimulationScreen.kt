@@ -35,6 +35,7 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
 import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
+import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
@@ -55,6 +56,9 @@ fun SimulationScreen(
     val aiDiagnosisState by viewModel.aiDiagnosisState.collectAsStateWithLifecycle()
 
     var showDictionaryDialog by remember { mutableStateOf(false) }
+
+    val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
+    val savePortfolioState by viewModel.savePortfolioState.collectAsStateWithLifecycle()
 
     LaunchedEffect(resultState) {
         if (resultState is UiState.Error) {
@@ -77,6 +81,16 @@ fun SimulationScreen(
         )
     }
 
+    if (showSaveDialog) {
+        PortfolioSaveDialog(
+            saveState = savePortfolioState,
+            onDismiss = { viewModel.onSaveDialogDismiss() },
+            onSave = { enteredName ->
+                viewModel.savePortfolio(enteredName)
+            }
+        )
+    }
+
     SimulationSetupScreenContent(
         formState = formState,
         resultState = resultState,
@@ -90,7 +104,8 @@ fun SimulationScreen(
         onAddEtfClick = onAddEtfClick,
         onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
         onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
-        onDictionaryClick = { showDictionaryDialog = true }
+        onDictionaryClick = { showDictionaryDialog = true },
+        onSaveClick = { viewModel.onSaveIconClick() }
     )
 }
 
@@ -109,6 +124,7 @@ private fun SimulationSetupScreenContent(
     onPortfolioItemRemoved: (String) -> Unit,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit,
+    onSaveClick: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.background(Color.White),
@@ -126,7 +142,7 @@ private fun SimulationSetupScreenContent(
                         modifier = Modifier
                             .padding(end = 16.dp)
                             .background(PrimaryGreen, RoundedCornerShape(12.dp))
-                            .clickable { /* TODO */ }
+                            .clickable { onSaveClick() }
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     )
                 }

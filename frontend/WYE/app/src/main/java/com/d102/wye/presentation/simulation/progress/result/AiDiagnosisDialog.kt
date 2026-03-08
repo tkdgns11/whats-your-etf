@@ -56,7 +56,7 @@ fun AiDiagnosisDialog(
                 // 1. 다이얼로그 공통 타이틀
                 Text(
                     text = "AI 포트폴리오 진단",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
 

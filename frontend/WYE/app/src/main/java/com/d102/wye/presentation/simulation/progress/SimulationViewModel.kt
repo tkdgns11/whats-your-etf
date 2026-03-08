@@ -36,6 +36,14 @@ class SimulationSetupViewModel @Inject constructor(
     private val _aiDiagnosisState = MutableStateFlow<UiState<AiDiagnosisResult>>(UiState.Idle)
     val aiDiagnosisState: StateFlow<UiState<AiDiagnosisResult>> = _aiDiagnosisState.asStateFlow()
 
+    // 포트폴리오 저장 다이얼로그 표시 여부
+    private val _showSaveDialog = MutableStateFlow(false)
+    val showSaveDialog: StateFlow<Boolean> = _showSaveDialog.asStateFlow()
+
+    // 포트폴리오 저장 API 통신 상태
+    private val _savePortfolioState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
+    val savePortfolioState: StateFlow<UiState<Unit>> = _savePortfolioState.asStateFlow()
+
     fun onTabSelected(index: Int) {
         _formState.update { it.copy(selectedTabIndex = index) }
     }
@@ -109,6 +117,38 @@ class SimulationSetupViewModel @Inject constructor(
                     )
                 )
             }
+        }
+    }
+
+    fun onSaveIconClick() {
+        _showSaveDialog.value = true
+    }
+
+    fun onSaveDialogDismiss() {
+        _showSaveDialog.value = false
+        _savePortfolioState.value = UiState.Idle // 다이얼로그 닫을 때 통신 상태 초기화
+    }
+
+    fun savePortfolio(portfolioName: String) {
+        // 이미 저장 중이면 중복 클릭 방지
+        if (_savePortfolioState.value is UiState.Loading) return
+
+        viewModelScope.launch {
+            _savePortfolioState.update { UiState.Loading }
+
+            // TODO: 실제 저장 API 호출 로직 연결
+            // val currentForm = _formState.value
+            // val response = simulationRepository.savePortfolio(
+            //     name = portfolioName,
+            //     items = currentForm.portfolioItems
+            // )
+            // when (response) { ... }
+
+            // API 통신 테스트용 딜레이
+            delay(1000)
+
+            _savePortfolioState.update { UiState.Success(Unit) }
+            _showSaveDialog.value = false // 저장이 성공하면 다이얼로그를 닫아줍니다.
         }
     }
 
