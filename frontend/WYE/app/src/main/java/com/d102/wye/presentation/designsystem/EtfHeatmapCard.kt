@@ -60,9 +60,9 @@ fun EtfHeatmapCard(
         Text(
             text = etfName,
             color = TextOnColored,
-            fontSize = 11.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.TopStart),
         )
@@ -71,7 +71,7 @@ fun EtfHeatmapCard(
         Text(
             text = rateText,
             color = TextOnColored,
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.BottomStart),
         )
