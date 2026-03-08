@@ -32,6 +32,7 @@ data class EtfSector(
 data class SectorStock(
     val name: String,
     val percentage: Double,
+    val ticker: String = "",    // 종목 상세 진입용 (없으면 빈 문자열)
 )
 
 data class InfluentialStock(
