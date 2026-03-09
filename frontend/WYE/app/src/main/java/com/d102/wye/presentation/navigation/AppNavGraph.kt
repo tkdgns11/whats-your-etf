@@ -26,6 +26,8 @@ import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
+import com.d102.wye.presentation.home.news.NewsDetailScreen
+import com.d102.wye.presentation.home.news.NewsListScreen
 import com.d102.wye.presentation.home.notification.NotificationScreen
 
 /**
@@ -93,6 +95,7 @@ fun AppNavGraph(
             HomeScreen(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onNewsMoreClick = { navController.navigate(Route.NewsList.route) },
                 onNotificationClick = { navController.navigate(Route.Notification.route) }
             )
         }
@@ -210,6 +213,21 @@ fun AppNavGraph(
         // 뉴스 상세 (newsId 파라미터)
         // ─────────────────────────────────────────
 
+        // ─────────────────────────────────────────
+        // 뉴스 목록
+        // ─────────────────────────────────────────
+
+        composable(Route.NewsList.route) {
+            NewsListScreen(
+                onBack = { navController.popBackStack() },
+                onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
+            )
+        }
+
+        // ─────────────────────────────────────────
+        // 뉴스 상세 (newsId 파라미터)
+        // ─────────────────────────────────────────
+
         composable(
             route = Route.NewsDetail.ROUTE_PATTERN,
             arguments = listOf(
@@ -218,10 +236,11 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val newsId =
                 backStackEntry.arguments?.getLong(Route.NewsDetail.ARG_NEWS_ID) ?: return@composable
-//            NewsDetailScreen(
-//                newsId = newsId,
-//                navController = navController
-//            )
+            NewsDetailScreen(
+                newsId = newsId,
+                onBack = { navController.popBackStack() },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+            )
         }
 
         // ─────────────────────────────────────────
