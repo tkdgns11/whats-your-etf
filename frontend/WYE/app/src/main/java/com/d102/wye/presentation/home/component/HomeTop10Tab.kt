@@ -3,6 +3,7 @@ package com.d102.wye.presentation.home.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -20,6 +21,8 @@ fun HomeTop10Tab(
     onNewsClick: (newsId: Long) -> Unit,
     onNewsMoreClick: () -> Unit
 ) {
+    val primaryCardHeight = 400.dp
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
@@ -34,6 +37,7 @@ fun HomeTop10Tab(
 
         item {
             HomeTop10HeatmapCard(
+                modifier = Modifier.height(primaryCardHeight),
                 top10Etfs = top10Etfs,
                 onEtfClick = onEtfClick
             )

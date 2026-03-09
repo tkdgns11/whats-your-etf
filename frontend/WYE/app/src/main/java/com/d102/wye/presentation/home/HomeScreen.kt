@@ -5,7 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -24,7 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.designsystem.HomeTopBar
+import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.home.component.HomePortfolioTab
 import com.d102.wye.presentation.home.component.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
@@ -83,9 +88,24 @@ private fun HomeScreenContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            HomeTopBar(
-                onBookmarkClick = onBookmarkClick,
-                onNotificationClick = onNotificationClick
+            WyeTopBar(
+                title = "홈",
+                actions = {
+                    IconButton(onClick = onBookmarkClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "북마크",
+                            tint = PrimaryGreen
+                        )
+                    }
+                    IconButton(onClick = onNotificationClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Notifications,
+                            contentDescription = "알림",
+                            tint = PrimaryGreen
+                        )
+                    }
+                }
             )
 
             HomeTabRow(

@@ -62,7 +62,7 @@ fun EtfHeatmapCard(
             color = TextOnColored,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.TopStart),
         )
@@ -101,7 +101,7 @@ fun EtfHeatmapGrid(
         // ── Row 1: KODEX 200 (큰 카드) + 우측 S&P500 / [인버스|반도체] ──
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth().height(168.dp),
+            modifier = Modifier.fillMaxWidth().height(200.dp),
         ) {
             // 왼쪽 큰 카드
             EtfHeatmapCard(
@@ -144,7 +144,7 @@ fun EtfHeatmapGrid(
         // ── Row 2: 4등분 작은 카드 ────────────────────────────────────
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth().height(80.dp),
+            modifier = Modifier.fillMaxWidth().height(100.dp),
         ) {
             listOf(safeItems[4], safeItems[5], safeItems[6], safeItems[7]).forEach { (name, rate) ->
                 EtfHeatmapCard(
@@ -164,7 +164,7 @@ fun EtfHeatmapGrid(
             EtfHeatmapCard(
                 etfName = safeItems[8].first,
                 changeRate = safeItems[8].second,
-                modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onCardClick(safeItems[8].first) },
             )
             EtfHeatmapCard(
