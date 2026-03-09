@@ -93,7 +93,7 @@ fun AppNavGraph(
             HomeScreen(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
-                onNotificationClick = { navController.navigate(Route.Notification.route) }
+                onNotificationClick = { navController.navigate(Route.NotificationList.route) }
             )
         }
 
@@ -122,7 +122,7 @@ fun AppNavGraph(
                 onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onLikedEtfListClick = { navController.navigate(Route.LikedEtfList.route) },
                 onPasswordChangeClick = { navController.navigate(Route.PasswordReset.route) },
-                onNotificationSettingClick = { navController.navigate(Route.Notification.route) },
+                onNotificationSettingClick = { navController.navigate(Route.NotificationSettings.route) },
                 onFaqClick = { navController.navigate(Route.Faq.route) },
                 onTermsClick = { navController.navigate(Route.Terms.route) },
                 onLogoutClick = {
@@ -140,7 +140,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(Route.Notification.route) {
+        composable(Route.NotificationSettings.route) {
             NotificationSettingsScreen(
                 onBackClick = { navController.popBackStack() }
             )
@@ -239,7 +239,7 @@ fun AppNavGraph(
         // 알림 목록
         // ─────────────────────────────────────────
 
-        composable(Route.Notification.route) {
+        composable(Route.NotificationList.route) {
             NotificationScreen(
                 onBack = { navController.popBackStack() }
             )
