@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +34,7 @@ fun BottomNavBar(
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     NavigationBar(
+        modifier = Modifier.navigationBarsPadding(),
         containerColor = SurfaceWhite,
         tonalElevation = 0.dp,
         windowInsets = WindowInsets(0, 0, 0, 0),
