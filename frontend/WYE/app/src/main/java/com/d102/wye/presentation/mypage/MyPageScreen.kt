@@ -1,5 +1,8 @@
 package com.d102.wye.presentation.mypage
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +28,7 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.mypage.components.myPageAccountSection
 import com.d102.wye.presentation.mypage.components.myPageEtfSection
 import com.d102.wye.presentation.mypage.components.MyPageProfileHeader
+import com.d102.wye.presentation.mypage.components.NicknameEditDialog
 import com.d102.wye.presentation.mypage.components.myPageSettingsSection
 import com.d102.wye.presentation.mypage.components.myPageSupportSection
 import com.d102.wye.presentation.model.UiState
@@ -44,6 +48,11 @@ fun MyPageScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.toString()?.let(viewModel::onProfileImageSelected)
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is UiState.Error) {
@@ -62,7 +71,16 @@ fun MyPageScreen(
         onNotificationSettingClick = onNotificationSettingClick,
         onThemeModeClick = onThemeModeClick,
         onFaqClick = onFaqClick,
-        onTermsClick = onTermsClick
+        onTermsClick = onTermsClick,
+        onNicknameEditClick = { viewModel.showNicknameEditDialog() },
+        onNicknameDraftChange = { viewModel.onNicknameDraftChange(it) },
+        onNicknameEditDismiss = { viewModel.dismissNicknameEditDialog() },
+        onNicknameSave = { viewModel.saveNickname() },
+        onProfileImageEditClick = {
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }
     )
 }
 
@@ -78,7 +96,12 @@ private fun MyPageScreenContent(
     onNotificationSettingClick: () -> Unit,
     onThemeModeClick: () -> Unit,
     onFaqClick: () -> Unit,
-    onTermsClick: () -> Unit
+    onTermsClick: () -> Unit,
+    onNicknameEditClick: () -> Unit,
+    onNicknameDraftChange: (String) -> Unit,
+    onNicknameEditDismiss: () -> Unit,
+    onNicknameSave: () -> Unit,
+    onProfileImageEditClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -99,7 +122,11 @@ private fun MyPageScreenContent(
                     ) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                MyPageProfileHeader(nickname = uiState.data.nickname)
+                                MyPageProfileHeader(
+                                    nickname = uiState.data.nickname,
+                                    profileImage = uiState.data.profileImage,
+                                    onProfileImageEditClick = onProfileImageEditClick
+                                )
                             }
                         }
 
@@ -111,6 +138,7 @@ private fun MyPageScreenContent(
                         )
 
                         myPageAccountSection(
+                            onNicknameChangeClick = onNicknameEditClick,
                             onPasswordChangeClick = onPasswordChangeClick,
                             onLogoutClick = onLogoutClick
                         )
@@ -123,6 +151,17 @@ private fun MyPageScreenContent(
                         myPageSupportSection(
                             onFaqClick = onFaqClick,
                             onTermsClick = onTermsClick
+                        )
+                    }
+
+                    if (uiState.data.isNicknameDialogVisible) {
+                        NicknameEditDialog(
+                            currentNickname = uiState.data.nickname,
+                            nicknameDraft = uiState.data.nicknameDraft,
+                            isSaving = uiState.data.isNicknameSaving,
+                            onNicknameChange = onNicknameDraftChange,
+                            onDismiss = onNicknameEditDismiss,
+                            onSave = onNicknameSave
                         )
                     }
                 }
