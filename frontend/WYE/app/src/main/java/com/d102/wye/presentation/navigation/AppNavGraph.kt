@@ -93,7 +93,7 @@ fun AppNavGraph(
 
         composable(Route.Explore.route) {
             ExploreScreen(
-                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+                onEtfClick = { ticker, riskLevel -> navController.navigate(Route.EtfDetail(ticker, riskLevel).route) }
             )
         }
 
@@ -128,7 +128,8 @@ fun AppNavGraph(
         composable(
             route = Route.EtfDetail.ROUTE_PATTERN,
             arguments = listOf(
-                navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType }
+                navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType },
+                navArgument(Route.EtfDetail.ARG_RISK_LEVEL) { type = NavType.IntType; defaultValue = 0 },
             )
         ) {
             EtfDetailScreen(

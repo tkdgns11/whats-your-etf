@@ -1,8 +1,6 @@
 package com.d102.wye.presentation.explore.detail
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -13,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.explore.detail.component.ClusterTab
 import com.d102.wye.presentation.explore.detail.component.EtfDetailInfoTab
 import com.d102.wye.presentation.model.UiState
@@ -30,26 +29,12 @@ fun EtfDetailScreen(
     val tabs = listOf("클러스터", "ETF 상세보기")
 
     Scaffold(
-        containerColor = Background,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "ETF 상세",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Background),
-            )
+            WyeTopBar(title = "ETF 상세", onBackClick = onBack)
         },
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
+        Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
             // 탭 바
             TabRow(
                 selectedTabIndex = selectedTab,
