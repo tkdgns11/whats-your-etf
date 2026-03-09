@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.state.EtfFilterState
@@ -166,8 +165,9 @@ private fun SearchRow(
             ) {
                 Text(
                     text = selectedLabel,
-                    fontSize = 13.sp,
-                    fontWeight = if (scopeActive) FontWeight.SemiBold else FontWeight.Normal,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = if (scopeActive) FontWeight.SemiBold else FontWeight.Normal,
+                    ),
                     color = if (scopeActive) PrimaryGreen else TextPrimary,
                 )
                 Icon(
@@ -190,8 +190,9 @@ private fun SearchRow(
                         text = {
                             Text(
                                 text = option.label,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
                                 color = if (isSelected) PrimaryGreen else TextPrimary,
                             )
                         },
@@ -318,7 +319,7 @@ private fun QuickFilterRow(
             if (filterCount > 0) {
                 Text(
                     text = "초기화",
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
@@ -338,8 +339,9 @@ private fun QuickChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Text(
         text = label,
         color = if (selected) TextOnColored else TextPrimary,
-        fontSize = 14.sp,
-        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        ),
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(if (selected) PrimaryGreen else SurfaceVariant)
@@ -360,8 +362,7 @@ private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
         Text(
             text = label,
             color = TextOnColored,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
         )
         Spacer(Modifier.width(2.dp))
         Icon(
@@ -398,8 +399,7 @@ private fun SortRow(modifier: Modifier = Modifier) {
             ) {
                 Text(
                     text = selected,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = TextPrimary,
                 )
                 Icon(
@@ -422,8 +422,9 @@ private fun SortRow(modifier: Modifier = Modifier) {
                         text = {
                             Text(
                                 text = option,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
                                 color = if (isSelected) PrimaryGreen else TextPrimary,
                             )
                         },
