@@ -2,18 +2,15 @@ package com.d102.wye.presentation.explore.detail
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
-import com.d102.wye.presentation.explore.detail.component.ClusterTab
-import com.d102.wye.presentation.explore.detail.component.EtfDetailInfoTab
+import com.d102.wye.presentation.explore.detail.components.ClusterTab
+import com.d102.wye.presentation.explore.detail.components.EtfDetailInfoTab
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.*
 
@@ -35,35 +32,12 @@ fun EtfDetailScreen(
         },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
-            // 탭 바
-            TabRow(
-                selectedTabIndex = selectedTab,
+            WyeTabs(
+                titles = tabs,
+                selectedIndex = selectedTab,
+                onTabSelected = { selectedTab = it },
                 containerColor = Background,
-                contentColor = PrimaryGreen,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        height = 2.dp,
-                        color = PrimaryGreen,
-                    )
-                },
-            ) {
-                tabs.forEachIndexed { idx, title ->
-                    Tab(
-                        selected = selectedTab == idx,
-                        onClick = { selectedTab = idx },
-                        selectedContentColor = PrimaryGreen,
-                        unselectedContentColor = TextSecondary,
-                        text = {
-                            Text(
-                                text = title,
-                                fontWeight = if (selectedTab == idx) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 15.sp,
-                            )
-                        },
-                    )
-                }
-            }
+            )
 
             when (val state = detailState) {
                 is UiState.Loading -> Box(

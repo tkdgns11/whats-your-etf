@@ -2,9 +2,11 @@ package com.d102.wye.core.di
 
 import com.d102.wye.data.repository.AuthRepositoryImpl
 import com.d102.wye.data.repository.EtfRepositoryImpl
+import com.d102.wye.data.repository.NotificationRepositoryImpl
 import com.d102.wye.data.repository.StockRepositoryImpl
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
+import com.d102.wye.domain.repository.NotificationRepository
 import com.d102.wye.domain.repository.StockRepository
 import dagger.Binds
 import dagger.Module
@@ -44,4 +46,10 @@ abstract class RepositoryModule {
     abstract fun bindStockRepository(
         impl: StockRepositoryImpl
     ): StockRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        impl: NotificationRepositoryImpl
+    ): NotificationRepository
 }

@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore.detail.component
+package com.d102.wye.presentation.explore.detail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

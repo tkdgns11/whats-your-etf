@@ -22,6 +22,7 @@ import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
+import com.d102.wye.presentation.home.notification.NotificationScreen
 
 /**
  * 앱 전체 NavGraph
@@ -87,7 +88,8 @@ fun AppNavGraph(
         composable(Route.Home.route) {
             HomeScreen(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
-                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onNotificationClick = { navController.navigate(Route.Notification.route) }
             )
         }
 
@@ -196,6 +198,16 @@ fun AppNavGraph(
             SimulationScreen(
                 onBackClick = { navController.popBackStack() },
                 onAddEtfClick = {}
+            )
+        }
+
+        // ─────────────────────────────────────────
+        // 알림 목록
+        // ─────────────────────────────────────────
+
+        composable(Route.Notification.route) {
+            NotificationScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 

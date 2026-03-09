@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore.detail.component
+package com.d102.wye.presentation.explore.detail.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -41,16 +41,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.model.EtfDetail
 import com.d102.wye.domain.model.EtfSector
 import com.d102.wye.domain.model.InfluentialStock
-import com.d102.wye.domain.model.SectorStock
 import com.d102.wye.presentation.designsystem.CategoryBadge
 import com.d102.wye.presentation.explore.detail.EtfDetailViewModel
 import com.d102.wye.presentation.theme.*
