@@ -35,7 +35,7 @@ public class RelatedStockResponse {
     public static RelatedStockResponse from(CompanyInfo company) {
         return RelatedStockResponse.builder()
                 .companyId(company.getId())
-                .companyName(company.getCompanyName())
+                .companyName(company.getStockName())
                 .industryGroup(company.getIndustryGroup())
                 .build();
     }
@@ -46,7 +46,7 @@ public class RelatedStockResponse {
     public static RelatedStockResponse from(CompanyInfo company, BigDecimal weightPct) {
         return RelatedStockResponse.builder()
                 .companyId(company.getId())
-                .companyName(company.getCompanyName())
+                .companyName(company.getStockName())
                 .industryGroup(company.getIndustryGroup())
                 .weightPct(weightPct)
                 .build();

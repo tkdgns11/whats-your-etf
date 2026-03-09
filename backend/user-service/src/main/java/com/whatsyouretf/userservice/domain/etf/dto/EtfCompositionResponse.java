@@ -41,7 +41,7 @@ public class EtfCompositionResponse {
             return CompositionItem.builder()
                     .componentTicker(stock != null ? stock.getTicker() : "기타")
                     .componentName(stock != null && stock.getCompany() != null
-                            ? stock.getCompany().getCompanyName() : "기타")
+                            ? stock.getCompany().getStockName() : "기타")
                     .weightPct(composition.getWeightPct())
                     .industry(stock != null && stock.getCompany() != null
                             ? stock.getCompany().getIndustryGroup() : null)

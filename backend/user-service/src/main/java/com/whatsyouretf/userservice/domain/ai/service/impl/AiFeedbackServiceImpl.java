@@ -10,6 +10,7 @@ import com.whatsyouretf.userservice.domain.ai.entity.*;
 import com.whatsyouretf.userservice.domain.ai.repository.AiPromptRepository;
 import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.ai.service.AiFeedbackService;
+import com.whatsyouretf.userservice.domain.ai.service.LlmService;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +28,7 @@ import java.util.Map;
 /**
  * AI 피드백 서비스 구현체
  * <p>
- * 실제 LLM 연동은 별도 모듈에서 처리하고,
- * 이 서비스는 요청/응답 처리 및 데이터 관리를 담당합니다.
+ * LLM 연동을 통해 포트폴리오 분석을 수행합니다.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,6 +39,7 @@ public class AiFeedbackServiceImpl implements AiFeedbackService {
     private final PortfolioAiFeedbackRepository feedbackRepository;
     private final AiPromptRepository promptRepository;
     private final UserRepository userRepository;
+    private final LlmService llmService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -81,8 +81,10 @@ public class AiFeedbackServiceImpl implements AiFeedbackService {
 
         feedbackRepository.save(feedback);
 
-        // TODO: 비동기로 LLM 호출 및 결과 저장 (별도 모듈에서 처리)
-        // 여기서는 처리 중 응답 반환
+        // 비동기로 LLM 호출 및 결과 저장
+        String promptTemplate = prompt != null ? prompt.getPromptTemplate() : null;
+        llmService.analyzePortfolioAsync(feedback.getId(), promptTemplate, request.getPortfolio());
+
         return PortfolioReviewResponse.processing(feedback.getId());
     }
 

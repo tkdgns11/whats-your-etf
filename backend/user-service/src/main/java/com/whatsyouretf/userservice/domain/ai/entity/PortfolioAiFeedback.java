@@ -3,6 +3,8 @@ package com.whatsyouretf.userservice.domain.ai.entity;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +45,7 @@ public class PortfolioAiFeedback {
     private Long portfolioSnapshotId;
 
     /** 요청 시 포트폴리오 정보 (JSON) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "portfolio_data", columnDefinition = "jsonb")
     private String portfolioData;
 
@@ -53,10 +56,12 @@ public class PortfolioAiFeedback {
     private ReviewStatus status = ReviewStatus.PROCESSING;
 
     /** Bull 리뷰 (JSON) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "bull_review", columnDefinition = "jsonb")
     private String bullReview;
 
     /** Bear 리뷰 (JSON) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "bear_review", columnDefinition = "jsonb")
     private String bearReview;
 
@@ -74,6 +79,7 @@ public class PortfolioAiFeedback {
     private String recommendation;
 
     /** 관련 뉴스 (JSON 배열) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "related_news", columnDefinition = "jsonb")
     private String relatedNews;
 
@@ -86,6 +92,7 @@ public class PortfolioAiFeedback {
     private String subHeadline;
 
     /** 분석 키워드 (JSON 배열) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String keywords;
 

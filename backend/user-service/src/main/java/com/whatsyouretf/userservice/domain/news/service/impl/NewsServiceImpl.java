@@ -174,7 +174,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                             maxWeight = weight;
                             relatedStock = EtfNewsResponse.RelatedStockInfo.builder()
                                     .stockCode(companyTickerMap.get(companyId))
-                                    .companyName(mapping.getCompanyInfo().getCompanyName())
+                                    .companyName(mapping.getCompanyInfo().getStockName())
                                     .weightPct(weight)
                                     .build();
                         }
@@ -226,7 +226,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         return StockNewsResponse.builder()
                 .stock(StockNewsResponse.StockInfo.builder()
                         .stockCode(stock.getTicker())
-                        .companyName(stock.getCompany().getCompanyName())
+                        .companyName(stock.getCompany().getStockName())
                         .build())
                 .news(newsItems)
                 .totalCount(totalCount)
