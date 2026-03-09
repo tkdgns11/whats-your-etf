@@ -30,8 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyeTopBar
-import com.d102.wye.presentation.home.component.HomePortfolioTab
-import com.d102.wye.presentation.home.component.HomeTop10Tab
+import com.d102.wye.presentation.home.components.HomePortfolioTab
+import com.d102.wye.presentation.home.components.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.PrimaryGreen
 
