@@ -19,7 +19,7 @@ fun RoundedSurface(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         border = BorderStroke(1.dp, PrimaryGreen.copy(alpha = 0.1f)),

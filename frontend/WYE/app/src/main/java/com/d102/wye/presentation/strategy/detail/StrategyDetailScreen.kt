@@ -92,7 +92,7 @@ private fun StrategyDetailScreenContent(
                             onClick = onBackClick,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
+                                .padding(horizontal = 24.dp)
                         )
                     }
                 }

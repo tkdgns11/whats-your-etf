@@ -110,28 +110,22 @@ private fun SimulationScreenContent(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 24.dp)
-                        ) {
-                            // 1. 상단 배너 영역
-                            SimulationBanner(onMakePortfolioClick = onMakePortfolioClick)
+                        // 1. 상단 배너 영역
+                        SimulationBanner(onMakePortfolioClick = onMakePortfolioClick)
 
-                            Spacer(modifier = Modifier.height(40.dp))
+                        Spacer(modifier = Modifier.height(40.dp))
 
-                            // 2. 추천 ETF 꾸러미 영역
-                            if (uiState is UiState.Success) {
-                                RecommendedBundlesSection(
-                                    bundles = uiState.data.bundles,
-                                    onBundleClick = onBundleClick
-                                )
-                            }
+                        // 2. 추천 ETF 꾸러미 영역
+                        if (uiState is UiState.Success) {
+                            RecommendedBundlesSection(
+                                bundles = uiState.data.bundles,
+                                onBundleClick = onBundleClick
+                            )
                         }
                     }
-
                 }
 
                 is UiState.Error -> Unit
