@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -187,19 +189,25 @@ private fun ClusterBubbleChart(
 
     val displaySectors = sectors.take(6)
     val angleStep = 360.0 / displaySectors.size.coerceAtLeast(1)
-    val orbitRadius = 130.dp
 
-    // 비중 기반 버블 크기 계산 (80dp ~ 105dp)
+    // 비중 기반 버블 크기 계산
     val maxPct = displaySectors.maxOfOrNull { it.percentage } ?: 1.0
     val minPct = displaySectors.minOfOrNull { it.percentage } ?: 0.0
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        // 가용 공간에 비례한 크기 계산
+        val availableSize = minOf(maxWidth, maxHeight)
+        val orbitRadius = availableSize * 0.40f
+        val centerBubbleSize = availableSize * 0.46f
+        val minBubbleSize = availableSize * 0.24f
+        val maxBubbleSize = availableSize * 0.30f
+
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2
             val cy = size.height / 2
 
             // 펄스 링 (3개 단계 차이)
-            val maxRingR = 80.dp.toPx()
+            val maxRingR = centerBubbleSize.toPx() * 0.67f
             for (i in 0..2) {
                 val progress = (pulseProgress + i / 3f) % 1f
                 val ringR = maxRingR * progress
@@ -218,7 +226,8 @@ private fun ClusterBubbleChart(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(120.dp)
+                .zIndex(10f)
+                .size(centerBubbleSize)
                 .scale(centerScale)
                 .shadow(elevation = 12.dp, shape = CircleShape, clip = false)
                 .clip(CircleShape)
@@ -226,13 +235,14 @@ private fun ClusterBubbleChart(
         ) {
             // "KODEX200" → "KODEX\n200" 처럼 문자/숫자 경계에서 줄바꿈
             val displayTicker = ticker.replace(Regex("(?<=[A-Za-z가-힣])(?=\\d)|(?<=\\d)(?=[A-Za-z가-힣])| "), "\n")
+            val tickerFontSize = (centerBubbleSize.value * 0.13f).coerceIn(12f, 18f).sp
             Text(
                 text = displayTicker,
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = tickerFontSize,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
-                lineHeight = 22.sp,
+                lineHeight = tickerFontSize * 1.4f,
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
         }
@@ -247,7 +257,7 @@ private fun ClusterBubbleChart(
             val normalized = if (maxPct > minPct) {
                 ((sector.percentage - minPct) / (maxPct - minPct)).toFloat()
             } else 0.5f
-            val bubbleSize = (80 + normalized * 25).dp
+            val bubbleSize = minBubbleSize + (maxBubbleSize - minBubbleSize) * normalized
 
             SectorBubble(
                 sector = sector,
@@ -309,7 +319,7 @@ private fun SectorBubble(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
             modifier = Modifier
                 .size(bubbleSize)
                 .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
@@ -317,10 +327,8 @@ private fun SectorBubble(
                 .background(Color.White)
                 .clickable(onClick = onClick),
         ) {
-            // 버블 크기 기준으로 아이콘·텍스트 비례 조정
-            // 컨텐츠 폭을 버블의 68%로 제한 → 원 가장자리와 자연스러운 여백 확보
-            val contentWidth = bubbleSize * 0.68f
-            val iconSize = bubbleSize * 0.28f
+            val contentWidth = bubbleSize * 0.84f
+            val iconSize = bubbleSize * 0.26f
             val nameFontSize = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
             val pctFontSize = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
 
@@ -330,19 +338,20 @@ private fun SectorBubble(
                 tint = PrimaryGreen,
                 modifier = Modifier.size(iconSize),
             )
-            Spacer(Modifier.height(4.dp))
             Text(
                 text = sector.name,
                 fontSize = nameFontSize,
+                lineHeight = nameFontSize,
                 fontWeight = FontWeight.SemiBold,
                 color = TextPrimary,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
                 modifier = Modifier.width(contentWidth),
             )
-            Spacer(Modifier.height(2.dp))
             Text(
                 text = "${"%.1f".format(sector.percentage)}%",
                 fontSize = pctFontSize,
+                lineHeight = pctFontSize,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.width(contentWidth),
