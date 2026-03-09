@@ -4,18 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d102.wye.R
 import com.d102.wye.presentation.theme.*
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -93,10 +92,12 @@ fun EtfListItem(
             // 즐겨찾기 별
             IconButton(onClick = onLikeToggled, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = if (isLiked) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                    painter = painterResource(
+                        id = if (isLiked) R.drawable.ic_star else R.drawable.ic_staroutline
+                    ),
                     contentDescription = null,
                     tint = if (isLiked) PrimaryGreen else NavInactive,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }

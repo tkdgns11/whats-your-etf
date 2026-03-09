@@ -5,20 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,13 +22,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.R
+import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.home.components.HomePortfolioTab
 import com.d102.wye.presentation.home.components.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.PrimaryGreen
+import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun HomeScreen(
@@ -93,9 +93,10 @@ private fun HomeScreenContent(
                 actions = {
                     IconButton(onClick = onBookmarkClick) {
                         Icon(
-                            imageVector = Icons.Filled.Star,
+                            painter = painterResource(R.drawable.ic_star),
                             contentDescription = "북마크",
-                            tint = PrimaryGreen
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(30.dp)
                         )
                     }
                     IconButton(onClick = onNotificationClick) {
@@ -108,9 +109,9 @@ private fun HomeScreenContent(
                 }
             )
 
-            HomeTabRow(
-                selectedTabIndex = selectedTabIndex,
-                tabTitles = tabTitles,
+            WyeTabs(
+                titles = tabTitles,
+                selectedIndex = selectedTabIndex,
                 onTabSelected = { selectedTabIndex = it }
             )
 
@@ -151,39 +152,5 @@ private fun HomeScreenContent(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
-    }
-}
-@Composable
-private fun HomeTabRow(
-    selectedTabIndex: Int,
-    tabTitles: List<String>,
-    onTabSelected: (Int) -> Unit
-) {
-    TabRow(
-        selectedTabIndex = selectedTabIndex,
-        modifier = Modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = PrimaryGreen,
-        indicator = { tabPositions ->
-            TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                color = PrimaryGreen
-            )
-        }
-    ) {
-        tabTitles.forEachIndexed { index, title ->
-            Tab(
-                selected = selectedTabIndex == index,
-                onClick = { onTabSelected(index) },
-                selectedContentColor = PrimaryGreen,
-                unselectedContentColor = PrimaryGreen.copy(alpha = 0.6f),
-                text = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            )
-        }
     }
 }

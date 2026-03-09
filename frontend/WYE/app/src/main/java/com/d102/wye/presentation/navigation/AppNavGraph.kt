@@ -96,6 +96,7 @@ fun AppNavGraph(
             HomeScreen(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onBookmarkClick = { navController.navigate(Route.LikedEtfList.route) },
                 onNotificationClick = { navController.navigate(Route.NotificationList.route) },
                 onNewsMoreClick = { navController.navigate(Route.NewsList.route) }
 
