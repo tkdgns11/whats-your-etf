@@ -22,11 +22,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyeTopBar
-import com.d102.wye.presentation.mypage.component.myPageAccountSection
-import com.d102.wye.presentation.mypage.component.myPageEtfSection
-import com.d102.wye.presentation.mypage.component.MyPageProfileHeader
-import com.d102.wye.presentation.mypage.component.myPageSettingsSection
-import com.d102.wye.presentation.mypage.component.myPageSupportSection
+import com.d102.wye.presentation.mypage.components.myPageAccountSection
+import com.d102.wye.presentation.mypage.components.myPageEtfSection
+import com.d102.wye.presentation.mypage.components.MyPageProfileHeader
+import com.d102.wye.presentation.mypage.components.myPageSettingsSection
+import com.d102.wye.presentation.mypage.components.myPageSupportSection
 import com.d102.wye.presentation.model.UiState
 
 @Composable
