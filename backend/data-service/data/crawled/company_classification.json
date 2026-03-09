@@ -22,8 +22,8 @@
   },
   "0115": {
     "name": "삼성스팩13호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "2026 상반기 신규상장",
       "기업인수목적회사(SPAC)"
@@ -72,8 +72,8 @@
   },
   "001550": {
     "name": "조비",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "태풍 및 장마",
@@ -84,8 +84,8 @@
   },
   "025860": {
     "name": "남해화학",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "태풍 및 장마",
@@ -96,8 +96,8 @@
   },
   "097870": {
     "name": "효성오앤비",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "농업",
@@ -106,8 +106,8 @@
   },
   "332290": {
     "name": "누보",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "농업",
@@ -130,8 +130,8 @@
   },
   "004000": {
     "name": "롯데정밀화학",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "태풍 및 장마",
@@ -153,8 +153,8 @@
   },
   "054050": {
     "name": "농우바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_FRT",
+    "industry_group": "CHEM",
     "themes": [
       "비료",
       "농업"
@@ -173,8 +173,8 @@
   },
   "002100": {
     "name": "경농",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "태풍 및 장마",
       "농업",
@@ -183,8 +183,8 @@
   },
   "007590": {
     "name": "동방아그로",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "태풍 및 장마",
       "농업"
@@ -351,24 +351,24 @@
   },
   "154030": {
     "name": "아시아종묘",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "농업"
     ]
   },
   "352940": {
     "name": "인바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "농업"
     ]
   },
   "003080": {
     "name": "SB성보",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "농업"
     ]
@@ -395,8 +395,8 @@
   },
   "050860": {
     "name": "아세아텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "농업"
     ]
@@ -415,8 +415,8 @@
   },
   "002900": {
     "name": "TYM",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_AGR",
+    "industry_group": "FOOD",
     "themes": [
       "농업",
       "우크라이나 재건"
@@ -518,8 +518,8 @@
   },
   "005860": {
     "name": "한일사료",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)",
@@ -538,16 +538,16 @@
   },
   "002140": {
     "name": "고려산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료"
     ]
   },
   "027710": {
     "name": "팜스토리",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)",
@@ -559,8 +559,8 @@
   },
   "025880": {
     "name": "케이씨피드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "마켓컬리(kurly)"
@@ -577,16 +577,16 @@
   },
   "003310": {
     "name": "대주산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료"
     ]
   },
   "368970": {
     "name": "오에스피",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료"
     ]
@@ -614,16 +614,16 @@
   },
   "179530": {
     "name": "애드바이오텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료"
     ]
   },
   "006980": {
     "name": "우성",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)",
@@ -632,8 +632,8 @@
   },
   "036580": {
     "name": "팜스코",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)",
@@ -642,8 +642,8 @@
   },
   "136490": {
     "name": "선진",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)"
@@ -651,8 +651,8 @@
   },
   "353810": {
     "name": "이지바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)"
@@ -674,8 +674,8 @@
   },
   "035810": {
     "name": "이지홀딩스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "사료",
       "아프리카 돼지열병(ASF)",
@@ -697,8 +697,8 @@
   },
   "065450": {
     "name": "빅텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "자전거",
       "방위산업/전쟁 및 테러"
@@ -1025,8 +1025,8 @@
   },
   "069260": {
     "name": "TKG휴켐스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "요소수",
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)"
@@ -1034,8 +1034,8 @@
   },
   "000910": {
     "name": "유니온",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "요소수",
       "시멘트/레미콘",
@@ -1338,8 +1338,8 @@
   },
   "002820": {
     "name": "SUN&L",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "조림사업",
       "리모델링/인테리어"
@@ -1358,8 +1358,8 @@
   },
   "009580": {
     "name": "무림P&P",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "조림사업",
       "제지"
@@ -1367,8 +1367,8 @@
   },
   "025750": {
     "name": "한솔홈데코",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "조림사업",
       "리모델링/인테리어",
@@ -1386,8 +1386,8 @@
   },
   "008250": {
     "name": "이건산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "조림사업",
       "리모델링/인테리어",
@@ -1435,112 +1435,112 @@
   },
   "487720": {
     "name": "키움제10호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "482690": {
     "name": "대신밸런스제19호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "464440": {
     "name": "한국제13호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "478390": {
     "name": "KB제29호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "469480": {
     "name": "IBKS제24호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "496070": {
     "name": "신한제16호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "455310": {
     "name": "한화플러스제4호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "452980": {
     "name": "신한제11호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "478440": {
     "name": "미래에셋비전스팩6호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "471050": {
     "name": "대신밸런스제17호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "457630": {
     "name": "대신밸런스제16호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "484130": {
     "name": "하나34호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "469880": {
     "name": "하나30호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0041": {
     "name": "교보18호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "기업인수목적회사(SPAC)",
@@ -1552,128 +1552,128 @@
   },
   "468760": {
     "name": "유진스팩10호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "473000": {
     "name": "에스케이증권제12호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "473050": {
     "name": "유안타제15호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "465320": {
     "name": "교보15호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "492220": {
     "name": "KB제31호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "462020": {
     "name": "에이치엠씨제6호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "458610": {
     "name": "한국제12호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "489730": {
     "name": "디비금융제13호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "489480": {
     "name": "키움제11호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "473950": {
     "name": "에스케이증권제13호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "474660": {
     "name": "신한제12호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "477340": {
     "name": "에이치엠씨제7호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "477760": {
     "name": "DB금융스팩12호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "478110": {
     "name": "이베스트스팩6호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "488060": {
     "name": "유진스팩11호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0098": {
     "name": "교보19호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1681,8 +1681,8 @@
   },
   "0096": {
     "name": "삼성스팩12호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "기업인수목적회사(SPAC)",
@@ -1692,16 +1692,16 @@
   },
   "482520": {
     "name": "교보16호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0088": {
     "name": "메리츠제1호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1709,64 +1709,64 @@
   },
   "481890": {
     "name": "엔에이치스팩31호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "474490": {
     "name": "유안타제16호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "444920": {
     "name": "유안타제11호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "464680": {
     "name": "KB제27호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "487830": {
     "name": "신한제15호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "472230": {
     "name": "에스케이증권제11호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "498390": {
     "name": "한화플러스제5호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0093": {
     "name": "미래에셋비전스팩8호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1774,8 +1774,8 @@
   },
   "0071": {
     "name": "삼성스팩11호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1783,16 +1783,16 @@
   },
   "452670": {
     "name": "상상인제4호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0101": {
     "name": "하나36호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1800,24 +1800,24 @@
   },
   "467930": {
     "name": "IBKS제23호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "474930": {
     "name": "신한제13호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0099": {
     "name": "IBKS제25호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "기업인수목적회사(SPAC)",
@@ -1827,24 +1827,24 @@
   },
   "489210": {
     "name": "교보17호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "482680": {
     "name": "미래에셋비전스팩7호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0072": {
     "name": "KB제33호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1852,16 +1852,16 @@
   },
   "493790": {
     "name": "유안타제17호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0097": {
     "name": "미래에셋비전스팩10호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1869,24 +1869,24 @@
   },
   "472220": {
     "name": "신영스팩10호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "486630": {
     "name": "KB제30호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0068": {
     "name": "비엔케이제3호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1894,8 +1894,8 @@
   },
   "0105": {
     "name": "유진스팩12호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1903,24 +1903,24 @@
   },
   "469900": {
     "name": "하나31호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "475250": {
     "name": "하나33호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0091": {
     "name": "신영스팩11호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1928,8 +1928,8 @@
   },
   "466690": {
     "name": "키움히어로제1호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1937,8 +1937,8 @@
   },
   "0054": {
     "name": "엔에이치스팩32호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1946,8 +1946,8 @@
   },
   "0037": {
     "name": "KB제32호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1955,32 +1955,32 @@
   },
   "475240": {
     "name": "하나32호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "477470": {
     "name": "미래에셋비전스팩5호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "479880": {
     "name": "한국제15호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "0044": {
     "name": "삼성스팩10호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)",
       "2025 하반기 신규상장"
@@ -1988,40 +1988,40 @@
   },
   "477380": {
     "name": "미래에셋비전스팩4호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "487360": {
     "name": "신한제14호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "473370": {
     "name": "비엔케이제2호스팩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "451700": {
     "name": "엔에이치스팩29호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
   },
   "466910": {
     "name": "엔에이치스팩30호",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_SPAC",
+    "industry_group": "FINANCE",
     "themes": [
       "기업인수목적회사(SPAC)"
     ]
@@ -2057,8 +2057,8 @@
   },
   "060560": {
     "name": "HC홈센타",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "아스콘(아스팔트 콘크리트)",
       "시멘트/레미콘"
@@ -2076,8 +2076,8 @@
   },
   "225530": {
     "name": "HC보광산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "아스콘(아스팔트 콘크리트)",
       "시멘트/레미콘"
@@ -2094,8 +2094,8 @@
   },
   "255220": {
     "name": "SG",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "아스콘(아스팔트 콘크리트)",
       "우크라이나 재건",
@@ -2114,16 +2114,16 @@
   },
   "188260": {
     "name": "세니젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)"
     ]
   },
   "136480": {
     "name": "하림",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "구제역/광우병 수혜",
@@ -2134,8 +2134,8 @@
   },
   "331920": {
     "name": "셀레믹스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "유전자 치료제/분석"
@@ -2143,8 +2143,8 @@
   },
   "088910": {
     "name": "동우팜투테이블",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "구제역/광우병 수혜",
@@ -2166,8 +2166,8 @@
   },
   "198440": {
     "name": "강동씨앤엘",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "시멘트/레미콘"
@@ -2193,8 +2193,8 @@
   },
   "900340": {
     "name": "윙입푸드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "국내 상장 중국기업"
@@ -2232,16 +2232,16 @@
   },
   "110020": {
     "name": "전진바이오팜",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)"
     ]
   },
   "027740": {
     "name": "마니커",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "구제역/광우병 수혜",
@@ -2252,8 +2252,8 @@
   },
   "025870": {
     "name": "신라에스지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)",
       "구제역/광우병 수혜",
@@ -2272,8 +2272,8 @@
   },
   "073560": {
     "name": "우리손에프앤지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "아프리카 돼지열병(ASF)"
     ]
@@ -2339,8 +2339,8 @@
   },
   "037070": {
     "name": "파세코",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "겨울",
       "여름",
@@ -2428,8 +2428,8 @@
   },
   "003680": {
     "name": "한성기업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "김밥(냉동김밥 등)",
@@ -2438,8 +2438,8 @@
   },
   "011150": {
     "name": "CJ씨푸드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "김밥(냉동김밥 등)",
@@ -2448,8 +2448,8 @@
   },
   "030720": {
     "name": "동원수산",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "수산"
@@ -2457,8 +2457,8 @@
   },
   "004970": {
     "name": "신라교역",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "수산"
@@ -2466,8 +2466,8 @@
   },
   "006090": {
     "name": "사조오양",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "수산"
@@ -2475,8 +2475,8 @@
   },
   "006040": {
     "name": "동원산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "수산",
@@ -2488,8 +2488,8 @@
   },
   "003960": {
     "name": "사조대림",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "김밥(냉동김밥 등)",
@@ -2498,8 +2498,8 @@
   },
   "007160": {
     "name": "사조산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FED",
+    "industry_group": "FOOD",
     "themes": [
       "구제역/광우병 수혜",
       "수산"
@@ -2655,8 +2655,8 @@
   },
   "044340": {
     "name": "위닉스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_AIR",
+    "industry_group": "CONSUMER",
     "themes": [
       "여름",
       "공기청정기",
@@ -2829,8 +2829,8 @@
   },
   "100790": {
     "name": "미래에셋벤처투자",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "마켓컬리(kurly)",
       "스페이스X(SpaceX)",
@@ -2947,8 +2947,8 @@
   },
   "037440": {
     "name": "희림",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "남북경협",
       "우크라이나 재건",
@@ -4536,8 +4536,8 @@
   },
   "004140": {
     "name": "동방",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "쿠팡(coupang)",
       "종합 물류",
@@ -4554,8 +4554,8 @@
   },
   "289010": {
     "name": "아이스크림에듀",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "쿠팡(coupang)",
       "교육/온라인 교육"
@@ -4619,8 +4619,8 @@
   },
   "009070": {
     "name": "KCTC",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "쿠팡(coupang)",
       "종합 물류",
@@ -4738,8 +4738,8 @@
   },
   "084440": {
     "name": "유비온",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "밸류업(26년 기업가치 제고계획 발표)"
@@ -4747,8 +4747,8 @@
   },
   "053290": {
     "name": "NE능률",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
@@ -4765,8 +4765,8 @@
   },
   "133750": {
     "name": "메가엠디",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "일자리(취업)"
@@ -4774,8 +4774,8 @@
   },
   "035290": {
     "name": "골드앤에스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "밸류업(26년 기업가치 제고계획 발표)"
@@ -4783,8 +4783,8 @@
   },
   "040420": {
     "name": "정상제이엘에스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "엔젤산업"
@@ -4792,8 +4792,8 @@
   },
   "215200": {
     "name": "메가스터디교육",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "밸류업(25년 기업가치 제고계획 발표)",
@@ -4802,8 +4802,8 @@
   },
   "096240": {
     "name": "크레버스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "메타버스(Metaverse)"
@@ -4821,8 +4821,8 @@
   },
   "461300": {
     "name": "아이스크림미디어",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
@@ -4843,8 +4843,8 @@
   },
   "068930": {
     "name": "디지털대성",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "밸류업(25년 기업가치 제고계획 발표)"
@@ -4852,8 +4852,8 @@
   },
   "339950": {
     "name": "아이비김영",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "일자리(취업)"
@@ -4861,16 +4861,16 @@
   },
   "072870": {
     "name": "메가스터디",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
   },
   "134060": {
     "name": "이퓨쳐",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
@@ -4888,8 +4888,8 @@
   },
   "057030": {
     "name": "YBM넷",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "모바일콘텐츠(스마트폰/태블릿PC)"
@@ -4897,16 +4897,16 @@
   },
   "067280": {
     "name": "멀티캠퍼스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
   },
   "373160": {
     "name": "데이원컴퍼니",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "일자리(취업)"
@@ -4926,16 +4926,16 @@
   },
   "100220": {
     "name": "비상교육",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육"
     ]
   },
   "095720": {
     "name": "웅진씽크빅",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "출산장려정책",
@@ -4944,8 +4944,8 @@
   },
   "068290": {
     "name": "삼성출판사",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "출산장려정책",
@@ -4966,8 +4966,8 @@
   },
   "475580": {
     "name": "에이럭스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_EDTC",
+    "industry_group": "IT_SW",
     "themes": [
       "교육/온라인 교육",
       "드론(Drone)"
@@ -5141,16 +5141,16 @@
   },
   "002870": {
     "name": "신풍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "004540": {
     "name": "깨끗한나라",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지",
       "출산장려정책",
@@ -5160,8 +5160,8 @@
   },
   "002200": {
     "name": "한국수출포장",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지",
       "골판지 제조"
@@ -5169,56 +5169,56 @@
   },
   "001810": {
     "name": "무림SP",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "009460": {
     "name": "한창제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "213500": {
     "name": "한솔제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "009770": {
     "name": "삼정펄프",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "001020": {
     "name": "페이퍼코리아",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "027970": {
     "name": "한국제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
   },
   "002310": {
     "name": "아세아제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지",
       "골판지 제조"
@@ -5236,8 +5236,8 @@
   },
   "034810": {
     "name": "해성산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지",
       "지주사"
@@ -5245,8 +5245,8 @@
   },
   "009200": {
     "name": "무림페이퍼",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "제지"
     ]
@@ -6605,8 +6605,8 @@
   },
   "389470": {
     "name": "인벤티지랩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "마리화나(대마)",
       "비만치료제",
@@ -7576,8 +7576,8 @@
   },
   "013990": {
     "name": "아가방컴퍼니",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "日제품 불매운동(수혜)",
@@ -7587,8 +7587,8 @@
   },
   "002450": {
     "name": "삼익악기",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "엔젤산업"
@@ -7607,8 +7607,8 @@
   },
   "012690": {
     "name": "모나리자",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "日제품 불매운동(수혜)",
@@ -7619,8 +7619,8 @@
   },
   "014100": {
     "name": "메디앙스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "日제품 불매운동(수혜)",
@@ -7630,8 +7630,8 @@
   },
   "036000": {
     "name": "예림당",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "엔젤산업"
@@ -7673,8 +7673,8 @@
   },
   "407400": {
     "name": "꿈비",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "출산장려정책",
       "엔젤산업"
@@ -8094,8 +8094,8 @@
   },
   "052220": {
     "name": "iMBC",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "미디어(방송/신문)",
       "메타버스(Metaverse)"
@@ -8103,8 +8103,8 @@
   },
   "040300": {
     "name": "YTN",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "미디어(방송/신문)",
       "방위산업/전쟁 및 테러",
@@ -8142,8 +8142,8 @@
   },
   "136540": {
     "name": "윈스테크넷",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "키오스크(KIOSK)",
       "보안주(정보)"
@@ -8290,8 +8290,8 @@
   },
   "258790": {
     "name": "소프트캠프",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "재택근무/스마트워크",
       "보안주(정보)"
@@ -8503,8 +8503,8 @@
   },
   "207760": {
     "name": "미스터블루",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "모바일게임(스마트폰)",
       "웹툰",
@@ -8529,40 +8529,40 @@
   },
   "079650": {
     "name": "서산",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘"
     ]
   },
   "004980": {
     "name": "성신양회",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘"
     ]
   },
   "183190": {
     "name": "아세아시멘트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘"
     ]
   },
   "300720": {
     "name": "한일시멘트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘"
     ]
   },
   "038500": {
     "name": "삼표시멘트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘",
       "부동산 보유 자산주"
@@ -8570,8 +8570,8 @@
   },
   "006920": {
     "name": "모헨즈",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘",
       "DMZ 평화공원"
@@ -8579,8 +8579,8 @@
   },
   "001520": {
     "name": "동양",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘",
       "마스크"
@@ -8588,8 +8588,8 @@
   },
   "011390": {
     "name": "부산산업",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_CEM",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "시멘트/레미콘",
       "철도",
@@ -8903,8 +8903,8 @@
   },
   "005360": {
     "name": "모나미",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "日제품 불매운동(수혜)",
       "엔젤산업"
@@ -8968,8 +8968,8 @@
   },
   "039830": {
     "name": "오로라",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_BAB",
+    "industry_group": "CONSUMER",
     "themes": [
       "엔젤산업",
       "캐릭터상품"
@@ -8977,8 +8977,8 @@
   },
   "014710": {
     "name": "사조씨푸드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FOOD_FSH",
+    "industry_group": "FOOD",
     "themes": [
       "수산"
     ]
@@ -9006,8 +9006,8 @@
   },
   "448710": {
     "name": "코츠테크놀로지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러"
     ]
@@ -9028,8 +9028,8 @@
   },
   "484590": {
     "name": "삼양컴텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러",
       "2025 하반기 신규상장"
@@ -9037,16 +9037,16 @@
   },
   "474610": {
     "name": "RF시스템즈",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러"
     ]
   },
   "484870": {
     "name": "엠앤씨솔루션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러"
     ]
@@ -9111,8 +9111,8 @@
   },
   "006050": {
     "name": "국영지앤엠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러",
       "철도"
@@ -9167,8 +9167,8 @@
   },
   "065950": {
     "name": "웰크론",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러",
       "마스크",
@@ -9304,8 +9304,8 @@
   },
   "274400": {
     "name": "이노시뮬레이션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러",
       "가상현실(VR)",
@@ -9314,8 +9314,8 @@
   },
   "140430": {
     "name": "카티스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "DEF_LAND",
+    "industry_group": "DEFENSE",
     "themes": [
       "방위산업/전쟁 및 테러",
       "보안주(물리)"
@@ -9507,8 +9507,8 @@
   },
   "195990": {
     "name": "에이비프로바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "공작기계",
       "면역항암제"
@@ -9558,8 +9558,8 @@
   },
   "089140": {
     "name": "넥스턴앤롤코리아",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "공작기계",
       "비만치료제"
@@ -9733,32 +9733,32 @@
   },
   "032280": {
     "name": "삼일",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
   },
   "129260": {
     "name": "인터지스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
   },
   "009180": {
     "name": "한솔로지스틱스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
   },
   "124560": {
     "name": "태웅로직스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류",
       "밸류업(25년 기업가치 제고계획 발표)"
@@ -9766,24 +9766,24 @@
   },
   "004360": {
     "name": "세방",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
   },
   "003100": {
     "name": "선광",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
   },
   "002320": {
     "name": "한진",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
@@ -9810,8 +9810,8 @@
   },
   "000120": {
     "name": "CJ대한통운",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "TRANS_LOG",
+    "industry_group": "TRANSPORT",
     "themes": [
       "종합 물류"
     ]
@@ -9857,8 +9857,8 @@
   },
   "418470": {
     "name": "KT밀리의서재",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "밸류업(26년 기업가치 제고계획 발표)",
       "모바일콘텐츠(스마트폰/태블릿PC)"
@@ -9900,8 +9900,8 @@
   },
   "026890": {
     "name": "스틱인베스트먼트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "밸류업(26년 기업가치 제고계획 발표)",
       "창투사"
@@ -9981,8 +9981,8 @@
   },
   "087010": {
     "name": "펩트론",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제",
       "코로나19(치료제/백신 개발 등)",
@@ -10035,8 +10035,8 @@
   },
   "095700": {
     "name": "제넥신",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제",
       "면역항암제",
@@ -10194,16 +10194,16 @@
   },
   "439580": {
     "name": "블루엠텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제"
     ]
   },
   "347850": {
     "name": "디앤디파마텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제"
     ]
@@ -10220,8 +10220,8 @@
   },
   "348150": {
     "name": "고바이오랩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제",
       "마이크로바이옴",
@@ -10249,8 +10249,8 @@
   },
   "378800": {
     "name": "샤페론",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제",
       "코로나19(치료제/백신 개발 등)",
@@ -10274,8 +10274,8 @@
   },
   "456160": {
     "name": "지투지바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_OBST",
+    "industry_group": "BIO",
     "themes": [
       "비만치료제",
       "2025 하반기 신규상장",
@@ -10297,8 +10297,8 @@
   },
   "000650": {
     "name": "천일고속",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "서울고속버스터미널 재개발 수혜",
       "부동산 보유 자산주"
@@ -10306,8 +10306,8 @@
   },
   "084670": {
     "name": "동양고속",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "서울고속버스터미널 재개발 수혜",
       "부동산 보유 자산주"
@@ -10597,8 +10597,8 @@
   },
   "038530": {
     "name": "케이바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(치료제/백신 개발 등)",
       "코로나19(진단/치료제/백신 개발 등)"
@@ -10641,8 +10641,8 @@
   },
   "299660": {
     "name": "셀리드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(치료제/백신 개발 등)",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -10690,8 +10690,8 @@
   },
   "174900": {
     "name": "앱클론",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(치료제/백신 개발 등)",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -10702,8 +10702,8 @@
   },
   "203400": {
     "name": "에이비온",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(치료제/백신 개발 등)",
       "코로나19(진단/치료제/백신 개발 등)"
@@ -10711,8 +10711,8 @@
   },
   "285800": {
     "name": "진영",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "탈 플라스틱(친환경/생분해성 등)"
@@ -10720,8 +10720,8 @@
   },
   "066620": {
     "name": "국보디자인",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "테마파크"
@@ -10729,40 +10729,40 @@
   },
   "171120": {
     "name": "라이온켐텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "006570": {
     "name": "대림통상",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "011090": {
     "name": "에넥스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "446070": {
     "name": "유니드비티플러스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "066130": {
     "name": "하츠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "황사/미세먼지"
@@ -10770,32 +10770,32 @@
   },
   "005750": {
     "name": "대림바스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "018310": {
     "name": "삼목에스폼",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "344820": {
     "name": "KCC글라스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "020710": {
     "name": "시공테크",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "테마파크",
@@ -10814,8 +10814,8 @@
   },
   "009240": {
     "name": "한샘",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "코리아 밸류업 지수(Korea Value-up Index)"
@@ -10823,8 +10823,8 @@
   },
   "079430": {
     "name": "현대리바트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "스마트홈(홈네트워크)"
@@ -10832,8 +10832,8 @@
   },
   "007210": {
     "name": "벽산",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어",
       "페인트"
@@ -10863,16 +10863,16 @@
   },
   "309930": {
     "name": "조이웍스앤코",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_INT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "리모델링/인테리어"
     ]
   },
   "352700": {
     "name": "씨앤투스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_PROT",
+    "industry_group": "BIO",
     "themes": [
       "공기청정기",
       "마스크",
@@ -10881,8 +10881,8 @@
   },
   "045520": {
     "name": "크린앤사이언스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_PROT",
+    "industry_group": "BIO",
     "themes": [
       "공기청정기",
       "마스크",
@@ -10891,8 +10891,8 @@
   },
   "068100": {
     "name": "케이웨더",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_AIR",
+    "industry_group": "CONSUMER",
     "themes": [
       "공기청정기",
       "황사/미세먼지"
@@ -11270,8 +11270,8 @@
   },
   "083550": {
     "name": "케이엠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_PROT",
+    "industry_group": "BIO",
     "themes": [
       "마스크",
       "황사/미세먼지"
@@ -11291,8 +11291,8 @@
   },
   "263020": {
     "name": "디케이앤디",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_PROT",
+    "industry_group": "BIO",
     "themes": [
       "마스크",
       "밸류업(24년 기업가치 제고계획 발표)"
@@ -11309,8 +11309,8 @@
   },
   "142280": {
     "name": "녹십자엠에스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_PROT",
+    "industry_group": "BIO",
     "themes": [
       "마스크",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -11424,16 +11424,16 @@
   },
   "014830": {
     "name": "유니드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)"
     ]
   },
   "005090": {
     "name": "SGC에너지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)"
     ]
@@ -11469,8 +11469,8 @@
   },
   "448280": {
     "name": "에코아이",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)"
     ]
@@ -11506,8 +11506,8 @@
   },
   "383310": {
     "name": "에코프로에이치엔",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)",
       "황사/미세먼지",
@@ -11540,40 +11540,40 @@
   },
   "163280": {
     "name": "에어레인",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "ENG_CCU",
+    "industry_group": "ENERGY",
     "themes": [
       "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)"
     ]
   },
   "014160": {
     "name": "대영포장",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
   },
   "011280": {
     "name": "태림포장",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
   },
   "023600": {
     "name": "삼보판지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
   },
   "004150": {
     "name": "한솔홀딩스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조",
       "폐기물처리",
@@ -11591,24 +11591,24 @@
   },
   "006740": {
     "name": "블루산업개발",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
   },
   "017650": {
     "name": "대림제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
   },
   "016590": {
     "name": "신대양제지",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CHEM_PAP",
+    "industry_group": "CHEM",
     "themes": [
       "골판지 제조"
     ]
@@ -11683,8 +11683,8 @@
   },
   "311690": {
     "name": "CJ 바이오사이언스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "마이크로바이옴",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -11705,8 +11705,8 @@
   },
   "187420": {
     "name": "HLB제넥스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "마이크로바이옴",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -11716,8 +11716,8 @@
   },
   "038290": {
     "name": "마크로젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "마이크로바이옴",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -11740,8 +11740,8 @@
   },
   "950200": {
     "name": "소마젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "마이크로바이옴",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -13173,8 +13173,8 @@
   },
   "476830": {
     "name": "알지노믹스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "2025 하반기 신규상장",
       "치매",
@@ -13250,8 +13250,8 @@
   },
   "0009": {
     "name": "에임드바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "2025 하반기 신규상장",
       "면역항암제"
@@ -13351,8 +13351,8 @@
   },
   "331740": {
     "name": "아우토크립트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "2025 하반기 신규상장",
       "보안주(정보)",
@@ -13635,8 +13635,8 @@
   },
   "012750": {
     "name": "에스원",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "스마트홈(홈네트워크)",
       "보안주(정보)",
@@ -13800,8 +13800,8 @@
   },
   "069140": {
     "name": "누리플랜",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_AIR",
+    "industry_group": "CONSUMER",
     "themes": [
       "황사/미세먼지",
       "DMZ 평화공원"
@@ -13839,16 +13839,16 @@
   },
   "131030": {
     "name": "옵투스제약",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_AIR",
+    "industry_group": "CONSUMER",
     "themes": [
       "황사/미세먼지"
     ]
   },
   "187790": {
     "name": "나노",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CONS_AIR",
+    "industry_group": "CONSUMER",
     "themes": [
       "황사/미세먼지"
     ]
@@ -15952,8 +15952,8 @@
   },
   "003380": {
     "name": "하림지주",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "지주사",
       "부동산 보유 자산주"
@@ -15978,8 +15978,8 @@
   },
   "003090": {
     "name": "대웅",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "지주사",
       "코로나19(진단/치료제/백신 개발 등)"
@@ -16022,8 +16022,8 @@
   },
   "015860": {
     "name": "일진홀딩스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "지주사",
       "치매",
@@ -16098,8 +16098,8 @@
   },
   "402340": {
     "name": "SK스퀘어",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "지주사",
       "밸류업(24년 기업가치 제고계획 발표)",
@@ -16109,16 +16109,16 @@
   },
   "065650": {
     "name": "하이퍼코퍼레이션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매"
     ]
   },
   "298380": {
     "name": "에이비엘바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매",
       "면역항암제"
@@ -16147,8 +16147,8 @@
   },
   "365270": {
     "name": "큐라클",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매",
       "면역항암제"
@@ -16177,8 +16177,8 @@
   },
   "039200": {
     "name": "오스코텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매",
       "밸류업(25년 기업가치 제고계획 발표)",
@@ -16189,8 +16189,8 @@
   },
   "304840": {
     "name": "피플바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매",
       "탈모 치료"
@@ -16198,8 +16198,8 @@
   },
   "310210": {
     "name": "보로노이",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매"
     ]
@@ -16217,24 +16217,24 @@
   },
   "176750": {
     "name": "듀켐바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매"
     ]
   },
   "082270": {
     "name": "젬백스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매"
     ]
   },
   "220100": {
     "name": "퓨쳐켐",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매",
       "고령화 사회(노인복지)"
@@ -16242,8 +16242,8 @@
   },
   "086040": {
     "name": "바이오톡스텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_NEW",
+    "industry_group": "BIO",
     "themes": [
       "치매"
     ]
@@ -16298,8 +16298,8 @@
   },
   "032190": {
     "name": "다우데이타",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "밸류업(24년 기업가치 제고계획 발표)",
       "보안주(정보)"
@@ -16780,8 +16780,8 @@
   },
   "424760": {
     "name": "벨로크",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "보안주(물리)"
@@ -16799,16 +16799,16 @@
   },
   "275630": {
     "name": "에스에스알",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
   },
   "050960": {
     "name": "수산아이앤티",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
@@ -16833,8 +16833,8 @@
   },
   "208350": {
     "name": "지란지교시큐리티",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
@@ -16864,8 +16864,8 @@
   },
   "197140": {
     "name": "디지캡",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "딥페이크(deepfake)"
@@ -16873,24 +16873,24 @@
   },
   "247660": {
     "name": "나노씨엠에스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
   },
   "434480": {
     "name": "모니터랩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
   },
   "075130": {
     "name": "플랜티넷",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "모바일콘텐츠(스마트폰/태블릿PC)",
@@ -16900,8 +16900,8 @@
   },
   "465480": {
     "name": "인스피언",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
@@ -16919,8 +16919,8 @@
   },
   "286750": {
     "name": "나노실리칸첨단소재",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "코로나19(진단/치료제/백신 개발 등)",
@@ -16929,16 +16929,16 @@
   },
   "263860": {
     "name": "지니언스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
   },
   "411080": {
     "name": "샌즈랩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "딥페이크(deepfake)"
@@ -16946,8 +16946,8 @@
   },
   "356890": {
     "name": "싸이버원",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "보안주(물리)"
@@ -16969,8 +16969,8 @@
   },
   "430690": {
     "name": "한싹",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)"
     ]
@@ -16986,8 +16986,8 @@
   },
   "356680": {
     "name": "엑스게이트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "양자암호/양자컴퓨팅"
@@ -17019,8 +17019,8 @@
   },
   "214180": {
     "name": "헥토이노베이션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_SEC",
+    "industry_group": "IT_SW",
     "themes": [
       "보안주(정보)",
       "핀테크(FinTech)",
@@ -17166,16 +17166,16 @@
   },
   "044380": {
     "name": "주연테크",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)"
     ]
   },
   "336060": {
     "name": "웨이버스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)"
     ]
@@ -17223,8 +17223,8 @@
   },
   "109080": {
     "name": "옵티시스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)",
       "철도"
@@ -17232,8 +17232,8 @@
   },
   "431190": {
     "name": "케이쓰리아이",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)",
       "가상현실(VR)",
@@ -17280,8 +17280,8 @@
   },
   "066310": {
     "name": "큐에스아이",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)",
       "양자암호/양자컴퓨팅",
@@ -17291,8 +17291,8 @@
   },
   "438700": {
     "name": "버넥트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)",
       "증강현실(AR)"
@@ -17310,8 +17310,8 @@
   },
   "189330": {
     "name": "씨이랩",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_META",
+    "industry_group": "IT_SW",
     "themes": [
       "메타버스(Metaverse)"
     ]
@@ -17466,8 +17466,8 @@
   },
   "363250": {
     "name": "진시스템",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)",
@@ -17476,8 +17476,8 @@
   },
   "377740": {
     "name": "바이오노트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)"
@@ -17506,8 +17506,8 @@
   },
   "137310": {
     "name": "에스디바이오센서",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)",
@@ -17516,8 +17516,8 @@
   },
   "221800": {
     "name": "유투바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)"
@@ -17525,8 +17525,8 @@
   },
   "228760": {
     "name": "지노믹트리",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)",
@@ -17535,8 +17535,8 @@
   },
   "238120": {
     "name": "얼라인드",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)"
@@ -17554,8 +17554,8 @@
   },
   "305090": {
     "name": "마이크로디지탈",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "코로나19(진단키트)"
@@ -17563,8 +17563,8 @@
   },
   "289080": {
     "name": "SV인베스트먼트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_VACC",
+    "industry_group": "BIO",
     "themes": [
       "코로나19(진단/치료제/백신 개발 등)",
       "창투사"
@@ -17605,8 +17605,8 @@
   },
   "003610": {
     "name": "방림",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "부동산 보유 자산주"
     ]
@@ -17624,24 +17624,24 @@
   },
   "029530": {
     "name": "신도리코",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "부동산 보유 자산주"
     ]
   },
   "003200": {
     "name": "일신방직",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "부동산 보유 자산주"
     ]
   },
   "006730": {
     "name": "서부T&D",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "부동산 보유 자산주",
       "호텔/리조트"
@@ -17649,8 +17649,8 @@
   },
   "000050": {
     "name": "경방",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "CON_REIT",
+    "industry_group": "CONSTRUCT",
     "themes": [
       "부동산 보유 자산주"
     ]
@@ -17709,8 +17709,8 @@
   },
   "020120": {
     "name": "키다리스튜디오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "웹툰",
       "모바일콘텐츠(스마트폰/태블릿PC)"
@@ -17718,8 +17718,8 @@
   },
   "263720": {
     "name": "디앤씨미디어",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "웹툰",
       "모바일콘텐츠(스마트폰/태블릿PC)"
@@ -17736,8 +17736,8 @@
   },
   "417180": {
     "name": "핑거스토리",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "웹툰",
       "모바일콘텐츠(스마트폰/태블릿PC)"
@@ -18426,24 +18426,24 @@
   },
   "052020": {
     "name": "에스티큐브",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "115180": {
     "name": "큐리언트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "083790": {
     "name": "CG인바이츠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제",
       "유전자 치료제/분석"
@@ -18451,8 +18451,8 @@
   },
   "321550": {
     "name": "티움바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제",
       "유전자 치료제/분석"
@@ -18460,24 +18460,24 @@
   },
   "028300": {
     "name": "HLB",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "338840": {
     "name": "와이바이오로직스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "215600": {
     "name": "신라젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제",
       "유전자 치료제/분석"
@@ -18485,16 +18485,16 @@
   },
   "323990": {
     "name": "박셀바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "308080": {
     "name": "바이젠셀",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제",
       "유전자 치료제/분석"
@@ -18502,32 +18502,32 @@
   },
   "424870": {
     "name": "이뮨온시아",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "235980": {
     "name": "메드팩토",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "397030": {
     "name": "에이프릴바이오",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
   },
   "950220": {
     "name": "네오이뮨텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
@@ -18543,8 +18543,8 @@
   },
   "085660": {
     "name": "차바이오텍",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제",
       "고령화 사회(노인복지)",
@@ -18554,8 +18554,8 @@
   },
   "358570": {
     "name": "지아이이노베이션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CANC",
+    "industry_group": "BIO",
     "themes": [
       "면역항암제"
     ]
@@ -19533,8 +19533,8 @@
   },
   "065660": {
     "name": "안트로젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CELL",
+    "industry_group": "BIO",
     "themes": [
       "탈모 치료",
       "줄기세포"
@@ -19550,16 +19550,16 @@
   },
   "036030": {
     "name": "케이티알파",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "모바일콘텐츠(스마트폰/태블릿PC)"
     ]
   },
   "208860": {
     "name": "다산디엠씨",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "SW_MOBI",
+    "industry_group": "IT_SW",
     "themes": [
       "모바일콘텐츠(스마트폰/태블릿PC)",
       "자율주행차"
@@ -19605,16 +19605,16 @@
   },
   "389030": {
     "name": "지니너스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
   },
   "373110": {
     "name": "엑셀세라퓨틱스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석",
       "줄기세포"
@@ -19622,8 +19622,8 @@
   },
   "456070": {
     "name": "이엔셀",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석",
       "줄기세포"
@@ -19631,32 +19631,32 @@
   },
   "199800": {
     "name": "툴젠",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
   },
   "046210": {
     "name": "HLB파나진",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
   },
   "372320": {
     "name": "큐로셀",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
   },
   "461030": {
     "name": "아이엠비디엑스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
@@ -19672,8 +19672,8 @@
   },
   "340450": {
     "name": "지씨지놈",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_GENE",
+    "industry_group": "BIO",
     "themes": [
       "유전자 치료제/분석"
     ]
@@ -20179,8 +20179,8 @@
   },
   "027360": {
     "name": "아주IB투자",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "스페이스X(SpaceX)",
       "창투사",
@@ -20407,8 +20407,8 @@
   },
   "330730": {
     "name": "스톤브릿지벤처스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "딥페이크(deepfake)",
       "창투사"
@@ -21514,32 +21514,32 @@
   },
   "086820": {
     "name": "바이오솔루션",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CELL",
+    "industry_group": "BIO",
     "themes": [
       "줄기세포"
     ]
   },
   "191420": {
     "name": "테고사이언스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CELL",
+    "industry_group": "BIO",
     "themes": [
       "줄기세포"
     ]
   },
   "166480": {
     "name": "코아스템켐온",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CELL",
+    "industry_group": "BIO",
     "themes": [
       "줄기세포"
     ]
   },
   "304360": {
     "name": "에스바이오메딕스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "BIO_CELL",
+    "industry_group": "BIO",
     "themes": [
       "줄기세포"
     ]
@@ -21677,40 +21677,40 @@
   },
   "019570": {
     "name": "플루토스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "창투사"
     ]
   },
   "016600": {
     "name": "큐캐피탈",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "창투사"
     ]
   },
   "277070": {
     "name": "린드먼아시아",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "창투사"
     ]
   },
   "440290": {
     "name": "HB인베스트먼트",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "창투사"
     ]
   },
   "452300": {
     "name": "캡스톤파트너스",
-    "industry_code": null,
-    "industry_group": null,
+    "industry_code": "FIN_VC",
+    "industry_group": "FINANCE",
     "themes": [
       "창투사"
     ]

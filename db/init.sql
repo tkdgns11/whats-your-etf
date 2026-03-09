@@ -444,7 +444,7 @@ CREATE TABLE "etf_other_composition" (
     "identifier_type" VARCHAR(20),                -- ISIN / TICKER / CUSTOM
     "identifier_value" VARCHAR(30),               -- 식별값
     "weight" DECIMAL(6,3),
-    "market_value" INTEGER,
+    "market_value" BIGINT,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_other_composition_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );

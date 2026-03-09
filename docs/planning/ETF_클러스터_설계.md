@@ -49,13 +49,61 @@ ETF의 `category`에 따라 다른 분류 방식을 적용합니다.
 
 | category | sector 예시 | cluster_type | 버블 예시 |
 |----------|-------------|--------------|-----------|
-| **시장형** | - | GROUP_CODE | 반도체, 금융, 바이오, 자동차... |
-| **테마형** | 반도체, 2차전지 | SUB_SECTOR | 메모리, 장비, 팹리스... |
+| **시장형** | - | GROUP_CODE | 반도체(IT_SEMI), 금융(FINANCE), 바이오(BIO), 지주회사(HOLDING)... |
+| **테마형** | 반도체, 2차전지 | SUB_SECTOR | 메모리(SEMI_MEM), 장비(SEMI_EQP), 팹리스(SEMI_FBL)... |
 | **테마형** | 금융, 헬스케어 | INDUSTRY | 은행, 증권, 보험... |
-| **배당형** | - | GROUP_CODE | 금융, 통신, 유틸리티... |
-| 채권형/파생형 | - | - | 클러스터 시각화 제외 |
+| **배당형** | - | GROUP_CODE | 금융(FINANCE), 통신(TELECOM), 이벤트(EVENT)... |
+| **파생형** | - | **ASSET_TYPE** | **선물, 채권, 현금, ETF, 우선주** |
 
-**제약조건**: 국내 주식을 구성종목으로 가진 ETF만 클러스터 시각화 가능
+> **group_code 목록 (21개 + 기타 3개)**:
+> IT_SEMI, IT_ELEC, IT_SW, ENERGY, AUTO, BIO, CHEM, STEEL, MACHINERY, CONSTRUCT,
+> FINANCE, INSURANCE, RETAIL, FOOD, CONSUMER, TELECOM, TRANSPORT, SHIPBUILD,
+> DEFENSE, HOLDING, EVENT + 기타(AGRI, MINING, ETC)
+
+> **Note**: 파생형 ETF는 `etf_other_composition` 테이블 기반으로 클러스터 생성.
+> market_value 절대값 비율로 비중 계산 (weight가 0인 경우).
+
+### 2.0 ETF 구성종목 테이블 구조
+
+ETF 구성종목은 **2개 테이블**에 분산 저장됩니다:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    ETF 구성종목 저장 구조                             │
+├─────────────────────────────────────────────────────────────────────┤
+│  etf_stock_composition                                              │
+│  ├── 주식 기반 구성종목 (삼성전자, SK하이닉스 등)                      │
+│  └── etf.sector 값이 있는 ETF의 주된 구성                            │
+│                                                                     │
+│  etf_other_composition                                              │
+│  ├── 파생상품 구성종목 (선물, 채권, ETF 내 ETF, 우선주 등)             │
+│  ├── asset_type: FUTURES, BOND, CASH, ETF, PREFERRED_STOCK          │
+│  └── 인버스/레버리지/골드선물 ETF의 주된 구성                         │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### ETF.sector 컬럼 의미
+
+| sector 값 | 의미 | 구성종목 테이블 | 클러스터 방식 |
+|-----------|------|-----------------|---------------|
+| **값 있음** (반도체, 금융...) | 주식 기반 ETF | `etf_stock_composition` 위주 | GROUP_CODE/SUB_SECTOR |
+| **NULL/빈값** | 파생상품 기반 ETF | `etf_other_composition` 위주 | ASSET_TYPE |
+
+#### 파생상품 ETF 예시 (12개)
+
+```
+| stock_code | ETF명                          | 구성 특성               |
+|------------|--------------------------------|------------------------|
+| 114800     | KODEX 인버스                   | KOSPI200 선물 (음수 비중) |
+| 123310     | TIGER 인버스                   | KOSPI200 선물 (음수 비중) |
+| 132030     | KODEX 골드선물(H)              | 금 선물 + USD 선물       |
+| 319640     | TIGER 골드선물(H)              | 금 선물 + USD 선물       |
+| 261140     | TIGER 우선주                   | 우선주 20종목           |
+| 267770     | TIGER 200선물레버리지          | KOSPI200 선물 + ETF     |
+```
+
+**중요**: `etf.sector`가 NULL이어도 `etf_sector_cluster`에 클러스터 데이터가 있어야 합니다.
+파생상품 ETF는 `cluster_type = 'ASSET_TYPE'`으로 선물/채권/현금 등의 분포를 표시합니다
 
 ### 2.1 cluster_type에 따른 집계 방식
 
@@ -74,7 +122,7 @@ company_info.industry_code (Level 3 소분류, 표준 KSIC)
          ▼
 industry_classification 테이블 JOIN
          │
-         ├─── cluster_type = GROUP_CODE ──→ group_code로 집계 (22개 그룹)
+         ├─── cluster_type = GROUP_CODE ──→ group_code로 집계 (21개 그룹 + 기타 3개)
          │
          ├─── cluster_type = SUB_SECTOR ──→ 소분류 → 세분류 변환 후 표시 (커스텀 매핑)
          │
@@ -782,20 +830,40 @@ object ClusterCoordinateUtils {
     }
 
     /**
-     * 섹터별 색상 반환
+     * 섹터별 색상 반환 (21개 그룹 + 기타 3개)
      */
     fun getSectorColor(groupCode: String): Color {
         return when (groupCode) {
+            // IT/기술
             "IT_SEMI" -> Color(0xFF2196F3)     // 반도체 - 파랑
             "IT_SW" -> Color(0xFF03A9F4)       // 소프트웨어 - 하늘
             "IT_ELEC" -> Color(0xFF00BCD4)     // 전자 - 청록
+            // 금융
             "FINANCE" -> Color(0xFF4CAF50)    // 금융 - 초록
-            "MANUFACTURING" -> Color(0xFFFF9800) // 제조 - 주황
-            "CONSUMER" -> Color(0xFFE91E63)   // 소비재 - 분홍
-            "ENERGY" -> Color(0xFF9C27B0)     // 에너지 - 보라
-            "HEALTHCARE" -> Color(0xFF009688) // 헬스케어 - 청록
+            "INSURANCE" -> Color(0xFF81C784)  // 보험 - 연초록
+            // 제조/산업재
             "AUTO" -> Color(0xFF795548)       // 자동차 - 갈색
-            else -> Color(0xFF607D8B)
+            "CHEM" -> Color(0xFFFF5722)       // 화학 - 주황빨강
+            "STEEL" -> Color(0xFF64748B)      // 철강 - 슬레이트
+            "MACHINERY" -> Color(0xFFBDBDBD)  // 기계 - 회색
+            "SHIPBUILD" -> Color(0xFF06B6D4)  // 조선 - 시안
+            "CONSTRUCT" -> Color(0xFF78716C)  // 건설 - 갈색
+            // 에너지/바이오
+            "ENERGY" -> Color(0xFF9C27B0)     // 에너지 - 보라
+            "BIO" -> Color(0xFF009688)        // 바이오 - 청록
+            // 소비재/서비스
+            "CONSUMER" -> Color(0xFFE91E63)   // 소비재 - 분홍
+            "RETAIL" -> Color(0xFFFF4081)     // 유통 - 핑크
+            "FOOD" -> Color(0xFFFFB74D)       // 식품 - 주황
+            // 인프라/통신
+            "TELECOM" -> Color(0xFF673AB7)    // 통신 - 보라
+            "TRANSPORT" -> Color(0xFF26A69A)  // 운송 - 청록
+            "DEFENSE" -> Color(0xFF546E7A)    // 방위 - 청회색
+            // 지주/이벤트
+            "HOLDING" -> Color(0xFFA855F7)    // 지주회사 - 퍼플
+            "EVENT" -> Color(0xFF9CA3AF)      // 이벤트 - 회색
+            // 기타
+            else -> Color(0xFF9E9E9E)
         }
     }
 }
@@ -1076,20 +1144,47 @@ object ClusterColors {
     val CenterGreen = Color(0xFF4CAF50)
     val CenterGreenDark = Color(0xFF388E3C)
 
+    // 21개 주요 그룹 + 기타 3개 (AGRI, MINING, ETC)
     private val sectorColors = mapOf(
+        // IT/기술
         "IT_SEMI" to Color(0xFF2196F3),      // 반도체 - 파랑
-        "IT_SW" to Color(0xFF03A9F4),        // IT/소프트웨어 - 하늘
-        "IT_ELEC" to Color(0xFF00BCD4),      // 전자 - 청록
+        "IT_SW" to Color(0xFF03A9F4),        // 소프트웨어 - 하늘
+        "IT_ELEC" to Color(0xFF00BCD4),      // 전자/IT - 청록
+
+        // 금융
         "FINANCE" to Color(0xFF4CAF50),      // 금융 - 초록
-        "MANUFACTURING" to Color(0xFFFF9800), // 제조 - 주황
-        "CONSUMER" to Color(0xFFE91E63),     // 소비재 - 분홍
-        "ENERGY" to Color(0xFF9C27B0),       // 에너지 - 보라
-        "HEALTHCARE" to Color(0xFF009688),   // 헬스케어 - 청록
+        "INSURANCE" to Color(0xFF81C784),    // 보험 - 연초록
+
+        // 제조/산업재
         "AUTO" to Color(0xFF795548),         // 자동차 - 갈색
-        "CHEMICAL" to Color(0xFFFF5722),     // 화학 - 주황빨강
-        "TELECOM" to Color(0xFF673AB7),      // 통신 - 보라
-        "UTILITY" to Color(0xFF607D8B),      // 유틸리티 - 회색
-        "MATERIAL" to Color(0xFF8BC34A)      // 소재 - 연두
+        "CHEM" to Color(0xFFFF5722),         // 화학/소재 - 주황빨강
+        "STEEL" to Color(0xFF64748B),        // 철강/금속 - 슬레이트
+        "MACHINERY" to Color(0xFFBDBDBD),    // 기계/로봇 - 회색
+        "SHIPBUILD" to Color(0xFF06B6D4),    // 조선 - 시안
+        "CONSTRUCT" to Color(0xFF78716C),    // 건설 - 갈색
+
+        // 에너지/바이오
+        "ENERGY" to Color(0xFF9C27B0),       // 에너지 - 보라
+        "BIO" to Color(0xFF009688),          // 바이오/의료 - 청록
+
+        // 소비재/서비스
+        "CONSUMER" to Color(0xFFE91E63),     // 소비재 - 분홍
+        "RETAIL" to Color(0xFFFF4081),       // 유통 - 핑크
+        "FOOD" to Color(0xFFFFB74D),         // 식품 - 주황
+
+        // 인프라/통신
+        "TELECOM" to Color(0xFF673AB7),      // 통신/미디어 - 보라
+        "TRANSPORT" to Color(0xFF26A69A),    // 운송 - 청록
+        "DEFENSE" to Color(0xFF546E7A),      // 방위/우주 - 청회색
+
+        // 지주/이벤트
+        "HOLDING" to Color(0xFFA855F7),      // 지주회사 - 퍼플
+        "EVENT" to Color(0xFF9CA3AF),        // 이벤트/테마 - 회색
+
+        // 기타
+        "AGRI" to Color(0xFF8BC34A),         // 농업/어업 - 연두
+        "MINING" to Color(0xFF8D6E63),       // 광업 - 갈색
+        "ETC" to Color(0xFF9E9E9E)           // 기타 - 회색
     )
 
     fun getSectorColor(groupCode: String): Color {
@@ -1690,10 +1785,64 @@ fun NavController.navigateToEtfCluster(etfId: Long) {
 
 ---
 
-## 11. 향후 확장
+## 11. ASSET_TYPE 클러스터 (파생상품 ETF)
+
+### 11.1 대상 ETF (12개)
+
+| stock_code | ETF명 | 주요 자산 |
+|------------|-------|----------|
+| 114800 | KODEX 인버스 | KOSPI200 선물 (숏) |
+| 123310 | TIGER 인버스 | KOSPI200 선물 (숏) |
+| 132030 | KODEX 골드선물(H) | 금 선물, USD 선물 |
+| 319640 | TIGER 골드선물(H) | 금 선물, USD 선물 |
+| 261140 | TIGER 우선주 | 우선주 20종 |
+| 267770 | TIGER 200선물레버리지 | KOSPI200 선물, ETF |
+| 252670 | KODEX 200선물인버스2X | KOSPI200 선물, ETF |
+| 252710 | TIGER 200선물인버스2X | KOSPI200 선물, ETF |
+| 250780 | TIGER 코스닥150선물인버스 | 코스닥150 선물 |
+| 251340 | KODEX 코스닥150선물인버스 | 코스닥150 선물, ETF |
+| 280940 | KODEX 골드선물인버스(H) | 금 선물, USD 선물 |
+| 360150 | KODEX 코스닥150롱코스피200숏선물 | 코스닥150 선물, KOSPI200 선물 |
+
+### 11.2 자산 유형 (asset_type)
+
+| asset_type | 한글명 | 설명 |
+|------------|--------|------|
+| FUTURES | 선물 | KOSPI200, 코스닥150, 금, USD 선물 |
+| BOND | 채권/RP | 국고채, RP |
+| CASH | 현금성 자산 | 예금, MMF |
+| ETF | ETF | ETF 내 ETF 보유 |
+| PREFERRED_STOCK | 우선주 | 삼성전자우, 현대차2우B 등 |
+
+### 11.3 비중 계산 로직
+
+```sql
+-- weight > 0 이면 weight 사용
+-- weight = 0 이면 ABS(market_value) 비율로 계산
+CASE
+    WHEN total_weight > 0 THEN sum_weight
+    WHEN total_mv > 0 THEN ROUND((sum_mv / total_mv * 100)::numeric, 2)
+    ELSE 0
+END as weight_pct
+```
+
+### 11.4 클러스터 생성 스크립트
+
+```bash
+# 파생상품 ETF만
+python -m scripts.generate_sector_cluster --mode derivative
+
+# 전체 (주식형 + 파생상품)
+python -m scripts.generate_sector_cluster --mode all
+```
+
+---
+
+## 12. 향후 확장
 
 1. **터치 인터랙션**: 버블 클릭 시 해당 섹터 종목 목록 표시 ✅ (10.6, 10.8에 구현)
 2. **애니메이션**: 버블 등장/이동 애니메이션 ✅ (10.7에 구현)
 3. **줌/패닝**: 클러스터 확대/축소 기능 (TransformableState 활용)
 4. **시계열 분석**: 섹터 분포 변화 추적 (base_date 활용)
 5. **포트폴리오 섹터 분석**: 사용자 포트폴리오에도 동일 로직 적용
+6. **ASSET_TYPE 시각화**: 파생상품 ETF용 자산 유형별 클러스터 UI

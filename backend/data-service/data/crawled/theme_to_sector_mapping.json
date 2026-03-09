@@ -141,7 +141,48 @@
     "우주항공": {"code": "SPC_SAT", "group": "DEFENSE"},
     "위성통신": {"code": "TEL_SAT", "group": "TELECOM"},
     "저궤도 위성통신": {"code": "TEL_SAT", "group": "TELECOM"},
-    "광고": {"code": "MED_AD", "group": "TELECOM"}
+    "광고": {"code": "MED_AD", "group": "TELECOM"},
+
+    "유전자 치료제/분석": {"code": "BIO_GENE", "group": "BIO"},
+    "면역항암제": {"code": "BIO_CANC", "group": "BIO"},
+    "치매": {"code": "BIO_NEW", "group": "BIO"},
+    "코로나19(진단/치료제/백신 개발 등)": {"code": "BIO_VACC", "group": "BIO"},
+    "코로나19(진단키트)": {"code": "BIO_DIAG", "group": "BIO"},
+    "줄기세포": {"code": "BIO_CELL", "group": "BIO"},
+    "비만치료제": {"code": "BIO_OBST", "group": "BIO"},
+    "마스크": {"code": "BIO_PROT", "group": "BIO"},
+
+    "보안주(정보)": {"code": "SW_SEC", "group": "IT_SW"},
+    "교육/온라인 교육": {"code": "SW_EDTC", "group": "IT_SW"},
+    "모바일콘텐츠(스마트폰/태블릿PC)": {"code": "SW_MOBI", "group": "IT_SW"},
+    "메타버스(Metaverse)": {"code": "SW_META", "group": "IT_SW"},
+
+    "리모델링/인테리어": {"code": "CON_INT", "group": "CONSTRUCT"},
+    "시멘트/레미콘": {"code": "CON_CEM", "group": "CONSTRUCT"},
+    "부동산 보유 자산주": {"code": "CON_REIT", "group": "CONSTRUCT"},
+
+    "농업": {"code": "FOOD_AGR", "group": "FOOD"},
+    "사료": {"code": "FOOD_FED", "group": "FOOD"},
+    "수산": {"code": "FOOD_FSH", "group": "FOOD"},
+    "아프리카 돼지열병(ASF)": {"code": "FOOD_FED", "group": "FOOD"},
+    "구제역/광우병 수혜": {"code": "FOOD_FED", "group": "FOOD"},
+
+    "제지": {"code": "CHEM_PAP", "group": "CHEM"},
+    "골판지 제조": {"code": "CHEM_PAP", "group": "CHEM"},
+    "비료": {"code": "CHEM_FRT", "group": "CHEM"},
+
+    "종합 물류": {"code": "TRANS_LOG", "group": "TRANSPORT"},
+
+    "방위산업/전쟁 및 테러": {"code": "DEF_LAND", "group": "DEFENSE"},
+
+    "기업인수목적회사(SPAC)": {"code": "FIN_SPAC", "group": "FINANCE"},
+    "창투사": {"code": "FIN_VC", "group": "FINANCE"},
+
+    "온실가스(탄소배출권)/탄소 포집·활용·저장(CCUS)": {"code": "ENG_CCU", "group": "ENERGY"},
+
+    "출산장려정책": {"code": "CONS_BAB", "group": "CONSUMER"},
+    "엔젤산업": {"code": "CONS_BAB", "group": "CONSUMER"},
+    "황사/미세먼지": {"code": "CONS_AIR", "group": "CONSUMER"}
   },
 
   "default_group_by_keyword": {
