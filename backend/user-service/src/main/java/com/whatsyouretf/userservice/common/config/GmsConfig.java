@@ -37,7 +37,8 @@ public class GmsConfig {
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .defaultHeader("x-api-key", apiKey)
+                .defaultHeader("anthropic-version", "2023-06-01")
                 .defaultHeader("Content-Type", "application/json")
                 .codecs(configurer -> configurer
                         .defaultCodecs()

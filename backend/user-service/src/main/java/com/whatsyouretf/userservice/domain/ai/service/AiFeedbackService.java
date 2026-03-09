@@ -12,7 +12,7 @@ public interface AiFeedbackService {
      *
      * @param userId  사용자 ID
      * @param request 리뷰 요청 정보
-     * @return 리뷰 응답 (처리 중 또는 완료)
+     * @return 리뷰 응답
      */
     PortfolioReviewResponse requestReview(Long userId, PortfolioReviewRequest request);
 
@@ -34,13 +34,4 @@ public interface AiFeedbackService {
      * @return 리뷰 히스토리 응답
      */
     ReviewHistoryResponse getReviewHistory(Long userId, int page, int size);
-
-    /**
-     * 리뷰 평가 등록
-     *
-     * @param userId   사용자 ID
-     * @param reviewId 리뷰 ID
-     * @param request  평가 요청
-     */
-    void rateReview(Long userId, Long reviewId, RatingRequest request);
 }

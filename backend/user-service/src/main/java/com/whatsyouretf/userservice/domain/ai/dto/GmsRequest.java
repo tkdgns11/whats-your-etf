@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * GMS API 요청 DTO (OpenAI-compatible format)
+ * GMS API 요청 DTO (Anthropic Messages API format)
  */
 @Getter
 @NoArgsConstructor
@@ -19,35 +19,35 @@ public class GmsRequest {
 
     private String model;
 
-    private List<Message> messages;
-
     @JsonProperty("max_tokens")
     private Integer maxTokens;
 
-    private Double temperature;
+    /** 시스템 프롬프트 (Anthropic API는 system을 별도 필드로 받음) */
+    private String system;
+
+    /** 대화 메시지 목록 */
+    private List<Message> messages;
 
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class Message {
-        private String role;  // "system", "user", "assistant"
+        private String role;  // "user", "assistant"
         private String content;
     }
 
     /**
      * 포트폴리오 분석용 요청 생성
      */
-    public static GmsRequest forPortfolioAnalysis(String model, String systemPrompt, String userMessage,
-                                                   int maxTokens, double temperature) {
+    public static GmsRequest forPortfolioAnalysis(String model, String systemPrompt, String userMessage, int maxTokens) {
         return GmsRequest.builder()
                 .model(model)
+                .maxTokens(maxTokens)
+                .system(systemPrompt)
                 .messages(List.of(
-                        Message.builder().role("system").content(systemPrompt).build(),
                         Message.builder().role("user").content(userMessage).build()
                 ))
-                .maxTokens(maxTokens)
-                .temperature(temperature)
                 .build();
     }
 }

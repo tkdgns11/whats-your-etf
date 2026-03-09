@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * GMS API 응답 DTO (OpenAI-compatible format)
+ * GMS API 응답 DTO (Anthropic Messages API format)
  */
 @Getter
 @NoArgsConstructor
@@ -19,13 +19,16 @@ public class GmsResponse {
 
     private String id;
 
-    private String object;
+    private String type;
 
-    private Long created;
+    private String role;
 
     private String model;
 
-    private List<Choice> choices;
+    private List<ContentBlock> content;
+
+    @JsonProperty("stop_reason")
+    private String stopReason;
 
     private Usage usage;
 
@@ -33,20 +36,9 @@ public class GmsResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Choice {
-        private Integer index;
-        private Message message;
-        @JsonProperty("finish_reason")
-        private String finishReason;
-    }
-
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Message {
-        private String role;
-        private String content;
+    public static class ContentBlock {
+        private String type;  // "text"
+        private String text;
     }
 
     @Getter
@@ -54,22 +46,23 @@ public class GmsResponse {
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Usage {
-        @JsonProperty("prompt_tokens")
-        private Integer promptTokens;
-        @JsonProperty("completion_tokens")
-        private Integer completionTokens;
-        @JsonProperty("total_tokens")
-        private Integer totalTokens;
+        @JsonProperty("input_tokens")
+        private Integer inputTokens;
+        @JsonProperty("output_tokens")
+        private Integer outputTokens;
     }
 
     /**
-     * 첫 번째 응답 메시지 내용 반환
+     * 첫 번째 텍스트 응답 내용 반환
      */
-    public String getContent() {
-        if (choices == null || choices.isEmpty()) {
+    public String getTextContent() {
+        if (content == null || content.isEmpty()) {
             return null;
         }
-        Message msg = choices.get(0).getMessage();
-        return msg != null ? msg.getContent() : null;
+        return content.stream()
+                .filter(block -> "text".equals(block.getType()))
+                .map(ContentBlock::getText)
+                .findFirst()
+                .orElse(null);
     }
 }

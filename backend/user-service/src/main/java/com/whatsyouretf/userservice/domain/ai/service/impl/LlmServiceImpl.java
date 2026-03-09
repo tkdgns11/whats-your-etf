@@ -9,21 +9,15 @@ import com.whatsyouretf.userservice.domain.ai.dto.GmsRequest;
 import com.whatsyouretf.userservice.domain.ai.dto.GmsResponse;
 import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewRequest;
 import com.whatsyouretf.userservice.domain.ai.entity.PortfolioAiFeedback;
-import com.whatsyouretf.userservice.domain.ai.entity.RiskLevel;
 import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.ai.service.LlmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 /**
  * LLM 서비스 구현체 (GMS API 연동)
@@ -43,9 +37,6 @@ public class LlmServiceImpl implements LlmService {
     @Value("${gms.model.max-tokens}")
     private int maxTokens;
 
-    @Value("${gms.model.temperature}")
-    private double temperature;
-
     private static final String SYSTEM_PROMPT = """
         당신은 ETF 포트폴리오 분석 전문가입니다. 사용자의 포트폴리오를 분석하여 투자 성향과 특징을 진단해주세요.
 
@@ -56,69 +47,19 @@ public class LlmServiceImpl implements LlmService {
           "headline": "포트폴리오 특성 한 문장 (15자 내외)",
           "sub_headline": "부제목 구체적 설명 (25자 내외)",
           "keywords": ["키워드1", "키워드2", "키워드3"],
-          "analysis": "종합 분석 200~300자",
-          "bull_review": {
-            "summary": "긍정적 관점 요약",
-            "points": [
-              {"title": "포인트 제목", "description": "설명"}
-            ]
-          },
-          "bear_review": {
-            "summary": "부정적 관점 요약",
-            "points": [
-              {"title": "포인트 제목", "description": "설명"}
-            ]
-          },
-          "overall_score": 7.5,
-          "risk_level": "MEDIUM",
-          "recommendation": "개선 제안"
+          "analysis": "종합 분석 200~300자"
         }
         ```
 
-        - overall_score: 0.0 ~ 10.0 (분산, 안정성, 성장성 기준)
-        - risk_level: LOW / MEDIUM / HIGH
-        - bull_review.points: 긍정적 포인트 2~3개
-        - bear_review.points: 부정적 포인트 2~3개
+        - headline: 포트폴리오의 핵심 특성을 한 문장으로 표현
+        - sub_headline: 헤드라인을 보완하는 구체적 설명
+        - keywords: 포트폴리오 특성 키워드 3~5개
+        - analysis: 포트폴리오 분석 결과 상세 설명
         """;
 
     @Override
-    public String analyzePortfolio(String promptTemplate, PortfolioReviewRequest.PortfolioInfo portfolio) {
-        String userMessage = buildUserMessage(portfolio);
-
-        GmsRequest request = GmsRequest.forPortfolioAnalysis(
-                modelName,
-                promptTemplate != null ? promptTemplate : SYSTEM_PROMPT,
-                userMessage,
-                maxTokens,
-                temperature
-        );
-
-        try {
-            GmsResponse response = gmsWebClient.post()
-                    .uri("/v1/chat/completions")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(GmsResponse.class)
-                    .block();
-
-            if (response == null || response.getContent() == null) {
-                throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
-            }
-
-            return response.getContent();
-        } catch (WebClientResponseException e) {
-            log.error("GMS API 호출 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
-        } catch (Exception e) {
-            log.error("LLM 분석 실패", e);
-            throw new BusinessException(ErrorCode.REVIEW_GENERATION_FAILED);
-        }
-    }
-
-    @Override
-    @Async
     @Transactional
-    public void analyzePortfolioAsync(Long feedbackId, String promptTemplate, PortfolioReviewRequest.PortfolioInfo portfolio) {
+    public void analyzePortfolio(Long feedbackId, String promptTemplate, PortfolioReviewRequest.PortfolioInfo portfolio) {
         PortfolioAiFeedback feedback = feedbackRepository.findById(feedbackId).orElse(null);
         if (feedback == null) {
             log.error("피드백을 찾을 수 없음: feedbackId={}", feedbackId);
@@ -126,16 +67,38 @@ public class LlmServiceImpl implements LlmService {
         }
 
         try {
-            String llmResponse = analyzePortfolio(promptTemplate, portfolio);
+            String userMessage = buildUserMessage(portfolio);
+
+            GmsRequest request = GmsRequest.forPortfolioAnalysis(
+                    modelName,
+                    promptTemplate != null ? promptTemplate : SYSTEM_PROMPT,
+                    userMessage,
+                    maxTokens
+            );
+
+            GmsResponse response = gmsWebClient.post()
+                    .uri("/v1/messages")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(GmsResponse.class)
+                    .block();
+
+            if (response == null || response.getTextContent() == null) {
+                throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+            }
+
+            String llmResponse = response.getTextContent();
             log.debug("LLM 응답: {}", llmResponse);
 
             // JSON 파싱 및 저장
             parseLlmResponseAndUpdate(feedback, llmResponse);
 
+        } catch (WebClientResponseException e) {
+            log.error("GMS API 호출 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         } catch (Exception e) {
-            log.error("비동기 포트폴리오 분석 실패: feedbackId={}", feedbackId, e);
-            feedback.fail();
-            feedbackRepository.save(feedback);
+            log.error("LLM 분석 실패: feedbackId={}", feedbackId, e);
+            throw new BusinessException(ErrorCode.REVIEW_GENERATION_FAILED);
         }
     }
 
@@ -180,49 +143,15 @@ public class LlmServiceImpl implements LlmService {
             // 분석
             String analysis = getTextOrNull(root, "analysis");
 
-            // Bull/Bear 리뷰
-            String bullReview = null;
-            String bearReview = null;
-            if (root.has("bull_review")) {
-                bullReview = objectMapper.writeValueAsString(root.get("bull_review"));
-            }
-            if (root.has("bear_review")) {
-                bearReview = objectMapper.writeValueAsString(root.get("bear_review"));
-            }
-
-            // 점수 및 리스크 레벨
-            BigDecimal overallScore = BigDecimal.valueOf(7.0);
-            if (root.has("overall_score")) {
-                overallScore = BigDecimal.valueOf(root.get("overall_score").asDouble());
-            }
-
-            RiskLevel riskLevel = RiskLevel.MEDIUM;
-            if (root.has("risk_level")) {
-                String level = root.get("risk_level").asText();
-                try {
-                    riskLevel = RiskLevel.valueOf(level);
-                } catch (IllegalArgumentException e) {
-                    riskLevel = RiskLevel.MEDIUM;
-                }
-            }
-
-            // 추천
-            String recommendation = getTextOrNull(root, "recommendation");
-
             // 엔티티 업데이트
-            feedback.setHeadline(headline);
-            feedback.setSubHeadline(subHeadline);
-            feedback.setKeywords(keywords);
-            feedback.setAnalysis(analysis);
-            feedback.complete(bullReview, bearReview, overallScore, riskLevel, recommendation, modelName);
-
+            feedback.complete(headline, subHeadline, keywords, analysis, modelName);
             feedbackRepository.save(feedback);
+
             log.info("포트폴리오 AI 분석 완료: feedbackId={}", feedback.getId());
 
         } catch (JsonProcessingException e) {
             log.error("LLM 응답 JSON 파싱 실패: {}", llmResponse, e);
-            feedback.fail();
-            feedbackRepository.save(feedback);
+            throw new BusinessException(ErrorCode.REVIEW_GENERATION_FAILED);
         }
     }
 

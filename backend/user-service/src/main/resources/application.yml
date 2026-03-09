@@ -31,6 +31,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
 
   # Mail (Gmail SMTP)
   mail:
@@ -115,12 +117,11 @@ app:
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
 
-# GMS (Gen AI Management System) - SSAFY LLM API
+# GMS (Gen AI Management System) - SSAFY LLM API (Anthropic Proxy)
 gms:
   api:
-    base-url: ${GMS_API_URL:https://gms.ssafy.io/api}
+    base-url: ${GMS_API_URL:https://gms.ssafy.io/gmsapi/api.anthropic.com}
     key: ${GMS_API_KEY:}
   model:
-    name: claude-sonnet-4-5-20250929
+    name: claude-sonnet-4-20250514
     max-tokens: 4096
-    temperature: 0.7

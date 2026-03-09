@@ -30,7 +30,7 @@ public class AiFeedbackController {
      * 포트폴리오 AI 리뷰 요청
      */
     @Operation(summary = "포트폴리오 AI 리뷰 요청",
-            description = "사용자가 구성한 포트폴리오에 대해 Bull/Bear 양면 분석을 요청합니다.")
+            description = "사용자가 구성한 포트폴리오에 대해 AI 분석을 요청합니다.")
     @PostMapping("/portfolio/review")
     public ResponseEntity<ApiResponse<PortfolioReviewResponse>> requestReview(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -68,19 +68,5 @@ public class AiFeedbackController {
         ReviewHistoryResponse response = aiFeedbackService.getReviewHistory(
                 userDetails.getUserId(), page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * 리뷰 평가 (도움됨/안됨)
-     */
-    @Operation(summary = "리뷰 평가", description = "AI 리뷰에 대한 사용자 평가를 등록합니다.")
-    @PostMapping("/portfolio/review/{reviewId}/rating")
-    public ResponseEntity<ApiResponse<Void>> rateReview(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "리뷰 ID") @PathVariable Long reviewId,
-            @Valid @RequestBody RatingRequest request
-    ) {
-        aiFeedbackService.rateReview(userDetails.getUserId(), reviewId, request);
-        return ResponseEntity.ok(ApiResponse.success("평가가 등록되었습니다. 감사합니다!"));
     }
 }
