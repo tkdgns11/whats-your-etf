@@ -137,7 +137,7 @@ fun WyeNicknameTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "개구리중사케로로",
+    placeholder: String = "닉네임을 입력하세요.",
     style: WyeTextFieldStyle = WyeTextFieldStyle.Filled
 ) {
     WyeTextField(

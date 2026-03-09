@@ -65,7 +65,6 @@ private fun LoginScreenContent(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceVariant)
-            .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
         LoginHeader(lowerWaveColor = SurfaceVariant)
