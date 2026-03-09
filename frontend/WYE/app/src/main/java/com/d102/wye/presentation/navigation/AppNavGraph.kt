@@ -10,25 +10,26 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
 import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
+import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
 import com.d102.wye.presentation.explore.ExploreScreen
+import com.d102.wye.presentation.explore.detail.EtfDetailScreen
+import com.d102.wye.presentation.explore.stock.StockDetailScreen
+import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
+import com.d102.wye.presentation.home.notification.NotificationScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
 import com.d102.wye.presentation.mypage.notification.NotificationSettingsScreen
 import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
-import com.d102.wye.presentation.strategy.list.StrategyScreen
-import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
-import com.d102.wye.presentation.explore.stock.StockDetailScreen
-import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.news.NewsDetailScreen
 import com.d102.wye.presentation.home.news.NewsListScreen
-import com.d102.wye.presentation.home.notification.NotificationScreen
+import com.d102.wye.presentation.strategy.detail.StrategyDetailScreen
+import com.d102.wye.presentation.strategy.list.StrategyScreen
 
 /**
  * 앱 전체 NavGraph
@@ -95,8 +96,9 @@ fun AppNavGraph(
             HomeScreen(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
-                onNewsMoreClick = { navController.navigate(Route.NewsList.route) },
-                onNotificationClick = { navController.navigate(Route.Notification.route) }
+                onNotificationClick = { navController.navigate(Route.NotificationList.route) },
+                onNewsMoreClick = { navController.navigate(Route.NewsList.route) }
+
             )
         }
 
@@ -116,7 +118,7 @@ fun AppNavGraph(
             StrategyScreen(
                 onStrategyClick = { id -> navController.navigate(Route.StrategyDetail(id).route) },
                 onCompareClick = { navController.navigate(Route.StrategyCompare.route) },
-                onCreateFirstStrategyClick = {navController.navigate(Route.Simulation.route)}
+                onCreateFirstStrategyClick = { navController.navigate(Route.Simulation.route) }
             )
         }
 
@@ -125,7 +127,7 @@ fun AppNavGraph(
                 onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onLikedEtfListClick = { navController.navigate(Route.LikedEtfList.route) },
                 onPasswordChangeClick = { navController.navigate(Route.PasswordReset.route) },
-                onNotificationSettingClick = { navController.navigate(Route.Notification.route) },
+                onNotificationSettingClick = { navController.navigate(Route.NotificationSettings.route) },
                 onFaqClick = { navController.navigate(Route.Faq.route) },
                 onTermsClick = { navController.navigate(Route.Terms.route) },
                 onLogoutClick = {
@@ -143,7 +145,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(Route.Notification.route) {
+        composable(Route.NotificationSettings.route) {
             NotificationSettingsScreen(
                 onBackClick = { navController.popBackStack() }
             )
@@ -169,7 +171,9 @@ fun AppNavGraph(
             route = Route.EtfDetail.ROUTE_PATTERN,
             arguments = listOf(
                 navArgument(Route.EtfDetail.ARG_TICKER) { type = NavType.StringType },
-                navArgument(Route.EtfDetail.ARG_RISK_LEVEL) { type = NavType.IntType; defaultValue = 0 },
+                navArgument(Route.EtfDetail.ARG_RISK_LEVEL) {
+                    type = NavType.IntType; defaultValue = 0
+                },
             )
         ) {
             EtfDetailScreen(
@@ -258,7 +262,7 @@ fun AppNavGraph(
         // 알림 목록
         // ─────────────────────────────────────────
 
-        composable(Route.Notification.route) {
+        composable(Route.NotificationList.route) {
             NotificationScreen(
                 onBack = { navController.popBackStack() }
             )
@@ -275,12 +279,9 @@ fun AppNavGraph(
                 navArgument(Route.StrategyDetail.ARG_STRATEGY_ID) { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            val strategyId = backStackEntry.arguments?.getLong(Route.StrategyDetail.ARG_STRATEGY_ID)
-                ?: return@composable
-//            StrategyDetailScreen(
-//                strategyId = strategyId,
-//                navController = navController
-//            )
+            StrategyDetailScreen(
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
     }

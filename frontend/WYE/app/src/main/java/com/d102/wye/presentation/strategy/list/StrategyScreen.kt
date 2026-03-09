@@ -160,7 +160,7 @@ private fun StrategyListView(
                     // 실제 자산 카드 렌더링
                     StrategyCard(
                         strategy = data.realAsset,
-                        onClick = onItemClick
+                        onItemClick = onItemClick
                     )
                 }
             }
@@ -193,7 +193,7 @@ private fun StrategyListView(
             items(data.strategies) { strategy ->
                 StrategyCard(
                     strategy = strategy,
-                    onClick = onItemClick
+                    onItemClick = onItemClick
                 )
             }
         }
