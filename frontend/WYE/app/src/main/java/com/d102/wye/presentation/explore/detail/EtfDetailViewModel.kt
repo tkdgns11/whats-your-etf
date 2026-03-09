@@ -22,6 +22,7 @@ class EtfDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     val ticker: String = checkNotNull(savedStateHandle["ticker"])
+    val riskLevel: Int = savedStateHandle["riskLevel"] ?: 0
 
     private val _detailState = MutableStateFlow<UiState<EtfDetail>>(UiState.Loading)
     val detailState: StateFlow<UiState<EtfDetail>> = _detailState.asStateFlow()
@@ -65,7 +66,7 @@ class EtfDetailViewModel @Inject constructor(
 //                is BaseResult.Success -> _detailState.update { UiState.Success(result.data) }
 //                is BaseResult.Error   -> _detailState.update { UiState.Error(result.error.message) }
 //            }
-            _detailState.update { UiState.Success(mockEtfDetail(ticker)) }
+            _detailState.update { UiState.Success(mockEtfDetail(ticker, riskLevel)) }
         }
     }
 
@@ -116,11 +117,11 @@ class EtfDetailViewModel @Inject constructor(
 
 // ── 목업 데이터 ─────────────────────────────────────────────────
 
-private fun mockEtfDetail(ticker: String) = EtfDetail(
+private fun mockEtfDetail(ticker: String, riskLevel: Int) = EtfDetail(
     ticker = ticker,
     name = "KODEX 200",
     englishName = "KOSPI 200 Index Tracking Fund",
-    riskLevel = 2,
+    riskLevel = riskLevel,
     currentPrice = 35_420,
     iNav = 28_442,
     changeAmount = 450,
