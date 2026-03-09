@@ -164,17 +164,23 @@ private fun PriceCard(
     valueColor: Color = TextPrimary,
     subColor: Color = TextSecondary,
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
-            .background(Background)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    Card(
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Border),
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
-        Text(value, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
-        Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = subColor)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(value, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
+                Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = subColor)
+            }
+        }
     }
 }
 
@@ -182,43 +188,47 @@ private fun PriceCard(
 
 @Composable
 private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(BackGroundLightGreen),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onToggle)
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = if (expanded) "상품정보 닫기" else "상품정보 자세히 보기",
-                style = MaterialTheme.typography.labelLarge,
-                color = TextPrimary,
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = TextSecondary,
-            )
-        }
-        if (expanded) {
-            HorizontalDivider(color = Divider, modifier = Modifier.padding(horizontal = 14.dp))
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+        Column {
+            if (expanded) {
+                val rows = listOf(
+                    "운용사" to detail.manager,
+                    "투자위험" to "${detail.riskLevel}등급",
+                    "변동성" to (if (detail.volatility.isBlank()) "----" else detail.volatility),
+                    "총보수(수수료)" to "연 ${"%.4f".format(detail.expenseRatio)}%",
+                    "순자산" to "%,d 억원".format(detail.netAsset / 100_000_000),
+                    "상장일" to detail.listedDate,
+                )
+                rows.forEachIndexed { index, (label, value) ->
+                    InfoRow(label, value)
+                    if (index < rows.lastIndex) HorizontalDivider(color = Divider)
+                }
+                HorizontalDivider(color = Divider)
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BackGroundLightGreen)
+                    .clickable(onClick = onToggle)
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                InfoRow("운용사", detail.manager)
-                InfoRow("투자위험", "${detail.riskLevel}등급")
-                InfoRow("변동성", if (detail.volatility.isBlank()) "----" else detail.volatility)
-                InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%")
-                InfoRow("순자산", "%,d 억원".format(detail.netAsset / 100_000_000))
-                InfoRow("상장일", detail.listedDate)
+                Text(
+                    text = if (expanded) "상품정보 닫기" else "상품정보 자세히 보기",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextPrimary,
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                )
             }
         }
     }
@@ -227,11 +237,12 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
 @Composable
 private fun InfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp), color = TextPrimary)
-        Text(value, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextPrimary)
+        Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = TextSecondary)
+        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
     }
 }
 
