@@ -11,16 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -33,11 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.R
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -91,21 +83,7 @@ private fun StrategyScreenContent(
         containerColor = Color.White,
         floatingActionButton = {
             if (uiState is UiState.Success && !isCompletelyEmpty) {
-                ExtendedFloatingActionButton(
-                    onClick = onCompareClick,
-                    containerColor = PrimaryGreen,
-                    contentColor = Color.White,
-                    elevation = FloatingActionButtonDefaults.elevation(4.dp),
-                    shape = RoundedCornerShape(100.dp) // 완전히 둥글게
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_compare),
-                        contentDescription = "비교",
-                        tint = PrimaryGreen
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(text = "전략 비교하기", style = MaterialTheme.typography.titleSmall)
-                }
+                CompareButton(onClick = { onCompareClick() })
             }
         }
     ) { innerPadding ->
