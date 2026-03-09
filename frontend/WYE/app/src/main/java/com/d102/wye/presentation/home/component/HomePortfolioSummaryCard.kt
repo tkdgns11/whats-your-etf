@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,24 +34,31 @@ import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun HomePortfolioSummaryCard(
+    modifier: Modifier = Modifier,
     portfolio: PortfolioSummaryUiModel?
 ) {
     if (portfolio == null) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
         ) {
-            Text(
-                text = "포트폴리오를 생성하면 수익률을 확인할 수 있습니다.",
-                color = TextSecondary,
-                modifier = Modifier.padding(16.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "포트폴리오를 생성하면 수익률을 확인할 수 있습니다.",
+                    color = TextSecondary
+                )
+            }
         }
         return
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -93,7 +101,6 @@ private fun PortfolioPeriodFilter(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .clickable {
                         selectedIndex = index
-                        // TODO: 기간 필터 선택 시 API 기간 파라미터 변경 로직 연결
                     }
                     .background(
                         color = if (selectedIndex == index) SurfaceWhite else BackGroundLightGreen,

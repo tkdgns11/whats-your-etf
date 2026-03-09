@@ -164,7 +164,7 @@ fun EtfHeatmapGrid(
             EtfHeatmapCard(
                 etfName = safeItems[8].first,
                 changeRate = safeItems[8].second,
-                modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { onCardClick(safeItems[8].first) },
             )
             EtfHeatmapCard(
