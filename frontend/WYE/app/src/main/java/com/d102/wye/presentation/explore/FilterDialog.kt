@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.explore
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.unit.sp
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
@@ -39,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.d102.wye.domain.state.EtfFilterState
@@ -354,14 +354,13 @@ private fun FilterDialogHeader(onReset: () -> Unit, onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = onReset) {
-            Text("초기화", color = TextSecondary, fontSize = 14.sp)
+            Text("초기화", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
         }
         Text(
             text = "상세 필터",
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         IconButton(onClick = onDismiss) {
             Icon(Icons.Default.Close, contentDescription = "닫기")
@@ -395,8 +394,7 @@ private fun ThemeFilterSection(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 "투자 테마",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
+                style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
                 color = TextPrimary,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -443,7 +441,7 @@ private fun FilterSection(title: String, content: @Composable ColumnScope.() -> 
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextPrimary)
+            Text(title, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp), color = TextPrimary)
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = if (expanded) "접기" else "펼치기",
@@ -477,8 +475,7 @@ private fun LockedFilterSection(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
+                style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
                 color = TextPrimary,
                 modifier = Modifier.fillMaxWidth(),
             )

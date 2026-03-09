@@ -44,9 +44,9 @@ fun SectorBottomSheetContent(
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("${sector.name} 산업", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Text("${sector.name} 산업", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
         HorizontalDivider(color = Divider)
-        Text("주요 구성 종목", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+        Text("주요 구성 종목", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
         sector.stocks.forEach { stock ->
             StockProgressItem(
                 stock = stock,
@@ -77,11 +77,11 @@ private fun StockProgressItem(stock: SectorStock, onClick: (() -> Unit)? = null)
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(SurfaceVariant),
                 ) {
-                    Text(stock.name.take(1), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
+                    Text(stock.name.take(1), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
                 }
-                Text(stock.name, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                Text(stock.name, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium), color = TextPrimary)
             }
-            Text("${"%.1f".format(stock.percentage)}%", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+            Text("${"%.1f".format(stock.percentage)}%", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
         }
         Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(SurfaceVariant)) {
             Box(modifier = Modifier.fillMaxWidth((stock.percentage / 100.0).toFloat().coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(PrimaryGreen))
@@ -95,10 +95,10 @@ private fun AiAnalysisBox(analysis: String) {
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceVariant).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("?", fontSize = 16.sp, color = PrimaryGreen, fontWeight = FontWeight.Bold)
+        Text("?", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
         Column {
-            Text("AI 분석 결과: ", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
-            Text(analysis, fontSize = 13.sp, color = TextSecondary, lineHeight = 20.sp)
+            Text("AI 분석 결과: ", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
+            Text(analysis, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, lineHeight = 20.sp), color = TextSecondary)
         }
     }
 }
