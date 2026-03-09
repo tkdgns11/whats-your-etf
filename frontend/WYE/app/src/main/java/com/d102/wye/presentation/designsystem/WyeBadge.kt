@@ -108,9 +108,11 @@ fun WyeSelectableChip(
     selected: Boolean,
     onClick: () -> Unit,
     description: String? = null,
+    unselectedColor: Color = SurfaceWhite,
+    showBorder: Boolean = true,
 ) {
     val shape = RoundedCornerShape(12.dp)
-    val bgColor   = if (selected) PrimaryGreen else SurfaceWhite
+    val bgColor   = if (selected) PrimaryGreen else unselectedColor
     val border    = if (selected) PrimaryGreen else Divider
     val titleColor = if (selected) TextOnColored else TextPrimary
     val descColor  = if (selected) TextOnColored.copy(alpha = 0.8f) else TextSecondary
@@ -121,7 +123,7 @@ fun WyeSelectableChip(
         modifier = modifier
             .clip(shape)
             .background(bgColor)
-            .border(1.dp, border, shape)
+            .then(if (showBorder) Modifier.border(1.dp, border, shape) else Modifier)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 14.dp),
     ) {

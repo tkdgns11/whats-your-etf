@@ -12,10 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,10 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
@@ -40,7 +36,6 @@ import com.d102.wye.presentation.simulation.progress.result.SimulationResultSect
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
 import com.d102.wye.presentation.theme.PrimaryGreen
-import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun SimulationScreen(
@@ -155,7 +150,8 @@ private fun SimulationSetupScreenContent(
                 .padding(innerPadding)
                 .background(Color.White)
         ) {
-            SimulationTabs(
+            WyeTabs(
+                titles = listOf("수익률 추이", "포트폴리오 분석"),
                 selectedIndex = formState.selectedTabIndex,
                 onTabSelected = onTabSelected
             )
@@ -190,39 +186,6 @@ private fun SimulationSetupScreenContent(
                     onRemoveClick = onPortfolioItemRemoved
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun SimulationTabs(
-    selectedIndex: Int,
-    onTabSelected: (Int) -> Unit
-) {
-    val tabs = listOf("수익률 추이", "포트폴리오 분석")
-    TabRow(
-        selectedTabIndex = selectedIndex,
-        containerColor = Color.White,
-        contentColor = PrimaryGreen,
-        indicator = { tabPositions ->
-            TabRowDefaults.SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
-                color = PrimaryGreen
-            )
-        }
-    ) {
-        tabs.forEachIndexed { index, title ->
-            Tab(
-                selected = selectedIndex == index,
-                onClick = { onTabSelected(index) },
-                text = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
-                        color = if (selectedIndex == index) PrimaryGreen else TextSecondary,
-                    )
-                }
-            )
         }
     }
 }

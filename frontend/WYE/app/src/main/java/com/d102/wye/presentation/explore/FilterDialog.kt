@@ -45,6 +45,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.d102.wye.domain.state.EtfFilterState
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeSelectableChip
+import com.d102.wye.presentation.theme.BackGroundLightGreen
+import com.d102.wye.presentation.theme.Background
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 import com.d102.wye.presentation.theme.WYETheme
@@ -67,6 +69,7 @@ fun FilterDialog(
                 .fillMaxHeight(0.9f)
                 .padding(horizontal = 16.dp),
             shape = MaterialTheme.shapes.large,
+            color = Background,
         ) {
             Column {
                 // 헤더
@@ -111,6 +114,8 @@ fun FilterDialog(
                                         )
                                     },
                                     modifier = Modifier.weight(1f),
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                                 )
                             }
                         }
@@ -131,6 +136,8 @@ fun FilterDialog(
                                         )
                                     },
                                     modifier = Modifier.weight(1f),
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                                 )
                             }
                             Spacer(Modifier.weight(1f))
@@ -145,6 +152,8 @@ fun FilterDialog(
                                     label = s,
                                     selected = filter.strategy == s,
                                     onClick = { onFilterChanged(filter.copy(strategy = if (filter.strategy == s) null else s)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                                 )
                             }
                         }
@@ -167,6 +176,8 @@ fun FilterDialog(
                                     label = label,
                                     selected = filter.dividendRateRange == value,
                                     onClick = { onFilterChanged(filter.copy(dividendRateRange = if (filter.dividendRateRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                                 )
                             }
                         }
@@ -180,6 +191,8 @@ fun FilterDialog(
                                     label = cycle,
                                     selected = filter.dividendCycle == cycle,
                                     onClick = { onFilterChanged(filter.copy(dividendCycle = if (filter.dividendCycle == cycle) null else cycle)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                                 )
                             }
                         }
@@ -191,12 +204,17 @@ fun FilterDialog(
                             WyeSelectableChip(
                                 label = "O",
                                 selected = filter.hasDerivative == true,
-                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == true) null else true)) }
+                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == true) null else true)) },
+                                unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                             )
                             WyeSelectableChip(
                                 label = "X",
                                 selected = filter.hasDerivative == false,
-                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == false) null else false)) })
+                                onClick = { onFilterChanged(filter.copy(hasDerivative = if (filter.hasDerivative == false) null else false)) },
+                                unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                            )
                         }
                     }
 
@@ -227,7 +245,10 @@ fun FilterDialog(
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.peRange == value,
-                                    onClick = { onFilterChanged(filter.copy(peRange = if (filter.peRange == value) null else value)) })
+                                    onClick = { onFilterChanged(filter.copy(peRange = if (filter.peRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                                )
                             }
                         }
                     }
@@ -243,7 +264,10 @@ fun FilterDialog(
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.pbRange == value,
-                                    onClick = { onFilterChanged(filter.copy(pbRange = if (filter.pbRange == value) null else value)) })
+                                    onClick = { onFilterChanged(filter.copy(pbRange = if (filter.pbRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                                )
                             }
                         }
                     }
@@ -259,7 +283,10 @@ fun FilterDialog(
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.roeRange == value,
-                                    onClick = { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) })
+                                    onClick = { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                                )
                             }
                         }
                     }
@@ -275,7 +302,10 @@ fun FilterDialog(
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.expenseRatioRange == value,
-                                    onClick = { onFilterChanged(filter.copy(expenseRatioRange = if (filter.expenseRatioRange == value) null else value)) })
+                                    onClick = { onFilterChanged(filter.copy(expenseRatioRange = if (filter.expenseRatioRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                                )
                             }
                         }
                     }
@@ -291,7 +321,10 @@ fun FilterDialog(
                                 WyeSelectableChip(
                                     label = label,
                                     selected = filter.netAssetRange == value,
-                                    onClick = { onFilterChanged(filter.copy(netAssetRange = if (filter.netAssetRange == value) null else value)) })
+                                    onClick = { onFilterChanged(filter.copy(netAssetRange = if (filter.netAssetRange == value) null else value)) },
+                                    unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                                )
                             }
                         }
                     }
@@ -389,6 +422,8 @@ private fun ThemeFilterSection(
                                     )
                                 )
                             },
+                            unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
                         )
                     }
                 }
@@ -456,11 +491,17 @@ private fun LockedFilterSection(
                     WyeSelectableChip(
                         label = "O",
                         selected = selected == true,
-                        onClick = { onChanged(if (selected == true) null else true) })
+                        onClick = { onChanged(if (selected == true) null else true) },
+                        unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                    )
                     WyeSelectableChip(
                         label = "X",
                         selected = selected == false,
-                        onClick = { onChanged(if (selected == false) null else false) })
+                        onClick = { onChanged(if (selected == false) null else false) },
+                        unselectedColor = BackGroundLightGreen,
+                                    showBorder = false,
+                    )
                 }
             }
         }

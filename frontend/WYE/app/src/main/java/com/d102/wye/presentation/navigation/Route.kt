@@ -42,11 +42,11 @@ sealed class Route(val route: String) {
     // ETF 상세 (ticker로 단건 조회)
     // ─────────────────────────────────────────
 
-    data class EtfDetail(val ticker: String) : Route("etf_detail/$ticker") {
+    data class EtfDetail(val ticker: String, val riskLevel: Int = 0) : Route("etf_detail/$ticker/$riskLevel") {
         companion object {
-            // NavHost 등록용 경로 패턴 (중괄호 포함)
-            const val ROUTE_PATTERN = "etf_detail/{ticker}"
+            const val ROUTE_PATTERN = "etf_detail/{ticker}/{riskLevel}"
             const val ARG_TICKER = "ticker"
+            const val ARG_RISK_LEVEL = "riskLevel"
         }
     }
 
