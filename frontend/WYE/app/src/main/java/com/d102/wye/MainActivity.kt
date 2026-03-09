@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                 // val startDestination = if (isLoggedIn) Route.Main.route else Route.Login.route
 
                 AppScaffold(
-                    startDestination = Route.SimulationEntry.route
+                    startDestination = Route.Strategy.route
                 )
             }
         }
