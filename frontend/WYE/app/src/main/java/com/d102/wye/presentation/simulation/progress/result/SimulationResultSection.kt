@@ -13,6 +13,7 @@ import com.d102.wye.presentation.designsystem.bottomShadow
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.SimulationResult
+import com.d102.wye.presentation.simulation.progress.components.AiDiagnosisButton
 
 @Composable
 fun SimulationResultSection(

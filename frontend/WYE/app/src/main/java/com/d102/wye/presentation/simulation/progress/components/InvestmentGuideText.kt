@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.progress.setup
+package com.d102.wye.presentation.simulation.progress.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme

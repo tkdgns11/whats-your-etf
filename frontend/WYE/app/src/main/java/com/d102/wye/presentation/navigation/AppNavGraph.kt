@@ -17,7 +17,7 @@ import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
-import com.d102.wye.presentation.strategy.StrategyScreen
+import com.d102.wye.presentation.strategy.list.StrategyScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
@@ -106,7 +106,8 @@ fun AppNavGraph(
         composable(Route.Strategy.route) {
             StrategyScreen(
                 onStrategyClick = { id -> navController.navigate(Route.StrategyDetail(id).route) },
-                onCompareClick = { navController.navigate(Route.StrategyCompare.route) }
+                onCompareClick = { navController.navigate(Route.StrategyCompare.route) },
+                onCreateFirstStrategyClick = {navController.navigate(Route.Simulation.route)}
             )
         }
 

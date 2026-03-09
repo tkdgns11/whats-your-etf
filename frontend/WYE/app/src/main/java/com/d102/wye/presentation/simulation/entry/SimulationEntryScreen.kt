@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -88,18 +87,18 @@ private fun SimulationScreenContent(
     snackbarHostState: SnackbarHostState,
     onMakePortfolioClick: () -> Unit,
     onBundleClick: (EtfBundle) -> Unit
-){
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            WyeTopBar(title = "투자 시뮬레이션")
-        }
-    ) { innerPadding ->
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        WyeTopBar("투자 시뮬레이션")
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(innerPadding)
         ) {
             when (uiState) {
                 is UiState.Loading -> {
@@ -138,6 +137,11 @@ private fun SimulationScreenContent(
 
                 UiState.Idle -> Unit
             }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
@@ -195,8 +199,7 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
 fun RecommendedBundlesSection(
     bundles: List<EtfBundle>,
     onBundleClick: (EtfBundle) -> Unit
-)
- {
+) {
     Column {
         Text(
             text = "막막하다면? 추천 ETF 꾸러미로 시작하기",
