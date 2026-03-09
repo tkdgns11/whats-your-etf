@@ -18,6 +18,8 @@ import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
+import com.d102.wye.presentation.home.news.NewsDetailScreen
+import com.d102.wye.presentation.home.news.NewsListScreen
 import com.d102.wye.presentation.home.notification.NotificationScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
@@ -26,8 +28,7 @@ import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
-import com.d102.wye.presentation.home.news.NewsDetailScreen
-import com.d102.wye.presentation.home.news.NewsListScreen
+import com.d102.wye.presentation.strategy.compare.StrategyCompareScreen
 import com.d102.wye.presentation.strategy.detail.StrategyDetailScreen
 import com.d102.wye.presentation.strategy.list.StrategyScreen
 
@@ -105,7 +106,14 @@ fun AppNavGraph(
 
         composable(Route.Explore.route) {
             ExploreScreen(
-                onEtfClick = { ticker, riskLevel -> navController.navigate(Route.EtfDetail(ticker, riskLevel).route) }
+                onEtfClick = { ticker, riskLevel ->
+                    navController.navigate(
+                        Route.EtfDetail(
+                            ticker,
+                            riskLevel
+                        ).route
+                    )
+                }
             )
         }
 
@@ -281,6 +289,13 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             StrategyDetailScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = Route.StrategyCompare.route
+        ) { backStackEntry ->
+            StrategyCompareScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
