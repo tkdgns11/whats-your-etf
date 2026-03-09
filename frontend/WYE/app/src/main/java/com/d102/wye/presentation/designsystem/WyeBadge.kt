@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,12 +40,12 @@ enum class WyeBadgeStyle { FILLED, OUTLINED }
 fun WyeBadge(
     modifier: Modifier = Modifier,
     label: String,
+    shape: Shape = RoundedCornerShape(4.dp),
     textStyle: TextStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
     color: Color = BadgeConservative,
     style: WyeBadgeStyle = WyeBadgeStyle.FILLED,
     textColor: Color = if (style == WyeBadgeStyle.FILLED) TextOnColored else color,
 ) {
-    val shape = RoundedCornerShape(4.dp)
     val bgModifier = when (style) {
         WyeBadgeStyle.FILLED -> Modifier.background(color)
         WyeBadgeStyle.OUTLINED -> Modifier.border(1.dp, color, shape)
