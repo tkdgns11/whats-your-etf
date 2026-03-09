@@ -20,6 +20,10 @@ import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.home.notification.NotificationScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
+import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
+import com.d102.wye.presentation.mypage.notification.NotificationSettingsScreen
+import com.d102.wye.presentation.mypage.support.FaqScreen
+import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
 import com.d102.wye.presentation.strategy.detail.StrategyDetailScreen
@@ -124,11 +128,41 @@ fun AppNavGraph(
         composable(Route.MyPage.route) {
             MyPageScreen(
                 onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onLikedEtfListClick = { navController.navigate(Route.LikedEtfList.route) },
+                onPasswordChangeClick = { navController.navigate(Route.PasswordReset.route) },
+                onNotificationSettingClick = { navController.navigate(Route.Notification.route) },
+                onFaqClick = { navController.navigate(Route.Faq.route) },
+                onTermsClick = { navController.navigate(Route.Terms.route) },
                 onLogoutClick = {
                     navController.navigate(Route.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Route.LikedEtfList.route) {
+            LikedEtfListScreen(
+                onBackClick = { navController.popBackStack() },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+            )
+        }
+
+        composable(Route.Notification.route) {
+            NotificationSettingsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Route.Faq.route) {
+            FaqScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Route.Terms.route) {
+            TermsScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

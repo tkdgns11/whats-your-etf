@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.auth.login.component
+package com.d102.wye.presentation.auth.login.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

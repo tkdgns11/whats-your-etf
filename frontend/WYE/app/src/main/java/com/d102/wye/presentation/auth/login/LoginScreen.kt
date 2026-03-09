@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.auth.login.component.LoginFooterLinks
-import com.d102.wye.presentation.auth.login.component.LoginFormSection
-import com.d102.wye.presentation.auth.login.component.LoginHeader
-import com.d102.wye.presentation.auth.login.component.LoginSocialSection
+import com.d102.wye.presentation.auth.login.components.LoginFooterLinks
+import com.d102.wye.presentation.auth.login.components.LoginFormSection
+import com.d102.wye.presentation.auth.login.components.LoginHeader
+import com.d102.wye.presentation.auth.login.components.LoginSocialSection
 import com.d102.wye.presentation.theme.SurfaceVariant
 
 @Composable

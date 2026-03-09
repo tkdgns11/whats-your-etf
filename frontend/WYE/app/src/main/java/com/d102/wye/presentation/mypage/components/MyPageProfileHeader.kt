@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.mypage.component
+package com.d102.wye.presentation.mypage.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

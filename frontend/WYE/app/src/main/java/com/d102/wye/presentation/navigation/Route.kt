@@ -37,6 +37,9 @@ sealed class Route(val route: String) {
     object Login : Route("login")
     object Join : Route("join")
     object PasswordReset : Route("password_reset")
+    object LikedEtfList : Route("liked_etf_list")
+    object Faq : Route("faq")
+    object Terms : Route("terms")
 
     // ─────────────────────────────────────────
     // ETF 상세 (ticker로 단건 조회)

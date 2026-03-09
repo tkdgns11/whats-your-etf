@@ -41,7 +41,9 @@ fun NewsSection(news: List<NewsItem>) {
 
         news.forEach { item ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 Column(

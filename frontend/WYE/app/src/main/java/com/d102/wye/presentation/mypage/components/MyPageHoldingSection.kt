@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.mypage.component
+package com.d102.wye.presentation.mypage.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,9 +28,7 @@ import com.d102.wye.presentation.mypage.MyPageHoldingEtfUiModel
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.BackGroundLightGreen3
 import com.d102.wye.presentation.theme.EtfRise
-import com.d102.wye.presentation.theme.IconBackGroundOrange
 import com.d102.wye.presentation.theme.PrimaryGreen
-import com.d102.wye.presentation.theme.SurfaceWhite
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 

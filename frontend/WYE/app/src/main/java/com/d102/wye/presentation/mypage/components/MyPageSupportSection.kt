@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.mypage.component
+package com.d102.wye.presentation.mypage.components
 
 import androidx.compose.foundation.lazy.LazyListScope
 import com.d102.wye.presentation.designsystem.WyeListItem
