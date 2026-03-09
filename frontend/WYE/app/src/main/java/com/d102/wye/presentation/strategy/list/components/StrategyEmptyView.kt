@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.strategy
+package com.d102.wye.presentation.strategy.list.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -120,7 +121,7 @@ fun StrategyEmptyView(
                 .padding(vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.material3.HorizontalDivider(
+            HorizontalDivider(
                 modifier = Modifier.weight(1f),
                 color = SurfaceVariant
             )
@@ -130,7 +131,7 @@ fun StrategyEmptyView(
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary
             )
-            androidx.compose.material3.HorizontalDivider(
+            HorizontalDivider(
                 modifier = Modifier.weight(1f),
                 color = SurfaceVariant
             )

@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.strategy
+package com.d102.wye.presentation.strategy.list.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.R
 import com.d102.wye.presentation.designsystem.WyeBadge
+import com.d102.wye.presentation.strategy.list.StrategyCardUiModel
 import com.d102.wye.presentation.theme.Divider
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen

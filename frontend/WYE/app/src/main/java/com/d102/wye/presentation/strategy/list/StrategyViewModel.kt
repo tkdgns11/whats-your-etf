@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.strategy
+package com.d102.wye.presentation.strategy.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

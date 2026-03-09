@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.strategy
+package com.d102.wye.presentation.strategy.list
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +32,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.strategy.list.components.CompareButton
+import com.d102.wye.presentation.strategy.list.components.EmptyRealAssetCard
+import com.d102.wye.presentation.strategy.list.components.EmptySavedStrategyCard
+import com.d102.wye.presentation.strategy.list.components.StrategyCard
+import com.d102.wye.presentation.strategy.list.components.StrategyEmptyView
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextSecondary
 

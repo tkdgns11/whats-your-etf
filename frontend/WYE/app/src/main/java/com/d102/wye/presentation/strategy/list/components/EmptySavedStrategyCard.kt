@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.strategy
+package com.d102.wye.presentation.strategy.list.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

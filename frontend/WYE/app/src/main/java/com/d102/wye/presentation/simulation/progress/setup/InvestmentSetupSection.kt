@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
+import com.d102.wye.presentation.simulation.progress.components.InvestmentGuideText
+import com.d102.wye.presentation.simulation.progress.components.InvestmentInputField
+import com.d102.wye.presentation.simulation.progress.components.InvestmentTypeToggle
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceVariant
