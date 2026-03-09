@@ -26,6 +26,7 @@ import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
+import com.d102.wye.presentation.strategy.compare.StrategyCompareScreen
 import com.d102.wye.presentation.strategy.detail.StrategyDetailScreen
 import com.d102.wye.presentation.strategy.list.StrategyScreen
 
@@ -267,6 +268,13 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             StrategyDetailScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route = Route.StrategyCompare.route
+        ) { backStackEntry ->
+            StrategyCompareScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
