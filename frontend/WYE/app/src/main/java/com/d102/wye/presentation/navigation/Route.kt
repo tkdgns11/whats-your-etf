@@ -99,8 +99,15 @@ sealed class Route(val route: String) {
     }
 
     // ─────────────────────────────────────────
+    // 뉴스 목록
+    // ─────────────────────────────────────────
+
+    object NewsList : Route("news_list")
+
+    // ─────────────────────────────────────────
     // 알림
     // ─────────────────────────────────────────
 
-    object Notification : Route("notification")
+    object NotificationList : Route("notification")
+    object NotificationSettings : Route("notification_settings")
 }

@@ -172,9 +172,9 @@ private fun PriceCard(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(label, fontSize = 11.sp, color = TextSecondary)
-        Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = valueColor)
-        Text(sub, fontSize = 11.sp, color = subColor)
+        Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+        Text(value, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
+        Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = subColor)
     }
 }
 
@@ -198,8 +198,7 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
         ) {
             Text(
                 text = if (expanded) "상품정보 닫기" else "상품정보 자세히 보기",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = TextPrimary,
             )
             Icon(
@@ -231,8 +230,8 @@ private fun InfoRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(label, fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
-        Text(value, fontSize = 13.sp, color = TextPrimary)
+        Text(label, style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp), color = TextPrimary)
+        Text(value, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextPrimary)
     }
 }
 
@@ -270,8 +269,8 @@ private fun ReturnChartSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("수익률 그래프", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text("5분전 업데이트", fontSize = 11.sp, color = TextSecondary)
+            Text("수익률 그래프", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text("5분전 업데이트", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
 
         // 기간 프리셋
@@ -290,8 +289,9 @@ private fun ReturnChartSection(
                 ) {
                     Text(
                         text = label,
-                        fontSize = 12.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        ),
                         color = if (selected) TextOnColored else TextSecondary,
                         textAlign = TextAlign.Center,
                     )
@@ -313,8 +313,7 @@ private fun ReturnChartSection(
             )
             Text(
                 text = "조회",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp),
                 color = TextOnColored,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
@@ -355,7 +354,7 @@ private fun ReturnChartSection(
                     .clip(RoundedCornerShape(12.dp))
                     .background(SurfaceVariant),
                 contentAlignment = Alignment.Center,
-            ) { Text("조회 버튼을 눌러 불러오세요", fontSize = 13.sp, color = TextSecondary) }
+            ) { Text("조회 버튼을 눌러 불러오세요", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary) }
         }
     }
 
@@ -394,7 +393,7 @@ private fun DateRangeField(
     ) {
         Text(
             text = text,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
             color = if (startDateMs != null) TextPrimary else TextSecondary,
         )
         Icon(
@@ -429,7 +428,7 @@ private fun ChartCheckbox(label: String, checked: Boolean, onToggle: () -> Unit,
             colors = CheckboxDefaults.colors(checkedColor = color),
             modifier = Modifier.size(20.dp),
         )
-        Text(label, fontSize = 12.sp, color = TextSecondary)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
     }
 }
 
@@ -529,8 +528,8 @@ private fun PeriodReturnTable(data: EtfPeriodReturn) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("기간별 수익률", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text("26.03.04기준", fontSize = 11.sp, color = TextSecondary)
+            Text("기간별 수익률", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text("26.03.04기준", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
 
         Column(
@@ -555,10 +554,10 @@ private fun TableHeader() {
     Row(
         modifier = Modifier.fillMaxWidth().background(SurfaceVariant).padding(vertical = 10.dp),
     ) {
-        Text("구분",   fontSize = 12.sp, color = TextSecondary, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
-        Text("1개월",  fontSize = 12.sp, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
-        Text("3개월",  fontSize = 12.sp, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
-        Text("6개월",  fontSize = 12.sp, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("구분",   style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
+        Text("1개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("3개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("6개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
     }
 }
 
@@ -568,11 +567,11 @@ private fun TableRow(label: String, v1m: Double, v3m: Double, v6m: Double) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, fontSize = 12.sp, color = TextPrimary, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = TextPrimary, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
         listOf(v1m, v3m, v6m).forEach { v ->
             Text(
                 text = "${if (v >= 0) "" else ""}${"%.2f".format(v)}",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = if (v >= 0) EtfRise else EtfFall,
                 modifier = Modifier.weight(1.5f),
                 textAlign = TextAlign.Center,
@@ -594,7 +593,7 @@ private fun Footnotes() {
     )
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         notes.forEach { note ->
-            Text(note, fontSize = 11.sp, color = TextSecondary, lineHeight = 16.sp)
+            Text(note, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 16.sp), color = TextSecondary)
         }
     }
 }
@@ -629,7 +628,7 @@ private fun RangeCalendarBottomSheet(
                 .padding(bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("기간 선택", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text("기간 선택", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
 
             // 선택된 범위 표시
             val rangeLabel = when {
@@ -640,9 +639,8 @@ private fun RangeCalendarBottomSheet(
             }
             Text(
                 text = rangeLabel,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.labelLarge,
                 color = if (localStartMs != null) PrimaryGreen else TextSecondary,
-                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
 
@@ -668,7 +666,7 @@ private fun RangeCalendarBottomSheet(
                 ) {
                     Text(
                         text = "${displayYear}년 ${displayMonth + 1}월",
-                        fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary,
                     )
                     Icon(
                         imageVector = if (showYearPicker) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -709,8 +707,10 @@ private fun RangeCalendarBottomSheet(
                         ) {
                             Text(
                                 text = "${year}년",
-                                fontSize = 13.sp,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
                                 color = if (selected) TextOnColored else TextPrimary,
                                 textAlign = TextAlign.Center,
                             )
@@ -725,9 +725,8 @@ private fun RangeCalendarBottomSheet(
                             text = label,
                             modifier = Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.labelMedium,
                             color = if (i == 0) EtfFall else TextSecondary,
-                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
@@ -876,9 +875,11 @@ private fun CalendarDayCell(
         }
         Text(
             text = day.toString(),
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 13.sp,
+                fontWeight = if (isStart || isEnd || isToday) FontWeight.SemiBold else FontWeight.Normal,
+            ),
             color = textColor,
-            fontWeight = if (isStart || isEnd || isToday) FontWeight.SemiBold else FontWeight.Normal,
         )
     }
 }

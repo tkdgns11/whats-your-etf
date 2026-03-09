@@ -107,8 +107,7 @@ fun ClusterTab(
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Text(
                         text = "현재 이 ETF에 영향을 많이 끼치는 종목은?",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
                         color = TextPrimary,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -147,8 +146,8 @@ private fun EtfHeader(detail: EtfDetail) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg)
-        Text(detail.ticker, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = TextPrimary)
-        Text(detail.englishName, fontSize = 13.sp, color = TextSecondary)
+        Text(detail.ticker, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold), color = TextPrimary)
+        Text(detail.englishName, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary)
     }
 }
 
@@ -391,8 +390,8 @@ private fun InfoCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(label, fontSize = 12.sp, color = TextSecondary)
-        Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = valueColor)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Text(value, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
     }
 }
 
@@ -401,8 +400,7 @@ private fun InfluentialStocksSection(stocks: List<InfluentialStock>) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = "현재 이 ETF에 영향을 많이 끼치는 종목은?",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
             color = TextPrimary,
         )
         stocks.forEach { stock ->
@@ -428,18 +426,18 @@ private fun InfluentialStockItem(stock: InfluentialStock, onClick: () -> Unit = 
                 .clip(CircleShape)
                 .background(SurfaceVariant),
         ) {
-            Text(stock.name.take(1), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PrimaryGreen)
+            Text(stock.name.take(1), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(stock.name, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-            Text("${"%.2f".format(stock.weight)}%", fontSize = 12.sp, color = TextSecondary)
+            Text(stock.name, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium), color = TextPrimary)
+            Text("${"%.2f".format(stock.weight)}%", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("%,d원".format(stock.currentPrice), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text("%,d원".format(stock.currentPrice), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
             val changeColor = if (stock.changeRate >= 0) EtfRise else EtfFall
             val sign = if (stock.changeRate >= 0) "+" else ""
-            Text("$sign${"%.1f".format(stock.changeRate)}%", fontSize = 12.sp, color = changeColor)
+            Text("$sign${"%.1f".format(stock.changeRate)}%", style = MaterialTheme.typography.bodySmall, color = changeColor)
         }
     }
 }

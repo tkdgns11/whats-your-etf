@@ -70,7 +70,11 @@ fun NotificationScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("알림이 없습니다.", color = TextSecondary, fontSize = 14.sp)
+                    Text(
+                        text = "알림이 없습니다.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                    )
                 }
             } else {
                 LazyColumn(
@@ -81,7 +85,7 @@ fun NotificationScreen(
                         item(key = "header_$dateGroup") {
                             Text(
                                 text = dateGroup,
-                                fontSize = 12.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                             )
@@ -126,17 +130,19 @@ private fun NotificationItemRow(item: NotificationItem, onTap: () -> Unit) {
                 )
                 Text(
                     text = item.timestamp,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
             }
             Spacer(Modifier.height(6.dp))
             Text(
                 text = item.title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 22.sp,
+                ),
                 color = TextPrimary,
-                lineHeight = 22.sp,
             )
         }
         if (!item.isRead) {

@@ -41,8 +41,79 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
+    fun showNicknameEditDialog() {
+        updateSuccessState { data ->
+            data.copy(
+                isNicknameDialogVisible = true,
+                nicknameDraft = data.nickname
+            )
+        }
+    }
+
+    fun dismissNicknameEditDialog() {
+        updateSuccessState { data ->
+            data.copy(
+                isNicknameDialogVisible = false,
+                nicknameDraft = data.nickname,
+                isNicknameSaving = false
+            )
+        }
+    }
+
+    fun onNicknameDraftChange(value: String) {
+        updateSuccessState { data ->
+            data.copy(nicknameDraft = value.take(20))
+        }
+    }
+
+    fun onProfileImageSelected(imageUri: String) {
+        if (imageUri.isBlank()) return
+
+        viewModelScope.launch {
+            updateSuccessState { data -> data.copy(profileImage = imageUri) }
+
+            // TODO: userRepository.updateProfileImage(imageUri)
+            // TODO: 업로드용 multipart/file 변환은 data 레이어에서 처리
+            // TODO: 성공 시 서버가 내려준 최신 profileImageUrl로 다시 갱신
+            // TODO: 실패 시 기존 이미지로 롤백하고 에러 스낵바 노출
+        }
+    }
+
+    fun saveNickname() {
+        val currentState = _uiState.value as? UiState.Success ?: return
+        val newNickname = currentState.data.nicknameDraft.trim()
+        if (newNickname.isEmpty()) return
+
+        viewModelScope.launch {
+            updateSuccessState { data -> data.copy(isNicknameSaving = true) }
+
+            // TODO: userRepository.updateNickname(newNickname)
+            // TODO: 성공 시 서버 응답의 최신 닉네임으로 profile state 갱신
+            // TODO: 실패 시 에러 메시지 스낵바 노출 후 isNicknameSaving 롤백
+
+            updateSuccessState { data ->
+                data.copy(
+                    nickname = newNickname,
+                    nicknameDraft = newNickname,
+                    isNicknameDialogVisible = false,
+                    isNicknameSaving = false
+                )
+            }
+        }
+    }
+
+    private fun updateSuccessState(transform: (MyPageData) -> MyPageData) {
+        _uiState.update { current ->
+            when (current) {
+                is UiState.Success -> UiState.Success(transform(current.data))
+                else -> current
+            }
+        }
+    }
+
     private fun mockMyPageData(): MyPageData = MyPageData(
         nickname = "레전드투자자",
+        nicknameDraft = "레전드투자자",
         profileImage = null,
         likedEtfCount = 12,
         holdingEtfs = emptyList() // 보유 ETF 없는 상태 UI
@@ -57,7 +128,10 @@ data class MyPageHoldingEtfUiModel(
 
 data class MyPageData(
     val nickname: String,
+    val nicknameDraft: String,
     val profileImage: String?,
     val likedEtfCount: Int,
-    val holdingEtfs: List<MyPageHoldingEtfUiModel>
+    val holdingEtfs: List<MyPageHoldingEtfUiModel>,
+    val isNicknameDialogVisible: Boolean = false,
+    val isNicknameSaving: Boolean = false
 )

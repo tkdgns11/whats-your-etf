@@ -89,8 +89,8 @@ private fun StockDetailContent(
 
         // ── 종목명 + 티커 ──────────────────────────────────────────
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stock.name, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text(stock.ticker, fontSize = 14.sp, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
+            Text(stock.name, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text(stock.ticker, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
         }
 
         Spacer(Modifier.height(8.dp))
@@ -129,7 +129,7 @@ private fun StockDetailContent(
                 .background(SurfaceVariant)
                 .padding(16.dp),
         ) {
-            Text(stock.description, fontSize = 14.sp, color = TextSecondary, lineHeight = 22.sp)
+            Text(stock.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = TextSecondary)
         }
 
         Spacer(Modifier.height(32.dp))
@@ -152,7 +152,7 @@ private fun StockDetailContent(
         ) {
             Text(
                 text = "포함된 ETF 전체보기",
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 modifier = Modifier.clickable(onClick = onEtfListClick),
             )
@@ -181,7 +181,7 @@ private fun TagChip(label: String) {
             .background(SurfaceCard)
             .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        Text(label, fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = TextSecondary)
     }
 }
 
@@ -194,11 +194,10 @@ private fun MarketCapCard(marketCap: Long, modifier: Modifier = Modifier) {
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("시가총액", fontSize = 12.sp, color = TextSecondary)
+        Text("시가총액", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
         Text(
             formatMarketCap(marketCap),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = TextPrimary,
         )
     }
@@ -217,22 +216,20 @@ private fun CurrentPriceCard(price: Long, changeAmount: Long, modifier: Modifier
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text("현재가", fontSize = 12.sp, color = TextSecondary)
+        Text("현재가", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
                 "%,d원".format(price),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
             )
             Text(
                 "$sign%,d".format(kotlin.math.abs(changeAmount)),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.labelMedium,
                 color = changeColor,
-                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -242,7 +239,7 @@ private fun CurrentPriceCard(price: Long, changeAmount: Long, modifier: Modifier
 private fun SectionHeader(icon: @Composable () -> Unit, title: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         icon()
-        Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Text(title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
     }
 }
 
@@ -259,8 +256,8 @@ private fun EtfWeightItem(etf: StockEtf, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top,
         ) {
-            Text(etf.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text("비중", fontSize = 11.sp, color = TextSecondary)
+            Text(etf.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text("비중", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -269,13 +266,12 @@ private fun EtfWeightItem(etf: StockEtf, onClick: () -> Unit) {
         ) {
             Text(
                 "${etf.manager} · ${etf.ticker}",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
             Text(
                 "${"%.1f".format(etf.weight)}%",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
             )
         }
@@ -318,15 +314,14 @@ private fun RelatedStockItem(stock: RelatedStock, onClick: () -> Unit) {
         ) {
             Text(
                 stock.name.take(2),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
             )
         }
 
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(stock.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text(stock.description, fontSize = 12.sp, color = TextSecondary)
+            Text(stock.name, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text(stock.description, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
         }
 
         Icon(

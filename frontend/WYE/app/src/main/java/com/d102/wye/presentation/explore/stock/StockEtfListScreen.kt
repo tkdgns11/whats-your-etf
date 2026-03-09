@@ -65,13 +65,12 @@ fun StockEtfListScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(
                                     stock.name,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                                     color = TextPrimary,
                                 )
                                 Text(
                                     "총 ${stock.containedEtfs.size}개의 ETF에 편입됨",
-                                    fontSize = 13.sp,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                                     color = TextSecondary,
                                 )
                             }
@@ -127,8 +126,8 @@ private fun EtfListCard(etf: StockEtf, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top,
         ) {
-            Text(etf.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            Text("비중", fontSize = 11.sp, color = TextSecondary)
+            Text(etf.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+            Text("비중", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
         // 운용사·티커 + 비중 숫자 행
         Row(
@@ -136,11 +135,10 @@ private fun EtfListCard(etf: StockEtf, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("${etf.manager} · ${etf.ticker}", fontSize = 12.sp, color = TextSecondary)
+            Text("${etf.manager} · ${etf.ticker}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             Text(
                 "${"%.1f".format(etf.weight)}%",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
             )
         }
