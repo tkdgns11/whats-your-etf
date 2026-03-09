@@ -35,7 +35,7 @@ import com.d102.wye.presentation.theme.*
 
 @Composable
 fun ExploreScreen(
-    onEtfClick: (ticker: String) -> Unit,
+    onEtfClick: (ticker: String, riskLevel: Int) -> Unit,
     viewModel: ExploreViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,14 +61,14 @@ fun ExploreScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { WyeTopBar(title = "탐색") },
-    ) { innerPadding ->
+    ) { _ ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+                .fillMaxSize(),
         ) {
+            WyeTopBar(title = "탐색")
             SearchRow(
                 query = filterState.query,
                 searchScope = filterState.searchScope,
@@ -110,7 +110,7 @@ fun ExploreScreen(
                             riskLevel = etf.riskLevel,
                             isLiked = etf.isLiked,
                             onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
-                            onClick = { onEtfClick(etf.ticker) },
+                            onClick = { onEtfClick(etf.ticker, etf.riskLevel) },
                         )
                     }
                 }
@@ -296,28 +296,20 @@ private fun QuickFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier.horizontalScroll(rememberScrollState()),
     ) {
-        BadgedBox(
-            badge = {
-                if (filterCount > 0) {
-                    Badge { Text("$filterCount") }
-                }
-            },
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(SurfaceVariant)
+                .clickable(onClick = onFilterIconClick),
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(SurfaceVariant)
-                    .clickable(onClick = onFilterIconClick),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "상세 필터",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = "상세 필터",
+                tint = TextSecondary,
+                modifier = Modifier.size(20.dp),
+            )
         }
 
         if (hasNoFilters) {
@@ -401,10 +393,8 @@ private fun SortRow(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(SurfaceVariant)
                     .clickable { expanded = true }
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                    .padding(horizontal = 4.dp, vertical = 7.dp),
             ) {
                 Text(
                     text = selected,
