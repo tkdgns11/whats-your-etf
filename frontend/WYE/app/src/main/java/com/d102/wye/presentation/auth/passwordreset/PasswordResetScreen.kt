@@ -24,8 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.auth.join.component.JoinStepHeader
-import com.d102.wye.presentation.auth.join.component.JoinVerificationSection
+import com.d102.wye.presentation.auth.join.components.JoinStepHeader
+import com.d102.wye.presentation.auth.join.components.JoinVerificationSection
 import com.d102.wye.presentation.designsystem.WyeEmailTextField
 import com.d102.wye.presentation.designsystem.WyePasswordConfirmTextField
 import com.d102.wye.presentation.designsystem.WyePasswordTextField

@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.auth.join.component
+package com.d102.wye.presentation.auth.join.components
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer

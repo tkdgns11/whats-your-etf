@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.home.component
+package com.d102.wye.presentation.home.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues

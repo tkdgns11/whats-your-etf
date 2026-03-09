@@ -13,11 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.auth.join.component.JoinEmailStep
-import com.d102.wye.presentation.auth.join.component.JoinNicknameStep
-import com.d102.wye.presentation.auth.join.component.JoinPasswordStep
-import com.d102.wye.presentation.auth.join.component.JoinSuccessContent
-import com.d102.wye.presentation.auth.join.component.JoinVerificationStep
+import com.d102.wye.presentation.auth.join.components.JoinEmailStep
+import com.d102.wye.presentation.auth.join.components.JoinNicknameStep
+import com.d102.wye.presentation.auth.join.components.JoinPasswordStep
+import com.d102.wye.presentation.auth.join.components.JoinSuccessContent
+import com.d102.wye.presentation.auth.join.components.JoinVerificationStep
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeTopBar
 
