@@ -46,25 +46,72 @@ class StrategyViewModel @Inject constructor(
             // }
 
             // Mock - 케이스 교체해서 UI 확인
+//            _uiState.update {
+//                UiState.Success(
+//                    // 케이스 1: 완전 빈 유저 (왼쪽 시안)
+//                    StrategyListData()
+//
+//                    // 케이스 2: 실제 자산 없음 + 전략 있음 (가운데 시안)
+//                    // StrategyListData(
+//                    //     realAsset = null,
+//                    //     strategies = listOf(
+//                    //         StrategyCardUiModel("1", "배당왕 안정 추구 전략", "2026.02.15 저장됨", listOf("#SCHD", "#VYM")),
+//                    //         StrategyCardUiModel("2", "ESG 사회적 책임 투자", "2026.01.20 저장됨", listOf("#ESGU", "#SUSA"))
+//                    //     )
+//                    // )
+//
+//                    // 케이스 3: 실제 자산 있음 + 전략 없음 (오른쪽 시안)
+//                    // StrategyListData(
+//                    //     realAsset = StrategyCardUiModel("0", "기술주 중심 성장 전략", "MY 전략", listOf("#QQQ", "#VGT"), isRealAsset = true),
+//                    //     strategies = emptyList()
+//                    // )
+//                )
+//            }
+
+            // ----------
+            // 케이스 2
+            // ----------
+
+            // Mock - 케이스 교체해서 UI 확인
             _uiState.update {
                 UiState.Success(
-                    // 케이스 1: 완전 빈 유저 (왼쪽 시안)
-                    StrategyListData()
-
                     // 케이스 2: 실제 자산 없음 + 전략 있음 (가운데 시안)
-                    // StrategyListData(
-                    //     realAsset = null,
-                    //     strategies = listOf(
-                    //         StrategyCardUiModel("1", "배당왕 안정 추구 전략", "2026.02.15 저장됨", listOf("#SCHD", "#VYM")),
-                    //         StrategyCardUiModel("2", "ESG 사회적 책임 투자", "2026.01.20 저장됨", listOf("#ESGU", "#SUSA"))
-                    //     )
-                    // )
-
-                    // 케이스 3: 실제 자산 있음 + 전략 없음 (오른쪽 시안)
-                    // StrategyListData(
-                    //     realAsset = StrategyCardUiModel("0", "기술주 중심 성장 전략", "MY 전략", listOf("#QQQ", "#VGT"), isRealAsset = true),
-                    //     strategies = emptyList()
-                    // )
+                    StrategyListData(
+//                        realAsset = null,
+                        realAsset = StrategyCardUiModel(
+                            id = "0",
+                            title = "기술주 중심 성장 전략",
+                            date = "MY 전략",
+                            tags = listOf("#QQQ", "#VGT", "#SOXX"),
+                            isRealAsset = true
+                        ),
+                        strategies = listOf(
+                            StrategyCardUiModel(
+                                id = "1",
+                                title = "배당왕 안정 추구 전략",
+                                date = "2026.02.15",
+                                tags = listOf("#SCHD", "#VYM", "#JEPI")
+                            ),
+                            StrategyCardUiModel(
+                                id = "2",
+                                title = "기술주 중심 성장 전략",
+                                date = "2026.01.30",
+                                tags = listOf("#QQQ", "#VGT", "#SOXX")
+                            ),
+                            StrategyCardUiModel(
+                                id = "3",
+                                title = "ESG 사회적 책임 투자",
+                                date = "2026.01.20",
+                                tags = listOf("#ESGU", "#SUSA")
+                            ),
+                            StrategyCardUiModel(
+                                id = "4",
+                                title = "글로벌 분산 투자 전략",
+                                date = "2025.12.10",
+                                tags = listOf("#VT", "#VXUS", "#EEM")
+                            )
+                        )
+                    )
                 )
             }
         }
