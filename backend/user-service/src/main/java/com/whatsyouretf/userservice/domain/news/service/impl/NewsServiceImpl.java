@@ -1,5 +1,9 @@
 package com.whatsyouretf.userservice.domain.news.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.company.entity.Stock;
@@ -10,9 +14,12 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRep
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
+import com.whatsyouretf.userservice.domain.news.entity.NewsEtfInfluence;
 import com.whatsyouretf.userservice.domain.news.entity.NewsStockMapping;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
+import com.whatsyouretf.userservice.domain.news.repository.NewsEtfInfluenceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,12 +38,15 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news.service.NewsService {
 
     private final NewsArticleRepository newsArticleRepository;
+    private final NewsEtfInfluenceRepository newsEtfInfluenceRepository;
     private final StockRepository stockRepository;
     private final EtfRepository etfRepository;
     private final EtfStockCompositionRepository etfStockCompositionRepository;
+    private final ObjectMapper objectMapper;
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_ETF_NEWS_SIZE = 50;
@@ -75,40 +85,63 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         // 조회수 증가
         article.incrementViewCount();
 
+        // AI 요약 파싱 (JSON: {"bullets": ["요약1", "요약2", ...]} 형식)
+        List<String> aiSummary = parseAiSummary(article.getContentSummary());
+
+        // 키워드 파싱 (JSON 배열)
+        List<String> keywords = parseKeywords(article.getKeywords());
+
         // 관련 종목 목록 조회
         List<RelatedStockResponse> relatedStocks = article.getStockMappings().stream()
                 .map(mapping -> RelatedStockResponse.from(mapping.getCompanyInfo()))
                 .toList();
 
-        // 관련 ETF 목록 조회 (관련 종목을 구성종목으로 포함하는 ETF)
-        List<RelatedEtfResponse> relatedEtfs = new ArrayList<>();
-        Map<Long, BigDecimal> etfWeightMap = new HashMap<>();
+        // AI 분석 기반 ETF 추천 조회
+        List<NewsEtfInfluence> etfInfluences = newsEtfInfluenceRepository.findByNewsIdWithEtf(newsId);
+        List<NewsDetailResponse.RecommendedEtfResponse> recommendedEtfs = etfInfluences.stream()
+                .map(NewsDetailResponse.RecommendedEtfResponse::from)
+                .toList();
 
-        for (NewsStockMapping mapping : article.getStockMappings()) {
-            // Stock을 통해 ETF 구성종목 조회
-            Stock stock = stockRepository.findByCompanyId(mapping.getCompanyInfo().getId()).orElse(null);
-            if (stock != null) {
-                List<EtfStockComposition> compositions = etfStockCompositionRepository.findLatestByStockId(stock.getId());
-                for (EtfStockComposition composition : compositions) {
-                    Etf etf = composition.getEtf();
-                    // 중복 제거 (같은 ETF가 여러 종목으로 연결될 수 있음)
-                    if (!etfWeightMap.containsKey(etf.getId())) {
-                        etfWeightMap.put(etf.getId(), composition.getWeightPct());
-                        relatedEtfs.add(RelatedEtfResponse.builder()
-                                .etfId(etf.getId())
-                                .ticker(etf.getStockCode())
-                                .name(etf.getName())
-                                .weightPct(composition.getWeightPct())
-                                .build());
-                    }
-                }
-            }
+        return NewsDetailResponse.from(article, aiSummary, keywords, relatedStocks, recommendedEtfs);
+    }
+
+    /**
+     * AI 요약 JSON 파싱
+     * 형식: {"bullets": ["요약1", "요약2", "요약3"]}
+     */
+    private List<String> parseAiSummary(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
         }
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            if (root.has("bullets") && root.get("bullets").isArray()) {
+                return objectMapper.convertValue(
+                        root.get("bullets"),
+                        new TypeReference<List<String>>() {}
+                );
+            }
+            return List.of();
+        } catch (JsonProcessingException e) {
+            log.error("AI 요약 파싱 실패: {}", json, e);
+            return List.of();
+        }
+    }
 
-        // 비중 순 정렬
-        relatedEtfs.sort((a, b) -> b.getWeightPct().compareTo(a.getWeightPct()));
-
-        return NewsDetailResponse.from(article, relatedStocks, relatedEtfs);
+    /**
+     * 키워드 JSON 파싱
+     * 형식: ["키워드1", "키워드2", ...]
+     */
+    private List<String> parseKeywords(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            log.error("키워드 파싱 실패: {}", json, e);
+            return List.of();
+        }
     }
 
     @Override

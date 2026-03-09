@@ -41,6 +41,10 @@ public class SecurityConfig {
             "/health",
             // Auth
             "/api/v1/auth/**",
+            // News (공개 API)
+            "/api/v1/news/**",
+            // ETF (공개 API)
+            "/api/v1/etf/**",
             // Static
             "/error"
     };

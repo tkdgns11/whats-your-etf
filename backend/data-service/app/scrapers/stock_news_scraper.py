@@ -248,7 +248,7 @@ class StockNewsScraper:
                 source=article.source,
                 source_url=article.source_url,
                 thumbnail_url=article.thumbnail_url,
-                category=category,
+                category_code=category,
                 published_at=article.published_at
             )
             self.db.add(news)

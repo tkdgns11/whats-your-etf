@@ -24,4 +24,27 @@ public interface EtfSectorClusterRepository extends JpaRepository<EtfSectorClust
            "                   WHERE sc2.etf.id = :etfId AND sc2.clusterType = 'GROUP_CODE') " +
            "ORDER BY sc.weightPct DESC")
     List<EtfSectorCluster> findLatestByEtfId(@Param("etfId") Long etfId);
+
+    /**
+     * 모든 고유 클러스터(그룹) 목록 조회
+     */
+    @Query("SELECT DISTINCT sc.groupCode, sc.groupName FROM EtfSectorCluster sc " +
+           "WHERE sc.clusterType = 'GROUP_CODE' AND sc.groupCode IS NOT NULL " +
+           "ORDER BY sc.groupName")
+    List<Object[]> findDistinctClusters();
+
+    /**
+     * 클러스터별 ETF ID 목록 조회
+     */
+    @Query("SELECT DISTINCT sc.etf.id FROM EtfSectorCluster sc " +
+           "WHERE sc.groupCode = :groupCode AND sc.clusterType = 'GROUP_CODE'")
+    List<Long> findEtfIdsByGroupCode(@Param("groupCode") String groupCode);
+
+    /**
+     * 클러스터별 ETF 개수 조회
+     */
+    @Query("SELECT sc.groupCode, COUNT(DISTINCT sc.etf.id) FROM EtfSectorCluster sc " +
+           "WHERE sc.clusterType = 'GROUP_CODE' AND sc.groupCode IS NOT NULL " +
+           "GROUP BY sc.groupCode")
+    List<Object[]> countEtfsByCluster();
 }

@@ -11,12 +11,15 @@
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
 | GET | `/me` | 내 정보 조회 | O |
-| PUT | `/me` | 내 정보 수정 | O |
+| PATCH | `/me` | 내 정보 수정 | O |
 | PUT | `/me/password` | 비밀번호 변경 | O |
 | DELETE | `/me` | 회원 탈퇴 | O |
+| GET | `/check-nickname` | 닉네임 중복 체크 | X |
+| GET | `/{userId}` | 특정 사용자 조회 | X |
 | GET | `/me/favorites` | 관심 ETF 목록 조회 | O |
 | POST | `/me/favorites/{etfId}` | 관심 ETF 추가 | O |
 | DELETE | `/me/favorites/{etfId}` | 관심 ETF 삭제 | O |
+| GET | `/me/favorites/{etfId}/check` | 관심 ETF 여부 확인 | O |
 | GET | `/me/holdings` | 보유 ETF 목록 조회 (마이데이터) | O |
 | POST | `/me/holdings/sync` | 마이데이터 동기화 | O |
 
@@ -53,7 +56,7 @@ Authorization: Bearer {accessToken}
 
 **Request**
 ```
-PUT /api/v1/users/me
+PATCH /api/v1/users/me
 Authorization: Bearer {accessToken}
 Content-Type: application/json
 ```
@@ -94,7 +97,74 @@ Content-Type: application/json
 
 ---
 
-### 3. 비밀번호 변경
+### 3. 닉네임 중복 체크
+
+**Request**
+```
+GET /api/v1/users/check-nickname?nickname=홍길동
+```
+
+| Parameter | Type | 필수 | 설명 |
+|-----------|------|------|------|
+| nickname | string | O | 확인할 닉네임 (2~20자) |
+
+**Response (사용 가능)**
+```json
+{
+  "success": true,
+  "data": true
+}
+```
+
+**Response (중복)**
+```json
+{
+  "success": true,
+  "data": false
+}
+```
+
+---
+
+### 4. 특정 사용자 조회
+
+**Request**
+```
+GET /api/v1/users/{userId}
+```
+
+| Parameter | Type | 필수 | 설명 |
+|-----------|------|------|------|
+| userId | number | O | 사용자 ID (양수 정수) |
+
+**Response**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "email": "hong@gmail.com",
+    "nickname": "홍길동",
+    "loginProvider": "KAKAO",
+    "createdAt": "2025-01-10T10:00:00Z"
+  }
+}
+```
+
+**Error Response**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "USER_NOT_FOUND",
+    "message": "사용자를 찾을 수 없습니다."
+  }
+}
+```
+
+---
+
+### 5. 비밀번호 변경 (미구현)
 이메일 로그인 사용자 또는 비밀번호를 설정한 소셜 로그인 사용자용
 
 **Request**
@@ -138,7 +208,7 @@ Content-Type: application/json
 
 ---
 
-### 4. 회원 탈퇴
+### 6. 회원 탈퇴
 
 **Request**
 ```
@@ -168,7 +238,7 @@ Content-Type: application/json
 
 ---
 
-### 5. 관심 ETF 목록 조회
+### 7. 관심 ETF 목록 조회
 
 **Request**
 ```
@@ -204,7 +274,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 6. 관심 ETF 추가 (좋아요)
+### 8. 관심 ETF 추가 (좋아요)
 
 **Request**
 ```
@@ -242,7 +312,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 7. 관심 ETF 삭제
+### 9. 관심 ETF 삭제
 
 **Request**
 ```
@@ -260,7 +330,37 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 8. 보유 ETF 목록 조회 (마이데이터)
+### 10. 관심 ETF 여부 확인
+
+**Request**
+```
+GET /api/v1/users/me/favorites/{etfId}/check
+Authorization: Bearer {accessToken}
+```
+
+| Parameter | Type | 필수 | 설명 |
+|-----------|------|------|------|
+| etfId | number | O | ETF ID (양수 정수) |
+
+**Response (관심 등록됨)**
+```json
+{
+  "success": true,
+  "data": true
+}
+```
+
+**Response (미등록)**
+```json
+{
+  "success": true,
+  "data": false
+}
+```
+
+---
+
+### 11. 보유 ETF 목록 조회 (마이데이터)
 
 **Request**
 ```
@@ -304,7 +404,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 9. 마이데이터 동기화
+### 12. 마이데이터 동기화
 
 **Request**
 ```

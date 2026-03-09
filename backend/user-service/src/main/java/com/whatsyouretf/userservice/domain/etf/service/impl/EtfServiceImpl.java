@@ -255,6 +255,125 @@ public class EtfServiceImpl implements EtfService {
                 .build();
     }
 
+    @Override
+    public EtfClusterListResponse getClusterList() {
+        // 고유 클러스터 목록 조회
+        List<Object[]> clusters = etfSectorClusterRepository.findDistinctClusters();
+
+        // 클러스터별 ETF 개수 조회
+        Map<String, Long> etfCountMap = etfSectorClusterRepository.countEtfsByCluster().stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]
+                ));
+
+        List<EtfClusterListResponse.ClusterItem> clusterItems = clusters.stream()
+                .map(arr -> {
+                    String groupCode = (String) arr[0];
+                    String groupName = (String) arr[1];
+                    return EtfClusterListResponse.ClusterItem.builder()
+                            .id(groupCode)
+                            .name(groupName)
+                            .description(getClusterDescription(groupCode))
+                            .etfCount(etfCountMap.getOrDefault(groupCode, 0L).intValue())
+                            .avgExpenseRatio(null)
+                            .avgReturn1Y(null)
+                            .build();
+                })
+                .toList();
+
+        return EtfClusterListResponse.builder()
+                .clusters(clusterItems)
+                .build();
+    }
+
+    @Override
+    public EtfClusterDetailResponse getClusterEtfs(String clusterId, int page, int size) {
+        size = Math.min(size, 100);
+
+        // 클러스터에 속한 ETF ID 목록 조회
+        List<Long> etfIds = etfSectorClusterRepository.findEtfIdsByGroupCode(clusterId);
+
+        if (etfIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.SECTOR_CLUSTER_NOT_FOUND);
+        }
+
+        // 페이징 처리
+        int start = page * size;
+        int end = Math.min(start + size, etfIds.size());
+
+        if (start >= etfIds.size()) {
+            return EtfClusterDetailResponse.builder()
+                    .cluster(EtfClusterDetailResponse.ClusterInfo.builder()
+                            .id(clusterId)
+                            .name(getClusterName(clusterId))
+                            .description(getClusterDescription(clusterId))
+                            .build())
+                    .etfs(List.of())
+                    .page(page)
+                    .totalPages((int) Math.ceil((double) etfIds.size() / size))
+                    .totalElements(etfIds.size())
+                    .build();
+        }
+
+        List<Long> pagedEtfIds = etfIds.subList(start, end);
+        List<Etf> etfs = etfRepository.findAllById(pagedEtfIds);
+
+        List<EtfClusterDetailResponse.EtfItem> etfItems = etfs.stream()
+                .map(EtfClusterDetailResponse.EtfItem::from)
+                .toList();
+
+        return EtfClusterDetailResponse.builder()
+                .cluster(EtfClusterDetailResponse.ClusterInfo.builder()
+                        .id(clusterId)
+                        .name(getClusterName(clusterId))
+                        .description(getClusterDescription(clusterId))
+                        .build())
+                .etfs(etfItems)
+                .page(page)
+                .totalPages((int) Math.ceil((double) etfIds.size() / size))
+                .totalElements(etfIds.size())
+                .build();
+    }
+
+    private String getClusterName(String groupCode) {
+        return switch (groupCode) {
+            case "반도체" -> "반도체";
+            case "금융" -> "금융";
+            case "바이오/의약" -> "바이오/의약";
+            case "자동차" -> "자동차";
+            case "소프트웨어" -> "소프트웨어";
+            case "전자/IT" -> "전자/IT";
+            case "에너지" -> "에너지";
+            default -> groupCode;
+        };
+    }
+
+    private String getClusterDescription(String groupCode) {
+        return switch (groupCode) {
+            case "반도체" -> "반도체, HBM, 파운드리, 메모리 관련 ETF 그룹";
+            case "금융" -> "은행, 증권, 보험, 금융지주 관련 ETF 그룹";
+            case "바이오/의약" -> "바이오, 제약, 신약, 의료기기 관련 ETF 그룹";
+            case "자동차" -> "전기차, 자동차부품, 2차전지 관련 ETF 그룹";
+            case "소프트웨어" -> "AI, 클라우드, 게임, 플랫폼 관련 ETF 그룹";
+            case "전자/IT" -> "디스플레이, OLED, 가전, IT 관련 ETF 그룹";
+            case "에너지" -> "태양광, 풍력, 원전, 수소 관련 ETF 그룹";
+            case "CHEM" -> "석유화학, 정밀화학, 화장품 관련 ETF 그룹";
+            case "CONSTRUCT" -> "건설, 부동산, 리츠, 인프라 관련 ETF 그룹";
+            case "CONSUMER" -> "패션, 여행, 항공, 레저 관련 ETF 그룹";
+            case "DEFENSE" -> "방산, 위성, 우주항공 관련 ETF 그룹";
+            case "FOOD" -> "식품, 음료, HMR 관련 ETF 그룹";
+            case "INSURANCE" -> "생명보험, 손해보험 관련 ETF 그룹";
+            case "MACHINERY" -> "기계, 로봇, 자동화, 휴머노이드 관련 ETF 그룹";
+            case "RETAIL" -> "백화점, 이커머스, 편의점 관련 ETF 그룹";
+            case "SHIPBUILD" -> "조선, LNG선, 해양플랜트 관련 ETF 그룹";
+            case "STEEL" -> "철강, 비철금속, 희토류 관련 ETF 그룹";
+            case "TELECOM" -> "통신, 5G, 엔터테인먼트, OTT 관련 ETF 그룹";
+            case "TRANSPORT" -> "해운, 물류, 택배, 항공화물 관련 ETF 그룹";
+            default -> groupCode + " 관련 ETF 그룹";
+        };
+    }
+
     private Sort getSort(String sortBy) {
         if (sortBy == null) {
             return Sort.by(Sort.Direction.DESC, "aum");

@@ -1,11 +1,13 @@
 package com.whatsyouretf.userservice.domain.news.dto;
 
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
+import com.whatsyouretf.userservice.domain.news.entity.NewsEtfInfluence;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -45,19 +47,63 @@ public class NewsDetailResponse {
     /** 발행일시 */
     private LocalDateTime publishedAt;
 
+    /** AI 핵심 요약 (bullet points) */
+    private List<String> aiSummary;
+
+    /** 키워드 태그 */
+    private List<String> keywords;
+
     /** 관련 종목 목록 */
     private List<RelatedStockResponse> relatedStocks;
 
-    /** 관련 ETF 목록 (종목을 포함하는 ETF) */
-    private List<RelatedEtfResponse> relatedEtfs;
+    /** 관련 ETF 추천 (AI 분석 기반) */
+    private List<RecommendedEtfResponse> recommendedEtfs;
 
     /**
-     * Entity -> DTO 변환 (관련 종목 포함)
+     * AI 분석 ETF 추천 응답
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RecommendedEtfResponse {
+        /** ETF ID */
+        private Long etfId;
+        /** ETF 티커 */
+        private String ticker;
+        /** ETF 이름 */
+        private String name;
+        /** 운용사 */
+        private String issuer;
+        /** 영향 유형 (POSITIVE, NEGATIVE, NEUTRAL) */
+        private String influenceType;
+        /** 영향도 점수 (0~1) */
+        private BigDecimal influenceScore;
+        /** 분석 이유 */
+        private String analysisReason;
+
+        public static RecommendedEtfResponse from(NewsEtfInfluence influence) {
+            return RecommendedEtfResponse.builder()
+                    .etfId(influence.getEtf().getId())
+                    .ticker(influence.getEtf().getStockCode())
+                    .name(influence.getEtf().getName())
+                    .issuer(influence.getEtf().getAssetManager())
+                    .influenceType(influence.getInfluenceType())
+                    .influenceScore(influence.getInfluenceScore())
+                    .analysisReason(influence.getAnalysisReason())
+                    .build();
+        }
+    }
+
+    /**
+     * Entity -> DTO 변환
      */
     public static NewsDetailResponse from(
             NewsArticle article,
+            List<String> aiSummary,
+            List<String> keywords,
             List<RelatedStockResponse> relatedStocks,
-            List<RelatedEtfResponse> relatedEtfs
+            List<RecommendedEtfResponse> recommendedEtfs
     ) {
         return NewsDetailResponse.builder()
                 .id(article.getId())
@@ -69,8 +115,10 @@ public class NewsDetailResponse {
                 .categoryCode(article.getCategory() != null ? article.getCategory().getCode() : null)
                 .categoryName(article.getCategory() != null ? article.getCategory().getName() : null)
                 .publishedAt(article.getPublishedAt())
+                .aiSummary(aiSummary)
+                .keywords(keywords)
                 .relatedStocks(relatedStocks)
-                .relatedEtfs(relatedEtfs)
+                .recommendedEtfs(recommendedEtfs)
                 .build();
     }
 }

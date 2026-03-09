@@ -62,6 +62,7 @@ public enum ErrorCode {
     ETF_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF001", "ETF를 찾을 수 없습니다."),
     ETF_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF002", "ETF 가격 정보를 찾을 수 없습니다."),
     ETF_COMPOSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF003", "ETF 구성종목 정보를 찾을 수 없습니다."),
+    SECTOR_CLUSTER_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF004", "섹터 클러스터 정보를 찾을 수 없습니다."),
 
     // Portfolio
     PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "PORTFOLIO001", "포트폴리오를 찾을 수 없습니다."),

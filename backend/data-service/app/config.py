@@ -14,11 +14,12 @@ class Settings(BaseSettings):
     naver_client_id: str = ""
     naver_client_secret: str = ""
 
-    # OpenAI API
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-3.5-turbo
-    openai_max_tokens: int = 1000
-    openai_temperature: float = 0.3
+    # SSAFY GMS API (Anthropic)
+    gms_api_key: str = ""
+    gms_base_url: str = "https://gms.ssafy.io/gmsapi/api.anthropic.com"
+    gms_model: str = "claude-sonnet-4-20250514"
+    gms_max_tokens: int = 4096
+    gms_temperature: float = 0.3
 
     class Config:
         env_file = ".env"

@@ -89,6 +89,30 @@ public class EtfController {
     }
 
     /**
+     * ETF 클러스터 목록 조회
+     */
+    @Operation(summary = "ETF 클러스터 목록 조회", description = "ETF 클러스터(산업군) 목록을 조회합니다.")
+    @GetMapping("/clusters")
+    public ResponseEntity<ApiResponse<EtfClusterListResponse>> getClusterList() {
+        EtfClusterListResponse response = etfService.getClusterList();
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 클러스터별 ETF 조회
+     */
+    @Operation(summary = "클러스터별 ETF 조회", description = "특정 클러스터에 속한 ETF 목록을 조회합니다.")
+    @GetMapping("/clusters/{clusterId}")
+    public ResponseEntity<ApiResponse<EtfClusterDetailResponse>> getClusterEtfs(
+            @Parameter(description = "클러스터 ID (group_code)") @PathVariable String clusterId,
+            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size
+    ) {
+        EtfClusterDetailResponse response = etfService.getClusterEtfs(clusterId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
      * ETF 검색
      */
     @Operation(summary = "ETF 검색", description = "ETF를 검색합니다.")

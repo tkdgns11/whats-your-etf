@@ -3,6 +3,8 @@ package com.whatsyouretf.userservice.domain.news.entity;
 import com.whatsyouretf.userservice.domain.common.entity.Category;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ public class NewsArticle {
     private String content;
 
     /** AI 요약 (JSON: {"bullets": ["요약1", "요약2", "요약3"]}) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "content_summary", columnDefinition = "jsonb")
     private String contentSummary;
 
@@ -58,6 +61,7 @@ public class NewsArticle {
     private Category category;
 
     /** 검색 키워드 (JSON 배열) */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String keywords;
 

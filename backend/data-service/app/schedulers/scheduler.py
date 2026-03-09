@@ -1,4 +1,4 @@
-"""네이버 증권 종목뉴스 크롤링, KRX 공시 스케줄러"""
+"""네이버 증권 종목뉴스 크롤링, AI 분석, KRX 공시 스케줄러"""
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -8,6 +8,7 @@ from sqlalchemy import func
 from app.database import SessionLocal
 from app.scrapers.stock_news_scraper import StockNewsScraper
 from app.scrapers.krx_scraper import KrxDisclosureScraper
+from app.services.news_analyzer import analyze_unprocessed_news
 from app.models.etf import ETF, ETFComposition
 from app.models.company import CompanyInfo
 from app.config import get_settings
@@ -19,12 +20,10 @@ scheduler = AsyncIOScheduler()
 
 
 async def scrape_stock_news_job():
-    """ETF 구성종목 뉴스 크롤링 (30분마다)
+    """ETF 구성종목 뉴스 크롤링 + AI 분석 (30분마다)
 
-    - 활성 ETF 상위 100개의 구성종목에서 뉴스 수집
-    - 사용자 관심 ETF/포트폴리오 ETF 구성종목도 포함
-    - 네이버 증권 종목뉴스 페이지에서 직접 크롤링
-    - 100% 본문 추출 가능
+    1. 뉴스 크롤링: 상위 100개 ETF + 사용자 관심 ETF 구성종목
+    2. AI 분석: 미분석 뉴스 자동 처리 (요약, 키워드, ETF 추천)
     """
     logger.info("=== 종목뉴스 크롤링 시작 ===")
 
@@ -34,13 +33,11 @@ async def scrape_stock_news_job():
         from sqlalchemy import text
 
         # 크롤링 대상 종목 조회 (중복 제거)
-        # 1. 상위 100개 ETF의 구성종목
-        # 2. 사용자 관심 ETF 구성종목
-        # 3. 사용자 포트폴리오 ETF 구성종목
         query = text("""
             SELECT DISTINCT c.id, c.stock_code
             FROM company_info c
-            JOIN etf_stock_composition esc ON esc.company_id = c.id
+            JOIN stock s ON s.company_id = c.id
+            JOIN etf_stock_composition esc ON esc.stock_id = s.id
             WHERE c.is_active = true
               AND c.stock_code IS NOT NULL
               AND (
@@ -54,7 +51,7 @@ async def scrape_stock_news_job():
                 -- 사용자 관심 ETF 구성종목
                 OR esc.etf_id IN (SELECT etf_id FROM user_favorite_etf)
                 -- 포트폴리오 ETF 구성종목
-                OR esc.etf_id IN (SELECT etf_id FROM portfolio_items)
+                OR esc.etf_id IN (SELECT etf_id FROM portfolio_etf)
               )
             ORDER BY c.id
         """)
@@ -89,6 +86,12 @@ async def scrape_stock_news_job():
             f"  신규: {total_stats['new']}건\n"
             f"  매핑추가: {total_stats['mapped']}건"
         )
+
+        # AI 분석 자동 실행 (신규 뉴스가 있을 때만)
+        if total_stats["new"] > 0:
+            logger.info("=== AI 뉴스 분석 시작 ===")
+            analyzed = await analyze_unprocessed_news(db, limit=total_stats["new"] + 10)
+            logger.info(f"=== AI 분석 완료: {analyzed}건 처리 ===")
 
     except Exception as e:
         logger.error(f"종목뉴스 크롤링 실패: {e}")

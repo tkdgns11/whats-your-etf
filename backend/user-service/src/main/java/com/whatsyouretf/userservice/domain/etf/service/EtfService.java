@@ -44,4 +44,14 @@ public interface EtfService {
      * ETF 추천 (사용자 기반)
      */
     EtfRecommendResponse getEtfRecommendations(Long userId);
+
+    /**
+     * ETF 클러스터 목록 조회
+     */
+    EtfClusterListResponse getClusterList();
+
+    /**
+     * 클러스터별 ETF 조회
+     */
+    EtfClusterDetailResponse getClusterEtfs(String clusterId, int page, int size);
 }

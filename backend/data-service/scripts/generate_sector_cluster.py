@@ -21,10 +21,10 @@ from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app.database import SessionLocal
-from app.models.etf import ETF, ETFComposition, ETFSectorCluster
-from app.models.company import CompanyInfo, IndustryClassification
+from app.models.etf import ETF, ETFSectorCluster
+from app.models.company import IndustryClassification
 
 
 def get_industry_name(db, group_code: str) -> str:
@@ -85,21 +85,21 @@ def generate_cluster_for_etf(db, etf: ETF) -> list:
     단일 ETF의 섹터 클러스터 생성
 
     로직:
-    1. etf_compositions에서 해당 ETF의 구성종목 조회
+    1. etf_stock_composition -> stock -> company_info 조인
     2. 각 종목의 company_info.industry_group 조회
     3. industry_group별 비중 합산
     """
-    # 1. 구성종목 + 회사 정보 조인
-    compositions = db.query(
-        ETFComposition.weight_pct,
-        CompanyInfo.industry_group,
-        CompanyInfo.stock_name
-    ).join(
-        CompanyInfo, ETFComposition.company_id == CompanyInfo.id
-    ).filter(
-        ETFComposition.etf_id == etf.id,
-        CompanyInfo.industry_group != None
-    ).all()
+    # 1. 구성종목 + 회사 정보 조인 (실제 DB 구조에 맞게)
+    result = db.execute(text("""
+        SELECT esc.weight_pct, c.industry_group, c.stock_name
+        FROM etf_stock_composition esc
+        JOIN stock s ON esc.stock_id = s.id
+        JOIN company_info c ON s.company_id = c.id
+        WHERE esc.etf_id = :etf_id
+          AND c.industry_group IS NOT NULL
+    """), {"etf_id": etf.id})
+
+    compositions = result.fetchall()
 
     if not compositions:
         print(f"  [!] {etf.name}: 구성종목 없음")
@@ -109,12 +109,13 @@ def generate_cluster_for_etf(db, etf: ETF) -> list:
     group_stats = defaultdict(lambda: {"weight": Decimal("0"), "count": 0, "stocks": []})
 
     for comp in compositions:
-        group_code = comp.industry_group
-        weight = comp.weight_pct or Decimal("0")
+        weight_pct, industry_group, stock_name = comp
+        group_code = industry_group
+        weight = Decimal(str(weight_pct)) if weight_pct else Decimal("0")
 
         group_stats[group_code]["weight"] += weight
         group_stats[group_code]["count"] += 1
-        group_stats[group_code]["stocks"].append(comp.stock_name)
+        group_stats[group_code]["stocks"].append(stock_name)
 
     # 3. 섹터 리스트 생성 (비중 내림차순 정렬)
     sectors = []
