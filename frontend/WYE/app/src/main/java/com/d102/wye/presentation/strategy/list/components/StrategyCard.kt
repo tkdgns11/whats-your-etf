@@ -37,13 +37,13 @@ import com.d102.wye.presentation.theme.TextTertiary
 @Composable
 fun StrategyCard(
     strategy: StrategyCardUiModel,
-    onClick: (Long) -> Unit,
+    onItemClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { /* TODO: */ },
+            .clickable { onItemClick(strategy.id.toLong()) },
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
         border = BorderStroke(

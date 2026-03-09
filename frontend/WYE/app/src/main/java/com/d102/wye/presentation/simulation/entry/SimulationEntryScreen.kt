@@ -41,6 +41,7 @@ import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.BackGroundLightGreen
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
@@ -160,6 +161,7 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
                 text = "나만의 투자 전략,\n미리 확인해 보세요",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                 modifier = Modifier.fillMaxWidth(),
+                color = TextPrimary
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -167,8 +169,9 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
             // 서브 텍스트
             Text(
                 text = "과거 데이터를 바탕으로 내 자산의 미래를 그려보는\n시뮬레이션입니다.",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.fillMaxWidth(),
+                color = TextTertiary
             )
 
             Spacer(modifier = Modifier.height(12.dp))
