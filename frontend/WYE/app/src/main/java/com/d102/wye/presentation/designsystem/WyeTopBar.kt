@@ -21,6 +21,7 @@ import com.d102.wye.presentation.theme.TextPrimary
 @Composable
 fun WyeTopBar(
     title: String,
+    backgroundColor: Color = Color.White,
     onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
@@ -43,7 +44,7 @@ fun WyeTopBar(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.White,
+            containerColor = backgroundColor,
             titleContentColor = TextPrimary
         ),
         windowInsets = WindowInsets(0.dp),
