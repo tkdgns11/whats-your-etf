@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -103,15 +104,17 @@ fun ClusterTab(
                 }
 
                 // 영향 종목 peek — spacedBy 밖에 분리하여 다른 종목과 동일한 레이아웃 유지
-                HorizontalDivider(color = Divider)
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Text(
                         text = "현재 이 ETF에 영향을 많이 끼치는 종목은?",
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
                         color = TextPrimary,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp, bottom = 4.dp),
+                            .padding(top = 12.dp),
                     )
                     if (detail.influentialStocks.isNotEmpty()) {
                         InfluentialStockItem(
@@ -127,10 +130,10 @@ fun ClusterTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 20.dp),
+                    .padding(top = 8.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 detail.influentialStocks.drop(1).forEach { stock ->
-                    HorizontalDivider(color = Divider)
                     InfluentialStockItem(stock = stock, onClick = { onStockClick(stock.ticker) })
                 }
             }
@@ -145,7 +148,7 @@ private fun EtfHeader(detail: EtfDetail) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg)
+        CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg, isPill = true, modifier = Modifier.scale(1.3f).padding(bottom = 4.dp))
         Text(detail.ticker, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold), color = TextPrimary)
         Text(detail.englishName, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary)
     }
@@ -405,7 +408,6 @@ private fun InfluentialStocksSection(stocks: List<InfluentialStock>) {
         )
         stocks.forEach { stock ->
             InfluentialStockItem(stock = stock)
-            HorizontalDivider(color = Divider)
         }
     }
 }
@@ -415,8 +417,10 @@ private fun InfluentialStockItem(stock: InfluentialStock, onClick: () -> Unit = 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, SurfaceVariant, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
