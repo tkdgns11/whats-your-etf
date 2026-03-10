@@ -3,6 +3,7 @@ package com.d102.wye.data.repository
 import com.d102.wye.data.local.datastore.AuthTokenDataStore
 import com.d102.wye.data.mapper.toDomain
 import com.d102.wye.data.remote.api.AuthApiService
+import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
@@ -72,6 +73,14 @@ class AuthRepositoryImpl @Inject constructor(
                 authTokenDataStore.clearTokens()
             }
         }
+    }
+
+    // ─────────────────────────────────────────
+    // FCM 토큰 등록
+    // ─────────────────────────────────────────
+
+    override suspend fun registerFcmToken(token: String): BaseResult<Unit> {
+        return safeApiCall { authApiService.registerFcmToken(FcmTokenRequest(token)) }
     }
 
     // ─────────────────────────────────────────

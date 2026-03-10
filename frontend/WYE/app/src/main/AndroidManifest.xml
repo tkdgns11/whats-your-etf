@@ -32,6 +32,15 @@
             </intent-filter>
         </activity>
 
+        <!-- FCM 서비스 -->
+        <service
+            android:name=".core.service.WyeFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
