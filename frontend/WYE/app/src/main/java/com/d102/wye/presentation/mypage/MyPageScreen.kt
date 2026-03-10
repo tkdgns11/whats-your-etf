@@ -32,6 +32,7 @@ import com.d102.wye.presentation.mypage.components.NicknameEditDialog
 import com.d102.wye.presentation.mypage.components.myPageSettingsSection
 import com.d102.wye.presentation.mypage.components.myPageSupportSection
 import com.d102.wye.presentation.model.UiState
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun MyPageScreen(
@@ -60,11 +61,19 @@ fun MyPageScreen(
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.event.collect { event ->
+            if (event == MyPageEvent.LogoutSuccess) {
+                onLogoutClick()
+            }
+        }
+    }
+
     MyPageScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onLikedEtfClick = onLikedEtfClick,
-        onLogoutClick = onLogoutClick,
+        onLogoutClick = { viewModel.logout() },
         onHoldingEtfMoreClick = onHoldingEtfMoreClick,
         onLikedEtfListClick = onLikedEtfListClick,
         onPasswordChangeClick = onPasswordChangeClick,

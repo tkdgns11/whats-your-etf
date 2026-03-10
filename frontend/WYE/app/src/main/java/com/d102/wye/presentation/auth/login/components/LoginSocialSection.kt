@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +21,8 @@ import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
 fun LoginSocialSection(
-    onKakaoLoginClick: () -> Unit
+    onKakaoLoginClick: () -> Unit,
+    kakaoLoginEnabled: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -46,8 +47,9 @@ fun LoginSocialSection(
     ) {
         WyeKakaoButton(
             onClick = onKakaoLoginClick,
+            enabled = kakaoLoginEnabled,
             modifier = Modifier
-                .fillMaxWidth()
+                .width(240.dp)
                 .height(52.dp)
         )
     }
