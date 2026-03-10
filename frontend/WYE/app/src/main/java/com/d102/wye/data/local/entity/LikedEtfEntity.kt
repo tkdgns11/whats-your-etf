@@ -23,6 +23,9 @@ data class LikedEtfEntity(
     @ColumnInfo(name = "change_rate")
     val changeRate: Double,
 
+    @ColumnInfo(name = "change_amount")
+    val changeAmount: Long,
+
     @ColumnInfo(name = "volume")
     val volume: Long,
 
