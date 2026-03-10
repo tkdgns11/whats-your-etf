@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,12 +40,17 @@ fun LoginSocialSection(
 
     Spacer(modifier = Modifier.height(20.dp))
 
-    WyeKakaoButton(
-        onClick = onKakaoLoginClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(54.dp)
-    )
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        WyeKakaoButton(
+            onClick = onKakaoLoginClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        )
+    }
 }
 
 @Composable
