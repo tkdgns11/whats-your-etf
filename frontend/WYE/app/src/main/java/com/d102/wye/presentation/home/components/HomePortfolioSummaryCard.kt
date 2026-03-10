@@ -61,7 +61,7 @@ fun HomePortfolioSummaryCard(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(2.dp)) {
             Text(
                 text = portfolio.name,
                 color = TextSecondary,
@@ -131,7 +131,7 @@ private fun PortfolioChartPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(270.dp)
             .background(BackGroundLightGreen, RoundedCornerShape(20.dp)),
         contentAlignment = Alignment.Center
     ) {
