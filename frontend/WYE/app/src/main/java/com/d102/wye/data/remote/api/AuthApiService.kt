@@ -1,5 +1,6 @@
 package com.d102.wye.data.remote.api
 
+import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
@@ -39,4 +40,14 @@ interface AuthApiService {
      */
     @POST("auth/logout")
     suspend fun logout(): Response<BaseResponse<Unit>>
+
+    /**
+     * FCM 토큰 등록
+     * POST /auth/fcm-token
+     * 로그인 후 또는 토큰 갱신 시 서버에 저장
+     */
+    @POST("auth/fcm-token")
+    suspend fun registerFcmToken(
+        @Body request: FcmTokenRequest,
+    ): Response<BaseResponse<Unit>>
 }
