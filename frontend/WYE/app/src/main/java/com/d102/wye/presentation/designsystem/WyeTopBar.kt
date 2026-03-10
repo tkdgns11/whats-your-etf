@@ -47,7 +47,6 @@ fun WyeTopBar(
             containerColor = backgroundColor,
             titleContentColor = TextPrimary
         ),
-        windowInsets = WindowInsets(0.dp),
         actions = actions
     )
 }

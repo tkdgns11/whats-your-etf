@@ -44,9 +44,7 @@ fun AppNavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)    // BottomNavBar / TopBar 영역 제외한 패딩 적용
+        modifier = Modifier.fillMaxSize().padding(bottom = contentPadding.calculateBottomPadding())
     ) {
 
         // ─────────────────────────────────────────
