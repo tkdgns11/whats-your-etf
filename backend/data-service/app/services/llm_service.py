@@ -16,17 +16,31 @@ settings = get_settings()
 
 
 class LLMService:
-    """SSAFY GMS API 호출 서비스 (Anthropic Claude)"""
+    """Anthropic Claude API 호출 서비스 (직접 또는 GMS 경유)"""
 
     TIMEOUT = 60
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, use_light_model: bool = False):
+        """
+        Args:
+            db: DB 세션
+            use_light_model: True면 Haiku(저렴), False면 Sonnet(고성능)
+        """
         self.db = db
-        self.api_key = settings.gms_api_key
-        self.base_url = settings.gms_base_url
-        self.model = settings.gms_model
+        self.model = settings.gms_model_light if use_light_model else settings.gms_model
         self.max_tokens = settings.gms_max_tokens
         self.temperature = settings.gms_temperature
+
+        # Anthropic API 직접 호출 우선, 없으면 GMS 사용
+        if settings.anthropic_api_key:
+            self.api_key = settings.anthropic_api_key
+            self.base_url = "https://api.anthropic.com"
+            logger.info("Anthropic API 직접 호출 모드")
+        else:
+            self.api_key = settings.gms_api_key
+            self.base_url = settings.gms_base_url
+            logger.info("GMS API 경유 모드")
+
         self.client = httpx.AsyncClient(
             headers={
                 "x-api-key": self.api_key,

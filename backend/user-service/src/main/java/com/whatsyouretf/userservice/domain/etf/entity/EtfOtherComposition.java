@@ -50,7 +50,7 @@ public class EtfOtherComposition {
 
     /** 시가 */
     @Column(name = "market_value")
-    private Integer marketValue;
+    private Long marketValue;
 
     @Column(name = "created_at")
     @Builder.Default

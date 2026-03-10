@@ -465,11 +465,11 @@ CREATE TABLE "etf_prices" (
 
 CREATE INDEX "idx_etf_prices_etf_date" ON "etf_prices"("etf_id", "trade_date" DESC);
 
--- ETF 섹터 클러스터 (요약)
+-- ETF 섹터 클러스터 (버블 시각화용, 현재 스냅샷)
 CREATE TABLE "etf_sector_cluster" (
     "id" BIGSERIAL PRIMARY KEY,
     "etf_id" BIGINT NOT NULL,
-    "cluster_type" VARCHAR(20) NOT NULL,        -- GROUP_CODE / INDUSTRY / SUB_SECTOR
+    "cluster_type" VARCHAR(20) NOT NULL,        -- GROUP_CODE / INDUSTRY / SUB_SECTOR / ASSET_TYPE
     "industry_code" VARCHAR(10),
     "industry_name" VARCHAR(100),
     "group_code" VARCHAR(20),
@@ -482,17 +482,36 @@ CREATE TABLE "etf_sector_cluster" (
     "pos_y" DECIMAL(10,6),
     "radius" DECIMAL(10,6),
     "distance_to_center" DECIMAL(10,6),
-    -- AI 분석
-    "ai_analysis" TEXT,                         -- 섹터 영향력 AI 분석 결과
-    "prompt_id" BIGINT,                         -- 사용된 프롬프트 FK
     "base_date" DATE NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_sector_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
-    CONSTRAINT "fk_sector_cluster_prompt" FOREIGN KEY ("prompt_id") REFERENCES "ai_prompt"("id")
+    CONSTRAINT "fk_sector_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE
 );
 
 CREATE INDEX "idx_sector_cluster_etf" ON "etf_sector_cluster"("etf_id");
 CREATE INDEX "idx_sector_cluster_date" ON "etf_sector_cluster"("etf_id", "base_date" DESC);
+
+-- ETF 섹터 버블 AI 분석 이력
+CREATE TABLE "etf_sector_ai_history" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "etf_id" BIGINT NOT NULL,
+    "group_code" VARCHAR(20) NOT NULL,          -- IT_SEMI, FINANCE 등
+    "group_name" VARCHAR(50),
+    -- 분석 시점 스냅샷
+    "weight_pct" DECIMAL(6,3),                  -- 분석 시점 비중
+    "stock_count" INTEGER,                      -- 분석 시점 종목 수
+    "top_stocks" JSONB,                         -- 상위 종목 [{"name":"삼성전자","weight":25.0}, ...]
+    -- AI 분석 결과
+    "ai_analysis" TEXT NOT NULL,                -- 분석 결과 텍스트
+    "prompt_id" BIGINT,                         -- 사용된 프롬프트 FK
+    -- 시점
+    "base_date" DATE NOT NULL,                  -- ETF 데이터 기준일
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "fk_sector_ai_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_sector_ai_prompt" FOREIGN KEY ("prompt_id") REFERENCES "ai_prompt"("id")
+);
+
+CREATE INDEX "idx_sector_ai_etf_date" ON "etf_sector_ai_history"("etf_id", "base_date" DESC);
+CREATE INDEX "idx_sector_ai_lookup" ON "etf_sector_ai_history"("etf_id", "group_code", "base_date" DESC);
 
 -- ETF 주식 클러스터 매핑 (클러스터 태그 → 회사 목록 조회용)
 CREATE TABLE "etf_stock_cluster_mapping" (
