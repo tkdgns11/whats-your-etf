@@ -1,11 +1,15 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql+psycopg://wye:wye1234@localhost:5432/whatsyouretf"
-
+    db_host: str = ""
+    db_port: str = ""
+    db_name: str = ""
+    db_user: str = ""
+    db_password: str = ""
+    
     # News Scraping
     news_scrape_interval_minutes: int = 10
     news_max_per_keyword: int = 5
@@ -28,9 +32,20 @@ class Settings(BaseSettings):
     # OpenAI API (직접 호출용)
     openai_api_key: str = ""
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    krx_id: str = ""
+    krx_pw: str = ""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
+
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql+psycopg://{self.db_user}:{self.db_password}"
+            f"@{self.db_host}:{self.db_port}/{self.db_name}"
+        )
 
 
 @lru_cache()
