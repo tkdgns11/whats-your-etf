@@ -17,7 +17,7 @@ import com.d102.wye.data.local.entity.LikedEtfEntity
         LikedEtfEntity::class,
         // 테이블 추가 시 여기에 등록
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

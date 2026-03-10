@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
@@ -33,7 +32,6 @@ import com.d102.wye.presentation.home.components.HomePortfolioTab
 import com.d102.wye.presentation.home.components.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.PrimaryGreen
-import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun HomeScreen(

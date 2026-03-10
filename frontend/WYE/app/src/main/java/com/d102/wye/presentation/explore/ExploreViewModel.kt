@@ -3,6 +3,7 @@ package com.d102.wye.presentation.explore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.state.EtfFilterState
 import com.d102.wye.domain.usecase.etf.FilterEtfListUseCase
@@ -11,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,8 +31,10 @@ class ExploreViewModel @Inject constructor(
 
     private var rawEtfList: List<Etf> = emptyList()
     private var mockEtfList: List<EtfListItemUiModel> = emptyList()
+    private var likedTickers: Set<String> = emptySet()
 
     init {
+        observeLikedEtfs()
         loadEtfList()
     }
 
@@ -42,14 +46,15 @@ class ExploreViewModel @Inject constructor(
 //                applyFilter()
 //            }
 
+            // TODO: API 연동 시 mockEtfList 대신 etfRepository.getEtfList()를 collect해서 사용한다.
             mockEtfList = listOf(
-                EtfListItemUiModel("KODEX200", "KODEX 200", 32_450, 1.24, 400, 1, false),
-                EtfListItemUiModel("TIGER나스닥", "TIGER 미국나스닥100", 104_820, 2.15, 2_210, 1, false),
-                EtfListItemUiModel("ACESP500", "ACE 미국S&P500", 15_340, 0.85, 130, 1, false),
-                EtfListItemUiModel("SOL배당", "SOL 미국배당다우존스", 10_120, 0.42, 45, 3, false),
-                EtfListItemUiModel("KODEX인버스", "KODEX 200선물인버스2X", 2_145, -2.31, -50, 5, false),
-                EtfListItemUiModel("TIGER나스닥2", "TIGER 미국나스닥100(레버리지)", 104_820, 2.15, 2_210, 1, false),
-                EtfListItemUiModel("SOL배당2", "SOL 미국배당다우존스(월배당)", 10_120, 0.42, 45, 1, false),
+                EtfListItemUiModel("KODEX200", "KODEX 200", 32_450, 1.24, 400, 1, likedTickers.contains("KODEX200")),
+                EtfListItemUiModel("TIGER나스닥", "TIGER 미국나스닥100", 104_820, 2.15, 2_210, 1, likedTickers.contains("TIGER나스닥")),
+                EtfListItemUiModel("ACESP500", "ACE 미국S&P500", 15_340, 0.85, 130, 1, likedTickers.contains("ACESP500")),
+                EtfListItemUiModel("SOL배당", "SOL 미국배당다우존스", 10_120, 0.42, 45, 3, likedTickers.contains("SOL배당")),
+                EtfListItemUiModel("KODEX인버스", "KODEX 200선물인버스2X", 2_145, -2.31, -50, 5, likedTickers.contains("KODEX인버스")),
+                EtfListItemUiModel("TIGER나스닥2", "TIGER 미국나스닥100(레버리지)", 104_820, 2.15, 2_210, 1, likedTickers.contains("TIGER나스닥2")),
+                EtfListItemUiModel("SOL배당2", "SOL 미국배당다우존스(월배당)", 10_120, 0.42, 45, 1, likedTickers.contains("SOL배당2")),
             )
             applyFilter()
         }
@@ -76,9 +81,27 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun onLikeToggled(ticker: String) {
-        mockEtfList = mockEtfList.map {
-            if (it.ticker == ticker) it.copy(isLiked = !it.isLiked) else it
+        val target = mockEtfList.firstOrNull { it.ticker == ticker } ?: return
+        viewModelScope.launch {
+            when (val result = etfRepository.toggleLike(target.toDomain())) {
+                is BaseResult.Success -> Unit
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
         }
+    }
+
+    private fun observeLikedEtfs() {
+        viewModelScope.launch {
+            etfRepository.getLikedEtfList().collect { likedEtfs ->
+                likedTickers = likedEtfs.mapTo(mutableSetOf()) { it.ticker }
+                syncLikeState()
+            }
+        }
+    }
+
+    private fun syncLikeState() {
+        if (mockEtfList.isEmpty()) return
+        mockEtfList = mockEtfList.map { it.copy(isLiked = likedTickers.contains(it.ticker)) }
         applyFilter()
     }
 
@@ -113,7 +136,28 @@ private fun Etf.toUiModel() = EtfListItemUiModel(
     changeRate = changeRate,
     changeAmount = changeAmount,
     riskLevel = riskLevel,
-    isLiked = false,  // TODO: Room 관심 ETF 연동
+    isLiked = false,  // TODO: API 연동 시 관심 ETF 상태를 서버 응답 또는 로컬 캐시와 함께 매핑
+)
+
+private fun EtfListItemUiModel.toDomain() = Etf(
+    ticker = ticker,
+    name = name,
+    currentPrice = currentPrice,
+    changeRate = changeRate,
+    changeAmount = changeAmount,
+    volume = 0L,
+    riskLevel = riskLevel,
+    investmentStrategy = "",
+    assetClass = "",
+    theme = "",
+    dividendRate = 0.0,
+    dividendCycle = "",
+    hasDerivative = false,
+    per = 0.0,
+    pbr = 0.0,
+    roe = 0.0,
+    expenseRatio = 0.0,
+    netAsset = 0L,
 )
 
 data class ExploreData(
