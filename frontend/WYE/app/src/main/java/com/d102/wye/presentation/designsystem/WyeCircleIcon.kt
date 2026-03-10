@@ -13,28 +13,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.theme.PrimaryGreen
 
 @Composable
-fun WyeCircleIcon(tag: String, iconRes: Int? = null) {
+fun WyeCircleIcon(
+    modifier: Modifier = Modifier,
+    tag: String,
+    iconRes: Int? = null,
+    count: Int = 1,
+    size: Dp = 40.dp,
+    backgroundColor: Color = PrimaryGreen,
+    contentColor: Color = Color.White,
+    textStyle: TextStyle = MaterialTheme.typography.titleSmall
+) {
     Box(
-        modifier = Modifier
-            .size(40.dp)
+        modifier = modifier
+            .size(size)
             .clip(CircleShape)
-            .background(PrimaryGreen),
+            .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
         if (iconRes == null) {
             Text(
-                text = tag.take(1),
-                color = Color.White,
-                style = MaterialTheme.typography.titleSmall,
+                text = tag.take(count),
+                color = contentColor,
+                style = textStyle
             )
         } else {
             Icon(
                 painter = painterResource(iconRes),
-                contentDescription = null
+                contentDescription = null,
+                tint = contentColor // 💡 아이콘 색상도 contentColor에 맞춤
             )
         }
     }
