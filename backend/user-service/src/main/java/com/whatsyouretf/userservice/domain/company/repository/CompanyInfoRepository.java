@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 회사 정보 Repository
@@ -14,19 +13,9 @@ import java.util.Optional;
 public interface CompanyInfoRepository extends JpaRepository<CompanyInfo, Long> {
 
     /**
-     * 종목코드로 회사 조회
+     * 회사명으로 검색 (부분 일치)
      */
-    Optional<CompanyInfo> findByStockCode(String stockCode);
-
-    /**
-     * 종목코드 목록으로 회사 목록 조회
-     */
-    List<CompanyInfo> findByStockCodeIn(List<String> stockCodes);
-
-    /**
-     * 종목명으로 검색 (부분 일치)
-     */
-    List<CompanyInfo> findByStockNameContaining(String stockName);
+    List<CompanyInfo> findByCompanyNameContaining(String companyName);
 
     /**
      * 산업분류 코드로 회사 목록 조회
