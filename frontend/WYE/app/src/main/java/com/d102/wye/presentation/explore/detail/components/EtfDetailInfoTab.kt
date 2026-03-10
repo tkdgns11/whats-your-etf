@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -65,7 +66,7 @@ fun EtfDetailInfoTab(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // 가격 그리드
         PriceGrid(detail = detail)
@@ -99,7 +100,9 @@ fun EtfDetailInfoTab(
 
         // 기간별 수익률 표
         if (periodReturn is UiState.Success) {
-            PeriodReturnTable(data = (periodReturn as UiState.Success<EtfPeriodReturn>).data)
+            Box(modifier = Modifier.padding(top = 12.dp)) {
+                PeriodReturnTable(data = (periodReturn as UiState.Success<EtfPeriodReturn>).data)
+            }
         }
 
         // 주석
@@ -422,13 +425,24 @@ private fun ChartCheckbox(label: String, checked: Boolean, onToggle: () -> Unit,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.clickable(onClick = onToggle),
     ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(checkedColor = color),
-            modifier = Modifier.size(20.dp),
-        )
-        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(18.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(if (checked) color else Color.Transparent)
+                .border(1.5.dp, if (checked) color else TextSecondary.copy(alpha = 0.4f), RoundedCornerShape(5.dp)),
+        ) {
+            if (checked) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(11.dp),
+                )
+            }
+        }
+        Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = TextSecondary)
     }
 }
 

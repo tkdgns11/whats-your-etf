@@ -29,16 +29,21 @@ fun CategoryBadge(
     modifier: Modifier = Modifier,
     backgroundColor: Color = BadgeConservative,
     textColor: Color = BadgeConservativeFont,
+    isPill: Boolean = false,
 ) {
     Text(
         text = label,
         color = textColor,
         fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
+        lineHeight = if (isPill) 11.sp else 14.sp,
+        fontWeight = if (isPill) FontWeight.Normal else FontWeight.SemiBold,
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(if (isPill) RoundedCornerShape(20.dp) else RoundedCornerShape(4.dp))
             .background(backgroundColor)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(
+                horizontal = if (isPill) 12.dp else 8.dp,
+                vertical = if (isPill) 1.dp else 3.dp,
+            ),
     )
 }
 

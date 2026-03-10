@@ -69,7 +69,7 @@ fun EtfListItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text("%,d원".format(currentPrice), color = TextSecondary, fontSize = 12.sp)
-                    CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg)
+                    CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg, isPill = true)
                 }
             }
 
