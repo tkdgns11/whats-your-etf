@@ -2,6 +2,8 @@ package com.d102.wye.core.app
 
 import android.app.Application
 import android.content.Context
+import com.d102.wye.BuildConfig
+import com.kakao.sdk.common.KakaoSdk
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
@@ -28,6 +30,7 @@ class BaseApplication : Application() {
     }
 
 
+    /** 앱 전역 라이브러리와 SDK를 초기화한다. */
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -35,8 +38,18 @@ class BaseApplication : Application() {
         // Timber 초기화
         Timber.plant(Timber.DebugTree())
 
-        // 카카오 SDK 초기화 (BuildConfig 사용)
-//        KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
-//        Timber.d("Kakao SDK initialized with key: ${BuildConfig.KAKAO_NATIVE_APP_KEY}")
+        initializeKakaoSdk()
+    }
+
+    /** 카카오 SDK를 초기화한다. 실제 키가 없으면 TODO 상태로 둔다. */
+    private fun initializeKakaoSdk() {
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.startsWith("TODO_")) {
+            Timber.w("Kakao native app key is not configured yet.")
+            // TODO: 실제 네이티브 앱 키를 BuildConfig.KAKAO_NATIVE_APP_KEY에 연결
+            return
+        }
+
+        KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
+        Timber.d("Kakao SDK initialized.")
     }
 }

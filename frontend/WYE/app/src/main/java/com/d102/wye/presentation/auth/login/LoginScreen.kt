@@ -1,11 +1,13 @@
 package com.d102.wye.presentation.auth.login
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -13,15 +15,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.core.auth.KakaoLoginManager
 import com.d102.wye.presentation.auth.login.components.LoginFooterLinks
 import com.d102.wye.presentation.auth.login.components.LoginFormSection
 import com.d102.wye.presentation.auth.login.components.LoginHeader
 import com.d102.wye.presentation.auth.login.components.LoginSocialSection
 import com.d102.wye.presentation.theme.SurfaceVariant
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun LoginScreen(
@@ -31,6 +37,8 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val kakaoLoginManager = remember { KakaoLoginManager() }
 
     LaunchedEffect(viewModel) {
         viewModel.loginEvent.collect { event ->
@@ -46,6 +54,24 @@ fun LoginScreen(
         onPasswordChanged = { viewModel.onPasswordChanged(it) },
         onPasswordVisibilityToggle = { viewModel.onPasswordVisibilityToggle() },
         onLoginClick = { viewModel.onLoginClick() },
+        onKakaoLoginClick = {
+            val activity = context.findActivity()
+            if (activity == null) {
+                viewModel.onKakaoLoginFailure("카카오 로그인을 시작할 수 없습니다.")
+            } else {
+                viewModel.onKakaoLoginStart()
+                kakaoLoginManager.login(
+                    activity = activity,
+                    onSuccess = { profile ->
+                        viewModel.onKakaoLoginSuccess(
+                            userId = profile.userId,
+                            nickname = profile.nickname
+                        )
+                    },
+                    onError = viewModel::onKakaoLoginFailure
+                )
+            }
+        },
         onJoinClick = onJoinClick,
         onForgotPasswordClick = onForgotPasswordClick
     )
@@ -58,6 +84,7 @@ private fun LoginScreenContent(
     onPasswordChanged: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onLoginClick: () -> Unit,
+    onKakaoLoginClick: () -> Unit,
     onJoinClick: () -> Unit,
     onForgotPasswordClick: () -> Unit
 ) {
@@ -87,9 +114,8 @@ private fun LoginScreenContent(
             Spacer(modifier = Modifier.height(20.dp))
 
             LoginSocialSection(
-                onKakaoLoginClick = {
-                    // TODO: 카카오 로그인 SDK 및 백엔드 연동
-                }
+                onKakaoLoginClick = onKakaoLoginClick,
+                kakaoLoginEnabled = !uiState.isLoading && !uiState.isKakaoLoading
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -102,4 +128,11 @@ private fun LoginScreenContent(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+/** LocalContext에서 실제 Activity를 찾아 카카오 SDK 호출에 사용한다. */
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

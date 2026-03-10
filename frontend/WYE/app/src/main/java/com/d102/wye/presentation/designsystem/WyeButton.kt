@@ -1,6 +1,8 @@
 package com.d102.wye.presentation.designsystem
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,15 +19,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.d102.wye.presentation.theme.KakaoYellow
+import com.d102.wye.R
 import com.d102.wye.presentation.theme.PrimaryGreen
-import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextOnColored
 
 /**
@@ -117,21 +119,15 @@ fun WyeKakaoButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = KakaoYellow,
-            contentColor = TextPrimary,
-            disabledContainerColor = KakaoYellow.copy(alpha = 0.4f),
-            disabledContentColor = TextPrimary.copy(alpha = 0.6f),
-        ),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-    }
+    Image(
+        painter = painterResource(id = R.drawable.ic_kakao_login_button),
+        contentDescription = text,
+        contentScale = ContentScale.FillWidth,
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer(alpha = if (enabled) 1f else 0.4f)
+            .clickable(enabled = enabled, onClick = onClick),
+    )
 }
 
 // ── Preview ─────────────────────────────────────────────────────
