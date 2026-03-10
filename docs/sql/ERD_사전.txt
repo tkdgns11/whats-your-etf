@@ -12,7 +12,7 @@ email_verification_token  이메일인증토큰
 login_history             로그인이력
 category                  공통카테고리(뉴스/포트폴리오분류)
 news_article              뉴스기사
-news_etf_influence        뉴스ETF영향력매핑
+news_stock_mapping        뉴스종목매핑(네이버증권종목뉴스)
 ai_prompt                 AI프롬프트관리
 portfolio_ai_feedback     포트폴리오AI피드백
 user_favorite_etf         관심ETF
@@ -91,15 +91,11 @@ category_code             카테고리코드 (FK)
 keywords                  키워드배열 (JSONB)
 published_at              발행일시
 view_count                조회수
-news_id                   뉴스ID (FK)
-influence_score           영향력점수
-influence_type            영향력유형
-analysis_reason           분석사유
-timeline_title            타임라인제목 (UI표시용)
-timeline_summary          타임라인요약 (UI표시용)
-actual_change_rate        뉴스발행후ETF실제변동률
-verified_at               검증시점 (장마감후)
-is_verified               실제데이터로검증됨여부
+
+【 속성명 (뉴스-종목 매핑) 】
+--------------------------------------------------------------------------------
+news_id                   뉴스ID (FK→news_article)
+company_id                회사ID (FK→company_info)
 
 【 속성명 (AI 피드백) 】
 --------------------------------------------------------------------------------
@@ -182,6 +178,7 @@ ceo_name                  대표자명
 homepage                  홈페이지
 region                    지역
 description               회사설명/사업내용
+corporation_number        사업자등록번호
 
 【 속성명 (주식) 】
 --------------------------------------------------------------------------------
@@ -286,8 +283,6 @@ weight_pct                분석시점비중(%)
 stock_count               분석시점종목수
 top_stocks                상위종목스냅샷 (JSONB)
 ai_analysis               AI분석결과텍스트
-risk_level                리스크레벨 (LOW/MEDIUM/HIGH)
-key_point                 핵심키워드 (집중투자, 분산투자 등)
 prompt_id                 사용된프롬프트FK (ai_prompt참조)
 base_date                 ETF데이터기준일
 
@@ -296,7 +291,6 @@ base_date                 ETF데이터기준일
 etf_id                    ETF ID (FK→etf)
 composition_id            구성종목ID (FK→etf_stock_composition 또는 etf_other_composition)
 sector_code               섹터코드 (FK→industry_classification Level4)
-source                    매핑출처 (MANUAL/AI)
 
 【 속성명 (꾸러미) 】
 --------------------------------------------------------------------------------
@@ -323,11 +317,6 @@ weight_pct                비중(%)
 --- provider (소셜제공자) ---
 KAKAO                     카카오
 EMAIL                     이메일(일반로그인)
-
---- influence_type (영향력유형) ---
-POSITIVE                  긍정적영향
-NEGATIVE                  부정적영향
-NEUTRAL                   중립
 
 --- alert_type.code (알림유형코드) ---
 ETF_LISTING               ETF신규상장
@@ -414,15 +403,6 @@ NONE                      무배당
 GROUP_CODE                그룹코드기준 (시장형ETF)
 INDUSTRY                  산업코드기준 (테마형-넓은범위)
 SUB_SECTOR                세분류기준 (테마형-좁은범위)
-
---- source (클러스터 매핑 출처) ---
-MANUAL                    수동매핑
-AI                        AI자동매핑
-
---- risk_level (섹터 AI 분석 리스크 레벨) ---
-LOW                       저위험 (분산투자, top2 집중도 < 50%)
-MEDIUM                    중위험 (보통 집중도, top2 50-80%)
-HIGH                      고위험 (집중투자, top2 집중도 > 80%)
 
 【 값 (산업분류 level) 】
 --------------------------------------------------------------------------------

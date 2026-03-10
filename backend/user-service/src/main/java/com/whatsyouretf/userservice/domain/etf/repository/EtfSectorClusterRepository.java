@@ -1,0 +1,29 @@
+package com.whatsyouretf.userservice.domain.etf.repository;
+
+import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorCluster;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+/**
+ * ETF 섹터 클러스터 Repository
+ */
+public interface EtfSectorClusterRepository extends JpaRepository<EtfSectorCluster, Long> {
+
+    /**
+     * ETF의 최신 섹터 클러스터 조회 (GROUP_CODE 기준)
+     */
+    @Query("""
+        SELECT esc FROM EtfSectorCluster esc
+        WHERE esc.etf.id = :etfId
+          AND esc.clusterType = 'GROUP_CODE'
+          AND esc.baseDate = (
+              SELECT MAX(e.baseDate) FROM EtfSectorCluster e
+              WHERE e.etf.id = :etfId AND e.clusterType = 'GROUP_CODE'
+          )
+        ORDER BY esc.weightPct DESC
+        """)
+    List<EtfSectorCluster> findLatestByEtfId(@Param("etfId") Long etfId);
+}

@@ -312,6 +312,7 @@ CREATE TABLE "company_info" (
     "homepage" VARCHAR(200),
     "region" VARCHAR(50),
     "description" TEXT,
+    "corporation_number" VARCHAR(20),              -- 사업자등록번호
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "fk_company_industry" FOREIGN KEY ("industry_code")
@@ -519,7 +520,6 @@ CREATE TABLE "etf_stock_cluster_mapping" (
     "etf_id" BIGINT NOT NULL,
     "composition_id" BIGINT NOT NULL,            -- etf_stock_composition FK
     "sector_code" VARCHAR(20) NOT NULL,          -- industry_classification FK (Level 4)
-    "source" VARCHAR(20) DEFAULT 'MANUAL',       -- MANUAL / AI
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("etf_id", "composition_id"),
     CONSTRAINT "fk_stock_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,
@@ -533,7 +533,6 @@ CREATE TABLE "etf_other_cluster_mapping" (
     "etf_id" BIGINT NOT NULL,
     "composition_id" BIGINT NOT NULL,            -- etf_other_composition FK
     "sector_code" VARCHAR(20) NOT NULL,          -- industry_classification FK
-    "source" VARCHAR(20) DEFAULT 'MANUAL',       -- MANUAL / AI
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("etf_id", "composition_id"),
     CONSTRAINT "fk_other_cluster_etf" FOREIGN KEY ("etf_id") REFERENCES "etf"("id") ON DELETE CASCADE,

@@ -1,5 +1,7 @@
 package com.whatsyouretf.userservice.domain.news.dto;
 
+import com.whatsyouretf.userservice.domain.etf.entity.Etf;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,6 +27,29 @@ public class RelatedEtfResponse {
     /** ETF 명칭 */
     private String name;
 
-    /** 해당 종목의 ETF 내 비중 */
-    private BigDecimal weightPct;
+    /** 자산운용사 */
+    private String manager;
+
+    /** 등락률 (%) */
+    private BigDecimal changeRate;
+
+    /**
+     * Entity -> DTO 변환
+     */
+    public static RelatedEtfResponse from(Etf etf, EtfPrice latestPrice) {
+        return RelatedEtfResponse.builder()
+                .etfId(etf.getId())
+                .ticker(etf.getStockCode())
+                .name(etf.getName())
+                .manager(etf.getAssetManager())
+                .changeRate(latestPrice != null ? latestPrice.getChangeRate() : BigDecimal.ZERO)
+                .build();
+    }
+
+    /**
+     * Entity -> DTO 변환 (시세 없이)
+     */
+    public static RelatedEtfResponse from(Etf etf) {
+        return from(etf, null);
+    }
 }
