@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface EtfRepository {
     fun getEtfList(): Flow<List<Etf>>
-    suspend fun toggleLike(ticker: String): BaseResult<Boolean>
+    fun getLikedEtfList(): Flow<List<Etf>>
+    suspend fun toggleLike(etf: Etf): BaseResult<Boolean>
     suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail>
     suspend fun getEtfReturnChart(ticker: String, period: String): BaseResult<EtfReturnChart>
     suspend fun getEtfPeriodReturn(ticker: String): BaseResult<EtfPeriodReturn>

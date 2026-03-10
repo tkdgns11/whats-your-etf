@@ -39,7 +39,7 @@ fun SectionHeader(
             text = title,
             color = TextPrimary,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
         )
 
         if (actionLabel != null && onActionClick != null) {

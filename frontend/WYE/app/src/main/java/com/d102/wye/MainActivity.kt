@@ -2,27 +2,36 @@ package com.d102.wye
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.presentation.navigation.AppScaffold
 import com.d102.wye.presentation.navigation.AppEntryViewModel
+import com.d102.wye.presentation.navigation.AppScaffold
 import com.d102.wye.presentation.navigation.Route
 import com.d102.wye.presentation.theme.WYETheme
 import dagger.hilt.android.AndroidEntryPoint
+import android.graphics.Color as AndroidColor
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    /** 앱 진입 시 로그인 여부에 따라 시작 화면을 결정한다. */
     override fun onCreate(savedInstanceState: Bundle?) {
 //        installSplashScreen()
 
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT
+            )
+        )
         setContent {
             WYETheme {
                 val appEntryViewModel: AppEntryViewModel = hiltViewModel()

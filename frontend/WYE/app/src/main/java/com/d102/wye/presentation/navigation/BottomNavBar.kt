@@ -34,10 +34,8 @@ fun BottomNavBar(
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     NavigationBar(
-        modifier = Modifier.navigationBarsPadding(),
         containerColor = SurfaceWhite,
         tonalElevation = 0.dp,
-        windowInsets = WindowInsets(0, 0, 0, 0),
     ) {
         BottomNavTab.entries.forEach { tab ->
             val selected = tab == selectedTab
