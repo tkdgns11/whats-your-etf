@@ -35,32 +35,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String token = resolveToken(request);
+            log.debug("Token resolved: {}", token != null ? "present" : "null");
 
-            if (StringUtils.hasText(token) && jwtTokenUtil.validateToken(token)) {
-                Long userId = jwtTokenUtil.getUserIdFromToken(token);
+            if (StringUtils.hasText(token)) {
+                boolean isValid = jwtTokenUtil.validateToken(token);
+                log.debug("Token validation: {}", isValid);
 
-                User user = userRepository.findById(userId).orElse(null);
+                if (isValid) {
+                    Long userId = jwtTokenUtil.getUserIdFromToken(token);
+                    log.debug("User ID from token: {}", userId);
 
-                if (user != null && user.getIsActive()) {
-                    CustomUserDetails userDetails = new CustomUserDetails(user);
+                    User user = userRepository.findById(userId).orElse(null);
+                    log.debug("User found: {}, isActive: {}", user != null, user != null ? user.getIsActive() : "N/A");
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
-                                    null,
-                                    userDetails.getAuthorities()
-                            );
+                    if (user != null && Boolean.TRUE.equals(user.getIsActive())) {
+                        CustomUserDetails userDetails = new CustomUserDetails(user);
 
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities()
+                                );
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Set Authentication for user: {}", userId);
+                        authentication.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.info("Set Authentication for user: {}", userId);
+                    } else {
+                        log.warn("User not found or inactive: userId={}", userId);
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("Could not set user authentication: {}", e.getMessage());
+            log.error("Could not set user authentication: {}", e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
