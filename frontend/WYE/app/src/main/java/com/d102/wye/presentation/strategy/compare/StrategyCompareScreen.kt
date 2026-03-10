@@ -156,7 +156,7 @@ private fun StrategyCompareScreenContent(
                         Spacer(modifier = Modifier.weight(1f))
                         WyePrimaryButton(
                             text = "닫기",
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                             onClick = { onBackClick() }
                         )
                     }

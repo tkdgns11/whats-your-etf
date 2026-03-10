@@ -2,12 +2,14 @@ package com.d102.wye
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.d102.wye.presentation.navigation.AppScaffold
 import com.d102.wye.presentation.navigation.Route
 import com.d102.wye.presentation.theme.WYETheme
 import dagger.hilt.android.AndroidEntryPoint
+import android.graphics.Color as AndroidColor
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -16,8 +18,16 @@ class MainActivity : ComponentActivity() {
 //        installSplashScreen()
 
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                AndroidColor.TRANSPARENT,
+                AndroidColor.TRANSPARENT
+            )
+        )
         setContent {
             WYETheme {
                 // TODO: 토큰 존재 여부에 따라 startDestination 분기
@@ -25,7 +35,7 @@ class MainActivity : ComponentActivity() {
                 // val startDestination = if (isLoggedIn) Route.Main.route else Route.Login.route
 
                 AppScaffold(
-                    startDestination = Route.Strategy.route
+                    startDestination = Route.Home.route
                 )
             }
         }
