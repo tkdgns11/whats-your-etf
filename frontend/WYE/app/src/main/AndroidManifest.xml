@@ -31,6 +31,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- TODO: 실제 네이티브 앱 키를 넣으면 kakao{NATIVE_APP_KEY} 형태의 scheme으로 동작해야 함 -->
+                <data
+                    android:host="oauth"
+                    android:scheme="${kakaoRedirectScheme}" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
