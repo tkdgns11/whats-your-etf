@@ -48,6 +48,11 @@ public class AuthController {
             @Valid @RequestBody KakaoMobileLoginRequest request
     ) {
         AuthResponse response = authService.processKakaoLogin(request.getAccessToken());
+        // 신규 회원: 201 Created, 기존 회원: 200 OK
+        if (Boolean.TRUE.equals(response.getIsNewUser())) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                    .body(ApiResponse.success("회원가입 및 로그인 성공", response));
+        }
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
     }
 

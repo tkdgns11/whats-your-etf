@@ -9,9 +9,9 @@ import com.whatsyouretf.userservice.domain.alert.entity.AlertCategory;
 public interface AlertService {
 
     /**
-     * 알림 목록 조회
+     * 알림 목록 조회 (최근 7일)
      */
-    AlertListResponse getAlerts(Long userId, int page, int size, String category);
+    AlertListResponse getAlerts(Long userId, String category);
 
     /**
      * 읽지 않은 알림 수 조회
@@ -60,6 +60,7 @@ public interface AlertService {
 
     /**
      * 알림 설정 수정
+     * @return 수정된 전체 알림 설정
      */
-    int updateNotificationSettings(Long userId, NotificationSettingsRequest request);
+    NotificationSettingsResponse updateNotificationSettings(Long userId, NotificationSettingsRequest request);
 }

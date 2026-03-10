@@ -9,12 +9,10 @@ import com.whatsyouretf.userservice.domain.alert.service.AlertService;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -31,23 +29,25 @@ public class AlertServiceImpl implements AlertService {
     private final FcmTokenRepository fcmTokenRepository;
     private final UserRepository userRepository;
 
-    @Override
-    public AlertListResponse getAlerts(Long userId, int page, int size, String category) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+    private static final int ALERT_DAYS = 7;
 
-        Page<UserAlert> alertPage;
+    @Override
+    public AlertListResponse getAlerts(Long userId, String category) {
+        LocalDateTime since = LocalDateTime.now().minusDays(ALERT_DAYS);
+
+        List<UserAlert> alertList;
         if (category == null || category.equalsIgnoreCase("all")) {
-            alertPage = userAlertRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+            alertList = userAlertRepository.findRecentByUserId(userId, since);
         } else {
             try {
                 AlertCategory alertCategory = AlertCategory.valueOf(category.toUpperCase());
-                alertPage = userAlertRepository.findByUserIdAndCategory(userId, alertCategory, pageable);
+                alertList = userAlertRepository.findRecentByUserIdAndCategory(userId, alertCategory, since);
             } catch (IllegalArgumentException e) {
-                alertPage = userAlertRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+                alertList = userAlertRepository.findRecentByUserId(userId, since);
             }
         }
 
-        List<AlertListResponse.AlertItem> alerts = alertPage.getContent().stream()
+        List<AlertListResponse.AlertItem> alerts = alertList.stream()
                 .map(AlertListResponse.AlertItem::from)
                 .toList();
 
@@ -55,9 +55,6 @@ public class AlertServiceImpl implements AlertService {
 
         return AlertListResponse.builder()
                 .alerts(alerts)
-                .page(page)
-                .totalPages(alertPage.getTotalPages())
-                .totalElements(alertPage.getTotalElements())
                 .unreadCount(unreadCount)
                 .build();
     }
@@ -175,11 +172,9 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     @Transactional
-    public int updateNotificationSettings(Long userId, NotificationSettingsRequest request) {
+    public NotificationSettingsResponse updateNotificationSettings(Long userId, NotificationSettingsRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        int updatedCount = 0;
 
         for (NotificationSettingsRequest.SettingItem item : request.getSettings()) {
             AlertType alertType = alertTypeRepository.findById(item.getAlertTypeCode())
@@ -199,9 +194,9 @@ public class AlertServiceImpl implements AlertService {
                         .build();
                 notificationSettingRepository.save(newSetting);
             }
-            updatedCount++;
         }
 
-        return updatedCount;
+        // 수정된 전체 설정 반환
+        return getNotificationSettings(userId);
     }
 }

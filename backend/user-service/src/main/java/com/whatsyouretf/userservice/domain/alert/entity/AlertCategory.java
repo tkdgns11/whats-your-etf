@@ -6,6 +6,5 @@ package com.whatsyouretf.userservice.domain.alert.entity;
 public enum AlertCategory {
     ETF,
     PORTFOLIO,
-    NEWS,
-    SYSTEM
+    NEWS
 }

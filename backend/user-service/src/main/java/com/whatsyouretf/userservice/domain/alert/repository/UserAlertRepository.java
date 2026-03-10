@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -19,12 +21,12 @@ import java.util.Optional;
 public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
 
     /**
-     * 사용자 알림 목록 조회 (최신순)
+     * 사용자 알림 목록 조회 (최신순) - 페이징
      */
     Page<UserAlert> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     /**
-     * 사용자 알림 목록 조회 (카테고리 필터, 최신순)
+     * 사용자 알림 목록 조회 (카테고리 필터, 최신순) - 페이징
      */
     @Query("SELECT ua FROM UserAlert ua " +
            "JOIN ua.alertType at " +
@@ -33,6 +35,26 @@ public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
     Page<UserAlert> findByUserIdAndCategory(@Param("userId") Long userId,
                                             @Param("category") AlertCategory category,
                                             Pageable pageable);
+
+    /**
+     * 최근 7일 알림 목록 조회 (최신순)
+     */
+    @Query("SELECT ua FROM UserAlert ua " +
+           "WHERE ua.user.id = :userId AND ua.createdAt >= :since " +
+           "ORDER BY ua.createdAt DESC")
+    List<UserAlert> findRecentByUserId(@Param("userId") Long userId,
+                                       @Param("since") LocalDateTime since);
+
+    /**
+     * 최근 7일 알림 목록 조회 (카테고리 필터, 최신순)
+     */
+    @Query("SELECT ua FROM UserAlert ua " +
+           "JOIN ua.alertType at " +
+           "WHERE ua.user.id = :userId AND at.category = :category AND ua.createdAt >= :since " +
+           "ORDER BY ua.createdAt DESC")
+    List<UserAlert> findRecentByUserIdAndCategory(@Param("userId") Long userId,
+                                                  @Param("category") AlertCategory category,
+                                                  @Param("since") LocalDateTime since);
 
     /**
      * 사용자 ID와 알림 ID로 조회

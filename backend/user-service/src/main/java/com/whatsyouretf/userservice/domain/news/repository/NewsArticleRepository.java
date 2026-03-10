@@ -76,4 +76,33 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
      * 원본 URL 존재 여부 확인
      */
     boolean existsBySourceUrl(String sourceUrl);
+
+    /**
+     * 포트폴리오 관련 뉴스 조회 (포트폴리오 구성 ETF들의 종목 뉴스)
+     * - portfolio_etf JOIN etf JOIN etf_stock_composition JOIN stock JOIN news_stock_mapping
+     * <p>
+     * 2단계 처리:
+     * 1. 스코어로 상위 N개 선택: score = relevance × recency_multiplier
+     *    - relevance = MAX(portfolio_etf.weight_pct × etf_stock.weight_pct)
+     *    - recency_multiplier = 1 / (1 + 경과일수 × 0.3)
+     * 2. 선택된 뉴스를 최신순(published_at DESC)으로 정렬하여 반환
+     */
+    @Query(value = """
+            SELECT * FROM (
+                SELECT n.* FROM news_article n
+                JOIN news_stock_mapping nsm ON nsm.news_id = n.id
+                JOIN stock s ON s.company_id = nsm.company_id
+                JOIN etf_stock_composition ec ON ec.stock_id = s.id
+                JOIN portfolio_etf pe ON pe.etf_id = ec.etf_id
+                WHERE pe.portfolio_id = :portfolioId AND n.is_active = true
+                GROUP BY n.id
+                ORDER BY (
+                    MAX(pe.weight_pct * ec.weight_pct) *
+                    (1.0 / (1.0 + EXTRACT(EPOCH FROM (NOW() - n.published_at)) / 86400.0 * 0.3))
+                ) DESC
+                LIMIT :limit
+            ) AS top_news
+            ORDER BY published_at DESC
+            """, nativeQuery = true)
+    List<NewsArticle> findByPortfolioId(@Param("portfolioId") Long portfolioId, @Param("limit") int limit);
 }
