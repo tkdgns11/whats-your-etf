@@ -29,8 +29,8 @@ import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
-import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
@@ -40,8 +40,8 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 @Composable
 fun SimulationScreen(
     onBackClick: () -> Unit,
-    onAddEtfClick: () -> Unit,          // ETF 종목 추가 화면으로 이동
-    viewModel: SimulationSetupViewModel = hiltViewModel()
+    onAddEtfClick: () -> Unit,
+    viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val formState by viewModel.formState.collectAsStateWithLifecycle()
     val resultState by viewModel.resultState.collectAsStateWithLifecycle()
@@ -100,7 +100,10 @@ fun SimulationScreen(
         onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
         onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
         onDictionaryClick = { showDictionaryDialog = true },
-        onSaveClick = { viewModel.onSaveIconClick() }
+        onSaveClick = { viewModel.onSaveIconClick() },
+        onWeightChange = { ticker, newWeight ->
+            viewModel.updateItemWeight(ticker, newWeight)
+        }
     )
 }
 
@@ -119,7 +122,8 @@ private fun SimulationSetupScreenContent(
     onPortfolioItemRemoved: (String) -> Unit,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit,
-    onSaveClick: () -> Unit
+    onSaveClick: () -> Unit,
+    onWeightChange: (String, Int) -> Unit
 ) {
     Scaffold(
         modifier = Modifier.background(Color.White),
@@ -167,7 +171,7 @@ private fun SimulationSetupScreenContent(
 
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
             ) {
@@ -183,7 +187,8 @@ private fun SimulationSetupScreenContent(
                 PortfolioSection(
                     formState = formState,
                     onAddClick = onAddEtfClick,
-                    onRemoveClick = onPortfolioItemRemoved
+                    onRemoveClick = onPortfolioItemRemoved,
+                    onWeightChange = onWeightChange
                 )
             }
         }

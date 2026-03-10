@@ -63,7 +63,10 @@ fun EtfListItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable {
+                    if (isSelectionMode) onToggleSelection()
+                    else onClick()
+                }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             WyeCircleIcon(
@@ -104,7 +107,6 @@ private fun EtfActionIcon(
     if (isSelectionMode) {
         WyeRoundCheckbox(
             checked = isSelected,
-            onCheckedChange = onToggleSelection
         )
     } else {
         IconButton(onClick = onLikeToggled, modifier = Modifier.size(32.dp)) {

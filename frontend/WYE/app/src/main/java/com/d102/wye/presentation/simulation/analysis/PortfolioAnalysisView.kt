@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.progress.result
+package com.d102.wye.presentation.simulation.analysis
 
 import DonutChart
 import SectorWeight

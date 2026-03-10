@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.explore
+package com.d102.wye.presentation.explore.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,9 +12,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,6 +32,10 @@ class ExploreViewModel @Inject constructor(
     private var rawEtfList: List<Etf> = emptyList()
     private var mockEtfList: List<EtfListItemUiModel> = emptyList()
     private var likedTickers: Set<String> = emptySet()
+
+    // 다중 선택 상태를 관리하는 StateFlow 추가
+    private val _selectedTickers = MutableStateFlow<Set<String>>(emptySet())
+    val selectedTickers: StateFlow<Set<String>> = _selectedTickers.asStateFlow()
 
     init {
         observeLikedEtfs()
@@ -88,6 +92,25 @@ class ExploreViewModel @Inject constructor(
                 is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
             }
         }
+    }
+
+    fun toggleSelection(ticker: String) {
+        _selectedTickers.update { currentSet ->
+            Timber.d("$ticker selected")
+            if (currentSet.contains(ticker)) {
+                currentSet - ticker // 있으면 제거
+            } else {
+                currentSet + ticker // 없으면 추가
+            }
+        }
+    }
+
+    fun removeSelection(ticker: String) {
+        _selectedTickers.update { it - ticker }
+    }
+
+    fun clearSelection() {
+        _selectedTickers.update { emptySet() }
     }
 
     private fun observeLikedEtfs() {
