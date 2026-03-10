@@ -40,4 +40,9 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
      * 활성화된 주식만 조회
      */
     List<Stock> findByIsActiveTrue();
+
+    /**
+     * 회사 ID 목록으로 주식 목록 조회 (배치)
+     */
+    List<Stock> findByCompanyIdIn(List<Long> companyIds);
 }

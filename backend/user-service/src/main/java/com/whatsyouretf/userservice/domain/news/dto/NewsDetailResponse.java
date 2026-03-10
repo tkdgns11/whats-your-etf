@@ -51,9 +51,6 @@ public class NewsDetailResponse {
     /** 키워드 태그 */
     private List<String> keywords;
 
-    /** 관련 종목 목록 */
-    private List<RelatedStockResponse> relatedStocks;
-
     /** 관련 ETF 목록 */
     private List<RelatedEtfResponse> relatedEtfs;
 
@@ -64,7 +61,6 @@ public class NewsDetailResponse {
             NewsArticle article,
             List<String> aiSummary,
             List<String> keywords,
-            List<RelatedStockResponse> relatedStocks,
             List<RelatedEtfResponse> relatedEtfs
     ) {
         return NewsDetailResponse.builder()
@@ -79,7 +75,6 @@ public class NewsDetailResponse {
                 .publishedAt(article.getPublishedAt())
                 .aiSummary(aiSummary)
                 .keywords(keywords)
-                .relatedStocks(relatedStocks)
                 .relatedEtfs(relatedEtfs)
                 .build();
     }

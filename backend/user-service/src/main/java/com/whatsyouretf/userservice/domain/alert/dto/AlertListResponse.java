@@ -23,15 +23,6 @@ public class AlertListResponse {
     /** 알림 목록 */
     private List<AlertItem> alerts;
 
-    /** 현재 페이지 */
-    private int page;
-
-    /** 전체 페이지 수 */
-    private int totalPages;
-
-    /** 전체 알림 수 */
-    private long totalElements;
-
     /** 읽지 않은 알림 수 */
     private long unreadCount;
 

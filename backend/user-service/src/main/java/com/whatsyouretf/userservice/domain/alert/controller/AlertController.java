@@ -25,17 +25,15 @@ public class AlertController {
     private final AlertService alertService;
 
     /**
-     * 알림 목록 조회
+     * 알림 목록 조회 (최근 7일)
      */
-    @Operation(summary = "알림 목록 조회", description = "사용자의 알림 목록을 조회합니다.")
+    @Operation(summary = "알림 목록 조회", description = "최근 7일간의 알림 목록을 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<AlertListResponse>> getAlerts(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "카테고리 필터 (all/ETF/PORTFOLIO/NEWS/SYSTEM)") @RequestParam(defaultValue = "all") String category
+            @Parameter(description = "카테고리 필터 (all/ETF/PORTFOLIO/NEWS)") @RequestParam(defaultValue = "all") String category
     ) {
-        AlertListResponse response = alertService.getAlerts(userDetails.getUserId(), page, size, category);
+        AlertListResponse response = alertService.getAlerts(userDetails.getUserId(), category);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -81,12 +79,12 @@ public class AlertController {
      */
     @Operation(summary = "알림 삭제", description = "특정 알림을 삭제합니다.")
     @DeleteMapping("/{alertId}")
-    public ResponseEntity<ApiResponse<Void>> deleteAlert(
+    public ResponseEntity<Void> deleteAlert(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "알림 ID") @PathVariable Long alertId
     ) {
         alertService.deleteAlert(userDetails.getUserId(), alertId);
-        return ResponseEntity.ok(ApiResponse.success("알림이 삭제되었습니다."));
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -111,7 +109,8 @@ public class AlertController {
             @Valid @RequestBody FcmTokenRequest request
     ) {
         alertService.registerFcmToken(userDetails.getUserId(), request);
-        return ResponseEntity.ok(ApiResponse.success("FCM 토큰이 등록되었습니다."));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(ApiResponse.success("FCM 토큰이 등록되었습니다."));
     }
 
     /**
@@ -119,12 +118,12 @@ public class AlertController {
      */
     @Operation(summary = "FCM 토큰 삭제", description = "FCM 토큰을 삭제합니다.")
     @DeleteMapping("/fcm/token")
-    public ResponseEntity<ApiResponse<Void>> deleteFcmToken(
+    public ResponseEntity<Void> deleteFcmToken(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody FcmTokenRequest request
     ) {
         alertService.deleteFcmToken(userDetails.getUserId(), request.getToken());
-        return ResponseEntity.ok(ApiResponse.success("FCM 토큰이 삭제되었습니다."));
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -156,11 +155,11 @@ public class AlertController {
      */
     @Operation(summary = "알림 설정 수정", description = "알림 설정을 수정합니다.")
     @PutMapping("/settings")
-    public ResponseEntity<ApiResponse<UpdateCountResponse>> updateNotificationSettings(
+    public ResponseEntity<ApiResponse<NotificationSettingsResponse>> updateNotificationSettings(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody NotificationSettingsRequest request
     ) {
-        int count = alertService.updateNotificationSettings(userDetails.getUserId(), request);
-        return ResponseEntity.ok(ApiResponse.success(UpdateCountResponse.updated(count)));
+        NotificationSettingsResponse response = alertService.updateNotificationSettings(userDetails.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

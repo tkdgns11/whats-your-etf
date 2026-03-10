@@ -164,21 +164,63 @@ class StockNewsScraper:
         )
 
     def _get_category_from_industry(self, industry_group: Optional[str]) -> str:
-        """산업 그룹에서 뉴스 카테고리 추출"""
+        """
+        산업 그룹(21개 group_code)에서 뉴스 카테고리(14개) 추출
+
+        매핑 규칙 (산업분류_체계_설계.md 섹션 3.2):
+        - 반도체: IT_SEMI
+        - IT/전자: IT_ELEC, IT_SW
+        - 바이오/의약: BIO
+        - 자동차: AUTO
+        - 화학/소재: CHEM, STEEL
+        - 에너지: ENERGY
+        - 금융: FINANCE, INSURANCE
+        - 건설/부동산: CONSTRUCT
+        - 소비재: CONSUMER, RETAIL, FOOD
+        - 통신/미디어: TELECOM
+        - 운송/물류: TRANSPORT, SHIPBUILD
+        - 산업재: MACHINERY, DEFENSE
+        - 기타: HOLDING, AGRI, MINING, EVENT, ETC, OTHER
+        """
         mapping = {
+            # 반도체
             "IT_SEMI": "NEWS_SEMI",
+            # IT/전자 (통합)
+            "IT_ELEC": "NEWS_IT",
             "IT_SW": "NEWS_IT",
-            "IT_HW": "NEWS_IT",
+            # 바이오/의약
             "BIO": "NEWS_BIO",
+            # 자동차
             "AUTO": "NEWS_AUTO",
+            # 화학/소재 (통합)
             "CHEM": "NEWS_CHEM",
+            "STEEL": "NEWS_CHEM",
+            # 에너지
             "ENERGY": "NEWS_ENERGY",
+            # 금융 (통합)
             "FINANCE": "NEWS_FINANCE",
+            "INSURANCE": "NEWS_FINANCE",
+            # 건설/부동산
             "CONSTRUCT": "NEWS_CONSTRUCT",
+            # 소비재 (통합)
             "CONSUMER": "NEWS_CONSUMER",
+            "RETAIL": "NEWS_CONSUMER",
+            "FOOD": "NEWS_CONSUMER",
+            # 통신/미디어
             "TELECOM": "NEWS_TELECOM",
+            # 운송/물류 (통합)
             "TRANSPORT": "NEWS_TRANSPORT",
-            "INDUSTRY": "NEWS_INDUSTRY",
+            "SHIPBUILD": "NEWS_TRANSPORT",
+            # 산업재 (통합)
+            "MACHINERY": "NEWS_INDUSTRY",
+            "DEFENSE": "NEWS_INDUSTRY",
+            # 기타 (통합)
+            "HOLDING": "NEWS_ETC",
+            "AGRI": "NEWS_ETC",
+            "MINING": "NEWS_ETC",
+            "EVENT": "NEWS_ETC",
+            "ETC": "NEWS_ETC",
+            "OTHER": "NEWS_ETC",
         }
         return mapping.get(industry_group, "NEWS_ETC")
 

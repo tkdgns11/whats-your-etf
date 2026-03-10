@@ -9,7 +9,7 @@
 | 번호 | 파일 | 화면 | API 개수 |
 |------|------|------|----------|
 | 01 | [카카오_로그인.md](01_카카오_로그인.md) | LoginScreen | 1개 |
-| 02 | [뉴스.md](02_뉴스.md) | NewsListScreen, NewsDetailScreen | 3개 |
+| 02 | [뉴스.md](02_뉴스.md) | NewsListScreen, NewsDetailScreen, PortfolioDetailScreen | 4개 |
 | 03 | [ETF_클러스터.md](03_ETF_클러스터.md) | EtfDetailScreen, ClusterTab | 1개 |
 | 04 | [AI_포트폴리오_진단.md](04_AI_포트폴리오_진단.md) | AiDiagnosisDialog | 3개 |
 | 05 | [알림.md](05_알림.md) | NotificationScreen, NotificationSettingsScreen | 7개 |
@@ -29,6 +29,7 @@
 | GET | `/api/v1/news` | 뉴스 목록 | O | X |
 | GET | `/api/v1/news/{newsId}` | 뉴스 상세 (relatedEtfs 포함) | O | X |
 | GET | `/api/v1/news/search` | 뉴스 검색 | O | X |
+| GET | `/api/v1/news/portfolio/{portfolioId}` | 포트폴리오 관련 뉴스 | O | X |
 
 ### ETF 클러스터
 | Method | Endpoint | 설명 | 백엔드 | 안드로이드 |
