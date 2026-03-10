@@ -80,29 +80,4 @@ public class Portfolio {
     @Builder.Default
     private List<PortfolioEtf> portfolioEtfs = new ArrayList<>();
 
-    /**
-     * 포트폴리오 수정
-     */
-    public void update(String name, String description, BigDecimal investAmount) {
-        if (name != null) this.name = name;
-        if (description != null) this.description = description;
-        if (investAmount != null) this.investAmount = investAmount;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * ETF 추가
-     */
-    public void addEtf(PortfolioEtf portfolioEtf) {
-        this.portfolioEtfs.add(portfolioEtf);
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * ETF 삭제
-     */
-    public void removeEtf(PortfolioEtf portfolioEtf) {
-        this.portfolioEtfs.remove(portfolioEtf);
-        this.updatedAt = LocalDateTime.now();
-    }
 }

@@ -44,11 +44,4 @@ public class PortfolioEtf {
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    /**
-     * 비중 수정
-     */
-    public void updateWeight(BigDecimal weightPct) {
-        this.weightPct = weightPct;
-    }
-}
+  }
