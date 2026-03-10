@@ -31,10 +31,10 @@ public class LlmServiceImpl implements LlmService {
     private final PortfolioAiFeedbackRepository feedbackRepository;
     private final ObjectMapper objectMapper;
 
-    @Value("${gms.model.name}")
+    @Value("${anthropic.model.name:${gms.model.name}}")
     private String modelName;
 
-    @Value("${gms.model.max-tokens}")
+    @Value("${anthropic.model.max-tokens:${gms.model.max-tokens}}")
     private int maxTokens;
 
     private static final String SYSTEM_PROMPT = """

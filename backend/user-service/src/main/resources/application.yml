@@ -125,3 +125,21 @@ gms:
   model:
     name: claude-sonnet-4-20250514
     max-tokens: 4096
+
+# Anthropic API (직접 호출 - GMS 대신 사용)
+anthropic:
+  api:
+    base-url: https://api.anthropic.com
+    key: ${ANTHROPIC_API_KEY:}
+  model:
+    name: claude-3-haiku-20240307
+    max-tokens: 4096
+
+# OpenAI API (직접 호출)
+openai:
+  api:
+    base-url: https://api.openai.com
+    key: ${OPENAI_API_KEY:}
+  model:
+    name: gpt-4o-mini
+    max-tokens: 4096

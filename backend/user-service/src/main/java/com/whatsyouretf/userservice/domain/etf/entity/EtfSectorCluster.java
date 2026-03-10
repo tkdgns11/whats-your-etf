@@ -1,6 +1,5 @@
 package com.whatsyouretf.userservice.domain.etf.entity;
 
-import com.whatsyouretf.userservice.domain.ai.entity.AiPrompt;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,9 +8,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * ETF 섹터 분포 엔티티
+ * ETF 섹터 클러스터 엔티티 (버블 시각화용)
  * <p>
  * ETF 구성종목의 산업별 집계 정보를 저장합니다.
+ * AI 분석은 별도 테이블(etf_sector_ai_history)에서 관리합니다.
  */
 @Entity
 @Table(name = "etf_sector_cluster", indexes = {
@@ -80,15 +80,6 @@ public class EtfSectorCluster {
     /** ETF 중심까지 거리 */
     @Column(name = "distance_to_center", precision = 10, scale = 6)
     private BigDecimal distanceToCenter;
-
-    /** 섹터 영향력 AI 분석 결과 */
-    @Column(name = "ai_analysis", columnDefinition = "TEXT")
-    private String aiAnalysis;
-
-    /** 사용된 프롬프트 (FK) */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_id")
-    private AiPrompt prompt;
 
     /** 기준일 */
     @Column(name = "base_date", nullable = false)

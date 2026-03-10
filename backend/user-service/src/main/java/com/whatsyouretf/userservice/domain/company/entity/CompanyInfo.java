@@ -24,13 +24,9 @@ public class CompanyInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 종목코드 (6자리) */
-    @Column(name = "stock_code", nullable = false, length = 20)
-    private String stockCode;
-
-    /** 종목명 */
-    @Column(name = "stock_name", nullable = false, length = 100)
-    private String stockName;
+    /** 회사명 */
+    @Column(name = "company_name", length = 100)
+    private String companyName;
 
     /** 시장 구분 (KOSPI, KOSDAQ) */
     @Column(name = "market_type", length = 20)

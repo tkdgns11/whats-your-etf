@@ -45,7 +45,8 @@ class NewsAnalyzer:
 
     def __init__(self, db: Session):
         self.db = db
-        self.llm = LLMService(db)
+        # 뉴스 분석은 Haiku(저렴한 모델) 사용
+        self.llm = LLMService(db, use_light_model=True)
 
     async def close(self):
         await self.llm.close()

@@ -32,7 +32,8 @@ etf                       ETF목록
 etf_stock_composition     ETF주식구성종목
 etf_other_composition     ETF비주식구성종목(선물/채권/현금)
 etf_prices                ETF일별시세
-etf_sector_cluster        ETF섹터클러스터(구성종목산업별집계요약)
+etf_sector_cluster        ETF섹터클러스터(버블시각화용,현재스냅샷)
+etf_sector_ai_history     ETF섹터AI분석이력(섹터버블AI분석)
 etf_stock_cluster_mapping ETF주식클러스터매핑(클러스터→회사목록)
 etf_other_cluster_mapping ETF비주식클러스터매핑
 preset_portfolios         꾸러미(시스템예시포트폴리오)
@@ -260,9 +261,9 @@ nav                       순자산가치
 volume                    거래량
 change_rate               등락률
 
-【 속성명 (ETF 섹터 클러스터) 】
+【 속성명 (ETF 섹터 클러스터) 】 - 버블 시각화용, 현재 스냅샷
 --------------------------------------------------------------------------------
-cluster_type              분류타입 (GROUP_CODE/INDUSTRY/SUB_SECTOR)
+cluster_type              분류타입 (GROUP_CODE/INDUSTRY/SUB_SECTOR/ASSET_TYPE)
 industry_code             산업코드 (FK→industry_classification)
 industry_name             산업명
 group_code                그룹코드
@@ -274,9 +275,21 @@ pos_x                     버블X좌표 (UMAP)
 pos_y                     버블Y좌표 (UMAP)
 radius                    버블반지름
 distance_to_center        ETF중심까지거리
-ai_analysis               섹터영향력AI분석결과
-prompt_id                 사용된프롬프트FK (ai_prompt참조)
 base_date                 기준일
+
+【 속성명 (ETF 섹터 AI 분석 이력) 】 - etf_sector_ai_history
+--------------------------------------------------------------------------------
+etf_id                    ETF ID (FK→etf)
+group_code                그룹코드 (IT_SEMI, FINANCE 등)
+group_name                그룹명
+weight_pct                분석시점비중(%)
+stock_count               분석시점종목수
+top_stocks                상위종목스냅샷 (JSONB)
+ai_analysis               AI분석결과텍스트
+risk_level                리스크레벨 (LOW/MEDIUM/HIGH)
+key_point                 핵심키워드 (집중투자, 분산투자 등)
+prompt_id                 사용된프롬프트FK (ai_prompt참조)
+base_date                 ETF데이터기준일
 
 【 속성명 (ETF 클러스터 매핑) 】
 --------------------------------------------------------------------------------
@@ -406,6 +419,10 @@ SUB_SECTOR                세분류기준 (테마형-좁은범위)
 MANUAL                    수동매핑
 AI                        AI자동매핑
 
+--- risk_level (섹터 AI 분석 리스크 레벨) ---
+LOW                       저위험 (분산투자, top2 집중도 < 50%)
+MEDIUM                    중위험 (보통 집중도, top2 50-80%)
+HIGH                      고위험 (집중투자, top2 집중도 > 80%)
 
 【 값 (산업분류 level) 】
 --------------------------------------------------------------------------------
