@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.models.news import NewsArticle
 from app.models.news_stock import NewsStockMapping
 from app.models.company import CompanyInfo
+from app.models.stock import Stock
 
 logger = logging.getLogger(__name__)
 
@@ -248,17 +249,22 @@ class StockNewsScraper:
         Returns:
             {"total": int, "new": int, "mapped": int}
         """
-        # 회사 정보 조회
-        company = self.db.query(CompanyInfo).filter(
-            CompanyInfo.stock_code == stock_code,
-            CompanyInfo.is_active == True
+        # 주식 정보 조회 (ticker로 검색)
+        stock = self.db.query(Stock).filter(
+            Stock.ticker == stock_code,
+            Stock.is_active == True
         ).first()
 
-        if not company:
-            logger.warning(f"회사 정보 없음: {stock_code}")
+        if not stock:
+            logger.warning(f"주식 정보 없음: {stock_code}")
             return {"total": 0, "new": 0, "mapped": 0}
 
-        category = self._get_category_from_industry(company.industry_group)
+        # 회사 정보 조회 (카테고리용)
+        company = self.db.query(CompanyInfo).filter(
+            CompanyInfo.id == stock.company_id
+        ).first() if stock.company_id else None
+
+        category = self._get_category_from_industry(company.industry_group if company else None)
         stats = {"total": 0, "new": 0, "mapped": 0}
 
         # 뉴스 링크 추출 (메인 페이지에서)
@@ -283,7 +289,8 @@ class StockNewsScraper:
 
             if existing:
                 # 이미 있는 뉴스면 매핑만 추가
-                self._add_stock_mapping(existing.id, company.id)
+                if stock.company_id:
+                    self._add_stock_mapping(existing.id, stock.company_id)
                 stats["mapped"] += 1
                 continue
 
@@ -306,7 +313,8 @@ class StockNewsScraper:
             self.db.flush()  # ID 생성
 
             # 종목 매핑
-            self._add_stock_mapping(news.id, company.id)
+            if stock.company_id:
+                self._add_stock_mapping(news.id, stock.company_id)
 
             stats["new"] += 1
             logger.info(f"뉴스 저장: [{stock_code}] {article.title[:30]}...")
@@ -355,16 +363,17 @@ class StockNewsScraper:
         total_stats = {"total": 0, "new": 0, "mapped": 0}
 
         for comp in compositions:
-            company = self.db.query(CompanyInfo).filter(
-                CompanyInfo.id == comp.company_id
+            # company_id로 stock 조회하여 ticker 얻기
+            stock = self.db.query(Stock).filter(
+                Stock.company_id == comp.company_id,
+                Stock.is_active == True
             ).first()
 
-            if not company:
+            if not stock:
                 continue
 
             stats = await self.scrape_stock_news(
-                stock_code=company.stock_code,
-                max_pages=1,
+                stock_code=stock.ticker,
                 max_articles=max_articles_per_stock
             )
 
