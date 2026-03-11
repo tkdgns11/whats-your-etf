@@ -136,18 +136,17 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # KRX KIND 공시 체크 (매일 09:00)
-    scheduler.add_job(
-        krx_disclosure_job,
-        trigger=CronTrigger(hour=9, minute=0),
-        id="krx_disclosure_check",
-        name="KRX KIND Disclosure Check",
-        replace_existing=True
-    )
+    # KRX KIND 공시 체크 - 비활성화 (크롤러 문제 해결 후 활성화)
+    # scheduler.add_job(
+    #     krx_disclosure_job,
+    #     trigger=CronTrigger(hour=9, minute=0, timezone='Asia/Seoul'),
+    #     id="krx_disclosure_check",
+    #     name="KRX KIND Disclosure Check",
+    #     replace_existing=True
+    # )
 
     scheduler.start()
     logger.info(
         f"스케줄러 시작:\n"
-        f"  - ETF 구성종목 뉴스: 30분 간격\n"
-        f"  - KRX 공시 체크: 매일 09:00"
+        f"  - ETF 구성종목 뉴스: 30분 간격"
     )
