@@ -19,7 +19,7 @@ import com.d102.wye.presentation.theme.Divider
 @Composable
 fun DashedContainer(
     modifier: Modifier = Modifier,
-    height: Dp = 180.dp,
+    height: Dp = 150.dp,
     strokeWidth: Dp = 1.dp,
     dashLength: Dp = 8.dp,
     dashGap: Dp = 8.dp,

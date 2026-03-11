@@ -65,7 +65,7 @@ private fun ToggleItem(
 ) {
     Surface(
         modifier = modifier
-            .height(44.dp)
+            .height(40.dp)
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         color = if (isSelected) Color.White else Color.Transparent,

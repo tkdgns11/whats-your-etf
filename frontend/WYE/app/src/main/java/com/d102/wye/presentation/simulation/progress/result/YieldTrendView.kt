@@ -120,6 +120,7 @@ fun YieldTrendView(
         Spacer(modifier = Modifier.height(16.dp))
 
         DashedContainer(
+            height = 180.dp,
             strokeWidth = 2.dp
         ) {
             Text(

@@ -108,6 +108,7 @@ dependencies {
     // Room (로컬 DB)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.androidx.foundation.layout)
     ksp(libs.room.compiler)
 
     // DataStore (설정 저장)

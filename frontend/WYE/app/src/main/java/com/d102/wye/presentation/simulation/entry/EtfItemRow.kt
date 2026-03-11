@@ -25,7 +25,7 @@ fun EtfItemRow(item: String) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            WyeCircleIcon(item)
+            WyeCircleIcon(tag = item)
 
             Column(
                 modifier = Modifier.fillMaxWidth(),

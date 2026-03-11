@@ -11,6 +11,7 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.designsystem.bottomShadow
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.analysis.PortfolioAnalysisView
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.SimulationResult
 import com.d102.wye.presentation.simulation.progress.components.AiDiagnosisButton

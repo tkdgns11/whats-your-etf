@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,8 +17,8 @@ import androidx.navigation.navArgument
 import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
-import com.d102.wye.presentation.explore.ExploreScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
+import com.d102.wye.presentation.explore.list.ExploreScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
@@ -28,6 +32,7 @@ import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
 import com.d102.wye.presentation.simulation.progress.SimulationScreen
+import com.d102.wye.presentation.simulation.progress.SimulationViewModel
 import com.d102.wye.presentation.strategy.compare.StrategyCompareScreen
 import com.d102.wye.presentation.strategy.detail.StrategyDetailScreen
 import com.d102.wye.presentation.strategy.list.StrategyScreen
@@ -44,7 +49,9 @@ fun AppNavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = Modifier.fillMaxSize().padding(bottom = contentPadding.calculateBottomPadding())
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = contentPadding.calculateBottomPadding())
     ) {
 
         // ─────────────────────────────────────────
@@ -106,10 +113,7 @@ fun AppNavGraph(
             ExploreScreen(
                 onEtfClick = { ticker, riskLevel ->
                     navController.navigate(
-                        Route.EtfDetail(
-                            ticker,
-                            riskLevel
-                        ).route
+                        Route.EtfDetail(ticker, riskLevel).route
                     )
                 }
             )
@@ -257,11 +261,44 @@ fun AppNavGraph(
         // ─────────────────────────────────────────
         // 시뮬레이션 진행 화면
         // ─────────────────────────────────────────
+        composable(Route.Simulation.route) { backStackEntry ->
+            val viewModel: SimulationViewModel = hiltViewModel()
 
-        composable(Route.Simulation.route) {
+            val selectedTickers by backStackEntry.savedStateHandle
+                .getStateFlow<Array<String>?>("selected_tickers", null)
+                .collectAsStateWithLifecycle()
+
+            LaunchedEffect(selectedTickers) {
+                selectedTickers?.let { tickers ->
+                    viewModel.addPortfolioItems(tickers.toList())
+                    backStackEntry.savedStateHandle.remove<Array<String>>("selected_tickers")
+                }
+            }
+
             SimulationScreen(
                 onBackClick = { navController.popBackStack() },
-                onAddEtfClick = {}
+                onAddEtfClick = { navController.navigate(Route.SimulationAddStock.route) },
+                viewModel = viewModel
+            )
+        }
+
+        // ─────────────────────────────────────────
+        // 시뮬레이션에서 '추가하기'를 눌렀을 때 띄울 탐색 화면
+        // ─────────────────────────────────────────
+        composable(Route.SimulationAddStock.route) {
+            ExploreScreen(
+                title = "종목 추가",
+                isSelectionMode = true,
+                onBackClick = { navController.popBackStack() },
+                onEtfClick = { ticker, riskLevel ->
+                    navController.navigate(Route.EtfDetail(ticker, riskLevel).route)
+                },
+                onSelectionComplete = { tickers ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selected_tickers", tickers.toTypedArray())
+                    navController.popBackStack()
+                }
             )
         }
 
