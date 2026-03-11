@@ -3,7 +3,7 @@ package com.d102.wye.core.app
 object Constants {
 
     // API
-    const val BASE_URL = "http://j14d102.p.ssafy.io/api/"
+    const val BASE_URL = "http://j14d102.p.ssafy.io/api/v1/"
 
     const val CONNECT_TIMEOUT = 30L // seconds
     const val READ_TIMEOUT = 30L
