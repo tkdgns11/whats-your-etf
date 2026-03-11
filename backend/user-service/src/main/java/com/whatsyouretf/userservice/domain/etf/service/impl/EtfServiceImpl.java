@@ -1,9 +1,6 @@
 package com.whatsyouretf.userservice.domain.etf.service.impl;
 
-import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
-import com.whatsyouretf.userservice.domain.etf.dto.EtfInfluentialStockResponse;
-import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorResponse;
-import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorStockResponse;
+import com.whatsyouretf.userservice.domain.etf.dto.*;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorAiHistory;
@@ -12,6 +9,7 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepo
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRepository;
 import com.whatsyouretf.userservice.domain.etf.service.EtfPriceReader;
+import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
 import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
@@ -133,5 +131,10 @@ public class EtfServiceImpl implements EtfService {
     @Override
     public EtfCurrentInfo getEtfCurrentInfo(String ticker) {
         return etfReader.getInfo(ticker);
+    }
+
+    @Override
+    public Page<EtfSummary> getEtfList(EtfQuery query, Pageable pageable) {
+        return etfReader.readEtfList(query, pageable);
     }
 }

@@ -1,6 +1,7 @@
 package com.whatsyouretf.userservice.domain.etf.service;
 
 import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import org.springframework.data.domain.Page;
@@ -27,4 +28,6 @@ public interface EtfService {
     Etf getEtfDetail(String ticker);
 
     EtfCurrentInfo getEtfCurrentInfo(String ticker);
+
+    Page<EtfSummary> getEtfList(EtfQuery query, Pageable pageable);
 }
