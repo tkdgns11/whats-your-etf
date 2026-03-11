@@ -19,6 +19,8 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 ```json
 {
   "success": true,
+  "message": "Success",
+  "code": "OK",
   "data": {
     "ticker": "091160",
     "name": "KODEX 반도체",
@@ -89,7 +91,8 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
         "changeRate": -0.72
       }
     ]
-  }
+  },
+  "timestamp": "2025-03-10T14:30:00"
 }
 ```
 

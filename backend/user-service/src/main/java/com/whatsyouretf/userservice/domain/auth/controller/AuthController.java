@@ -2,6 +2,8 @@ package com.whatsyouretf.userservice.domain.auth.controller;
 
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
+import com.whatsyouretf.userservice.domain.alert.dto.FcmTokenRequest;
+import com.whatsyouretf.userservice.domain.alert.service.AlertService;
 import com.whatsyouretf.userservice.domain.auth.dto.*;
 import com.whatsyouretf.userservice.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +32,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AlertService alertService;
 
     // ========== OAuth ==========
 
@@ -160,6 +163,26 @@ public class AuthController {
     ) {
         authService.logout(userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
+    }
+
+    // ========== FCM 토큰 ==========
+
+    /**
+     * FCM 토큰 등록
+     * <p>
+     * 푸시 알림을 위한 FCM 토큰을 등록합니다.
+     * 로그인 직후 호출해야 합니다.
+     * 로그아웃 시 자동으로 삭제됩니다.
+     */
+    @Operation(summary = "FCM 토큰 등록", description = "푸시 알림을 위한 FCM 토큰을 등록합니다.")
+    @PostMapping("/fcm/token")
+    public ResponseEntity<ApiResponse<Void>> registerFcmToken(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody FcmTokenRequest request
+    ) {
+        alertService.registerFcmToken(userDetails.getUserId(), request);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(ApiResponse.success("FCM 토큰이 등록되었습니다."));
     }
 
     // ========== 비밀번호 재설정 ==========
