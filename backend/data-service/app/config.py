@@ -52,13 +52,6 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8"
     )
 
-    @property
-    def database_url(self) -> str:
-        return (
-            f"postgresql+psycopg://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
-
 
 @lru_cache()
 def get_settings() -> Settings:
