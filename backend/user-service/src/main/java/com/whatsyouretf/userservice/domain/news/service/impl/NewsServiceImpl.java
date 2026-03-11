@@ -249,11 +249,11 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     }
 
     /**
-     * 매일 오전 9시에 포트폴리오 뉴스 캐시 초기화
+     * 매일 오전 9시(KST)에 포트폴리오 뉴스 캐시 초기화
      */
-    @Scheduled(cron = "0 0 9 * * *")
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     @CacheEvict(value = "portfolioNews", allEntries = true)
     public void clearPortfolioNewsCache() {
-        log.info("포트폴리오 뉴스 캐시 초기화 완료 (매일 오전 9시)");
+        log.info("포트폴리오 뉴스 캐시 초기화 완료 (매일 오전 9시 KST)");
     }
 }
