@@ -1,17 +1,25 @@
 package com.whatsyouretf.userservice.domain.etf.service.impl;
 
-import com.whatsyouretf.userservice.common.exception.BusinessException;
-import com.whatsyouretf.userservice.common.exception.ErrorCode;
-import com.whatsyouretf.userservice.domain.etf.dto.*;
-import com.whatsyouretf.userservice.domain.etf.entity.*;
-import com.whatsyouretf.userservice.domain.etf.repository.*;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfInfluentialStockResponse;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorResponse;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorStockResponse;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorAiHistory;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorCluster;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepository;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfPriceReader;
 import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,8 +33,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class EtfServiceImpl implements EtfService {
 
-    private final EtfRepository etfRepository;
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfPriceReader etfPriceReader;
     private final EtfSectorClusterRepository sectorClusterRepository;
     private final EtfSectorAiHistoryRepository sectorAiHistoryRepository;
     private final EtfStockCompositionRepository stockCompositionRepository;
@@ -34,27 +41,7 @@ public class EtfServiceImpl implements EtfService {
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
 
-    @Override
-    public EtfDetailResponse getEtfDetail(String ticker) {
-        // ETF 조회
-        Etf etf = etfRepository.findByStockCode(ticker)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ETF_NOT_FOUND));
 
-        // 최신 시세 조회
-        EtfPrice latestPrice = etfPriceRepository.findLatestByEtfId(etf.getId())
-                .orElse(null);
-
-        // 전일 시세 (변동 계산용) - 간단히 null 처리
-        EtfPrice previousPrice = null;
-
-        // 섹터 클러스터 조회
-        List<EtfSectorResponse> sectors = getSectorClusters(etf.getId());
-
-        // 영향력 종목 조회
-        List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
-
-        return EtfDetailResponse.from(etf, latestPrice, previousPrice, sectors, influentialStocks);
-    }
 
     /**
      * 섹터 클러스터 조회 (버블 차트용)
@@ -129,5 +116,10 @@ public class EtfServiceImpl implements EtfService {
                             .build();
                 })
                 .toList();
+    }
+
+    @Override
+    public Page<EtfPrice> getEtfHistory(Long etfId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return etfPriceReader.readPrices(etfId, startDate, endDate, pageable);
     }
 }
