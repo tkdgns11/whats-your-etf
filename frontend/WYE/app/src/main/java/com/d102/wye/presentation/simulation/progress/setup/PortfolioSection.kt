@@ -1,10 +1,12 @@
 package com.d102.wye.presentation.simulation.progress.setup
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,13 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,12 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.R
 import com.d102.wye.presentation.designsystem.DashedContainer
+import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.designsystem.WyeCircleIcon
 import com.d102.wye.presentation.simulation.progress.PortfolioItem
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
@@ -56,7 +55,6 @@ import com.d102.wye.presentation.theme.Border
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
-import com.d102.wye.presentation.theme.SurfaceWhite
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
@@ -70,7 +68,7 @@ fun PortfolioSection(
     Column(
         modifier = Modifier
             .background(BackGroundLightGreen2)
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = 20.dp)
     ) {
         // ── 상단 헤더 (타이틀 및 합계 뱃지)
         Row(
@@ -104,7 +102,7 @@ fun PortfolioSection(
 
         // ── 리스트 렌더링 영역 ──
         if (formState.portfolioItems.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 formState.portfolioItems.forEach { item ->
                     PortfolioSliderItemRow(
                         item = item,
@@ -138,6 +136,27 @@ fun PortfolioSection(
                     )
                 }
             }
+        } else if (formState.portfolioItems.size < 10) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAddClick() }
+                    .padding(vertical = 8.dp), // 클릭 영역 확보
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "추가",
+                    tint = PrimaryGreen,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "ETF 종목 추가하기",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = PrimaryGreen // 텍스트도 초록색으로
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -145,7 +164,7 @@ fun PortfolioSection(
 }
 
 /**
- * 💡 개별 포트폴리오 아이템 행
+ * 개별 포트폴리오 아이템 행
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,120 +173,141 @@ private fun PortfolioSliderItemRow(
     onWeightChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
-    // 입력창의 텍스트를 관리하기 위한 상태 변수
     var weightTextFieldValue by remember(item.weight) {
-        mutableStateOf(TextFieldValue(text = item.weight.toString(), selection = TextRange(item.weight.toString().length)))
+        mutableStateOf(
+            TextFieldValue(
+                text = item.weight.toString(),
+                selection = TextRange(item.weight.toString().length)
+            )
+        )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceWhite)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+    WyeCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 16.dp,
+        innerPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 4.dp),
+        border = BorderStroke(1.dp, SurfaceVariant),
+        containerColor = Color.White,
+        elevation = 0.dp
     ) {
-        // ── 상단 정보 행 (로고, 이름, 퍼센트 입력창, 삭제 버튼) ──
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // 좌측 로고 유지
-            WyeCircleIcon(
-                tag = item.ticker,
-                count = 2,
-                size = 36.dp,
-                backgroundColor = SurfaceVariant,
-                contentColor = TextSecondary
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // 중앙 텍스트 (종목명 & 티커) 유지
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.name,
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
-                )
-                Text(
-                    text = item.ticker,
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // ── 우측 퍼센트 직접 입력창 영역 ──
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // ── 1. 상단 정보 행 (로고, 텍스트, 퍼센트, X버튼이 모두 한 줄에 평화롭게 배치됨) ──
             Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 직접 입력을 위한 custom TextField (테두리 없고 크고 굵은 텍스트)
+                // 좌측 로고
+                WyeCircleIcon(
+                    tag = item.ticker,
+                    count = 2,
+                    size = 40.dp,
+                    backgroundColor = SurfaceVariant,
+                    contentColor = TextSecondary
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = item.ticker,
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp),
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = item.name,
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // ── 우측 퍼센트 및 X 버튼 영역 ──
                 BasicTextField(
                     value = weightTextFieldValue,
                     onValueChange = { newValue ->
-                        // 숫자만 입력받도록 로직 추가
                         val filteredText = newValue.text.filter { it.isDigit() }
                         if (filteredText.isNotEmpty()) {
                             val newWeight = filteredText.toInt().coerceIn(0, 100)
-                            // 텍스트 필드 값 업데이트 (커서 위치 유지)
-                            weightTextFieldValue = newValue.copy(text = newWeight.toString(), selection = TextRange(newWeight.toString().length))
-                            // 뷰모델 콜백 호출
+                            weightTextFieldValue = newValue.copy(
+                                text = newWeight.toString(),
+                                selection = TextRange(newWeight.toString().length)
+                            )
                             onWeightChange(newWeight)
                         } else {
-                            // 빈 값일 때 0%로 처리하거나 이전 값 유지 등 UX 결정 필요. 여기선 0%로 처리 예시
-                            weightTextFieldValue = newValue.copy(text = "", selection = TextRange(0))
+                            weightTextFieldValue =
+                                newValue.copy(text = "", selection = TextRange(0))
                             onWeightChange(0)
                         }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    textStyle = TextStyle(
+                    textStyle = MaterialTheme.typography.titleMedium.copy(
                         color = PrimaryGreen,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.End
                     ),
-                    modifier = Modifier.widthIn(min = 28.dp) // 숫자 너비에 맞춰 유동적으로 변함
+                    modifier = Modifier.width(44.dp)
                 )
-                // 단위 텍스트 `%` 추가
+
+                // 단위 텍스트 `%`
                 Text(
                     text = "%",
                     color = PrimaryGreen,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(bottom = 2.dp)
+                    style = MaterialTheme.typography.titleMedium,
                 )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // X 버튼 (절대 겹치지 않게 Row 마지막에 배치)
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "삭제",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // ── 삭제 버튼 (`X`) 유지 ──
-            IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.Close, contentDescription = "삭제", tint = TextSecondary, modifier = Modifier.size(18.dp))
-            }
+            // ── 2. 하단 슬라이더 ──
+            Slider(
+                value = item.weight.toFloat(),
+                onValueChange = { newValue ->
+                    val newIntValue = newValue.toInt()
+                    weightTextFieldValue = TextFieldValue(
+                        text = newIntValue.toString(),
+                        selection = TextRange(newIntValue.toString().length)
+                    )
+                    onWeightChange(newIntValue)
+                },
+                valueRange = 0f..100f,
+                modifier = Modifier.fillMaxWidth(),
+                thumb = {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .background(color = PrimaryGreen, shape = CircleShape)
+                    )
+                },
+                track = { sliderState ->
+                    SliderDefaults.Track(
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = PrimaryGreen.copy(alpha = 0.3f),
+                            inactiveTrackColor = SurfaceVariant
+                        ),
+                        sliderState = sliderState,
+                        thumbTrackGapSize = 0.dp,
+                        modifier = Modifier.height(8.dp)
+                    )
+                }
+            )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // ── 하단 비율 조절 슬라이더 영역 ──
-        Slider(
-            value = item.weight.toFloat(),
-            onValueChange = { newValue ->
-                // 💡 슬라이더 값이 바뀌면 텍스트 필드 값도 업데이트 (LaunchedEffect로 처리해도 좋음)
-                weightTextFieldValue = TextFieldValue(text = newValue.toInt().toString(), selection = TextRange(newValue.toInt().toString().length))
-                // 뷰모델 콜백 호출
-                onWeightChange(newValue.toInt())
-            },
-            valueRange = 0f..100f,
-            colors = SliderDefaults.colors(
-                thumbColor = PrimaryGreen, // 조절 버튼 색상
-                activeTrackColor = PrimaryGreen, // 진행된 부분 선 색상
-                inactiveTrackColor = SurfaceVariant // 안 진행된 부분 선 색상
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp) // 슬라이더 양쪽 패딩
-        )
     }
 }

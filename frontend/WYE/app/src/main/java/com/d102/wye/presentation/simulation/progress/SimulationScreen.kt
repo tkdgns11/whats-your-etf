@@ -2,14 +2,16 @@ package com.d102.wye.presentation.simulation.progress
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -19,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -35,6 +38,7 @@ import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
+import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.PrimaryGreen
 
 @Composable
@@ -125,72 +129,78 @@ private fun SimulationSetupScreenContent(
     onSaveClick: () -> Unit,
     onWeightChange: (String, Int) -> Unit
 ) {
-    Scaffold(
-        modifier = Modifier.background(Color.White),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            WyeTopBar(
-                title = "투자 시뮬레이션",
-                onBackClick = onBackClick,
-                actions = {
-                    Text(
-                        text = "저장",
-                        textAlign = TextAlign.Center,
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .background(PrimaryGreen, RoundedCornerShape(12.dp))
-                            .clickable { onSaveClick() }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(Color.White)
-        ) {
-            WyeTabs(
-                titles = listOf("수익률 추이", "포트폴리오 분석"),
-                selectedIndex = formState.selectedTabIndex,
-                onTabSelected = onTabSelected
-            )
-
-            // 1. 결과 및 차트
-            SimulationResultSection(
-                formState = formState,
-                resultState = resultState,
-                onOverlayToggled = onOverlayToggled,
-                onAiDiagnosisClick = onAiDiagnosisClick,
-                onDictionaryClick = onDictionaryClick
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // 2. 투자 설정
-                InvestmentSetupSection(
-                    formState = formState,
-                    onInvestmentTypeSelected = onInvestmentTypeSelected,
-                    onAmountChanged = onAmountChanged,
-                    onPeriodChanged = onPeriodChanged
-                )
-
-                // 3. 포트폴리오 구성
-                PortfolioSection(
-                    formState = formState,
-                    onAddClick = onAddEtfClick,
-                    onRemoveClick = onPortfolioItemRemoved,
-                    onWeightChange = onWeightChange
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        WyeTopBar(
+            title = "투자 시뮬레이션",
+            onBackClick = onBackClick,
+            actions = {
+                Text(
+                    text = "저장",
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .background(PrimaryGreen, RoundedCornerShape(12.dp))
+                        .clickable { onSaveClick() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
+        )
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                WyeTabs(
+                    titles = listOf("수익률 추이", "포트폴리오 분석"),
+                    selectedIndex = formState.selectedTabIndex,
+                    onTabSelected = onTabSelected
+                )
+
+                // 1. 결과 및 차트
+                SimulationResultSection(
+                    formState = formState,
+                    resultState = resultState,
+                    onOverlayToggled = onOverlayToggled,
+                    onAiDiagnosisClick = onAiDiagnosisClick,
+                    onDictionaryClick = onDictionaryClick
+                )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color.White)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // 2. 투자 설정
+                    InvestmentSetupSection(
+                        formState = formState,
+                        onInvestmentTypeSelected = onInvestmentTypeSelected,
+                        onAmountChanged = onAmountChanged,
+                        onPeriodChanged = onPeriodChanged
+                    )
+
+                    // 3. 포트폴리오 구성
+                    PortfolioSection(
+                        formState = formState,
+                        onAddClick = onAddEtfClick,
+                        onRemoveClick = onPortfolioItemRemoved,
+                        onWeightChange = onWeightChange
+                    )
+                }
+            }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

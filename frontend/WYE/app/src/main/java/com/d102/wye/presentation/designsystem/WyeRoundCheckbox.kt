@@ -25,7 +25,6 @@ import com.d102.wye.presentation.theme.SurfaceWhite
 @Composable
 fun WyeRoundCheckbox(
     checked: Boolean,
-    onCheckedChange: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 체크 여부에 따라 배경색이 스르륵 바뀌는 애니메이션
@@ -47,7 +46,6 @@ fun WyeRoundCheckbox(
             .clip(RoundedCornerShape(6.dp))
             .background(checkboxColor)
             .border(width = 1.5.dp, color = borderColor, shape = RoundedCornerShape(6.dp))
-            .clickable(onClick = onCheckedChange)
             .padding(2.dp),
         contentAlignment = Alignment.Center
     ) {

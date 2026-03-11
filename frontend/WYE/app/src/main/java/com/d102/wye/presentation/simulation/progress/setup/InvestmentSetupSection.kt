@@ -32,7 +32,7 @@ fun InvestmentSetupSection(
     onAmountChanged: (String) -> Unit,
     onPeriodChanged: (String) -> Unit
 ) {
-    Column(modifier = Modifier.background(BackGroundLightGreen2).padding(20.dp)) {
+    Column(modifier = Modifier.background(BackGroundLightGreen2).padding(horizontal = 20.dp, vertical = 24.dp)) {
         Text(text = "투자 설정", style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(12.dp))
 
