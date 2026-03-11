@@ -1,10 +1,26 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
-    # Database
-    database_url: str = "postgresql+psycopg://wye:wye1234@localhost:5432/whatsyouretf"
+    # Database (개별 환경변수 - Docker 환경용)
+    db_host: str = "localhost"
+    db_port: int = 5432
+    db_name: str = "whatsyouretf"
+    db_user: str = "wye"
+    db_password: str = "wye1234"
+
+    # DATABASE_URL 직접 지정 시 사용 (로컬 개발용)
+    database_url: str | None = None
+
+    @property
+    def get_database_url(self) -> str:
+        """비밀번호 특수문자 URL 인코딩 처리"""
+        if self.database_url:
+            return self.database_url
+        encoded_password = quote_plus(self.db_password)
+        return f"postgresql+psycopg://{self.db_user}:{encoded_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
     # News Scraping
     news_scrape_interval_minutes: int = 10
