@@ -1,35 +1,38 @@
 package com.d102.wye.presentation.simulation.progress
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiDiagnosisResult
+import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.domain.usecase.simulation.RunSimulationUseCase
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.model.SimulationUiModel
+import com.d102.wye.presentation.simulation.model.toUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class SimulationViewModel @Inject constructor(
-    // TODO: Repository 주입
-    // private val simulationRepository: SimulationRepository
+    private val runSimulation: RunSimulationUseCase,
+    private val simulationRepository: SimulationRepository
 ) : ViewModel() {
 
     // 투자 설정 상태
     private val _formState = MutableStateFlow(SimulationFormState())
     val formState: StateFlow<SimulationFormState> = _formState.asStateFlow()
 
-    // 결과 상태
-    private val _resultState = MutableStateFlow<UiState<SimulationResult>>(UiState.Idle)
-    val resultState: StateFlow<UiState<SimulationResult>> = _resultState.asStateFlow()
+    // 시뮬레이션 결과 상태
+    private val _simulationState = MutableStateFlow<UiState<SimulationUiModel>>(UiState.Idle)
+    val simulationState: StateFlow<UiState<SimulationUiModel>> = _simulationState.asStateFlow()
 
     // AI 진단 다이얼로그 표시 여부
     private val _showAiDialog = MutableStateFlow(false)
@@ -47,75 +50,76 @@ class SimulationViewModel @Inject constructor(
     private val _savePortfolioState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val savePortfolioState: StateFlow<UiState<Unit>> = _savePortfolioState.asStateFlow()
 
+    private var calcJob: Job? = null
 
-    // ── 포트폴리오 아이템 추가/수정/삭제 ────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // 포트폴리오 CRUD
+    // ─────────────────────────────────────────────────────────────────────────
 
     fun addPortfolioItems(tickers: List<String>) {
-        _formState.update { currentState ->
-            val currentItems = currentState.portfolioItems.toMutableList()
-
+        _formState.update { current ->
+            val items = current.portfolioItems.toMutableList()
             tickers.forEach { ticker ->
-                // 이미 담겨 있는 종목은 무시
-                if (currentItems.none { it.ticker == ticker }) {
-                    // TODO: 실제 API에서는 ticker로 name을 조회해야 합니다.
-                    // 지금은 임시로 ticker를 이름으로 사용
-                    currentItems.add(PortfolioItem(ticker = ticker, name = ticker, weight = 0))
+                // 이미 담긴 종목은 무시
+                if (items.none { it.ticker == ticker }) {
+                    // TODO: ticker → name API 조회로 교체
+                    items.add(PortfolioItem(ticker = ticker, name = ticker, weight = 0))
                 }
             }
-            currentState.copy(portfolioItems = currentItems)
+            current.copy(portfolioItems = items)
         }
-        calculateSimulation()
+        triggerCalculation()
     }
 
-
     fun onPortfolioItemRemoved(ticker: String) {
-        _formState.update { currentState ->
-            currentState.copy(
-                portfolioItems = currentState.portfolioItems.filter { it.ticker != ticker }
+        _formState.update { current ->
+            current.copy(
+                portfolioItems = current.portfolioItems.filter { it.ticker != ticker }
             )
         }
-        calculateSimulation()
+        triggerCalculation()
     }
 
     fun updateItemWeight(ticker: String, newWeight: Int) {
-        _formState.update { currentState ->
-            val updatedItems = currentState.portfolioItems.map { item ->
-                // 비중은 0~100 사이로 제한
-                if (item.ticker == ticker) item.copy(weight = newWeight.coerceIn(0, 100))
-                else item
-            }
-            currentState.copy(portfolioItems = updatedItems)
+        _formState.update { current ->
+            current.copy(
+                portfolioItems = current.portfolioItems.map { item ->
+                    if (item.ticker == ticker) item.copy(weight = newWeight.coerceIn(0, 100))
+                    else item
+                }
+            )
         }
-        // 비중이 바뀌면 차트 결과도 갱신되어야 함
-        calculateSimulation()
+        triggerCalculation()
     }
 
-    // ── UI 상호작용 ────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // UI 이벤트
+    // ─────────────────────────────────────────────────────────────────────────
 
-    fun onTabSelected(index: Int) {
+    fun onTabSelected(index: Int) =
         _formState.update { it.copy(selectedTabIndex = index) }
-    }
 
-    fun onOverlayToggled(enabled: Boolean) {
+    fun onOverlayToggled(enabled: Boolean) =
         _formState.update { it.copy(isOverlayEnabled = enabled) }
-    }
 
     fun onInvestmentTypeSelected(type: InvestmentType) {
         _formState.update { it.copy(investmentType = type) }
-        calculateSimulation()
+        triggerCalculation()
     }
 
     fun onAmountChanged(amount: String) {
         _formState.update { it.copy(investmentAmount = amount) }
-        calculateSimulation()
+        triggerCalculation()
     }
 
     fun onPeriodChanged(period: String) {
         _formState.update { it.copy(investmentPeriod = period) }
-        calculateSimulation()
+        triggerCalculation()
     }
 
-    // ── AI 진단 & 저장 로직 (기존 코드 유지) ────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // AI 진단
+    // ─────────────────────────────────────────────────────────────────────────
 
     fun onAiDiagnosisClick() {
         _showAiDialog.value = true
@@ -127,23 +131,30 @@ class SimulationViewModel @Inject constructor(
     }
 
     private fun fetchAiDiagnosis() {
-        if (_aiDiagnosisState.value is UiState.Loading || _aiDiagnosisState.value is UiState.Success) return
+        if (_aiDiagnosisState.value is UiState.Loading ||
+            _aiDiagnosisState.value is UiState.Success
+        ) return
 
         viewModelScope.launch {
             _aiDiagnosisState.update { UiState.Loading }
-            delay(1500)
+            delay(1500) // TODO: 실제 AI 진단 API 호출
             _aiDiagnosisState.update {
                 UiState.Success(
                     AiDiagnosisResult(
                         mainTitle = "공격적인 수익 추구!",
                         subTitle = "기술주 중심의 로켓 포트폴리오 🚀",
                         tags = listOf("기술주집중", "고변동성", "성장중심"),
-                        feedback = "현재 포트폴리오는 특정 섹터에 집중되어 있어 시장 상황에 따른 변동성이 매우 큽니다. 장기적인 안정을 위해 자산의 일부를 배당형 ETF로 분산투자하는 것을 고려해보세요."
+                        feedback = "현재 포트폴리오는 특정 섹터에 집중되어 있어 변동성이 매우 큽니다. " +
+                                "장기적인 안정을 위해 배당형 ETF로의 분산투자를 고려해보세요."
                     )
                 )
             }
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 저장
+    // ─────────────────────────────────────────────────────────────────────────
 
     fun onSaveIconClick() {
         _showSaveDialog.value = true
@@ -156,44 +167,65 @@ class SimulationViewModel @Inject constructor(
 
     fun savePortfolio(portfolioName: String) {
         if (_savePortfolioState.value is UiState.Loading) return
-
         viewModelScope.launch {
             _savePortfolioState.update { UiState.Loading }
-            delay(1000)
+            delay(1000) // TODO: 실제 저장 API 호출
             _savePortfolioState.update { UiState.Success(Unit) }
             _showSaveDialog.value = false
         }
     }
 
-    // ── 계산 ────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // 계산 트리거 (300ms debounce)
+    // ─────────────────────────────────────────────────────────────────────────
 
-    private fun calculateSimulation() {
-        val form = _formState.value
+    private fun triggerCalculation() {
+        calcJob?.cancel()
+        calcJob = viewModelScope.launch {
+            delay(300)
 
-        if (form.investmentAmount.isBlank() ||
-            form.investmentPeriod.isBlank() ||
-            form.portfolioItems.isEmpty()
-        ) {
-            _resultState.update { UiState.Idle }
-            return
-        }
+            val form = _formState.value
+            val totalWeight = form.portfolioItems.sumOf { it.weight }
+            val amount = form.investmentAmount.toLongOrNull() ?: 0L
+            val periodMonths = form.investmentPeriod.toIntOrNull() ?: 0
 
-        viewModelScope.launch {
-            _resultState.update { UiState.Loading }
-            // TODO: 실제 계산
+            // 입력 미완성 → Idle
+            if (form.portfolioItems.isEmpty() || amount <= 0L || periodMonths <= 0) {
+                _simulationState.update { UiState.Idle }
+                return@launch
+            }
+
+            // 비중 합계 100% 미달 → Loading (차트 영역에 안내 표시)
+            if (totalWeight != 100) {
+                _simulationState.update { UiState.Loading }
+                return@launch
+            }
+
+            _simulationState.update { UiState.Loading }
+
+            when (val result = runSimulation(
+                RunSimulationUseCase.Params(
+                    portfolios = form.portfolioItems.toDomain(),
+                    investmentAmount = amount,
+                    investmentType = form.investmentType,
+                    periodMonths = periodMonths
+                )
+            )) {
+                is BaseResult.Success -> _simulationState.update {
+                    UiState.Success(result.data.toUiModel(form.investmentType))
+                }
+
+                is BaseResult.Error -> _simulationState.update {
+                    UiState.Error(result.error.message)
+                }
+            }
         }
     }
 }
 
-// ─────────────────────────────────────────
-// 데이터 모델
-// ─────────────────────────────────────────
-
-data class PortfolioItem(
-    val ticker: String,
-    val name: String,
-    val weight: Int
-)
+// ─────────────────────────────────────────────────────────────────────────────
+// Presentation 전용 모델
+// ─────────────────────────────────────────────────────────────────────────────
 
 data class SimulationFormState(
     val selectedTabIndex: Int = 0,
@@ -202,13 +234,4 @@ data class SimulationFormState(
     val investmentAmount: String = "",
     val investmentPeriod: String = "",
     val portfolioItems: List<PortfolioItem> = emptyList()
-)
-
-data class SimulationResult(
-    val estimatedFinalAsset: String,
-    val yieldRate: String,
-    val totalInvestment: String,
-    val per: String,
-    val pbr: String,
-    val roe: String
 )

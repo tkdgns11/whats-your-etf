@@ -11,21 +11,20 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.designsystem.bottomShadow
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.analysis.PortfolioAnalysisView
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
-import com.d102.wye.presentation.simulation.progress.SimulationResult
 import com.d102.wye.presentation.simulation.progress.components.AiDiagnosisButton
 
 @Composable
 fun SimulationResultSection(
     formState: SimulationFormState,
-    resultState: UiState<SimulationResult>,
+    simulationState: UiState<SimulationUiModel>,
     onOverlayToggled: (Boolean) -> Unit,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit
 ) {
     Box {
-        // 두 탭을 모두 측정해서 큰 높이로 고정
         SubcomposeLayout(
             modifier = Modifier
                 .bottomShadow(offsetY = 4.dp, blurRadius = 6.dp)
@@ -33,18 +32,16 @@ fun SimulationResultSection(
                 .padding(16.dp)
         ) { constraints ->
 
-            // 두 탭 높이 측정
             val yieldHeight = subcompose("yield_measure") {
-                YieldTrendView(formState, resultState, onOverlayToggled)
+                YieldTrendView(formState, simulationState, onOverlayToggled)
             }.map { it.measure(constraints) }.maxOfOrNull { it.height } ?: 0
 
             val analysisHeight = subcompose("analysis_measure") {
-                PortfolioAnalysisView(formState, resultState, onDictionaryClick)
+                PortfolioAnalysisView(formState, simulationState, onDictionaryClick)
             }.map { it.measure(constraints) }.maxOfOrNull { it.height } ?: 0
 
             val maxHeight = maxOf(yieldHeight, analysisHeight)
 
-            // 실제 표시할 탭만 렌더링
             val fixedConstraints = constraints.copy(
                 minHeight = maxHeight,
                 maxHeight = maxHeight
@@ -52,8 +49,8 @@ fun SimulationResultSection(
 
             val content = subcompose("content") {
                 when (formState.selectedTabIndex) {
-                    0 -> YieldTrendView(formState, resultState, onOverlayToggled)
-                    1 -> PortfolioAnalysisView(formState, resultState, onDictionaryClick)
+                    0 -> YieldTrendView(formState, simulationState, onOverlayToggled)
+                    1 -> PortfolioAnalysisView(formState, simulationState, onDictionaryClick)
                 }
             }.map { it.measure(fixedConstraints) }
 
@@ -62,12 +59,11 @@ fun SimulationResultSection(
             }
         }
 
-        // 버튼
         AiDiagnosisButton(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
-            isEmpty = resultState !is UiState.Success,
+            isEmpty = simulationState !is UiState.Success,
             onClick = onAiDiagnosisClick
         )
     }

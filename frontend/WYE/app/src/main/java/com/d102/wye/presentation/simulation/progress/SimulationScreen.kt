@@ -4,9 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,13 +30,13 @@ import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
 import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
-import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.PrimaryGreen
 
 @Composable
@@ -48,21 +46,20 @@ fun SimulationScreen(
     viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val formState by viewModel.formState.collectAsStateWithLifecycle()
-    val resultState by viewModel.resultState.collectAsStateWithLifecycle()
+    val simulationState by viewModel.simulationState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val showAiDialog by viewModel.showAiDialog.collectAsStateWithLifecycle()
     val aiDiagnosisState by viewModel.aiDiagnosisState.collectAsStateWithLifecycle()
-
-    var showDictionaryDialog by remember { mutableStateOf(false) }
-
     val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
     val savePortfolioState by viewModel.savePortfolioState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(resultState) {
-        if (resultState is UiState.Error) {
+    var showDictionaryDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(simulationState) {
+        if (simulationState is UiState.Error) {
             snackbarHostState.showSnackbar(
-                message = (resultState as UiState.Error).message
+                message = (simulationState as UiState.Error).message
             )
         }
     }
@@ -75,24 +72,20 @@ fun SimulationScreen(
     }
 
     if (showDictionaryDialog) {
-        InvestmentDictionaryDialog(
-            onDismiss = { showDictionaryDialog = false }
-        )
+        InvestmentDictionaryDialog(onDismiss = { showDictionaryDialog = false })
     }
 
     if (showSaveDialog) {
         PortfolioSaveDialog(
             saveState = savePortfolioState,
             onDismiss = { viewModel.onSaveDialogDismiss() },
-            onSave = { enteredName ->
-                viewModel.savePortfolio(enteredName)
-            }
+            onSave = { viewModel.savePortfolio(it) }
         )
     }
 
-    SimulationSetupScreenContent(
+    SimulationScreenContent(
         formState = formState,
-        resultState = resultState,
+        simulationState = simulationState,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
         onTabSelected = { viewModel.onTabSelected(it) },
@@ -102,19 +95,17 @@ fun SimulationScreen(
         onPeriodChanged = { viewModel.onPeriodChanged(it) },
         onAddEtfClick = onAddEtfClick,
         onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
+        onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
         onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
         onDictionaryClick = { showDictionaryDialog = true },
-        onSaveClick = { viewModel.onSaveIconClick() },
-        onWeightChange = { ticker, newWeight ->
-            viewModel.updateItemWeight(ticker, newWeight)
-        }
+        onSaveClick = { viewModel.onSaveIconClick() }
     )
 }
 
 @Composable
-private fun SimulationSetupScreenContent(
+private fun SimulationScreenContent(
     formState: SimulationFormState,
-    resultState: UiState<SimulationResult>,
+    simulationState: UiState<SimulationUiModel>,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit,
     onTabSelected: (Int) -> Unit,
@@ -124,15 +115,15 @@ private fun SimulationSetupScreenContent(
     onPeriodChanged: (String) -> Unit,
     onAddEtfClick: () -> Unit,
     onPortfolioItemRemoved: (String) -> Unit,
+    onWeightChange: (String, Int) -> Unit,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    onWeightChange: (String, Int) -> Unit
+    onSaveClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(Color.White)
     ) {
         WyeTopBar(
             title = "투자 시뮬레이션",
@@ -151,35 +142,32 @@ private fun SimulationSetupScreenContent(
                 )
             }
         )
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 WyeTabs(
                     titles = listOf("수익률 추이", "포트폴리오 분석"),
                     selectedIndex = formState.selectedTabIndex,
                     onTabSelected = onTabSelected
                 )
 
-                // 1. 결과 및 차트
+                // 결과 섹션 (차트 + 지표)
                 SimulationResultSection(
                     formState = formState,
-                    resultState = resultState,
+                    simulationState = simulationState,
                     onOverlayToggled = onOverlayToggled,
                     onAiDiagnosisClick = onAiDiagnosisClick,
                     onDictionaryClick = onDictionaryClick
                 )
 
+                // 설정 섹션
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .background(Color.White)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    // 2. 투자 설정
+                    // 투자 설정
                     InvestmentSetupSection(
                         formState = formState,
                         onInvestmentTypeSelected = onInvestmentTypeSelected,
@@ -187,7 +175,7 @@ private fun SimulationSetupScreenContent(
                         onPeriodChanged = onPeriodChanged
                     )
 
-                    // 3. 포트폴리오 구성
+                    // 포트폴리오 구성
                     PortfolioSection(
                         formState = formState,
                         onAddClick = onAddEtfClick,
