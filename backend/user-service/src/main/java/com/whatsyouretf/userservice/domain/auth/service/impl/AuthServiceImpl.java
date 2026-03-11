@@ -355,11 +355,13 @@ public class AuthServiceImpl implements AuthService {
                     isNewUser.set(true);
 
                     Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
-                    Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+                    Map<String, Object> profile = kakaoAccount != null
+                            ? (Map<String, Object>) kakaoAccount.get("profile")
+                            : null;
 
-                    String email = (String) kakaoAccount.get("email");
-                    String nickname = (String) profile.get("nickname");
-                    String profileImage = (String) profile.get("profile_image_url");
+                    String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+                    String nickname = profile != null ? (String) profile.get("nickname") : null;
+                    String profileImage = profile != null ? (String) profile.get("profile_image_url") : null;
 
                     User user = email != null
                             ? userRepository.findByEmail(email).orElse(null)
