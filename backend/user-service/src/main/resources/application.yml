@@ -33,6 +33,9 @@ spring:
       port: ${REDIS_PORT:6379}
       repositories:
         enabled: false
+    web:
+      pageable:
+        default-page-size: 20
 
   # Mail (Gmail SMTP)
   mail:
