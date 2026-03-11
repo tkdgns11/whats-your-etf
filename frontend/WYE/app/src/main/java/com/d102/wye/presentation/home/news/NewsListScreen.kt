@@ -35,21 +35,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.d102.wye.presentation.designsystem.WyeTopBar
+import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.*
-
-// ── 데이터 모델 ─────────────────────────────────────────────────
-
-data class NewsUiModel(
-    val id: Long,
-    val category: String,
-    val title: String,
-    val summary: String,
-    val timeAgo: String,
-    val source: String,
-    val thumbnailUrl: String? = null,
-)
 
 // ── 뉴스 목록 화면 ──────────────────────────────────────────────
 
@@ -57,26 +48,27 @@ data class NewsUiModel(
 fun NewsListScreen(
     onBack: () -> Unit,
     onNewsClick: (Long) -> Unit,
+    viewModel: NewsListViewModel = hiltViewModel()
 ) {
-    val categories = listOf("전체", "금리/거시경제", "반도체", "AI/테크", "배당", "2차전지", "글로벌")
-    var selectedCategory by remember { mutableStateOf("전체") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
-
-    val allNews = remember { mockNewsList() }
-    val categoryFiltered = if (selectedCategory == "전체") allNews else allNews.filter { it.category == selectedCategory }
-    val displayNews = if (searchQuery.isBlank()) categoryFiltered else categoryFiltered.filter { it.title.contains(searchQuery, ignoreCase = true) }
-
-    val featured = displayNews.firstOrNull()
-    val restNews = if (displayNews.size > 1) displayNews.drop(1) else emptyList()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) focusRequester.requestFocus()
     }
 
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Error) {
+            snackbarHostState.showSnackbar((uiState as UiState.Error).message)
+        }
+    }
+
     Scaffold(
         containerColor = Background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             AnimatedContent(
                 targetState = isSearchActive,
@@ -171,6 +163,30 @@ fun NewsListScreen(
             }
         }
     ) { innerPadding ->
+        val state = uiState as? UiState.Success
+        val categories = state?.data?.categories.orEmpty()
+        val selectedCategoryCode = state?.data?.selectedCategoryCode
+        val allNews = state?.data?.newsList.orEmpty()
+        val displayNews = if (searchQuery.isBlank()) {
+            allNews
+        } else {
+            allNews.filter { it.title.contains(searchQuery, ignoreCase = true) }
+        }
+        val featured = displayNews.firstOrNull()
+        val restNews = if (displayNews.size > 1) displayNews.drop(1) else emptyList()
+
+        if (uiState is UiState.Loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding()),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -186,9 +202,9 @@ fun NewsListScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     categories.forEach { cat ->
-                        val selected = cat == selectedCategory
+                        val selected = cat.code == selectedCategoryCode
                         Text(
-                            text = cat,
+                            text = cat.label,
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                             ),
@@ -196,7 +212,7 @@ fun NewsListScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(if (selected) PrimaryGreen else SurfaceVariant)
-                                .clickable { selectedCategory = cat }
+                                .clickable { viewModel.onCategorySelected(cat.code) }
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
@@ -222,8 +238,9 @@ fun NewsListScreen(
                                 tint = TextSecondary,
                                 modifier = Modifier.size(40.dp),
                             )
+                            val emptyMessage = if (searchQuery.isBlank()) "뉴스가 없습니다" else "검색 결과가 없습니다"
                             Text(
-                                text = "검색 결과가 없습니다",
+                                text = emptyMessage,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
                                 color = TextSecondary,
                             )
@@ -282,7 +299,7 @@ fun NewsListScreen(
 
 @Composable
 private fun FeaturedNewsCard(
-    news: NewsUiModel,
+    news: NewsListItemUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -335,7 +352,7 @@ private fun FeaturedNewsCard(
 
 @Composable
 private fun NewsListItem(
-    news: NewsUiModel,
+    news: NewsListItemUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -346,6 +363,13 @@ private fun NewsListItem(
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
+                text = news.category,
+                style = MaterialTheme.typography.labelSmall,
+                color = PrimaryGreen,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
                 text = news.title,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 15.sp,
@@ -354,13 +378,6 @@ private fun NewsListItem(
                 ),
                 color = TextPrimary,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = news.summary,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                color = TextSecondary,
-                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
@@ -389,13 +406,3 @@ private fun NewsListItem(
         }
     }
 }
-
-// ── 목업 ───────────────────────────────────────────────────────
-
-private fun mockNewsList() = listOf(
-    NewsUiModel(1001, "금리/거시경제", "미국 연준 금리 동결 발표, 나스닥 기술주 일제히 반등", "미국 중앙은행인 연방준비제도(Fed·연준)가 4일 기준금리를 현재 수준인 5.25~5.50%로 유지하기로 결정했습니다.", "1시간 전", "금융경제뉴스"),
-    NewsUiModel(1002, "반도체", "반도체 수요 회복세에 관련 ETF 수익률 두 자리수 달성", "글로벌 공급망 안정화와 수요 회복이 맞...", "2시간 전", "매일경제"),
-    NewsUiModel(1003, "배당", "배당귀족주의 귀환? 변동성 장세에서 돋보이는 ETF들", "안정적인 현금 흐름을 중시하는 투자자...", "3시간 전", "한국경제"),
-    NewsUiModel(1004, "AI/테크", "AI 테마 ETF 열풍, 거품인가 새로운 산업의 서막인가", "생성형 AI 기술의 급격한 발전으로 관련 ...", "5시간 전", "테크인사이드"),
-    NewsUiModel(1005, "금리/거시경제", "에너지 패러다임 변화, 친환경 에너지 ETF 장기 전망 우수", "글로벌 탄소 중립 정책 강화에 따라 신재...", "6시간 전", "연합인포맥스"),
-)
