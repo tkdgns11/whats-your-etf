@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                 val appEntryViewModel: AppEntryViewModel = hiltViewModel()
                 val isLoggedIn by appEntryViewModel.isLoggedIn.collectAsStateWithLifecycle()
                 if (isLoggedIn != null) {
-                    val startDestination = if (isLoggedIn == true) Route.Home.route else Route.Home.route
+                    val startDestination = if (isLoggedIn == true) Route.Home.route else Route.Login.route
                     AppScaffold(startDestination = startDestination)
                 }
             }

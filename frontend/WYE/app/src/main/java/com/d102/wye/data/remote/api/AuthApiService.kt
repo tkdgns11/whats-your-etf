@@ -24,8 +24,8 @@ import retrofit2.http.POST
 interface AuthApiService {
 
     /**
-     * 자체 이메일 로그인
-     * POST /auth/login
+     * 이메일 로그인
+     * POST /api/v1/auth/login
      */
     @POST("auth/login")
     suspend fun login(
@@ -46,7 +46,7 @@ interface AuthApiService {
      * POST /auth/fcm-token
      * 로그인 후 또는 토큰 갱신 시 서버에 저장
      */
-    @POST("auth/fcm-token")
+    @POST("auth/fcm/token")
     suspend fun registerFcmToken(
         @Body request: FcmTokenRequest,
     ): Response<BaseResponse<Unit>>

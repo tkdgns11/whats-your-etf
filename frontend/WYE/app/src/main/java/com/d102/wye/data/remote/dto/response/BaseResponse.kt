@@ -18,7 +18,7 @@ data class BaseResponse<T>(
     @SerializedName("message")
     val message: String? = null,
     @SerializedName("code")
-    val code: Int? = null,
+    val code: String? = null,
     @SerializedName("data")
     val data: T? = null,
     @SerializedName("timestamp")
