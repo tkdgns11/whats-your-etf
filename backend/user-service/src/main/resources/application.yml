@@ -23,7 +23,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: ${SHOW_SQL:true}
     open-in-view: false
 
   # Redis
@@ -31,6 +31,33 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
+
+  # Mail (Gmail SMTP)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # Thymeleaf
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
 
   # OAuth2
   security:
@@ -40,7 +67,7 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/api/v1/auth/oauth/kakao/callback"
+            redirect-uri: http://localhost:8080/api/v1/auth/oauth/kakao/callback
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             scope:
@@ -87,5 +114,33 @@ app:
     allowed-origins:
       - http://localhost:3000
       - http://localhost:8080
+      - https://j14d102.p.ssafy.io
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
+
+# GMS (Gen AI Management System) - SSAFY LLM API (Anthropic Proxy)
+gms:
+  api:
+    base-url: ${GMS_API_URL:https://gms.ssafy.io/gmsapi/api.anthropic.com}
+    key: ${GMS_API_KEY:}
+  model:
+    name: claude-sonnet-4-20250514
+    max-tokens: 4096
+
+# Anthropic API (직접 호출 - GMS 대신 사용)
+anthropic:
+  api:
+    base-url: https://api.anthropic.com
+    key: ${ANTHROPIC_API_KEY:}
+  model:
+    name: claude-3-haiku-20240307
+    max-tokens: 4096
+
+# OpenAI API (직접 호출)
+openai:
+  api:
+    base-url: https://api.openai.com
+    key: ${OPENAI_API_KEY:}
+  model:
+    name: gpt-4o-mini
+    max-tokens: 4096

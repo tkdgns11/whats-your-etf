@@ -10,10 +10,12 @@ from datetime import datetime
 from app.database import get_db, SessionLocal
 from app.models.news import NewsArticle
 from app.models.etf_disclosure import EtfDisclosure
+from app.models.etf import ETF, ETFSectorCluster
 from app.scrapers.news_service import NewsCollectionService
 from app.scrapers.krx_scraper import KrxDisclosureScraper
 from app.schedulers.scheduler import start_scheduler, scheduler
 from app.config import get_settings
+from app.scrapers.keywords import NEWS_CATEGORIES
 
 # 로깅 설정
 logging.basicConfig(
@@ -56,6 +58,7 @@ class NewsResponse(BaseModel):
     source: str | None
     source_url: str | None
     category: str | None
+    category_name: str | None
     keywords: list | None
     published_at: datetime | None
     created_at: datetime | None
@@ -93,6 +96,39 @@ class DisclosureScrapeResult(BaseModel):
     new: int
 
 
+# ==================== ETF Sector Cluster Models ====================
+
+class SectorItem(BaseModel):
+    """섹터 버블 정보"""
+    group_code: str | None
+    group_name: str | None
+    weight_pct: float
+    stock_count: int | None
+    pos_x: float | None
+    pos_y: float | None
+    radius: float | None
+    distance_to_center: float | None
+
+    class Config:
+        from_attributes = True
+
+
+class CenterPoint(BaseModel):
+    """클러스터 중심점"""
+    x: float = 0.5
+    y: float = 0.5
+
+
+class SectorClusterResponse(BaseModel):
+    """ETF 섹터 클러스터 응답"""
+    etf_id: int
+    etf_name: str
+    cluster_type: str
+    base_date: str | None
+    center: CenterPoint
+    sectors: List[SectorItem]
+
+
 # ==================== API Endpoints ====================
 
 @app.get("/")
@@ -116,6 +152,7 @@ async def get_news(
     offset: int = Query(0, ge=0),
     keyword: Optional[str] = None,
     source: Optional[str] = None,
+    category: Optional[str] = Query(None, description="카테고리 코드 (NEWS_SEMI, NEWS_IT 등)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -125,6 +162,7 @@ async def get_news(
     - offset: 시작 위치
     - keyword: 키워드 필터 (제목 검색)
     - source: 언론사 필터
+    - category: 카테고리 필터 (NEWS_SEMI, NEWS_IT, NEWS_BIO 등)
     """
     query = db.query(NewsArticle)
 
@@ -133,6 +171,8 @@ async def get_news(
         query = query.filter(NewsArticle.title.ilike(f"%{keyword}%"))
     if source:
         query = query.filter(NewsArticle.source.ilike(f"%{source}%"))
+    if category:
+        query = query.filter(NewsArticle.category == category)
 
     # 정렬 및 페이징
     news = query.order_by(NewsArticle.published_at.desc())\
@@ -141,6 +181,20 @@ async def get_news(
         .all()
 
     return news
+
+
+@app.get("/news/categories")
+async def get_news_categories():
+    """
+    뉴스 카테고리 목록 조회
+
+    Returns:
+        카테고리 코드와 이름 목록
+    """
+    return [
+        {"code": code, "name": name}
+        for code, name in NEWS_CATEGORIES.items()
+    ]
 
 
 @app.get("/news/{news_id}", response_model=NewsResponse)
@@ -159,15 +213,19 @@ async def get_news_detail(
 async def search_news(
     q: str = Query(..., min_length=1, description="검색어"),
     limit: int = Query(20, ge=1, le=100),
+    category: Optional[str] = Query(None, description="카테고리 코드"),
     db: Session = Depends(get_db)
 ):
     """뉴스 검색 (제목 + 본문)"""
-    news = db.query(NewsArticle)\
-        .filter(
-            (NewsArticle.title.ilike(f"%{q}%")) |
-            (NewsArticle.content_summary.ilike(f"%{q}%"))
-        )\
-        .order_by(NewsArticle.published_at.desc())\
+    query = db.query(NewsArticle).filter(
+        (NewsArticle.title.ilike(f"%{q}%")) |
+        (NewsArticle.content_summary.ilike(f"%{q}%"))
+    )
+
+    if category:
+        query = query.filter(NewsArticle.category == category)
+
+    news = query.order_by(NewsArticle.published_at.desc())\
         .limit(limit)\
         .all()
     return news
@@ -381,6 +439,108 @@ async def mark_disclosure_notified(
     db.commit()
 
     return {"message": "알림 발송 완료 처리됨", "disclosure_id": disclosure_id}
+
+
+# ==================== ETF Sector Cluster Endpoints ====================
+
+@app.get("/etf/{etf_id}/sector-cluster", response_model=SectorClusterResponse)
+async def get_etf_sector_cluster(
+    etf_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    ETF 섹터 클러스터 조회 (버블 시각화용)
+
+    - etf_id: ETF ID
+    - 반환: 섹터별 비중 + 시각화 좌표 (pos_x, pos_y, radius, distance_to_center)
+    """
+    # ETF 존재 확인
+    etf = db.query(ETF).filter(ETF.id == etf_id).first()
+    if not etf:
+        raise HTTPException(status_code=404, detail="ETF를 찾을 수 없습니다.")
+
+    # 섹터 분포 조회 (비중 내림차순)
+    clusters = db.query(ETFSectorCluster)\
+        .filter(ETFSectorCluster.etf_id == etf_id)\
+        .order_by(ETFSectorCluster.weight_pct.desc())\
+        .all()
+
+    if not clusters:
+        raise HTTPException(status_code=404, detail="섹터 분포 데이터가 없습니다.")
+
+    # 응답 생성
+    sectors = []
+    for sc in clusters:
+        sectors.append(SectorItem(
+            group_code=sc.group_code,
+            group_name=sc.group_name,
+            weight_pct=float(sc.weight_pct) if sc.weight_pct else 0,
+            stock_count=sc.stock_count,
+            pos_x=float(sc.pos_x) if sc.pos_x else None,
+            pos_y=float(sc.pos_y) if sc.pos_y else None,
+            radius=float(sc.radius) if sc.radius else None,
+            distance_to_center=float(sc.distance_to_center) if sc.distance_to_center else None
+        ))
+
+    return SectorClusterResponse(
+        etf_id=etf.id,
+        etf_name=etf.name,
+        cluster_type=clusters[0].cluster_type if clusters else "GROUP_CODE",
+        base_date=str(clusters[0].base_date) if clusters and clusters[0].base_date else None,
+        center=CenterPoint(),
+        sectors=sectors
+    )
+
+
+@app.get("/etf/sector-clusters", response_model=List[SectorClusterResponse])
+async def get_all_sector_clusters(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    모든 ETF의 섹터 클러스터 조회
+
+    - limit: 조회할 ETF 수 (기본 10, 최대 50)
+    """
+    # 활성 ETF 조회
+    etfs = db.query(ETF)\
+        .filter(ETF.is_active == True)\
+        .limit(limit)\
+        .all()
+
+    results = []
+    for etf in etfs:
+        clusters = db.query(ETFSectorCluster)\
+            .filter(ETFSectorCluster.etf_id == etf.id)\
+            .order_by(ETFSectorCluster.weight_pct.desc())\
+            .all()
+
+        if not clusters:
+            continue
+
+        sectors = []
+        for sc in clusters:
+            sectors.append(SectorItem(
+                group_code=sc.group_code,
+                group_name=sc.group_name,
+                weight_pct=float(sc.weight_pct) if sc.weight_pct else 0,
+                stock_count=sc.stock_count,
+                pos_x=float(sc.pos_x) if sc.pos_x else None,
+                pos_y=float(sc.pos_y) if sc.pos_y else None,
+                radius=float(sc.radius) if sc.radius else None,
+                distance_to_center=float(sc.distance_to_center) if sc.distance_to_center else None
+            ))
+
+        results.append(SectorClusterResponse(
+            etf_id=etf.id,
+            etf_name=etf.name,
+            cluster_type=clusters[0].cluster_type,
+            base_date=str(clusters[0].base_date) if clusters[0].base_date else None,
+            center=CenterPoint(),
+            sectors=sectors
+        ))
+
+    return results
 
 
 if __name__ == "__main__":

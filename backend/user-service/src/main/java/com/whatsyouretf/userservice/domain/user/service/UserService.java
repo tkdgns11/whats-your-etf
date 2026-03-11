@@ -1,76 +1,65 @@
 package com.whatsyouretf.userservice.domain.user.service;
 
-import com.whatsyouretf.userservice.common.exception.CustomException;
-import com.whatsyouretf.userservice.common.exception.ErrorCode;
-import com.whatsyouretf.userservice.domain.user.dto.UserResponse;
-import com.whatsyouretf.userservice.domain.user.dto.UserUpdateRequest;
-import com.whatsyouretf.userservice.domain.user.entity.User;
-import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.whatsyouretf.userservice.domain.user.dto.*;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class UserService {
-
-    private final UserRepository userRepository;
+public interface UserService {
 
     /**
      * 사용자 조회 (ID)
      */
-    public UserResponse getUserById(Long userId) {
-        User user = userRepository.findByIdWithSocialAccounts(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        return UserResponse.from(user);
-    }
+    UserResponse getUserById(Long userId);
 
     /**
      * 내 정보 조회
      */
-    public UserResponse getMyInfo(Long userId) {
-        return getUserById(userId);
-    }
+    UserResponse getMyInfo(Long userId);
 
     /**
      * 프로필 수정
      */
-    @Transactional
-    public UserResponse updateProfile(Long userId, UserUpdateRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        // 닉네임 중복 체크
-        if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
-            if (userRepository.existsByNickname(request.getNickname())) {
-                throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
-            }
-        }
-
-        user.updateProfile(request.getNickname(), request.getProfileImage());
-
-        return UserResponse.fromWithoutSocialAccounts(user);
-    }
+    UserResponse updateProfile(Long userId, UserUpdateRequest request);
 
     /**
      * 닉네임 중복 체크
      */
-    public boolean checkNicknameDuplicate(String nickname) {
-        return userRepository.existsByNickname(nickname);
-    }
+    boolean checkNicknameDuplicate(String nickname);
 
     /**
      * 회원 탈퇴
      */
-    @Transactional
-    public void deactivateUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    void deactivateUser(Long userId);
 
-        user.deactivate();
-        log.info("User deactivated: {}", userId);
-    }
+    // ==================== 관심 ETF ====================
+
+    /**
+     * 관심 ETF 목록 조회
+     */
+    FavoriteEtfListResponse getFavoriteEtfs(Long userId);
+
+    /**
+     * 관심 ETF 추가
+     */
+    void addFavoriteEtf(Long userId, Long etfId);
+
+    /**
+     * 관심 ETF 삭제
+     */
+    void removeFavoriteEtf(Long userId, Long etfId);
+
+    /**
+     * 관심 ETF 여부 확인
+     */
+    boolean isFavoriteEtf(Long userId, Long etfId);
+
+    // ==================== 보유 ETF (마이데이터) ====================
+
+    /**
+     * 보유 ETF 목록 조회
+     */
+    HoldingEtfListResponse getHoldingEtfs(Long userId);
+
+    /**
+     * 마이데이터 동기화 (Mock)
+     */
+    HoldingEtfListResponse syncMyData(Long userId);
 }

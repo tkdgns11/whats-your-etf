@@ -3,7 +3,24 @@
 ## 기본 정보
 - Base URL: `/api/v1/news`
 - 인증: 일부 엔드포인트 제외하고 JWT 필요
-- 크롤링 서비스: FastAPI (Python) - 10분 간격 자동 수집
+- 크롤링 서비스: FastAPI (Python) - 네이버 증권 종목뉴스 수집
+
+---
+
+## 뉴스 수집 방식
+
+**네이버 증권 종목뉴스 기반**
+- 네이버가 이미 뉴스-종목 매핑을 해놓음 (LLM 분석 불필요)
+- 종목별 뉴스 크롤링 → `news_article` + `news_stock_mapping` 저장
+- ETF 관련 뉴스 = ETF 구성종목(`etf_stock_composition`)의 뉴스
+
+```
+[뉴스 수집 흐름]
+1. 네이버 증권 종목 페이지에서 뉴스 링크 추출
+2. n.news.naver.com에서 본문 크롤링 (100% 본문 추출 가능)
+3. news_article 저장 + news_stock_mapping으로 종목 연결
+4. ETF 관련 뉴스 조회 시: etf_stock_composition JOIN news_stock_mapping
+```
 
 ---
 
@@ -14,10 +31,8 @@
 | GET | `/` | 최신 뉴스 목록 조회 | X |
 | GET | `/{newsId}` | 뉴스 상세 조회 | X |
 | GET | `/search` | 뉴스 검색 | X |
-| GET | `/etf/{ticker}` | ETF 관련 뉴스 조회 | X |
-| GET | `/etf/{ticker}/influence` | ETF 영향력 뉴스 조회 | X |
-| GET | `/highlight` | 하이라이트 뉴스 (맵 뷰용) | X |
-| POST | `/scrape` | 수동 크롤링 트리거 (관리자) | O |
+| GET | `/etf/{etfId}` | ETF 관련 뉴스 조회 | X |
+| GET | `/stock/{stockCode}` | 종목 뉴스 조회 | X |
 
 ---
 
@@ -27,14 +42,33 @@
 
 **Request**
 ```
-GET /api/v1/news?limit=20&offset=0
+GET /api/v1/news?page=0&size=20
 ```
 
 | Parameter | Type | 필수 | 기본값 | 설명 |
 |-----------|------|------|--------|------|
-| limit | int | X | 20 | 조회 개수 (최대 100) |
-| offset | int | X | 0 | 시작 위치 |
-| category | string | X | - | 카테고리 필터 (금융/ETF/경제) |
+| page | int | X | 0 | 페이지 번호 (0부터 시작) |
+| size | int | X | 20 | 페이지 크기 (최대 100) |
+| category | string | X | - | 카테고리 필터 (아래 14개 코드 참조) |
+
+**category 코드 (14개)**
+
+| 코드 | 이름 |
+|------|------|
+| NEWS_SEMI | 반도체 |
+| NEWS_IT | IT/전자 |
+| NEWS_BIO | 바이오/의약 |
+| NEWS_AUTO | 자동차 |
+| NEWS_CHEM | 화학/소재 |
+| NEWS_ENERGY | 에너지 |
+| NEWS_FINANCE | 금융 |
+| NEWS_CONSTRUCT | 건설/부동산 |
+| NEWS_CONSUMER | 소비재 |
+| NEWS_TELECOM | 통신/미디어 |
+| NEWS_TRANSPORT | 운송/물류 |
+| NEWS_INDUSTRY | 산업재 |
+| NEWS_ETC | 기타 |
+| NEWS_MARKET | 시장/경제 |
 
 **Response**
 ```json
@@ -44,31 +78,19 @@ GET /api/v1/news?limit=20&offset=0
     "news": [
       {
         "id": 1,
-        "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
+        "title": "삼성전자, HBM 대규모 수주 성공",
         "source": "한국경제",
-        "sourceUrl": "https://news.google.com/...",
         "thumbnailUrl": "https://...",
-        "category": "ETF",
-        "keywords": ["반도체", "ETF", "외국인"],
+        "category": "NEWS_SEMI",
         "publishedAt": "2025-01-17T09:30:00Z",
-        "viewCount": 125
-      },
-      {
-        "id": 2,
-        "title": "금리 인하 기대감에 채권 ETF 강세",
-        "contentSummary": "미국 연준의 금리 인하 시그널에 채권형 ETF가...",
-        "source": "매일경제",
-        "sourceUrl": "https://news.google.com/...",
-        "thumbnailUrl": null,
-        "category": "금융",
-        "keywords": ["금리", "채권", "ETF"],
-        "publishedAt": "2025-01-17T08:45:00Z",
-        "viewCount": 89
+        "relatedStocks": [
+          {"stockCode": "005930", "companyName": "삼성전자"}
+        ]
       }
     ],
-    "totalCount": 150,
-    "hasMore": true
+    "page": 0,
+    "totalPages": 8,
+    "totalElements": 150
   }
 }
 ```
@@ -79,7 +101,7 @@ GET /api/v1/news?limit=20&offset=0
 
 **Request**
 ```
-GET /api/v1/news/1
+GET /api/v1/news/{newsId}
 ```
 
 **Response**
@@ -88,32 +110,39 @@ GET /api/v1/news/1
   "success": true,
   "data": {
     "id": 1,
-    "title": "반도체 ETF, 외국인 순매수 지속",
-    "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
+    "title": "삼성전자, HBM 대규모 수주 성공",
+    "content": "삼성전자가 글로벌 AI 기업으로부터 HBM 대규모 수주에 성공했다...(본문 전체)",
     "source": "한국경제",
-    "sourceUrl": "https://news.google.com/...",
+    "sourceUrl": "https://n.news.naver.com/...",
     "thumbnailUrl": "https://...",
-    "category": "ETF",
-    "keywords": ["반도체", "ETF", "외국인"],
+    "category": "NEWS_SEMI",
     "publishedAt": "2025-01-17T09:30:00Z",
-    "viewCount": 126,
+    "relatedStocks": [
+      {
+        "stockCode": "005930",
+        "companyName": "삼성전자",
+        "industryGroup": "IT_SEMI"
+      }
+    ],
     "relatedEtfs": [
       {
+        "etfId": 1,
         "ticker": "091160",
         "name": "KODEX 반도체",
-        "influenceScore": 0.85,
-        "influenceType": "POSITIVE"
+        "weightPct": 35.5
       },
       {
+        "etfId": 2,
         "ticker": "091170",
         "name": "KODEX 반도체레버리지",
-        "influenceScore": 0.78,
-        "influenceType": "POSITIVE"
+        "weightPct": 35.5
       }
     ]
   }
 }
 ```
+
+> `relatedEtfs`: 해당 종목을 구성종목으로 포함하는 ETF 목록 (비중 순 정렬)
 
 **Error Response**
 ```json
@@ -132,14 +161,14 @@ GET /api/v1/news/1
 
 **Request**
 ```
-GET /api/v1/news/search?keyword=반도체&limit=20
+GET /api/v1/news/search?keyword=반도체&page=0&size=20
 ```
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| keyword | string | O | 검색 키워드 |
-| limit | int | X | 조회 개수 (기본 20) |
-| offset | int | X | 시작 위치 (기본 0) |
+| keyword | string | O | 검색 키워드 (최소 2자, 최대 50자) |
+| page | int | X | 페이지 번호 (기본 0) |
+| size | int | X | 페이지 크기 (기본 20) |
 
 **Response**
 ```json
@@ -149,13 +178,17 @@ GET /api/v1/news/search?keyword=반도체&limit=20
     "news": [
       {
         "id": 1,
-        "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속 순매수하며...",
+        "title": "삼성전자, HBM 대규모 수주 성공",
         "source": "한국경제",
-        "publishedAt": "2025-01-17T09:30:00Z"
+        "publishedAt": "2025-01-17T09:30:00Z",
+        "relatedStocks": [
+          {"stockCode": "005930", "companyName": "삼성전자"}
+        ]
       }
     ],
-    "totalCount": 25,
+    "page": 0,
+    "totalPages": 2,
+    "totalElements": 25,
     "keyword": "반도체"
   }
 }
@@ -165,15 +198,17 @@ GET /api/v1/news/search?keyword=반도체&limit=20
 
 ### 4. ETF 관련 뉴스 조회
 
+ETF 구성종목들의 뉴스를 조회합니다.
+
 **Request**
 ```
-GET /api/v1/news/etf/091160?limit=10
+GET /api/v1/news/etf/{etfId}?size=10
 ```
 
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
-| ticker | string | O | ETF 종목 코드 |
-| limit | int | X | 조회 개수 (기본 10) |
+| etfId | number | O | ETF ID |
+| size | int | X | 조회 개수 (기본 10, 최대 50) |
 
 **Response**
 ```json
@@ -181,18 +216,32 @@ GET /api/v1/news/etf/091160?limit=10
   "success": true,
   "data": {
     "etf": {
+      "id": 1,
       "ticker": "091160",
       "name": "KODEX 반도체"
     },
     "news": [
       {
         "id": 1,
-        "title": "반도체 ETF, 외국인 순매수 지속",
-        "contentSummary": "외국인이 반도체 관련 ETF를 5거래일 연속...",
+        "title": "삼성전자, HBM 대규모 수주 성공",
         "source": "한국경제",
         "publishedAt": "2025-01-17T09:30:00Z",
-        "influenceScore": 0.85,
-        "influenceType": "POSITIVE"
+        "relatedStock": {
+          "stockCode": "005930",
+          "companyName": "삼성전자",
+          "weightPct": 35.5
+        }
+      },
+      {
+        "id": 5,
+        "title": "SK하이닉스, 신규 투자 계획 발표",
+        "source": "매일경제",
+        "publishedAt": "2025-01-17T08:00:00Z",
+        "relatedStock": {
+          "stockCode": "000660",
+          "companyName": "SK하이닉스",
+          "weightPct": 28.2
+        }
       }
     ],
     "totalCount": 15
@@ -200,149 +249,90 @@ GET /api/v1/news/etf/091160?limit=10
 }
 ```
 
+> 구성종목 비중이 높은 종목의 뉴스가 상위에 표시됩니다.
+
 ---
 
-### 5. ETF 영향력 뉴스 조회
-특정 ETF에 영향을 미치는 뉴스를 영향력 점수 순으로 조회
+### 5. 종목 뉴스 조회
+
+특정 종목의 뉴스를 조회합니다.
 
 **Request**
 ```
-GET /api/v1/news/etf/091160/influence?limit=5
+GET /api/v1/news/stock/{stockCode}?size=10
 ```
+
+| Parameter | Type | 필수 | 설명 |
+|-----------|------|------|------|
+| stockCode | string | O | 종목 코드 (6자리) |
+| size | int | X | 조회 개수 (기본 10, 최대 50) |
 
 **Response**
 ```json
 {
   "success": true,
   "data": {
-    "etf": {
-      "ticker": "091160",
-      "name": "KODEX 반도체"
+    "stock": {
+      "stockCode": "005930",
+      "companyName": "삼성전자"
     },
-    "influences": [
+    "news": [
       {
-        "news": {
-          "id": 1,
-          "title": "삼성전자 HBM 대규모 수주 성공",
-          "source": "한국경제",
-          "publishedAt": "2025-01-17T09:30:00Z"
-        },
-        "influenceScore": 0.92,
-        "influenceType": "POSITIVE",
-        "analysisReason": "삼성전자가 KODEX 반도체 ETF의 35% 비중을 차지하며, HBM 수주는 매출 증가로 이어질 전망"
-      },
-      {
-        "news": {
-          "id": 5,
-          "title": "미국 반도체 수출 규제 강화 검토",
-          "source": "연합뉴스",
-          "publishedAt": "2025-01-17T08:00:00Z"
-        },
-        "influenceScore": 0.78,
-        "influenceType": "NEGATIVE",
-        "analysisReason": "미국의 대중국 반도체 수출 규제 강화 시 국내 반도체 기업 실적에 부정적 영향 예상"
-      }
-    ]
-  }
-}
-```
-
----
-
-### 6. 하이라이트 뉴스 (맵 뷰용)
-ETF 맵에서 하이라이트할 뉴스 기반 클러스터 정보 반환
-
-**Request**
-```
-GET /api/v1/news/highlight
-```
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "highlights": [
-      {
-        "news": {
-          "id": 1,
-          "title": "반도체 업황 회복 신호",
-          "source": "한국경제",
-          "publishedAt": "2025-01-17T09:30:00Z"
-        },
-        "affectedClusters": [
-          {
-            "clusterId": 3,
-            "clusterName": "반도체/IT",
-            "influenceType": "POSITIVE",
-            "avgInfluenceScore": 0.82
-          }
-        ],
-        "affectedEtfs": [
-          {
-            "ticker": "091160",
-            "name": "KODEX 반도체",
-            "influenceScore": 0.92
-          },
-          {
-            "ticker": "091170",
-            "name": "KODEX 반도체레버리지",
-            "influenceScore": 0.88
-          }
-        ]
+        "id": 1,
+        "title": "삼성전자, HBM 대규모 수주 성공",
+        "source": "한국경제",
+        "publishedAt": "2025-01-17T09:30:00Z"
       }
     ],
-    "lastUpdatedAt": "2025-01-17T10:00:00Z"
+    "totalCount": 25
   }
 }
 ```
 
 ---
 
-### 7. 수동 크롤링 트리거 (관리자)
+## 크롤링 시스템 (자동화)
 
-**Request**
+### 데이터 소스
+- **네이버 증권 종목뉴스** (finance.naver.com)
+- 네이버가 이미 뉴스-종목 매핑을 해놓음
+
+### 크롤링 흐름
+
 ```
-POST /api/v1/news/scrape
-Authorization: Bearer {accessToken}
-```
+1. 종목 메인 페이지에서 뉴스 링크 추출
+   GET finance.naver.com/item/main.naver?code={stockCode}
 
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "scrapedCount": 45,
-    "startedAt": "2025-01-17T10:00:00Z",
-    "completedAt": "2025-01-17T10:02:30Z"
-  },
-  "message": "뉴스 크롤링이 완료되었습니다."
-}
-```
+2. news_read.naver → redirect URL 추출
 
----
+3. n.news.naver.com에서 본문 추출
+   - 제목, 본문, 언론사, 썸네일, 발행일
+   - 100% 본문 추출 가능
 
-## 크롤링 시스템
-
-### 크롤링 소스
-- **Google News RSS API** (한국어)
-
-### 크롤링 키워드
-```
-ETF, 반도체+ETF, 2차전지+ETF, AI+ETF, 배당+ETF,
-금리+인하, 금리+인상, KOSPI, KOSDAQ, 미국+증시,
-나스닥, S&P500, 채권+금리, 환율+원달러, 원자재+금,
-원유+가격, 인플레이션, 삼성전자, SK하이닉스, 테슬라
+4. DB 저장
+   - news_article: 뉴스 정보
+   - news_stock_mapping: 뉴스-종목 연결
 ```
 
-### 스케줄
-- **실행 주기**: 10분 간격
-- **처리량**: 키워드당 최대 5개 뉴스
+### 스케줄 (APScheduler)
 
-### 뉴스-ETF 영향력 분석
-1. 뉴스 수집 후 LLM을 통해 관련 ETF 분석
-2. 영향력 점수 (0.0 ~ 1.0) 및 유형 (POSITIVE/NEGATIVE/NEUTRAL) 산출
-3. 분석 근거 텍스트 저장
+| 작업 | 주기 | 대상 |
+|------|------|------|
+| ETF 구성종목 뉴스 | 30분 | 상위 100개 ETF + 관심 ETF + 포트폴리오 ETF 구성종목 |
+| KRX 공시 체크 | 매일 09:00 | ETF 상장/폐지/리밸런싱 공시 |
+
+### ETF 관련 뉴스 조회 방식
+
+```sql
+-- ETF 관련 뉴스 조회 쿼리 예시
+SELECT na.*, ci.stock_code, ci.company_name, esc.weight_pct
+FROM news_article na
+JOIN news_stock_mapping nsm ON na.id = nsm.news_id
+JOIN company_info ci ON nsm.company_id = ci.id
+JOIN etf_stock_composition esc ON ci.id = esc.company_id
+WHERE esc.etf_id = {etfId}
+ORDER BY esc.weight_pct DESC, na.published_at DESC
+```
 
 ---
 
@@ -351,7 +341,6 @@ ETF, 반도체+ETF, 2차전지+ETF, AI+ETF, 배당+ETF,
 | 코드 | 에러명 | 설명 |
 |------|--------|------|
 | NEWS001 | NEWS_NOT_FOUND | 뉴스를 찾을 수 없음 |
-| NEWS002 | NEWS_SCRAPE_FAILED | 크롤링 실패 |
-| NEWS003 | INVALID_DATE_RANGE | 잘못된 날짜 범위 |
-| NEWS004 | INVALID_KEYWORD | 유효하지 않은 검색어 |
+| NEWS002 | INVALID_KEYWORD | 유효하지 않은 검색어 (2~50자) |
 | ETF001 | ETF_NOT_FOUND | ETF를 찾을 수 없음 |
+| STOCK001 | STOCK_NOT_FOUND | 종목을 찾을 수 없음 |

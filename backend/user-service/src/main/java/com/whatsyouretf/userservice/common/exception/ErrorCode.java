@@ -12,7 +12,8 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON001", "서버 내부 오류가 발생했습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON002", "잘못된 입력값입니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON003", "리소스를 찾을 수 없습니다."),
-
+    BIND_ERROR(HttpStatus.BAD_REQUEST, "COMMON4", "바인딩 에러가 발생했습니다"),
+    ARGUMENT_NOT_VALID(HttpStatus.BAD_REQUEST, "COMMON5", "파라미터가 유효하지 않습니다."),
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH001", "인증이 필요합니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 토큰입니다."),
@@ -61,6 +62,7 @@ public enum ErrorCode {
     ETF_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF001", "ETF를 찾을 수 없습니다."),
     ETF_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF002", "ETF 가격 정보를 찾을 수 없습니다."),
     ETF_COMPOSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF003", "ETF 구성종목 정보를 찾을 수 없습니다."),
+    SECTOR_CLUSTER_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF004", "섹터 클러스터 정보를 찾을 수 없습니다."),
 
     // Portfolio
     PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "PORTFOLIO001", "포트폴리오를 찾을 수 없습니다."),
@@ -72,7 +74,8 @@ public enum ErrorCode {
     // Simulation
     SIMULATION_NOT_FOUND(HttpStatus.NOT_FOUND, "SIM001", "시뮬레이션을 찾을 수 없습니다."),
     SIMULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SIM002", "시뮬레이션 실행에 실패했습니다."),
-    INVALID_SIMULATION_PERIOD(HttpStatus.BAD_REQUEST, "SIM003", "잘못된 시뮬레이션 기간입니다.");
+    INVALID_SIMULATION_PERIOD(HttpStatus.BAD_REQUEST, "SIM003", "잘못된 시뮬레이션 기간입니다."),
+    SIMULATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SIM004", "시뮬레이션 개수 제한을 초과했습니다.");
 
     private final HttpStatus status;
     private final String code;

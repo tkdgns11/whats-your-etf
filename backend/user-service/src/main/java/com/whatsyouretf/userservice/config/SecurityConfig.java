@@ -34,6 +34,9 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             // Swagger
             "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/swagger-resources/**",
+            "/webjars/**",
             "/api-docs/**",
             "/v3/api-docs/**",
             // Health
@@ -41,6 +44,10 @@ public class SecurityConfig {
             "/health",
             // Auth
             "/api/v1/auth/**",
+            // News (공개 API)
+            "/api/v1/news/**",
+            // ETF (공개 API)
+            "/api/v1/etf/**",
             // Static
             "/error"
     };

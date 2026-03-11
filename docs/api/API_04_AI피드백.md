@@ -3,7 +3,7 @@
 ## 기본 정보
 - Base URL: `/api/v1/ai`
 - 인증: JWT 필요
-- LLM: GPT-4 / Gemini / Claude (설정에 따라 선택)
+- LLM: Claude (GMS API 연동)
 
 ---
 
@@ -14,14 +14,13 @@
 | POST | `/portfolio/review` | 포트폴리오 AI 리뷰 요청 | O |
 | GET | `/portfolio/review/{reviewId}` | 리뷰 결과 조회 | O |
 | GET | `/portfolio/reviews` | 내 리뷰 히스토리 | O |
-| POST | `/portfolio/review/{reviewId}/rating` | 리뷰 평가 (도움됨/안됨) | O |
 
 ---
 
 ## API 상세
 
 ### 1. 포트폴리오 AI 리뷰 요청
-사용자가 구성한 포트폴리오에 대해 Bull/Bear 양면 분석을 요청합니다.
+사용자가 구성한 포트폴리오에 대해 AI 분석을 요청합니다.
 
 **Request**
 ```
@@ -31,7 +30,6 @@ Content-Type: application/json
 ```
 ```json
 {
-  "portfolioSnapshotId": 123,
   "portfolio": {
     "totalAmount": 10000000,
     "investmentType": "LUMP_SUM",
@@ -58,85 +56,42 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| portfolioSnapshotId | long | X | 저장된 포트폴리오 스냅샷 ID |
 | portfolio | object | O | 포트폴리오 구성 정보 |
-| portfolio.totalAmount | long | O | 총 투자금액 |
-| portfolio.investmentType | string | O | 투자 유형 (LUMP_SUM: 관망형, DCA: 적립형) |
-| portfolio.etfs | array | O | ETF 목록 |
-| portfolio.etfs[].ticker | string | O | ETF 종목 코드 |
-| portfolio.etfs[].name | string | O | ETF 이름 |
-| portfolio.etfs[].weight | int | O | 비중 (%) |
+| portfolio.totalAmount | long | O | 총 투자금액 (최소 10,000원, 최대 100억원) |
+| portfolio.investmentType | string | O | 투자 유형: `LUMP_SUM` (관망형) / `DCA` (적립형) |
+| portfolio.etfs | array | O | ETF 목록 (최소 1개, 최대 20개) |
+| portfolio.etfs[].ticker | string | O | ETF 종목 코드 (6자리 숫자) |
+| portfolio.etfs[].name | string | O | ETF 이름 (최대 200자) |
+| portfolio.etfs[].weight | int | O | 비중 (%, 1~100, 합계 100 필수) |
 
-**Response**
+**Response - 완료**
 ```json
 {
   "success": true,
   "data": {
     "reviewId": 456,
-    "status": "COMPLETED",
-    "bullReview": {
-      "summary": "균형 잡힌 포트폴리오로 안정적인 수익 기대",
-      "points": [
-        {
-          "title": "분산 투자 효과",
-          "description": "대형주(KODEX 200)와 테마형(반도체)을 적절히 배분하여 리스크 분산"
-        },
-        {
-          "title": "반도체 업황 회복",
-          "description": "2025년 반도체 업황 회복세가 예상되어 KODEX 반도체 ETF의 상승 여력 존재"
-        },
-        {
-          "title": "배당 재투자",
-          "description": "KBSTAR 200TR은 배당을 자동 재투자하여 복리 효과 기대"
-        }
-      ]
-    },
-    "bearReview": {
-      "summary": "변동성과 섹터 집중 리스크에 주의 필요",
-      "points": [
-        {
-          "title": "기술주 비중 과다",
-          "description": "반도체 ETF 30% 비중으로 기술주 조정 시 손실 확대 가능"
-        },
-        {
-          "title": "국내 시장 집중",
-          "description": "해외 ETF 없이 국내에만 집중되어 글로벌 분산 부족"
-        },
-        {
-          "title": "금리 리스크",
-          "description": "금리 인상 시 성장주 중심 포트폴리오는 상대적 약세 예상"
-        }
-      ]
-    },
-    "overallScore": 7.2,
-    "riskLevel": "MEDIUM",
-    "recommendation": "현재 포트폴리오는 양호하나, 해외 ETF(미국 S&P500 등) 10~20% 추가를 권장합니다. 또한 채권형 ETF를 일부 편입하면 변동성을 줄일 수 있습니다.",
-    "relatedNews": [
-      {
-        "newsId": 1,
-        "title": "반도체 업황 회복 신호",
-        "influenceType": "POSITIVE"
-      },
-      {
-        "newsId": 5,
-        "title": "미국 금리 동결 전망",
-        "influenceType": "POSITIVE"
-      }
-    ],
+    "headline": "공격적인 성장 추구!",
+    "subHeadline": "기술주 중심의 고성장 전략 포트폴리오",
+    "keywords": ["기술주집중", "고변동성", "성장중심"],
+    "analysis": "포트폴리오는 국내 대형주와 반도체 섹터에 집중되어 있습니다. KODEX 200(40%)으로 시장 전반에 투자하면서, KODEX 반도체(30%)로 기술주 비중을 높였습니다. KBSTAR 200TR(30%)은 배당 재투자 전략으로 복리 효과를 기대할 수 있습니다. 다만 국내 시장에만 집중되어 있어 글로벌 분산이 부족하고, 반도체 업황에 따른 변동성이 높을 수 있습니다. 해외 ETF 편입을 고려해보시기 바랍니다.",
+    "llmModel": "claude-sonnet-4-20250514",
     "createdAt": "2025-01-17T10:30:00Z"
   }
 }
 ```
 
-**Response - 처리 중**
+**Response - 처리 중 (분석 미완료)**
 ```json
 {
   "success": true,
   "data": {
     "reviewId": 456,
-    "status": "PROCESSING",
-    "message": "AI 분석이 진행 중입니다. 잠시 후 다시 조회해주세요.",
-    "estimatedTime": 30
+    "headline": null,
+    "subHeadline": null,
+    "keywords": null,
+    "analysis": null,
+    "llmModel": null,
+    "createdAt": null
   }
 }
 ```
@@ -157,19 +112,11 @@ Authorization: Bearer {accessToken}
   "success": true,
   "data": {
     "reviewId": 456,
-    "status": "COMPLETED",
-    "bullReview": {
-      "summary": "균형 잡힌 포트폴리오로 안정적인 수익 기대",
-      "points": [...]
-    },
-    "bearReview": {
-      "summary": "변동성과 섹터 집중 리스크에 주의 필요",
-      "points": [...]
-    },
-    "overallScore": 7.2,
-    "riskLevel": "MEDIUM",
-    "recommendation": "...",
-    "llmModel": "gpt-4",
+    "headline": "공격적인 성장 추구!",
+    "subHeadline": "기술주 중심의 고성장 전략 포트폴리오",
+    "keywords": ["기술주집중", "고변동성", "성장중심"],
+    "analysis": "포트폴리오는 국내 대형주와 반도체 섹터에 집중되어 있습니다...",
+    "llmModel": "claude-sonnet-4-20250514",
     "createdAt": "2025-01-17T10:30:00Z"
   }
 }
@@ -199,7 +146,7 @@ Authorization: Bearer {accessToken}
 | Parameter | Type | 필수 | 설명 |
 |-----------|------|------|------|
 | page | int | X | 페이지 번호 (기본 0) |
-| size | int | X | 페이지 크기 (기본 10) |
+| size | int | X | 페이지 크기 (기본 10, 최대 50) |
 
 **Response**
 ```json
@@ -209,20 +156,16 @@ Authorization: Bearer {accessToken}
     "reviews": [
       {
         "reviewId": 456,
-        "portfolioSnapshotId": 123,
-        "overallScore": 7.2,
-        "riskLevel": "MEDIUM",
-        "bullSummary": "균형 잡힌 포트폴리오로 안정적인 수익 기대",
-        "bearSummary": "변동성과 섹터 집중 리스크에 주의 필요",
+        "headline": "공격적인 성장 추구!",
+        "subHeadline": "기술주 중심의 고성장 전략 포트폴리오",
+        "keywords": ["기술주집중", "고변동성", "성장중심"],
         "createdAt": "2025-01-17T10:30:00Z"
       },
       {
         "reviewId": 400,
-        "portfolioSnapshotId": 100,
-        "overallScore": 6.5,
-        "riskLevel": "HIGH",
-        "bullSummary": "고수익 잠재력 보유",
-        "bearSummary": "높은 변동성에 주의 필요",
+        "headline": "안정적인 배당 전략",
+        "subHeadline": "배당주 중심의 저변동성 포트폴리오",
+        "keywords": ["배당형", "안정적", "저변동성"],
         "createdAt": "2025-01-15T14:00:00Z"
       }
     ],
@@ -235,87 +178,17 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 4. 리뷰 평가 (도움됨/안됨)
+## 응답 필드 설명
 
-**Request**
-```
-POST /api/v1/ai/portfolio/review/456/rating
-Authorization: Bearer {accessToken}
-Content-Type: application/json
-```
-```json
-{
-  "rating": "HELPFUL",
-  "comment": "Bull/Bear 분석이 이해하기 쉽고 유용했습니다."
-}
-```
-
-| Field | Type | 필수 | 설명 |
-|-------|------|------|------|
-| rating | string | O | HELPFUL / NOT_HELPFUL |
-| comment | string | X | 추가 코멘트 (500자 이내) |
-
-**Response**
-```json
-{
-  "success": true,
-  "message": "평가가 등록되었습니다. 감사합니다!"
-}
-```
-
-**Error Response**
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ALREADY_RATED",
-    "message": "이미 평가한 리뷰입니다."
-  }
-}
-```
-
----
-
-## AI 분석 상세
-
-### Bull/Bear 리뷰 생성 프로세스
-
-1. **포트폴리오 데이터 수집**
-   - ETF 구성 종목 및 비중
-   - 각 ETF의 기초 지표 (PER, PBR, 배당률 등)
-   - 섹터 분포
-
-2. **시장 컨텍스트 수집**
-   - 최근 관련 뉴스 (news_etf_influence 테이블)
-   - 시장 지표 (금리, 환율 등)
-
-3. **LLM 프롬프트 구성**
-   - 포트폴리오 정보
-   - 시장 컨텍스트
-   - Bull (긍정적) 관점 분석 요청
-   - Bear (부정적) 관점 분석 요청
-
-4. **결과 파싱 및 저장**
-   - JSON 형식으로 구조화
-   - 종합 점수 및 리스크 레벨 산출
-   - DB 저장
-
-### 종합 점수 기준
-
-| 점수 | 등급 | 설명 |
+| 필드 | 타입 | 설명 |
 |------|------|------|
-| 8.0 ~ 10.0 | 우수 | 분산, 안정성, 성장성 모두 양호 |
-| 6.0 ~ 7.9 | 양호 | 일부 개선 여지 있으나 전반적으로 적절 |
-| 4.0 ~ 5.9 | 보통 | 리밸런싱 또는 종목 조정 권장 |
-| 0.0 ~ 3.9 | 주의 | 높은 리스크 또는 불균형 포트폴리오 |
-
-### 리스크 레벨 기준
-
-| 레벨 | 설명 |
-|------|------|
-| LOW | 변동성 낮음, 안정적 배당/채권형 중심 |
-| MEDIUM | 적절한 분산, 성장주와 안전자산 혼합 |
-| HIGH | 테마형/레버리지 ETF 과다, 섹터 집중 |
+| reviewId | long | 리뷰 고유 ID |
+| headline | string | 포트폴리오 특성 한 문장 (15자 내외) |
+| subHeadline | string | 부제목 구체적 설명 (25자 내외) |
+| keywords | string[] | 포트폴리오 특성 키워드 (3~5개) |
+| analysis | string | 종합 분석 결과 (200~300자) |
+| llmModel | string | 사용된 LLM 모델명 |
+| createdAt | datetime | 생성일시 (ISO 8601) |
 
 ---
 
@@ -325,8 +198,6 @@ Content-Type: application/json
 |------|--------|------|
 | AI001 | REVIEW_NOT_FOUND | 리뷰를 찾을 수 없음 |
 | AI002 | REVIEW_GENERATION_FAILED | 리뷰 생성 실패 |
-| AI003 | INVALID_PORTFOLIO_FOR_REVIEW | 유효하지 않은 포트폴리오 |
-| AI004 | REVIEW_PROCESSING | 리뷰 분석 중 |
-| AI005 | ALREADY_RATED | 이미 평가한 리뷰 |
-| AI006 | AI_SERVICE_UNAVAILABLE | AI 서비스 일시 불가 |
-| AI007 | RATE_LIMIT_EXCEEDED | 요청 한도 초과 |
+| AI003 | INVALID_WEIGHT_SUM | 비중 합계가 100%가 아님 |
+| AI004 | AI_SERVICE_UNAVAILABLE | AI 서비스 일시 불가 |
+| AI005 | USER_NOT_FOUND | 사용자를 찾을 수 없음 |

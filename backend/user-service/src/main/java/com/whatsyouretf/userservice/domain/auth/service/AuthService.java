@@ -1,0 +1,66 @@
+package com.whatsyouretf.userservice.domain.auth.service;
+
+import com.whatsyouretf.userservice.domain.auth.dto.*;
+
+public interface AuthService {
+
+    // ========== OAuth ==========
+
+    /**
+     * 카카오 로그인 (모바일 SDK access_token 기반)
+     */
+    AuthResponse processKakaoLogin(String accessToken);
+
+    // ========== 이메일 회원가입 ==========
+
+    /**
+     * 이메일 회원가입 요청 (인증 이메일 발송)
+     */
+    void signup(SignupRequest request);
+
+    /**
+     * 이메일 인증 확인 후 회원 생성
+     */
+    AuthResponse verifyEmail(EmailVerifyRequest request);
+
+    /**
+     * 인증 이메일 재발송
+     */
+    void resendVerificationEmail(String email);
+
+    // ========== 이메일 로그인 ==========
+
+    /**
+     * 이메일 + 비밀번호 로그인
+     */
+    AuthResponse login(LoginRequest request);
+
+    // ========== 토큰 ==========
+
+    /**
+     * Refresh Token으로 Access Token 재발급
+     */
+    AuthResponse refreshToken(String refreshToken);
+
+    /**
+     * 로그아웃 (Refresh Token 폐기)
+     */
+    void logout(Long userId);
+
+    // ========== 비밀번호 재설정 ==========
+
+    /**
+     * 비밀번호 재설정 요청 (이메일 발송)
+     */
+    void requestPasswordReset(String email);
+
+    /**
+     * 비밀번호 재설정 토큰 검증
+     */
+    boolean verifyPasswordResetToken(String email, String token);
+
+    /**
+     * 비밀번호 재설정
+     */
+    void resetPassword(PasswordResetConfirmRequest request);
+}

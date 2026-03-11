@@ -3,6 +3,7 @@
 ## 기본 정보
 - Base URL: `/api/v1/simulations`
 - 인증: JWT 필요
+- **시뮬레이션 정책**: 프론트엔드에서 시뮬레이션 계산을 수행하고, 사용자가 저장을 원할 때만 API를 호출하여 결과 저장
 
 ---
 
@@ -11,10 +12,10 @@
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
 | GET | `/` | 내 시뮬레이션 목록 조회 | O |
-| POST | `/` | 시뮬레이션 실행 | O |
+| POST | `/` | 시뮬레이션 결과 저장 | O |
 | GET | `/{simulationId}` | 시뮬레이션 결과 조회 | O |
 | DELETE | `/{simulationId}` | 시뮬레이션 삭제 | O |
-| POST | `/compare` | 포트폴리오 비교 시뮬레이션 | O |
+| POST | `/compare` | 포트폴리오 비교 (저장하지 않음) | O |
 
 ---
 
@@ -60,7 +61,9 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 2. 시뮬레이션 실행
+### 2. 시뮬레이션 결과 저장
+
+프론트엔드에서 계산한 시뮬레이션 결과를 저장합니다. 사용자가 "저장" 버튼을 클릭할 때만 호출됩니다.
 
 **Request**
 ```
@@ -74,23 +77,54 @@ Content-Type: application/json
   "startDate": "2024-01-01",
   "endDate": "2024-12-31",
   "initialAmount": 10000000,
-  "rebalancingCycle": "MONTHLY"
+  "rebalancingCycle": "MONTHLY",
+  "result": {
+    "finalAmount": 11500000,
+    "totalReturn": 1500000,
+    "totalReturnRate": 15.0,
+    "annualizedReturn": 15.0,
+    "maxDrawdown": -8.5,
+    "sharpeRatio": 1.2,
+    "volatility": 12.5,
+    "monthlyReturns": [
+      { "month": "2024-01", "value": 10200000, "returnRate": 2.0 },
+      { "month": "2024-02", "value": 10350000, "returnRate": 1.47 }
+    ],
+    "etfPerformance": [
+      { "etfId": 1, "weightPct": 40.0, "returnRate": 12.0, "contribution": 4.8 },
+      { "etfId": 2, "weightPct": 30.0, "returnRate": 18.0, "contribution": 5.4 }
+    ]
+  }
 }
 ```
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| portfolioId | number | O | 시뮬레이션할 포트폴리오 ID |
-| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD) |
+| portfolioId | number | O | 포트폴리오 ID (양수 정수) |
+| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD, 정규식: `^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$`) |
 | endDate | string | O | 시뮬레이션 종료일 (YYYY-MM-DD) |
-| initialAmount | number | O | 초기 투자금액 |
-| rebalancingCycle | string | X | 리밸런싱 주기 (NONE/MONTHLY/QUARTERLY/YEARLY) |
+| initialAmount | number | O | 초기 투자금액 (최소 10,000원, 최대 100억원) |
+| rebalancingCycle | string | X | 리밸런싱 주기: `NONE` / `MONTHLY` / `QUARTERLY` / `YEARLY` (기본값: NONE) |
+| result | object | O | 프론트엔드에서 계산한 시뮬레이션 결과 |
+
+**result 객체 상세**
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| finalAmount | number | O | 최종 금액 |
+| totalReturn | number | O | 총 수익금액 |
+| totalReturnRate | number | O | 총 수익률 (%) |
+| annualizedReturn | number | O | 연환산 수익률 (%) |
+| maxDrawdown | number | O | 최대 낙폭 (%) |
+| sharpeRatio | number | O | 샤프 비율 |
+| volatility | number | O | 변동성 (%) |
+| monthlyReturns | array | O | 월별 수익률 배열 |
+| etfPerformance | array | O | ETF별 성과 배열 |
 
 **Response**
 ```json
 {
   "success": true,
-  "message": "시뮬레이션이 완료되었습니다.",
+  "message": "시뮬레이션이 저장되었습니다.",
   "data": {
     "simulationId": 1
   }
@@ -188,8 +222,8 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 5. 포트폴리오 비교 시뮬레이션
-여러 포트폴리오를 동일 조건에서 비교 시뮬레이션
+### 5. 포트폴리오 비교
+여러 포트폴리오의 과거 수익률 데이터를 조회합니다. 결과는 저장되지 않습니다
 
 **Request**
 ```
@@ -208,10 +242,10 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| portfolioIds | array | O | 비교할 포트폴리오 ID 목록 (최대 5개) |
-| startDate | string | O | 시뮬레이션 시작일 |
-| endDate | string | O | 시뮬레이션 종료일 |
-| initialAmount | number | O | 초기 투자금액 |
+| portfolioIds | array | O | 비교할 포트폴리오 ID 목록 (최소 2개, 최대 5개, 양수 정수) |
+| startDate | string | O | 시뮬레이션 시작일 (YYYY-MM-DD, 최소 2010-01-01) |
+| endDate | string | O | 시뮬레이션 종료일 (YYYY-MM-DD, startDate 이후, 오늘 이전) |
+| initialAmount | number | O | 초기 투자금액 (최소 10,000원, 최대 100억원) |
 
 **Response**
 ```json

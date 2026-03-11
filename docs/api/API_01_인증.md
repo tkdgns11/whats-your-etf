@@ -10,8 +10,7 @@
 
 | Method | Endpoint | 설명 | 인증 |
 |--------|----------|------|------|
-| GET | `/oauth/kakao` | 카카오 로그인 URL 요청 | X |
-| POST | `/oauth/kakao/callback` | 카카오 로그인 콜백 처리 | X |
+| POST | `/oauth/kakao` | 카카오 모바일 로그인 | X |
 | POST | `/signup` | 이메일 회원가입 | X |
 | POST | `/signup/verify` | 이메일 인증 확인 | X |
 | POST | `/signup/resend` | 인증 이메일 재발송 | X |
@@ -26,44 +25,29 @@
 
 ## API 상세
 
-### 1. 카카오 로그인 URL 요청
-카카오 로그인 인증 페이지로 리다이렉트할 URL을 반환합니다.
+### 1. 카카오 모바일 로그인
+Android/iOS 카카오 SDK에서 발급받은 access_token으로 로그인합니다.
 
 **Request**
 ```
-GET /api/v1/auth/oauth/kakao
-```
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "authUrl": "https://kauth.kakao.com/oauth/authorize?client_id=...&redirect_uri=...&response_type=code"
-  }
-}
-```
-
----
-
-### 2. 카카오 로그인 콜백 처리
-카카오 로그인 인증 후 콜백을 처리하고 JWT 토큰을 발급합니다.
-
-**Request**
-```
-POST /api/v1/auth/oauth/kakao/callback
+POST /api/v1/auth/oauth/kakao
 Content-Type: application/json
 ```
 ```json
 {
-  "code": "authorization_code_here"
+  "accessToken": "카카오_SDK에서_발급받은_access_token"
 }
 ```
+
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| accessToken | string | O | 카카오 SDK에서 발급받은 Access Token |
 
 **Response - 기존 회원**
 ```json
 {
   "success": true,
+  "message": "로그인 성공",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -73,7 +57,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@kakao.com",
       "nickname": "홍길동",
-      "profileImage": "https://...",
       "loginProvider": "KAKAO"
     }
   }
@@ -84,6 +67,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "로그인 성공",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -92,19 +76,29 @@ Content-Type: application/json
     "user": {
       "id": 1,
       "email": "hong@kakao.com",
-      "nickname": "hong@kakao.com",
-      "profileImage": "https://...",
+      "nickname": "카카오닉네임",
       "loginProvider": "KAKAO"
     }
   }
 }
 ```
 
-> 신규 회원의 경우 닉네임이 이메일로 설정됩니다. 마이페이지에서 변경 가능합니다.
+**Error Response**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "OAUTH_FAILED",
+    "message": "카카오 인증에 실패했습니다."
+  }
+}
+```
+
+> 신규 회원의 경우 카카오 프로필 닉네임으로 자동 설정됩니다. 마이페이지에서 변경 가능합니다.
 
 ---
 
-### 3. 이메일 회원가입
+### 2. 이메일 회원가입
 이메일 인증을 통한 회원가입을 요청합니다.
 
 **Request**
@@ -123,10 +117,20 @@ Content-Type: application/json
 
 | Field | Type | 필수 | 설명 |
 |-------|------|------|------|
-| email | string | O | 이메일 주소 |
-| password | string | O | 비밀번호 (8자 이상, 영문+숫자+특수문자) |
-| passwordConfirm | string | O | 비밀번호 확인 |
-| nickname | string | O | 닉네임 (2~20자) |
+| email | string | O | 이메일 주소 (최대 255자) |
+| password | string | O | 비밀번호 (아래 상세 참조) |
+| passwordConfirm | string | O | 비밀번호 확인 (password와 동일해야 함) |
+| nickname | string | O | 닉네임 (2~20자, 한글/영문/숫자만 허용) |
+
+**비밀번호 규칙**
+| 항목 | 값 |
+|------|-----|
+| 전송 방식 | **평문 전송** (HTTPS 필수, 서버에서 BCrypt 해시 처리) |
+| 최소 길이 | 8자 |
+| 최대 길이 | 72자 (BCrypt 제한) |
+| 필수 조건 | 영문 + 숫자 + 특수문자 조합 |
+| 허용 특수문자 | `!@#$%^&*()_+-=[]{}|;':\",./<>?` |
+| 정규식 | `^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;':\",./<>?]).{8,72}$` |
 
 **Response**
 ```json
@@ -162,7 +166,7 @@ Content-Type: application/json
 
 ---
 
-### 4. 이메일 인증 확인
+### 3. 이메일 인증 확인
 이메일로 발송된 인증 토큰을 확인합니다.
 
 **Request**
@@ -189,7 +193,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@gmail.com",
       "nickname": "홍길동",
-      "profileImage": null,
       "loginProvider": "EMAIL"
     }
   },
@@ -220,7 +223,7 @@ Content-Type: application/json
 
 ---
 
-### 5. 인증 이메일 재발송
+### 4. 인증 이메일 재발송
 
 **Request**
 ```
@@ -243,7 +246,7 @@ Content-Type: application/json
 
 ---
 
-### 6. 이메일+비밀번호 로그인
+### 5. 이메일+비밀번호 로그인
 
 **Request**
 ```
@@ -257,6 +260,11 @@ Content-Type: application/json
 }
 ```
 
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| email | string | O | 이메일 주소 |
+| password | string | O | 비밀번호 (평문 전송, 최대 72자) |
+
 **Response**
 ```json
 {
@@ -269,7 +277,6 @@ Content-Type: application/json
       "id": 1,
       "email": "hong@gmail.com",
       "nickname": "홍길동",
-      "profileImage": "https://...",
       "loginProvider": "EMAIL"
     }
   }
@@ -299,7 +306,7 @@ Content-Type: application/json
 
 ---
 
-### 7. Access Token 갱신
+### 6. Access Token 갱신
 
 **Request**
 ```
@@ -336,7 +343,7 @@ Content-Type: application/json
 
 ---
 
-### 8. 로그아웃
+### 7. 로그아웃
 
 **Request**
 ```
@@ -354,7 +361,7 @@ Authorization: Bearer {accessToken}
 
 ---
 
-### 9. 비밀번호 재설정 요청
+### 8. 비밀번호 재설정 요청
 비밀번호 재설정 링크를 이메일로 발송합니다.
 
 **Request**
@@ -380,7 +387,7 @@ Content-Type: application/json
 
 ---
 
-### 10. 비밀번호 재설정 토큰 검증
+### 9. 비밀번호 재설정 토큰 검증
 
 **Request**
 ```
@@ -406,7 +413,7 @@ Content-Type: application/json
 
 ---
 
-### 11. 비밀번호 재설정
+### 10. 비밀번호 재설정
 
 **Request**
 ```
@@ -421,6 +428,13 @@ Content-Type: application/json
   "newPasswordConfirm": "newPassword456!"
 }
 ```
+
+| Field | Type | 필수 | 설명 |
+|-------|------|------|------|
+| email | string | O | 이메일 주소 |
+| token | string | O | 비밀번호 재설정 토큰 |
+| newPassword | string | O | 새 비밀번호 (회원가입 비밀번호 규칙과 동일) |
+| newPasswordConfirm | string | O | 새 비밀번호 확인 |
 
 **Response**
 ```json
@@ -443,19 +457,20 @@ Content-Type: application/json
 
 ---
 
-## 카카오 OAuth 플로우
+## 카카오 OAuth 플로우 (모바일)
 
 ```
-1. 프론트엔드: GET /api/v1/auth/oauth/kakao 호출
-2. 백엔드: 카카오 인증 URL 반환
-3. 프론트엔드: 사용자를 카카오 로그인 페이지로 리다이렉트
-4. 사용자: 카카오 로그인 완료
-5. 카카오: redirect_uri로 authorization code 전달
-6. 프론트엔드: POST /api/v1/auth/oauth/kakao/callback 호출 (code 포함)
-7. 백엔드: 카카오에서 access_token 획득 → 사용자 정보 조회
-8. 백엔드: 사용자 생성/조회 → JWT 토큰 발급
-9. 프론트엔드: JWT 토큰 저장 → 로그인 완료
+1. 모바일 앱: 카카오 SDK를 통해 로그인 UI 표시
+2. 사용자: 카카오 로그인 완료
+3. 카카오 SDK: 앱에 access_token 반환
+4. 모바일 앱: POST /api/v1/auth/oauth/kakao 호출 (access_token 포함)
+5. 백엔드: 카카오 API로 사용자 정보 조회 (https://kapi.kakao.com/v2/user/me)
+6. 백엔드: 사용자 생성/조회 → JWT 토큰 발급
+7. 모바일 앱: JWT 토큰 저장 → 로그인 완료
 ```
+
+> **참고**: 웹 OAuth 플로우(authorization code 방식)는 지원하지 않습니다.
+> 모바일 앱에서 카카오 SDK로 발급받은 access_token만 사용 가능합니다.
 
 ---
 
