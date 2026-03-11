@@ -2,6 +2,11 @@ package com.d102.wye.core.network
 
 import com.d102.wye.core.app.Constants
 import com.d102.wye.data.local.datastore.AuthTokenDataStore
+import com.d102.wye.data.remote.dto.request.RefreshTokenRequest
+import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.TokenResponse
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -10,7 +15,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import org.json.JSONObject
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -18,7 +22,8 @@ import javax.inject.Inject
  * Access Token 만료 시 Refresh Token으로 재발급을 시도하는 Interceptor
  */
 class TokenRefreshInterceptor @Inject constructor(
-    private val authTokenDataStore: AuthTokenDataStore  // DataStore 직접 대신 DataStore 래퍼 주입
+    private val authTokenDataStore: AuthTokenDataStore,  // DataStore 직접 대신 DataStore 래퍼 주입
+    private val gson: Gson
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -76,9 +81,9 @@ class TokenRefreshInterceptor @Inject constructor(
         return try {
             val client = OkHttpClient()
 
-            val body = JSONObject()
-                .put("refreshToken", refreshToken)
-                .toString()
+            val body = gson.toJson(
+                RefreshTokenRequest(refreshToken = refreshToken)
+            )
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
@@ -94,12 +99,13 @@ class TokenRefreshInterceptor @Inject constructor(
             }
 
             val responseBody = response.body?.string() ?: return null
-            val json = JSONObject(responseBody)
+            val responseType = object : TypeToken<BaseResponse<TokenResponse>>() {}.type
+            val parsedResponse: BaseResponse<TokenResponse> =
+                gson.fromJson(responseBody, responseType) ?: return null
 
-            // TODO: 실제 서버 응답 구조에 맞게 파싱 경로 수정
-            val data = json.optJSONObject("data") ?: return null
-            val newAccessToken = data.optString("accessToken").takeIf { it.isNotEmpty() } ?: return null
-            val newRefreshToken = data.optString("refreshToken").takeIf { it.isNotEmpty() } ?: return null
+            val tokenData = parsedResponse.data ?: return null
+            val newAccessToken = tokenData.accessToken.takeIf { it.isNotEmpty() } ?: return null
+            val newRefreshToken = tokenData.refreshToken.takeIf { it.isNotEmpty() } ?: return null
 
             Pair(newAccessToken, newRefreshToken)
         } catch (e: Exception) {
