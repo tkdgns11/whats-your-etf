@@ -91,6 +91,9 @@ public class Etf {
     @Column(name = "delisted_date")
     private LocalDate delistedDate;
 
+    /** 재무 지표 */
+    @Embedded
+    private Fundamental fundamental;
     /** 활성 상태 */
     @Column(name = "is_active")
     @Builder.Default

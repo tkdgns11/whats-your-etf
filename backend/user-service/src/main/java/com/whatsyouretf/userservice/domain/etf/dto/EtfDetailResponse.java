@@ -58,6 +58,11 @@ public class EtfDetailResponse {
     /** 총보수율 (%) */
     private BigDecimal expenseRatio;
 
+    private Double per;
+
+    private Double pbr;
+
+    private Double roe;
 
     /** 순자산 총액 */
     private Long aum;
@@ -90,6 +95,9 @@ public class EtfDetailResponse {
             etf.getRiskType().getRiskGrade(),
             etf.getRiskType().getTypeName(),
             etf.getExpenseRatio(),
+            etf.getFundamental().getPer(),
+            etf.getFundamental().getPbr(),
+            etf.getFundamental().getRoe(),
             etf.getAum(),
             etf.getListingDate()
         );

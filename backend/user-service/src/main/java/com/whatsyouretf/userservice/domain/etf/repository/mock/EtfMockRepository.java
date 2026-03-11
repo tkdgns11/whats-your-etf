@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.etf.repository.mock;
 
 import com.whatsyouretf.userservice.domain.etf.dto.RiskType;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
+import com.whatsyouretf.userservice.domain.etf.entity.Fundamental;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class EtfMockRepository {
                     RiskType.STABLE,
                     LocalDate.of(2024,12,21),
                     null,
+                    Fundamental.calculateFundamental(22.7, 1.99),
                     Boolean.TRUE,
                     LocalDateTime.now(),
                     LocalDateTime.now()),
@@ -49,6 +51,7 @@ public class EtfMockRepository {
                     RiskType.STABLE,
                     LocalDate.of(2024,12,21),
                     null,
+                    Fundamental.calculateFundamental(32.36, 1.92),
                     Boolean.TRUE,
                     LocalDateTime.now(),
                     LocalDateTime.now()),
@@ -69,6 +72,7 @@ public class EtfMockRepository {
                     RiskType.STABLE,
                     LocalDate.of(2024,12,21),
                     null,
+                    Fundamental.calculateFundamental(37.92, 5.24),
                     Boolean.TRUE,
                     LocalDateTime.now(),
                     LocalDateTime.now()));
