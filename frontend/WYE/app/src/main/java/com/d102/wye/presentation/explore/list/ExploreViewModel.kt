@@ -113,6 +113,10 @@ class ExploreViewModel @Inject constructor(
         _selectedTickers.update { emptySet() }
     }
 
+    fun initializeSelection(tickers: List<String>) {
+        _selectedTickers.update { tickers.toSet() }
+    }
+
     private fun observeLikedEtfs() {
         viewModelScope.launch {
             etfRepository.getLikedEtfList().collect { likedEtfs ->

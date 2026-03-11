@@ -140,9 +140,14 @@ fun PortfolioSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(
+                        color = PrimaryGreen.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                     .clickable { onAddClick() }
-                    .padding(vertical = 8.dp), // 클릭 영역 확보
+                    .padding(vertical = 14.dp),
                 horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -154,7 +159,7 @@ fun PortfolioSection(
                 Text(
                     text = "ETF 종목 추가하기",
                     style = MaterialTheme.typography.titleSmall,
-                    color = PrimaryGreen // 텍스트도 초록색으로
+                    color = PrimaryGreen
                 )
             }
         }

@@ -30,8 +30,8 @@ import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
-import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
+import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
 import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
@@ -42,7 +42,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 @Composable
 fun SimulationScreen(
     onBackClick: () -> Unit,
-    onAddEtfClick: () -> Unit,
+    onAddEtfClick: (currentTickers: List<String>) -> Unit,
     viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val formState by viewModel.formState.collectAsStateWithLifecycle()
@@ -93,7 +93,7 @@ fun SimulationScreen(
         onInvestmentTypeSelected = { viewModel.onInvestmentTypeSelected(it) },
         onAmountChanged = { viewModel.onAmountChanged(it) },
         onPeriodChanged = { viewModel.onPeriodChanged(it) },
-        onAddEtfClick = onAddEtfClick,
+        onAddEtfClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
         onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
         onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
         onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
