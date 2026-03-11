@@ -1,6 +1,5 @@
 """회사정보 및 산업분류 모델"""
-from sqlalchemy import Column, BigInteger, String, Boolean, Date, TIMESTAMP, Integer, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, Integer, Text, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -31,26 +30,16 @@ class CompanyInfo(Base):
     __tablename__ = "company_info"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    stock_code = Column(String(20), unique=True, nullable=False)
-    stock_name = Column(String(100), nullable=False)
-    aliases = Column(JSONB)  # 회사명 별칭 (UI 표시용)
-
-    market_type = Column(String(20))  # KOSPI / KOSDAQ / NYSE / NASDAQ
+    company_name = Column(String(100), nullable=False)
     industry_code = Column(String(10), ForeignKey("industry_classification.code", ondelete="SET NULL"))
-    industry_name = Column(String(100))
-    industry_group = Column(String(50))
+    industry_group = Column(String(50))  # 투자테마 그룹 (IT_SEMI, BIO 등)
 
-    description = Column(Text)
-    listing_date = Column(Date)
-    fiscal_month = Column(Integer)
     ceo_name = Column(String(100))
     homepage = Column(String(200))
     region = Column(String(50))
-    face_value = Column(Integer)
-    listed_shares = Column(BigInteger)
+    description = Column(Text)
+    corporation_number = Column(String(20))
 
-    is_active = Column(Boolean, default=True)
-    data_source = Column(String(50), default='KRX')
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -58,4 +47,4 @@ class CompanyInfo(Base):
     industry = relationship("IndustryClassification")
 
     def __repr__(self):
-        return f"<Company(code={self.stock_code}, name={self.stock_name})>"
+        return f"<Company(id={self.id}, name={self.company_name})>"
