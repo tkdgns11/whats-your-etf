@@ -82,7 +82,7 @@ class TokenRefreshInterceptor @Inject constructor(
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("${Constants.BASE_URL}auth/refresh")  // TODO: 실제 재발급 엔드포인트로 교체
+                .url("${Constants.BASE_URL}auth/token/refresh")
                 .post(body)
                 .build()
 
