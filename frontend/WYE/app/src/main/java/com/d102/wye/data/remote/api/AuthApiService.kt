@@ -1,6 +1,7 @@
 package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
+import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
@@ -30,6 +31,15 @@ interface AuthApiService {
     @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
+    ): Response<BaseResponse<TokenResponse>>
+
+    /**
+     * 카카오 로그인
+     * POST /api/v1/auth/oauth/kakao
+     */
+    @POST("auth/oauth/kakao")
+    suspend fun loginWithKakao(
+        @Body request: KakaoLoginRequest
     ): Response<BaseResponse<TokenResponse>>
 
 
