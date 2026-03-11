@@ -100,33 +100,6 @@ public class AlertController {
     }
 
     /**
-     * FCM 토큰 등록
-     */
-    @Operation(summary = "FCM 토큰 등록", description = "푸시 알림을 위한 FCM 토큰을 등록합니다.")
-    @PostMapping("/fcm/token")
-    public ResponseEntity<ApiResponse<Void>> registerFcmToken(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody FcmTokenRequest request
-    ) {
-        alertService.registerFcmToken(userDetails.getUserId(), request);
-        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
-                .body(ApiResponse.success("FCM 토큰이 등록되었습니다."));
-    }
-
-    /**
-     * FCM 토큰 삭제
-     */
-    @Operation(summary = "FCM 토큰 삭제", description = "FCM 토큰을 삭제합니다.")
-    @DeleteMapping("/fcm/token")
-    public ResponseEntity<Void> deleteFcmToken(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody FcmTokenRequest request
-    ) {
-        alertService.deleteFcmToken(userDetails.getUserId(), request.getToken());
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
      * 알림 유형 목록 조회
      */
     @Operation(summary = "알림 유형 목록 조회", description = "사용 가능한 알림 유형 목록을 조회합니다.")
