@@ -77,6 +77,7 @@ async def scrape_stock_news_job():
                     total_stats["mapped"] += stats["mapped"]
                 except Exception as e:
                     logger.error(f"종목 크롤링 실패 [{stock.ticker}]: {e}")
+                    db.rollback()  # 트랜잭션 롤백하여 다음 종목 처리 가능하게
                     continue
 
         logger.info(
