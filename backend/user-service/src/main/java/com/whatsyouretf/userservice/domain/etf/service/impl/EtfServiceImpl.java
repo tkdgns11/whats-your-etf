@@ -16,8 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.awt.print.Pageable;
+import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -119,7 +118,7 @@ public class EtfServiceImpl implements EtfService {
     }
 
     @Override
-    public Page<EtfPrice> getEtfHistory(Long etfId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return etfPriceReader.readPrices(etfId, startDate, endDate, pageable);
+    public Page<EtfPrice> getEtfHistory(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return etfPriceReader.readPrices(ticker, startDate, endDate, pageable);
     }
 }

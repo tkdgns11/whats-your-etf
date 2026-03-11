@@ -114,4 +114,10 @@ public class Etf {
     @Column(name = "updated_at")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    public static Etf of(Long etfId) {
+        Etf etf = new Etf();
+        etf.id = etfId;
+        return etf;
+    }
 }

@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.awt.print.Pageable;
+import org.springframework.data.domain.Pageable;
 
 /**
  * ETF 관련 API Controller
@@ -30,17 +29,17 @@ public class EtfController {
     private final EtfService etfService;
 
     @Operation()
-    @GetMapping("/{etfId}/price-history")
+    @GetMapping("/{ticker}/price-history")
     public ResponseEntity<ApiResponse<PaginatedResponse<EtfPriceHistoryResponse>>> getEtfPriceHistories(
         @Valid EtfPriceHistoryRequest request,
-        @PathVariable Long etfId,
+        @PathVariable String ticker,
         Pageable pageable
     ) {
         return ResponseEntity
             .status(HttpStatus.OK)
             .body(ApiResponse.success(
                 PaginatedResponse.createPaginatedResponse(
-                    etfService.getEtfHistory(etfId, request.getStartDate(), request.getEndDate(), pageable)
+                    etfService.getEtfHistory(ticker, request.getStartDate(), request.getEndDate(), pageable)
                         .map(EtfPriceHistoryResponse::from))
             ));
     }

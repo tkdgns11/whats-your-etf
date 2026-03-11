@@ -7,6 +7,7 @@ public record EtfPriceInfo (
     LocalDate date,
     BigDecimal nav,
     BigDecimal close,
+    Long volume,
     BigDecimal dailyReturn
 ){
 }
