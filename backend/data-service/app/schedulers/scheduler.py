@@ -33,13 +33,12 @@ async def scrape_stock_news_job():
         from sqlalchemy import text
 
         # 크롤링 대상 종목 조회 (중복 제거)
+        # stock.ticker를 사용 (company_info에는 stock_code 없음)
         query = text("""
-            SELECT DISTINCT c.id, c.stock_code
-            FROM company_info c
-            JOIN stock s ON s.company_id = c.id
+            SELECT DISTINCT s.id, s.ticker
+            FROM stock s
             JOIN etf_stock_composition esc ON esc.stock_id = s.id
-            WHERE c.is_active = true
-              AND c.stock_code IS NOT NULL
+            WHERE s.ticker IS NOT NULL
               AND (
                 -- 상위 100개 ETF 구성종목
                 esc.etf_id IN (
@@ -53,7 +52,7 @@ async def scrape_stock_news_job():
                 -- 포트폴리오 ETF 구성종목
                 OR esc.etf_id IN (SELECT etf_id FROM portfolio_etf)
               )
-            ORDER BY c.id
+            ORDER BY s.id
         """)
 
         result = db.execute(query)
@@ -67,17 +66,17 @@ async def scrape_stock_news_job():
         total_stats = {"total": 0, "new": 0, "mapped": 0}
 
         async with StockNewsScraper(db) as scraper:
-            for company in companies:
+            for stock in companies:
                 try:
                     stats = await scraper.scrape_stock_news(
-                        stock_code=company.stock_code,
+                        stock_code=stock.ticker,
                         max_articles=5
                     )
                     total_stats["total"] += stats["total"]
                     total_stats["new"] += stats["new"]
                     total_stats["mapped"] += stats["mapped"]
                 except Exception as e:
-                    logger.error(f"종목 크롤링 실패 [{company.stock_code}]: {e}")
+                    logger.error(f"종목 크롤링 실패 [{stock.ticker}]: {e}")
                     continue
 
         logger.info(
