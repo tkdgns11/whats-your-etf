@@ -13,6 +13,7 @@ CREATE TABLE "user" (
     "email" VARCHAR(100) NOT NULL UNIQUE,
     "password" VARCHAR(255),                      -- 비밀번호 (nullable, 소셜만 사용 시 NULL)
     "nickname" VARCHAR(50) UNIQUE,                -- 닉네임 (신규 가입 시 이메일로 설정)
+    "profile_image" VARCHAR(500),                 -- 프로필 이미지 URL (카카오 프로필 등)
     "is_active" BOOLEAN DEFAULT TRUE,
     "last_login_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -181,9 +182,10 @@ CREATE INDEX "idx_ai_feedback_created" ON "portfolio_ai_feedback"("created_at" D
 
 -- 알림 유형 코드 테이블
 CREATE TABLE "alert_type" (
-    "code" VARCHAR(30) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
+    "code" VARCHAR(50) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
     "name" VARCHAR(100) NOT NULL,                -- "ETF 신규 상장"
     "category" VARCHAR(30) NOT NULL,             -- ETF / PORTFOLIO / NEWS / SYSTEM
+    "setting_group" VARCHAR(30) NOT NULL,        -- 사용자 설정 그룹 (화면에 보이는 단위)
     "description" VARCHAR(200),                  -- 알림 설명
     "is_active" BOOLEAN DEFAULT TRUE,
     "display_order" INTEGER DEFAULT 0,           -- 노출 순서
@@ -191,11 +193,12 @@ CREATE TABLE "alert_type" (
 );
 
 COMMENT ON TABLE "alert_type" IS '알림 유형 코드 테이블 (확장 가능한 코드성 테이블)';
+COMMENT ON COLUMN "alert_type"."setting_group" IS '사용자 설정 그룹: APP_NOTIFICATION, ETF_LISTING, ETF_DELISTING, PORTFOLIO_REBALANCING, PORTFOLIO_RETURN, NEWS_NOTIFICATION';
 
 -- 알림 메시지 템플릿 (버전 관리)
 CREATE TABLE "alert_message_template" (
     "id" BIGSERIAL PRIMARY KEY,
-    "alert_type_code" VARCHAR(30) NOT NULL,      -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,      -- alert_type FK
     "version" VARCHAR(20) NOT NULL,              -- 'v1.0', 'v1.1'
     "title_template" VARCHAR(200) NOT NULL,      -- "신규 ETF 상장 알림"
     "message_template" TEXT NOT NULL,            -- "{etf_name} ETF가 {date}에 상장 예정입니다."
@@ -215,7 +218,7 @@ COMMENT ON TABLE "alert_message_template" IS '알림 메시지 템플릿 (버전
 CREATE TABLE "user_notification_setting" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "alert_type_code" VARCHAR(30) NOT NULL,           -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,           -- alert_type FK
     "is_enabled" BOOLEAN DEFAULT TRUE,                -- 알림 활성화 여부
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -247,7 +250,7 @@ CREATE INDEX "idx_fcm_token" ON "fcm_token"("token");
 CREATE TABLE "user_alert" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "alert_type_code" VARCHAR(30) NOT NULL,       -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,       -- alert_type FK
     -- 참조 대상 (다형성)
     "reference_type" VARCHAR(30),                 -- ETF / PORTFOLIO / NEWS / DISCLOSURE (NULL이면 시스템 알림)
     "reference_id" BIGINT,                        -- 참조 대상 ID (etf.id / portfolio.id / news_article.id 등)
@@ -656,22 +659,24 @@ CREATE TABLE "portfolio_etf" (
 -- =============================================
 
 -- 알림 유형 코드 초기 데이터
-INSERT INTO "alert_type" ("code", "name", "category", "description", "display_order") VALUES
--- ETF 관련
-('ETF_LISTING', 'ETF 신규 상장', 'ETF', '새로운 ETF가 상장되었습니다', 1),
-('ETF_DELISTING_SCHEDULED', 'ETF 상장폐지 예정', 'ETF', 'ETF 상장폐지가 예정되어 있습니다', 2),
-('ETF_DELISTING_COMPLETED', 'ETF 상장폐지 완료', 'ETF', 'ETF 상장폐지가 완료되었습니다', 3),
-('ETF_REBALANCING', 'ETF 리밸런싱', 'ETF', 'ETF 구성종목이 변경되었습니다', 4),
--- 포트폴리오 관련
-('PORTFOLIO_RETURN_5PCT', '포트폴리오 수익률 5%', 'PORTFOLIO', '포트폴리오 수익률이 5%에 도달했습니다', 10),
-('PORTFOLIO_RETURN_10PCT', '포트폴리오 수익률 10%', 'PORTFOLIO', '포트폴리오 수익률이 10%에 도달했습니다', 11),
-('PORTFOLIO_LOSS_5PCT', '포트폴리오 손실률 -5%', 'PORTFOLIO', '포트폴리오 손실률이 -5%에 도달했습니다', 12),
-('PORTFOLIO_LOSS_10PCT', '포트폴리오 손실률 -10%', 'PORTFOLIO', '포트폴리오 손실률이 -10%에 도달했습니다', 13),
--- 뉴스 관련
-('NEWS_ETF_RELATED', '관심 ETF 뉴스', 'NEWS', '관심 ETF와 관련된 뉴스가 있습니다', 20),
-('NEWS_PORTFOLIO_RELATED', '포트폴리오 관련 뉴스', 'NEWS', '보유 포트폴리오와 관련된 뉴스가 있습니다', 21),
--- 시스템
-('SYSTEM_ANNOUNCEMENT', '시스템 공지', 'SYSTEM', '서비스 공지사항', 30);
+INSERT INTO "alert_type" ("code", "name", "category", "setting_group", "description", "display_order") VALUES
+-- 앱 알림
+('SYSTEM_ANNOUNCEMENT', '시스템 공지', 'SYSTEM', 'APP_NOTIFICATION', '서비스 공지사항', 1),
+-- ETF 상장 알림
+('ETF_LISTING', 'ETF 신규 상장', 'ETF', 'ETF_LISTING', '새로운 ETF가 상장되었습니다', 10),
+-- ETF 상장폐지 알림
+('ETF_DELISTING_SCHEDULED', 'ETF 상장폐지 예정', 'ETF', 'ETF_DELISTING', 'ETF 상장폐지가 예정되어 있습니다', 20),
+('ETF_DELISTING_COMPLETED', 'ETF 상장폐지 완료', 'ETF', 'ETF_DELISTING', 'ETF 상장폐지가 완료되었습니다', 21),
+-- 포트폴리오 리밸런싱 알림
+('PORTFOLIO_REBALANCING_SCHEDULED', '포트폴리오 리밸런싱 예정', 'PORTFOLIO', 'PORTFOLIO_REBALANCING', '포함된 ETF 리밸런싱이 예정되어 있습니다', 30),
+('PORTFOLIO_REBALANCING_COMPLETED', '포트폴리오 리밸런싱 완료', 'PORTFOLIO', 'PORTFOLIO_REBALANCING', '포함된 ETF 리밸런싱이 완료되었습니다', 31),
+-- 포트폴리오 수익률 알림
+('PORTFOLIO_RETURN_5PCT', '포트폴리오 수익률 5%', 'PORTFOLIO', 'PORTFOLIO_RETURN', '포트폴리오 수익률이 5%에 도달했습니다', 40),
+('PORTFOLIO_RETURN_10PCT', '포트폴리오 수익률 10%', 'PORTFOLIO', 'PORTFOLIO_RETURN', '포트폴리오 수익률이 10%에 도달했습니다', 41),
+('PORTFOLIO_LOSS_5PCT', '포트폴리오 손실률 -5%', 'PORTFOLIO', 'PORTFOLIO_RETURN', '포트폴리오 손실률이 -5%에 도달했습니다', 42),
+('PORTFOLIO_LOSS_10PCT', '포트폴리오 손실률 -10%', 'PORTFOLIO', 'PORTFOLIO_RETURN', '포트폴리오 손실률이 -10%에 도달했습니다', 43),
+-- 뉴스 수신 알림
+('NEWS_ETF_RELATED', '관심 ETF 뉴스', 'NEWS', 'NEWS_NOTIFICATION', '관심 ETF와 관련된 뉴스가 있습니다', 50);
 
 -- 알림 메시지 템플릿 초기 데이터
 INSERT INTO "alert_message_template" ("alert_type_code", "version", "title_template", "message_template", "variables", "is_active") VALUES
@@ -679,14 +684,14 @@ INSERT INTO "alert_message_template" ("alert_type_code", "version", "title_templ
 ('ETF_LISTING', 'v1.0', '신규 ETF 상장 알림', '{etf_name} ETF가 {date}에 상장 예정입니다.', '["etf_name", "date"]', TRUE),
 ('ETF_DELISTING_SCHEDULED', 'v1.0', 'ETF 상장폐지 예정', '관심 ETF ''{etf_name}''가 {date}에 상장폐지 예정입니다.', '["etf_name", "date"]', TRUE),
 ('ETF_DELISTING_COMPLETED', 'v1.0', 'ETF 상장폐지 완료', '관심 ETF ''{etf_name}''가 상장폐지되었습니다.', '["etf_name"]', TRUE),
-('ETF_REBALANCING', 'v1.0', 'ETF 리밸런싱 완료', '관심 ETF ''{etf_name}'' 구성종목이 변경되었습니다.', '["etf_name"]', TRUE),
 -- 포트폴리오 관련
+('PORTFOLIO_REBALANCING_SCHEDULED', 'v1.0', '포트폴리오 리밸런싱 예정', '''{portfolio_name}'' 포함 ETF ''{etf_name}'' 리밸런싱이 {date}에 예정되어 있습니다.', '["portfolio_name", "etf_name", "date"]', TRUE),
+('PORTFOLIO_REBALANCING_COMPLETED', 'v1.0', '포트폴리오 리밸런싱 완료', '''{portfolio_name}'' 포함 ETF ''{etf_name}'' 리밸런싱이 완료되었습니다.', '["portfolio_name", "etf_name"]', TRUE),
 ('PORTFOLIO_RETURN_5PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +5%를 달성했습니다!', '["portfolio_name"]', TRUE),
 ('PORTFOLIO_RETURN_10PCT', 'v1.0', '포트폴리오 수익률 알림', '''{portfolio_name}'' 수익률이 +10%를 달성했습니다!', '["portfolio_name"]', TRUE),
 ('PORTFOLIO_LOSS_5PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -5%에 도달했습니다.', '["portfolio_name"]', TRUE),
 ('PORTFOLIO_LOSS_10PCT', 'v1.0', '포트폴리오 손실률 알림', '''{portfolio_name}'' 손실률이 -10%에 도달했습니다.', '["portfolio_name"]', TRUE),
 -- 뉴스 관련
 ('NEWS_ETF_RELATED', 'v1.0', '관심 ETF 뉴스', '관심 ETF ''{etf_name}'' 관련 뉴스: {news_title}', '["etf_name", "news_title"]', TRUE),
-('NEWS_PORTFOLIO_RELATED', 'v1.0', '포트폴리오 관련 뉴스', '''{portfolio_name}'' 관련 뉴스가 있습니다: {news_title}', '["portfolio_name", "news_title"]', TRUE),
 -- 시스템
 ('SYSTEM_ANNOUNCEMENT', 'v1.0', '{title}', '{message}', '["title", "message"]', TRUE);

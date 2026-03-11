@@ -129,9 +129,18 @@ class StockNewsScraper:
             logger.warning(f"제목 추출 실패: {news_url}")
             return None
 
-        # 본문
+        # 본문 (문단 구분 유지)
         content_el = soup.select_one("#dic_area") or soup.select_one("#newsct_article")
-        content = content_el.get_text(strip=True) if content_el else ""
+        content = ""
+        if content_el:
+            # <br> 태그를 줄바꿈으로 변환
+            for br in content_el.find_all("br"):
+                br.replace_with("\n")
+            # 텍스트 추출 후 문단 정리
+            raw_text = content_el.get_text(separator="\n")
+            # 연속 줄바꿈 정리 (3개 이상 → 2개)
+            lines = [line.strip() for line in raw_text.split("\n")]
+            content = "\n\n".join(line for line in lines if line)
 
         # 언론사
         source_el = soup.select_one("a.media_end_head_top_logo img")

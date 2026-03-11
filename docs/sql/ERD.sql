@@ -12,6 +12,7 @@ CREATE TABLE "user" (
     "email" VARCHAR(100) NOT NULL UNIQUE,
     "password" VARCHAR(255),                      -- 비밀번호 (nullable, 소셜만 사용 시 NULL)
     "nickname" VARCHAR(50) UNIQUE,                -- 닉네임 (신규 가입 시 이메일로 설정)
+    "profile_image" VARCHAR(500),                 -- 프로필 이미지 URL (카카오 프로필 등)
     "is_active" BOOLEAN DEFAULT TRUE,
     "last_login_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -172,9 +173,10 @@ CREATE TABLE "portfolio_ai_feedback" (
 
 -- 알림 유형 코드 테이블
 CREATE TABLE "alert_type" (
-    "code" VARCHAR(30) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
+    "code" VARCHAR(50) PRIMARY KEY,              -- ETF_LISTING, ETF_DELISTING, PORTFOLIO_RETURN_5PCT 등
     "name" VARCHAR(100) NOT NULL,                -- "ETF 신규 상장"
     "category" VARCHAR(30) NOT NULL,             -- ETF / PORTFOLIO / NEWS / SYSTEM
+    "setting_group" VARCHAR(30) NOT NULL,        -- 사용자 설정 그룹 (화면에 보이는 단위)
     "description" VARCHAR(200),                  -- 알림 설명
     "is_active" BOOLEAN DEFAULT TRUE,
     "display_order" INTEGER DEFAULT 0,           -- 노출 순서
@@ -184,7 +186,7 @@ CREATE TABLE "alert_type" (
 -- 알림 메시지 템플릿 (버전 관리)
 CREATE TABLE "alert_message_template" (
     "id" BIGSERIAL PRIMARY KEY,
-    "alert_type_code" VARCHAR(30) NOT NULL,      -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,      -- alert_type FK
     "version" VARCHAR(20) NOT NULL,              -- 'v1.0', 'v1.1'
     "title_template" VARCHAR(200) NOT NULL,      -- "신규 ETF 상장 알림"
     "message_template" TEXT NOT NULL,            -- "{etf_name} ETF가 {date}에 상장 예정입니다."
@@ -200,7 +202,7 @@ CREATE TABLE "alert_message_template" (
 CREATE TABLE "user_notification_setting" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "alert_type_code" VARCHAR(30) NOT NULL,           -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,           -- alert_type FK
     "is_enabled" BOOLEAN DEFAULT TRUE,                -- 알림 활성화 여부
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -225,7 +227,7 @@ CREATE TABLE "fcm_token" (
 CREATE TABLE "user_alert" (
     "id" BIGSERIAL PRIMARY KEY,
     "user_id" BIGINT NOT NULL,
-    "alert_type_code" VARCHAR(30) NOT NULL,       -- alert_type FK
+    "alert_type_code" VARCHAR(50) NOT NULL,       -- alert_type FK
     -- 참조 대상 (다형성)
     "reference_type" VARCHAR(30),                 -- ETF / PORTFOLIO / NEWS / DISCLOSURE (NULL이면 시스템 알림)
     "reference_id" BIGINT,                        -- 참조 대상 ID (etf.id / portfolio.id / news_article.id 등)
