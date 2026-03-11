@@ -114,6 +114,7 @@ app:
     allowed-origins:
       - http://localhost:3000
       - http://localhost:8080
+      - https://j14d102.p.ssafy.io
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
 
