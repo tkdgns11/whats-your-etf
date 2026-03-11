@@ -29,13 +29,22 @@ public interface EtfRepository extends JpaRepository<Etf, Long> {
      * @return 관련 ETF 목록
      */
     @Query(value = """
-        SELECT DISTINCT e.* FROM etf e
-        JOIN etf_stock_composition esc ON e.id = esc.etf_id
-        JOIN stock s ON esc.stock_id = s.id
-        JOIN news_stock_mapping nsm ON s.company_id = nsm.company_id
-        WHERE nsm.news_id = :newsId
-          AND e.is_active = true
-        ORDER BY esc.weight_pct DESC
+        SELECT e.* FROM etf e
+        WHERE e.id IN (
+            SELECT DISTINCT esc.etf_id
+            FROM etf_stock_composition esc
+            JOIN stock s ON esc.stock_id = s.id
+            JOIN news_stock_mapping nsm ON s.company_id = nsm.company_id
+            WHERE nsm.news_id = :newsId
+        )
+        AND e.is_active = true
+        ORDER BY (
+            SELECT MAX(esc2.weight_pct)
+            FROM etf_stock_composition esc2
+            JOIN stock s2 ON esc2.stock_id = s2.id
+            JOIN news_stock_mapping nsm2 ON s2.company_id = nsm2.company_id
+            WHERE esc2.etf_id = e.id AND nsm2.news_id = :newsId
+        ) DESC
         LIMIT :limit
         """, nativeQuery = true)
     List<Etf> findRelatedEtfsByNewsId(@Param("newsId") Long newsId, @Param("limit") int limit);
