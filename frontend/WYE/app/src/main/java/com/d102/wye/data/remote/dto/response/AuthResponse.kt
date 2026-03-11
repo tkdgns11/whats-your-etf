@@ -12,6 +12,9 @@ data class TokenResponse(
     @SerializedName("expiresIn")
     val expiresIn: Int,             // 토큰 만료 시간 (초)
 
+    @SerializedName("isNewUser")
+    val isNewUser: Boolean,
+
     @SerializedName("user")
     val user: UserResponse
 )

@@ -19,6 +19,10 @@ import java.net.SocketTimeoutException
  */
 abstract class BaseRepository {
 
+    private fun resolveServerCode(serverCode: String?, fallbackCode: Int): Int {
+        return serverCode?.toIntOrNull() ?: fallbackCode
+    }
+
     /**
      * BaseResponse<T> 래퍼로 감싸진 API 호출
      *
@@ -62,11 +66,15 @@ abstract class BaseRepository {
 
                     // 200이지만 data가 null (서버 비즈니스 에러)
                     else -> {
+                        val resolvedCode = resolveServerCode(
+                            serverCode = body.code,
+                            fallbackCode = response.code()
+                        )
                         BaseResult.Error(
                             ApiError(
                                 message = body.message ?: "알 수 없는 오류",
-                                code = body.code ?: response.code(),
-                                type = ApiError.getErrorType(body.code)
+                                code = resolvedCode,
+                                type = ApiError.getErrorType(resolvedCode)
                             )
                         )
                     }

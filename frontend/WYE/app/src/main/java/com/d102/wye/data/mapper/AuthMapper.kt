@@ -13,6 +13,7 @@ fun TokenResponse.toDomain() = TokenPair(
     accessToken = accessToken,
     refreshToken = refreshToken,
     expiresIn = expiresIn,
+    isNewUser = isNewUser,
     user = user.toDomain()
 )
 
