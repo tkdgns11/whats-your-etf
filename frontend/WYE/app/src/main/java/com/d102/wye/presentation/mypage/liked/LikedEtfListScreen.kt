@@ -80,19 +80,34 @@ fun LikedEtfListScreen(
                     CircularProgressIndicator()
                 }
 
-                is UiState.Success -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.data.likedEtfs, key = { it.ticker }) { etf ->
-                        EtfListItem(
-                            name = etf.name,
-                            ticker = etf.ticker,
-                            currentPrice = etf.currentPrice,
-                            changeRate = etf.changeRate,
-                            changeAmount = etf.changeAmount,
-                            riskLevel = etf.riskLevel,
-                            isLiked = etf.isLiked,
-                            onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
-                            onClick = { onEtfClick(etf.ticker) }
-                        )
+                is UiState.Success -> {
+                    if (state.data.likedEtfs.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "관심있는 ETF가 없습니다.",
+                                color = TextSecondary,
+                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(state.data.likedEtfs, key = { it.ticker }) { etf ->
+                                EtfListItem(
+                                    name = etf.name,
+                                    ticker = etf.ticker,
+                                    currentPrice = etf.currentPrice,
+                                    changeRate = etf.changeRate,
+                                    changeAmount = etf.changeAmount,
+                                    riskLevel = etf.riskLevel,
+                                    isLiked = etf.isLiked,
+                                    onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
+                                    onClick = { onEtfClick(etf.ticker) }
+                                )
+                            }
+                        }
                     }
                 }
 
