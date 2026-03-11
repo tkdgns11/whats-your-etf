@@ -2,6 +2,8 @@ package com.d102.wye.presentation.auth.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,8 +16,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    // TODO: AuthRepository 주입
-    // private val authRepository: AuthRepository
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -24,6 +25,7 @@ class LoginViewModel @Inject constructor(
     private val _loginEvent = MutableSharedFlow<LoginEvent>()
     val loginEvent: SharedFlow<LoginEvent> = _loginEvent
 
+    /** 이메일 입력값을 상태에 반영한다. */
     fun onEmailChanged(email: String) {
         _uiState.update {
             it.copy(
@@ -33,6 +35,7 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    /** 비밀번호 입력값을 상태에 반영한다. */
     fun onPasswordChanged(password: String) {
         _uiState.update {
             it.copy(
@@ -42,10 +45,12 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    /** 비밀번호 표시 여부를 토글한다. */
     fun onPasswordVisibilityToggle() {
         _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
+    /** 이메일 로그인 버튼을 눌렀을 때 입력값 검증과 로그인 요청을 처리한다. */
     fun onLoginClick() {
         val currentState = _uiState.value
         val email = currentState.email.trim()
@@ -64,21 +69,45 @@ class LoginViewModel @Inject constructor(
                     )
                 }
 
-                // TODO: authRepository.login(email, password) 호출
-                // TODO: 로그인 성공 시 토큰 저장
-                // TODO: 서버 에러를 사용자 메시지로 매핑
-                // TODO: 실제 로그인 성공 시 emitLoginSuccess() 호출
+                viewModelScope.launch {
+                    when (val result = authRepository.login(email, password)) {
+                        is BaseResult.Success -> emitLoginSuccess()
+                        is BaseResult.Error -> setError(result.error.message)
+                    }
+                }
             }
         }
     }
 
-    private fun setError(message: String) {
-        _uiState.update { it.copy(isLoading = false, errorMessage = message) }
+    /** 카카오 로그인 시작 전 버튼 로딩 상태를 켠다. */
+    fun onKakaoLoginStart() {
+        _uiState.update { it.copy(isKakaoLoading = true, errorMessage = null) }
     }
 
+    /** 카카오 SDK 로그인 성공 결과를 로컬 임시 세션으로 저장한다. */
+    fun onKakaoLoginSuccess(userId: Long, nickname: String?) {
+        viewModelScope.launch {
+            when (val result = authRepository.loginWithKakao(userId = userId, nickname = nickname)) {
+                is BaseResult.Success -> emitLoginSuccess()
+                is BaseResult.Error -> setError(result.error.message)
+            }
+        }
+    }
+
+    /** 카카오 로그인 실패 시 로딩을 해제하고 에러 메시지를 노출한다. */
+    fun onKakaoLoginFailure(message: String) {
+        setError(message)
+    }
+
+    /** 화면에 표시할 에러 메시지를 저장하고 로딩 상태를 해제한다. */
+    private fun setError(message: String) {
+        _uiState.update { it.copy(isLoading = false, isKakaoLoading = false, errorMessage = message) }
+    }
+
+    /** 로그인 성공 시 로딩을 해제하고 화면 전환 이벤트를 발행한다. */
     private fun emitLoginSuccess() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = false) }
+            _uiState.update { it.copy(isLoading = false, isKakaoLoading = false) }
             _loginEvent.emit(LoginEvent.LoginSuccess)
         }
     }

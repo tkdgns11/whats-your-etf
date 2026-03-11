@@ -3,6 +3,7 @@ package com.d102.wye.core.di
 import com.d102.wye.core.app.Constants
 import com.d102.wye.core.network.AuthTokenInterceptor
 import com.d102.wye.core.network.TokenRefreshInterceptor
+import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -72,10 +73,17 @@ object NetworkModule {
             .build()
     }
 
-    // 에시...
+    /** ETF 관련 Retrofit API 인터페이스 구현체를 제공한다. */
     @Provides
     @Singleton
     fun provideEtfApiService(retrofit: Retrofit): EtfApiService {
         return retrofit.create(EtfApiService::class.java)
+    }
+
+    /** 인증 관련 Retrofit API 인터페이스 구현체를 제공한다. */
+    @Provides
+    @Singleton
+    fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
+        return retrofit.create(AuthApiService::class.java)
     }
 }

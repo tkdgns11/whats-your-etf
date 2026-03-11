@@ -3,7 +3,7 @@ package com.d102.wye.core.app
 object Constants {
 
     // API
-    const val BASE_URL = "http://d102.p.ssafy.io/api/"
+    const val BASE_URL = "http://j14d102.p.ssafy.io/api/"
 
     const val CONNECT_TIMEOUT = 30L // seconds
     const val READ_TIMEOUT = 30L
@@ -14,6 +14,9 @@ object Constants {
     const val KEY_ACCESS_TOKEN = "access_token"
     const val KEY_REFRESH_TOKEN = "refresh_token"
     const val KEY_USER_ID = "user_id"
+    const val KEY_AUTH_PROVIDER = "auth_provider"
+    const val KEY_USER_NICKNAME = "user_nickname"
+    const val KEY_KAKAO_USER_ID = "kakao_user_id"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
 
     // Database

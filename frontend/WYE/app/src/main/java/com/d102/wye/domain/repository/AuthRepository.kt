@@ -1,7 +1,7 @@
 package com.d102.wye.domain.repository
 
-import com.d102.wye.data.remote.dto.response.TokenResponse
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.TokenPair
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -10,10 +10,16 @@ import kotlinx.coroutines.flow.Flow
 interface AuthRepository {
 
     /** 로그인 */
-    suspend fun login(email: String, password: String): BaseResult<TokenResponse>
+    suspend fun login(email: String, password: String): BaseResult<TokenPair>
+
+    /** 카카오 SDK 로그인 성공 후 서버 없이 임시 세션을 저장한다. */
+    suspend fun loginWithKakao(userId: Long, nickname: String?): BaseResult<Unit>
 
     /** 로그아웃 (토큰 삭제) */
     suspend fun logout(): BaseResult<Unit>
+
+    /** FCM 토큰 서버 등록 */
+    suspend fun registerFcmToken(token: String): BaseResult<Unit>
 
     /** 로그인 상태 Flow — MainActivity startDestination 분기에 사용 */
     val isLoggedIn: Flow<Boolean>

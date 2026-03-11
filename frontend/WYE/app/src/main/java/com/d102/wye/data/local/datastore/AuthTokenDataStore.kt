@@ -31,6 +31,9 @@ class AuthTokenDataStore @Inject constructor(
 
     private val accessTokenKey = stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)
     private val refreshTokenKey = stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)
+    private val authProviderKey = stringPreferencesKey(Constants.KEY_AUTH_PROVIDER)
+    private val userNicknameKey = stringPreferencesKey(Constants.KEY_USER_NICKNAME)
+    private val kakaoUserIdKey = stringPreferencesKey(Constants.KEY_KAKAO_USER_ID)
     private val isLoggedInKey = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
 
     // ─────────────────────────────────────────
@@ -46,6 +49,12 @@ class AuthTokenDataStore @Inject constructor(
     /** 로그인 상태 Flow — MainActivity/AuthViewModel에서 startDestination 분기에 사용 */
     val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[isLoggedInKey] ?: false }
 
+    /** 현재 로그인 제공자 Flow — 이메일/카카오 구분이 필요할 때 사용 */
+    val authProvider: Flow<String?> = dataStore.data.map { it[authProviderKey] }
+
+    /** 현재 사용자 닉네임 Flow — 임시 소셜 로그인 상태 표시에 사용 */
+    val userNickname: Flow<String?> = dataStore.data.map { it[userNicknameKey] }
+
     // ─────────────────────────────────────────
     // Write
     // ─────────────────────────────────────────
@@ -58,6 +67,28 @@ class AuthTokenDataStore @Inject constructor(
         dataStore.edit { preferences ->
             preferences[accessTokenKey] = accessToken
             preferences[refreshTokenKey] = refreshToken
+            preferences[authProviderKey] = "server"
+            preferences.remove(userNicknameKey)
+            preferences.remove(kakaoUserIdKey)
+            preferences[isLoggedInKey] = true
+        }
+    }
+
+    /**
+     * 카카오 SDK 로그인 성공 후 서버 없이 임시 세션을 저장한다.
+     * TODO: 서버 연동 시 카카오 사용자 정보 저장 대신 서버 JWT 저장으로 교체
+     */
+    suspend fun saveKakaoSession(userId: Long, nickname: String?) {
+        dataStore.edit { preferences ->
+            preferences.remove(accessTokenKey)
+            preferences.remove(refreshTokenKey)
+            preferences[authProviderKey] = "kakao"
+            preferences[kakaoUserIdKey] = userId.toString()
+            if (nickname.isNullOrBlank()) {
+                preferences.remove(userNicknameKey)
+            } else {
+                preferences[userNicknameKey] = nickname
+            }
             preferences[isLoggedInKey] = true
         }
     }
@@ -91,6 +122,9 @@ class AuthTokenDataStore @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(accessTokenKey)
             preferences.remove(refreshTokenKey)
+            preferences.remove(authProviderKey)
+            preferences.remove(userNicknameKey)
+            preferences.remove(kakaoUserIdKey)
             preferences[isLoggedInKey] = false
         }
     }
