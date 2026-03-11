@@ -23,3 +23,43 @@ data class NewsItemResponse(
     @SerializedName("publishedAt")
     val publishedAt: String
 )
+
+data class NewsDetailResponse(
+    @SerializedName("id")
+    val id: Long,
+    @SerializedName("title")
+    val title: String,
+    @SerializedName("content")
+    val content: String,
+    @SerializedName("source")
+    val source: String,
+    @SerializedName("sourceUrl")
+    val sourceUrl: String,
+    @SerializedName("thumbnailUrl")
+    val thumbnailUrl: String?,
+    @SerializedName("publishedAt")
+    val publishedAt: String,
+    @SerializedName("categoryCode")
+    val categoryCode: String,
+    @SerializedName("categoryName")
+    val categoryName: String,
+    @SerializedName("keywords")
+    val keywords: List<String>,
+    @SerializedName("aiSummary")
+    val aiSummary: List<String>,
+    @SerializedName("relatedEtfs")
+    val relatedEtfs: List<RelatedEtfResponse>
+)
+
+data class RelatedEtfResponse(
+    @SerializedName("etfId")
+    val etfId: Long,
+    @SerializedName("ticker")
+    val ticker: String,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("manager")
+    val manager: String,
+    @SerializedName("changeRate")
+    val changeRate: Double
+)
