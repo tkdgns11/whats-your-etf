@@ -1,5 +1,6 @@
 package com.whatsyouretf.userservice.domain.etf.entity;
 
+import com.whatsyouretf.userservice.domain.etf.dto.RiskType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,10 +34,6 @@ public class Etf {
     @Column(nullable = false, length = 200)
     private String name;
 
-    /** 카테고리 (국내주식형/해외주식형/채권형/원자재형/통화형) */
-    @Column(length = 50)
-    private String category;
-
     /** 전략 유형 (MARKET/THEME/DIVIDEND/BOND/DERIVATIVE) */
     @Column(name = "strategy_type", length = 30)
     private String strategyType;
@@ -44,10 +41,6 @@ public class Etf {
     /** 섹터 (반도체/2차전지/AI/배당 등) */
     @Column(length = 50)
     private String sector;
-
-    /** 자산 클래스 (EQUITY/BOND/COMMODITY/MIXED) */
-    @Column(name = "asset_class", length = 30)
-    private String assetClass;
 
     /** 자산운용사 (KODEX/TIGER/KBSTAR 등) */
     @Column(name = "asset_manager", length = 50)
@@ -87,12 +80,8 @@ public class Etf {
     private String dividendFreq;
 
     /** 위험등급 (HIGH_RISK/MODERATE/STABLE) */
-    @Column(name = "risk_grade", length = 20)
-    private String riskGrade;
-
-    /** 1년 변동성 (%) */
-    @Column(name = "volatility_1y", precision = 8, scale = 4)
-    private BigDecimal volatility1y;
+    @Enumerated(EnumType.STRING)
+    private RiskType riskType;
 
     /** 상장일 */
     @Column(name = "listing_date")
@@ -102,6 +91,9 @@ public class Etf {
     @Column(name = "delisted_date")
     private LocalDate delistedDate;
 
+    /** 재무 지표 */
+    @Embedded
+    private Fundamental fundamental;
     /** 활성 상태 */
     @Column(name = "is_active")
     @Builder.Default
@@ -114,4 +106,10 @@ public class Etf {
     @Column(name = "updated_at")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    public static Etf of(Long etfId) {
+        Etf etf = new Etf();
+        etf.id = etfId;
+        return etf;
+    }
 }

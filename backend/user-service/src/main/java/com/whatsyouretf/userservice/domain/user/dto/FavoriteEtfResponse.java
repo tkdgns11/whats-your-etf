@@ -53,7 +53,6 @@ public class FavoriteEtfResponse {
                 .etfId(etf.getId())
                 .stockCode(etf.getStockCode())
                 .name(etf.getName())
-                .category(etf.getCategory())
                 .assetManager(etf.getAssetManager())
                 .favoritedAt(favorite.getCreatedAt())
                 .build();
@@ -68,7 +67,6 @@ public class FavoriteEtfResponse {
                 .etfId(etf.getId())
                 .stockCode(etf.getStockCode())
                 .name(etf.getName())
-                .category(etf.getCategory())
                 .assetManager(etf.getAssetManager())
                 .currentPrice(latestPrice != null ? latestPrice.getClose() : null)
                 .changeRate(latestPrice != null ? latestPrice.getChangeRate() : null)
