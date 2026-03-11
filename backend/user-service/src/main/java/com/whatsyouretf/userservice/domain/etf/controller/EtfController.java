@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.etf.controller;
 
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.common.response.PaginatedResponse;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfDetailResponse;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfPriceHistoryRequest;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfPriceHistoryResponse;
 import com.whatsyouretf.userservice.domain.etf.service.EtfService;
@@ -42,5 +43,15 @@ public class EtfController {
                     etfService.getEtfHistory(ticker, request.getStartDate(), request.getEndDate(), pageable)
                         .map(EtfPriceHistoryResponse::from))
             ));
+    }
+
+    @GetMapping("/{ticker}")
+    public ResponseEntity<ApiResponse<EtfDetailResponse>> getEtfDetail(@PathVariable String ticker) {
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(
+                    EtfDetailResponse.from(
+                        etfService.getEtfDetail(ticker),
+                        etfService.getEtfCurrentInfo(ticker))));
     }
 }

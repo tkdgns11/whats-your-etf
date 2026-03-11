@@ -1,8 +1,10 @@
 package com.whatsyouretf.userservice.domain.etf.service.impl;
 
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfInfluentialStockResponse;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorResponse;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSectorStockResponse;
+import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorAiHistory;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorCluster;
@@ -10,6 +12,7 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepo
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRepository;
 import com.whatsyouretf.userservice.domain.etf.service.EtfPriceReader;
+import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,11 +35,11 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class EtfServiceImpl implements EtfService {
 
+    private final EtfReader etfReader;
     private final EtfPriceReader etfPriceReader;
     private final EtfSectorClusterRepository sectorClusterRepository;
     private final EtfSectorAiHistoryRepository sectorAiHistoryRepository;
     private final EtfStockCompositionRepository stockCompositionRepository;
-
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
 
@@ -120,5 +123,15 @@ public class EtfServiceImpl implements EtfService {
     @Override
     public Page<EtfPrice> getEtfHistory(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return etfPriceReader.readPrices(ticker, startDate, endDate, pageable);
+    }
+
+    @Override
+    public Etf getEtfDetail(String ticker) {
+        return etfReader.read(ticker);
+    }
+
+    @Override
+    public EtfCurrentInfo getEtfCurrentInfo(String ticker) {
+        return etfReader.getInfo(ticker);
     }
 }
