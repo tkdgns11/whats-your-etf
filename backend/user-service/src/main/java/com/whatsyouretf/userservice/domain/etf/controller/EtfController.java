@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.common.response.PaginatedResponse;
 import com.whatsyouretf.userservice.domain.etf.dto.*;
 import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,11 @@ public class EtfController {
 
     private final EtfService etfService;
 
-    @Operation()
+    @Operation(summary = "etf 가격 이력 조회", description = "시작일부터 종료일을 기준으로 페이징하여 응답합니다.")
     @GetMapping("/{ticker}/price-history")
     public ResponseEntity<ApiResponse<PaginatedResponse<EtfPriceHistoryResponse>>> getEtfPriceHistories(
         @Valid EtfPriceHistoryRequest request,
-        @PathVariable String ticker,
+        @Parameter(description = "etf 종목 코드") @PathVariable String ticker,
         Pageable pageable
     ) {
             return ResponseEntity
@@ -41,7 +42,8 @@ public class EtfController {
     }
 
     @GetMapping("/{ticker}")
-    public ResponseEntity<ApiResponse<EtfDetailResponse>> getEtfDetail(@PathVariable String ticker) {
+    @Operation(summary = "etf 단건 조회", description = "etf의 종목 코드를 기준으로 etf 상세 조회를 응답합니다")
+    public ResponseEntity<ApiResponse<EtfDetailResponse>> getEtfDetail(@Parameter(description = "etf 종목 코드") @PathVariable String ticker) {
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(ApiResponse.success(
@@ -52,8 +54,9 @@ public class EtfController {
 
 
     @GetMapping
+    @Operation(summary = "etf 목록 조회", description = "etf 조건에 맞는 etf 목록을 페이징하여 응답합니다")
     public ResponseEntity<ApiResponse<PaginatedResponse<EtfListResponse>>> getEtfList(
-            @RequestBody EtfListRequest request,
+            @Parameter(description = "etf 검색 조건") @RequestBody EtfListRequest request,
             Pageable pageable
     ) {
             return ResponseEntity
