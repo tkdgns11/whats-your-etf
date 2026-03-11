@@ -3,10 +3,12 @@ package com.d102.wye.core.di
 import com.d102.wye.data.repository.AuthRepositoryImpl
 import com.d102.wye.data.repository.EtfRepositoryImpl
 import com.d102.wye.data.repository.NotificationRepositoryImpl
+import com.d102.wye.data.repository.SimulationRepositoryImpl
 import com.d102.wye.data.repository.StockRepositoryImpl
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.NotificationRepository
+import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.repository.StockRepository
 import dagger.Binds
 import dagger.Module
@@ -21,14 +23,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    /**
-     * EtfRepository 인터페이스 요청 시 EtfRepositoryImpl을 주입
-     *
-     * ViewModel에서:
-     *   @Inject constructor(private val etfRepository: EtfRepository)
-     * → Hilt가 이 @Binds를 보고 EtfRepositoryImpl을 자동으로 주입해줌
-     * → ViewModel은 구현체(EtfRepositoryImpl)를 전혀 몰라도 됨
-     */
     @Binds
     @Singleton
     abstract fun bindEtfRepository(
@@ -52,4 +46,10 @@ abstract class RepositoryModule {
     abstract fun bindNotificationRepository(
         impl: NotificationRepositoryImpl
     ): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSimulationRepository(
+        impl: SimulationRepositoryImpl
+    ): SimulationRepository
 }
