@@ -70,6 +70,7 @@ public enum ErrorCode {
     DUPLICATE_PORTFOLIO_NAME(HttpStatus.CONFLICT, "PORTFOLIO003", "이미 사용 중인 포트폴리오 이름입니다."),
     PORTFOLIO_ETF_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PORTFOLIO004", "포트폴리오 ETF 개수 제한을 초과했습니다."),
     INVALID_WEIGHT_SUM(HttpStatus.BAD_REQUEST, "PORTFOLIO005", "ETF 비중 합계가 100%가 아닙니다."),
+    INVALID_PORTFOLIO_PERIOD(HttpStatus.BAD_REQUEST, "PORTFOLIO006", "유효하지 않은 투자 기간입니다."),
 
     // Simulation
     SIMULATION_NOT_FOUND(HttpStatus.NOT_FOUND, "SIM001", "시뮬레이션을 찾을 수 없습니다."),

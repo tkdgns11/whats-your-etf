@@ -15,9 +15,10 @@ import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Pageable;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -62,6 +63,11 @@ public class EtfServiceImpl implements EtfService {
                 .sectors(sectors)
                 .influentialStocks(influentialStocks)
                 .build();
+    }
+
+    @Override
+    public Map<String, Etf> getEtfListInTickers(List<String> list) {
+        return etfReader.getValidEtfs(list);
     }
 
     /**

@@ -6,10 +6,15 @@ import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.Map;
+
 public interface EtfReader {
     Etf read(String ticker);
 
     EtfCurrentInfo getInfo(String ticker);
 
     Page<EtfSummary> readEtfList(EtfQuery query, Pageable pageable);
+
+    Map<String, Etf> getValidEtfs(List<String> list);
 }

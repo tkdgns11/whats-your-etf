@@ -48,4 +48,12 @@ public interface EtfRepository extends JpaRepository<Etf, Long> {
         LIMIT :limit
         """, nativeQuery = true)
     List<Etf> findRelatedEtfsByNewsId(@Param("newsId") Long newsId, @Param("limit") int limit);
+
+
+    @Query("""
+        SELECT e FROM Etf e
+        WHERE e.stockCode IN :tickers
+        and e.isActive = true
+    """)
+    List<Etf> findEtfsByStockCodeInTickers(@Param("tickers") List<String> tickers);
 }

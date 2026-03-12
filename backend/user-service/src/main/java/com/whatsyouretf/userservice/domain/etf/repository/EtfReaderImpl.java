@@ -11,11 +11,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Component
 @RequiredArgsConstructor
 public class EtfReaderImpl implements EtfReader {
     private final EtfMockRepository etfMockRepository;
     private final EtfCache etfCache;
+    private final EtfRepository etfRepository;
 
     @Override
     public Etf read(String ticker) {
@@ -30,5 +35,11 @@ public class EtfReaderImpl implements EtfReader {
     @Override
     public Page<EtfSummary> readEtfList(EtfQuery query, Pageable pageable) {
         return etfMockRepository.findEtfList(pageable);
+    }
+
+    @Override
+    public Map<String, Etf> getValidEtfs(List<String> tickers) {
+            return etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
+                    .collect(Collectors.toMap(Etf::getStockCode, etf -> etf));
     }
 }
