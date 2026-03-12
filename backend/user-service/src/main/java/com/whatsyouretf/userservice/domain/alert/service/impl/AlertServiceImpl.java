@@ -6,6 +6,8 @@ import com.whatsyouretf.userservice.domain.alert.dto.*;
 import com.whatsyouretf.userservice.domain.alert.entity.*;
 import com.whatsyouretf.userservice.domain.alert.repository.*;
 import com.whatsyouretf.userservice.domain.alert.service.AlertService;
+import com.whatsyouretf.userservice.domain.etf.entity.Etf;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class AlertServiceImpl implements AlertService {
     private final UserNotificationSettingRepository notificationSettingRepository;
     private final FcmTokenRepository fcmTokenRepository;
     private final UserRepository userRepository;
+    private final EtfRepository etfRepository;
 
     private static final int ALERT_DAYS = 7;
 
@@ -58,8 +61,11 @@ public class AlertServiceImpl implements AlertService {
             }
         }
 
+        // ETF 참조 알림의 ticker 조회
+        Map<Long, String> etfTickerMap = buildEtfTickerMap(alertList);
+
         List<AlertListResponse.AlertItem> alerts = alertList.stream()
-                .map(AlertListResponse.AlertItem::from)
+                .map(alert -> AlertListResponse.AlertItem.from(alert, etfTickerMap))
                 .toList();
 
         long unreadCount = userAlertRepository.countByUserIdAndIsReadFalse(userId);
@@ -68,6 +74,25 @@ public class AlertServiceImpl implements AlertService {
                 .alerts(alerts)
                 .unreadCount(unreadCount)
                 .build();
+    }
+
+    /**
+     * 알림 목록에서 ETF 참조 ID들의 ticker 맵 생성
+     */
+    private Map<Long, String> buildEtfTickerMap(List<UserAlert> alertList) {
+        // ETF 타입 알림의 referenceId 수집
+        Set<Long> etfIds = alertList.stream()
+                .filter(a -> a.getReferenceType() == ReferenceType.ETF && a.getReferenceId() != null)
+                .map(UserAlert::getReferenceId)
+                .collect(Collectors.toSet());
+
+        if (etfIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // ETF ID -> stockCode 맵 생성
+        return etfRepository.findAllById(etfIds).stream()
+                .collect(Collectors.toMap(Etf::getId, Etf::getStockCode));
     }
 
     @Override
