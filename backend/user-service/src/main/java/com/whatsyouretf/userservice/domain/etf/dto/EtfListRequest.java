@@ -5,7 +5,7 @@ import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
 import java.math.BigDecimal;
 
 public record EtfListRequest(
-        String ristType,
+        String riskType,
         String strategy,
         String sector,
         BigDecimal dividendYield,
@@ -25,7 +25,7 @@ public record EtfListRequest(
 ) {
         public EtfQuery toQuery() {
                 return new EtfQuery(
-                        ristType,
+                        riskType,
                         strategy,
                         sector,
                         dividendYield,
