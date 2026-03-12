@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,8 +24,7 @@ import com.d102.wye.presentation.theme.*
  *
  * 홈 화면 "실시간 ETF 뉴스" 섹션에서 사용하는 카드 컴포넌트.
  *
- * @param category      뱃지에 표시할 카테고리 (예: "위험형 ETF")
- * @param categoryColor 뱃지 배경색 (기본: BadgeConservative)
+ * @param category      카드 상단에 표시할 카테고리 텍스트
  * @param title         기사 제목
  * @param thumbnailUrl  썸네일 이미지 URL (없으면 null)
  * @param timeAgo       경과 시간 문자열 (예: "2시간 전")
@@ -58,8 +58,13 @@ fun NewsCard(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // 카테고리 뱃지
-            CategoryBadge(label = category, backgroundColor = categoryColor, textColor = categoryFontColor)
+            Text(
+                text = category,
+                style = MaterialTheme.typography.labelSmall,
+                color = PrimaryGreen,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
 
             // 기사 제목
             Text(
