@@ -54,10 +54,10 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
         List<NewsArticle> articles;
         if (categoryCode != null && !categoryCode.isBlank()) {
-            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueOrderByPublishedAtDesc(categoryCode, pageable)
+            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(categoryCode, pageable)
                     .getContent();
         } else {
-            articles = newsArticleRepository.findByIsActiveTrueOrderByPublishedAtDesc(pageable)
+            articles = newsArticleRepository.findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(pageable)
                     .getContent();
         }
 

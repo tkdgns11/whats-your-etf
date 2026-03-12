@@ -17,20 +17,20 @@ import java.util.List;
 public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> {
 
     /**
-     * 최신 뉴스 목록 조회 (활성 상태만)
+     * 최신 뉴스 목록 조회 (활성 상태 + AI 분석 완료)
      */
-    Page<NewsArticle> findByIsActiveTrueOrderByPublishedAtDesc(Pageable pageable);
+    Page<NewsArticle> findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(Pageable pageable);
 
     /**
      * 카테고리 코드별 최신 뉴스 목록 조회
      */
-    Page<NewsArticle> findByCategory_CodeAndIsActiveTrueOrderByPublishedAtDesc(
+    Page<NewsArticle> findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(
             String categoryCode, Pageable pageable);
 
     /**
      * 키워드 검색 (제목 + 본문)
      */
-    @Query("SELECT n FROM NewsArticle n WHERE n.isActive = true " +
+    @Query("SELECT n FROM NewsArticle n WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
            "AND (n.title LIKE %:keyword% OR n.content LIKE %:keyword%) " +
            "ORDER BY n.publishedAt DESC")
     Page<NewsArticle> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
@@ -42,7 +42,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     @Query("SELECT DISTINCT n FROM NewsArticle n " +
            "JOIN n.stockMappings nsm " +
            "JOIN EtfStockComposition ec ON ec.stock.company.id = nsm.companyInfo.id " +
-           "WHERE ec.etf.id = :etfId AND n.isActive = true " +
+           "WHERE ec.etf.id = :etfId AND n.isActive = true AND n.contentSummary IS NOT NULL " +
            "ORDER BY n.publishedAt DESC")
     List<NewsArticle> findByEtfId(@Param("etfId") Long etfId, Pageable pageable);
 
@@ -51,7 +51,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
      */
     @Query("SELECT n FROM NewsArticle n " +
            "JOIN n.stockMappings nsm " +
-           "WHERE nsm.companyInfo.id = :companyId AND n.isActive = true " +
+           "WHERE nsm.companyInfo.id = :companyId AND n.isActive = true AND n.contentSummary IS NOT NULL " +
            "ORDER BY n.publishedAt DESC")
     List<NewsArticle> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
 
@@ -60,7 +60,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
      */
     @Query("SELECT COUNT(DISTINCT n) FROM NewsArticle n " +
            "JOIN n.stockMappings nsm " +
-           "WHERE nsm.companyInfo.id = :companyId AND n.isActive = true")
+           "WHERE nsm.companyInfo.id = :companyId AND n.isActive = true AND n.contentSummary IS NOT NULL")
     long countByCompanyId(@Param("companyId") Long companyId);
 
     /**
@@ -69,7 +69,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     @Query("SELECT COUNT(DISTINCT n) FROM NewsArticle n " +
            "JOIN n.stockMappings nsm " +
            "JOIN EtfStockComposition ec ON ec.stock.company.id = nsm.companyInfo.id " +
-           "WHERE ec.etf.id = :etfId AND n.isActive = true")
+           "WHERE ec.etf.id = :etfId AND n.isActive = true AND n.contentSummary IS NOT NULL")
     long countByEtfId(@Param("etfId") Long etfId);
 
     /**
@@ -94,7 +94,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
                 JOIN stock s ON s.company_id = nsm.company_id
                 JOIN etf_stock_composition ec ON ec.stock_id = s.id
                 JOIN portfolio_etf pe ON pe.etf_id = ec.etf_id
-                WHERE pe.portfolio_id = :portfolioId AND n.is_active = true
+                WHERE pe.portfolio_id = :portfolioId AND n.is_active = true AND n.content_summary IS NOT NULL
                 GROUP BY n.id
                 ORDER BY (
                     MAX(pe.weight_pct * ec.weight_pct) *
