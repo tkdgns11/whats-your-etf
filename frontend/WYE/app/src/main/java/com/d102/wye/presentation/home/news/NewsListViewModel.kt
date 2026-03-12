@@ -114,7 +114,6 @@ data class NewsListItemUiModel(
 
 private val newsCategories = listOf(
     NewsCategoryUiModel(code = null, label = "전체"),
-    NewsCategoryUiModel(code = "NEWS_MARKET", label = "시장/경제"),
     NewsCategoryUiModel(code = "NEWS_SEMI", label = "반도체"),
     NewsCategoryUiModel(code = "NEWS_IT", label = "IT/전자"),
     NewsCategoryUiModel(code = "NEWS_BIO", label = "바이오/의약"),
