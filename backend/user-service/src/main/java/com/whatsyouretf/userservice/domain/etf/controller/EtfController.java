@@ -53,7 +53,7 @@ public class EtfController {
     }
 
 
-    @GetMapping
+    @PostMapping
     @Operation(summary = "etf 목록 조회", description = "etf 조건에 맞는 etf 목록을 페이징하여 응답합니다")
     public ResponseEntity<ApiResponse<PaginatedResponse<EtfListResponse>>> getEtfList(
             @Parameter(description = "etf 검색 조건") @RequestBody EtfListRequest request,
