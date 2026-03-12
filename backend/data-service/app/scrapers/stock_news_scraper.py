@@ -47,6 +47,16 @@ class StockNewsScraper:
     """
 
     BASE_URL = "https://finance.naver.com"
+
+    # User-Agent 로테이션 (429 Rate Limit 방지)
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ]
+
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -66,17 +76,32 @@ class StockNewsScraper:
             await self.client.aclose()
 
     async def _get_with_retry(self, url: str, max_retries: int = 3) -> Optional[str]:
-        """재시도 로직이 포함된 GET 요청"""
+        """재시도 로직이 포함된 GET 요청 (429 Rate Limit 대응)"""
         for attempt in range(max_retries):
             try:
-                await asyncio.sleep(random.uniform(0.5, 1.5))
+                # 요청 간 랜덤 대기 (2~4초로 증가)
+                await asyncio.sleep(random.uniform(2.0, 4.0))
+
+                # 매 요청마다 User-Agent 변경
+                self.client.headers["User-Agent"] = random.choice(self.USER_AGENTS)
+
                 response = await self.client.get(url)
                 response.raise_for_status()
                 return response.text
+            except httpx.HTTPStatusError as e:
+                # 429 Too Many Requests 특별 처리
+                if e.response.status_code == 429:
+                    wait_time = 30 + (attempt * 15)  # 30초, 45초, 60초
+                    logger.warning(f"429 Rate Limit - {wait_time}초 대기 후 재시도: {url}")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.warning(f"요청 실패 (시도 {attempt + 1}/{max_retries}): {url} - {e}")
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(3 * (attempt + 1))
             except Exception as e:
                 logger.warning(f"요청 실패 (시도 {attempt + 1}/{max_retries}): {url} - {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 * (attempt + 1))
+                    await asyncio.sleep(3 * (attempt + 1))
         return None
 
     async def get_news_links(self, stock_code: str) -> List[str]:
