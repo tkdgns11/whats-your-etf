@@ -46,47 +46,48 @@ public class EtfServiceImpl implements EtfService {
     /**
      * 섹터 클러스터 조회 (버블 차트용)
      */
-    private List<EtfSectorResponse> getSectorClusters(Long etfId) {
+    @Override
+    public List<EtfSectorResponse> getSectorClusters(String ticker) {
         // 섹터 클러스터 조회
-        List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfId(etfId);
+        List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfTicker(ticker);
 
         if (clusters.isEmpty()) {
             return List.of();
         }
 
         // AI 분석 조회 (그룹코드별)
-        Map<String, String> aiAnalysisMap = sectorAiHistoryRepository.findLatestAllByEtfId(etfId).stream()
-                .collect(Collectors.toMap(
-                        EtfSectorAiHistory::getGroupCode,
-                        EtfSectorAiHistory::getAiAnalysis,
-                        (a, b) -> a // 중복 시 첫번째 사용
-                ));
+        Map<String, String> aiAnalysisMap = sectorAiHistoryRepository.findLatestAllByEtfTicker(ticker).stream()
+            .collect(Collectors.toMap(
+                EtfSectorAiHistory::getGroupCode,
+                EtfSectorAiHistory::getAiAnalysis,
+                (a, b) -> a // 중복 시 첫번째 사용
+            ));
 
         // 섹터별 종목 조회하여 응답 생성
         return clusters.stream()
-                .map(cluster -> {
-                    // 해당 섹터 종목들 조회
-                    List<EtfSectorStockResponse> stocks = getSectorStocks(etfId, cluster.getGroupCode());
+            .map(cluster -> {
+                // 해당 섹터 종목들 조회
+                List<EtfSectorStockResponse> stocks = getSectorStocks(ticker, cluster.getGroupCode());
 
-                    return EtfSectorResponse.builder()
-                            .name(cluster.getGroupName() != null ? cluster.getGroupName() : cluster.getIndustryName())
-                            .percentage(cluster.getWeightPct())
-                            .stocks(stocks)
-                            .aiAnalysis(aiAnalysisMap.get(cluster.getGroupCode()))
-                            .build();
-                })
-                .toList();
+                return EtfSectorResponse.builder()
+                    .name(cluster.getGroupName() != null ? cluster.getGroupName() : cluster.getIndustryName())
+                    .percentage(cluster.getWeightPct())
+                    .stocks(stocks)
+                    .aiAnalysis(aiAnalysisMap.get(cluster.getGroupCode()))
+                    .build();
+            })
+            .toList();
     }
 
     /**
      * 섹터별 종목 목록 조회
      */
-    private List<EtfSectorStockResponse> getSectorStocks(Long etfId, String groupCode) {
+    private List<EtfSectorStockResponse> getSectorStocks(String ticker, String groupCode) {
         if (groupCode == null) {
             return List.of();
         }
 
-        return stockCompositionRepository.findByEtfIdAndGroupCode(etfId, groupCode).stream()
+        return stockCompositionRepository.findByEtfTickerAndGroupCode(ticker, groupCode).stream()
                 .limit(MAX_SECTOR_STOCKS)
                 .map(comp -> EtfSectorStockResponse.builder()
                         .ticker(comp.getStock().getTicker())
@@ -94,8 +95,8 @@ public class EtfServiceImpl implements EtfService {
                                 ? comp.getStock().getCompany().getCompanyName()
                                 : null)
                         .percentage(comp.getWeightPct())
-                        .build())
-                .toList();
+                    .build())
+            .toList();
     }
 
     /**

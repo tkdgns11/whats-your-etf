@@ -13,11 +13,14 @@ public class EtfPriceHistoryResponse {
     private LocalDate date;
     private BigDecimal stockPrice;
     private BigDecimal dailyReturn;
+    private BigDecimal nav;
+
     public static EtfPriceHistoryResponse from(EtfPrice etfPrice) {
         return EtfPriceHistoryResponse.builder()
                 .date(etfPrice.getTradeDate())
                 .stockPrice(etfPrice.getClose())
                 .dailyReturn(etfPrice.getChangeRate())
+                .nav(etfPrice.getNav())
                 .build();
     }
 }

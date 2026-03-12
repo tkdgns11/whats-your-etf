@@ -17,13 +17,13 @@ public interface EtfSectorClusterRepository extends JpaRepository<EtfSectorClust
      */
     @Query("""
         SELECT esc FROM EtfSectorCluster esc
-        WHERE esc.etf.id = :etfId
+        WHERE esc.etf.stockCode = :ticker
           AND esc.clusterType = 'GROUP_CODE'
           AND esc.baseDate = (
               SELECT MAX(e.baseDate) FROM EtfSectorCluster e
-              WHERE e.etf.id = :etfId AND e.clusterType = 'GROUP_CODE'
+              WHERE e.etf.stockCode = :ticker AND e.clusterType = 'GROUP_CODE'
           )
         ORDER BY esc.weightPct DESC
         """)
-    List<EtfSectorCluster> findLatestByEtfId(@Param("etfId") Long etfId);
+    List<EtfSectorCluster> findLatestByEtfTicker(@Param("ticker") String ticker);
 }
