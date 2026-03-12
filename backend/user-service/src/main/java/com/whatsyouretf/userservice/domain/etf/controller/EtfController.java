@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * ETF 관련 API Controller
  */
@@ -52,6 +54,14 @@ public class EtfController {
                                 etfService.getEtfCurrentInfo(ticker))));
     }
 
+    @GetMapping("/{ticker}/clusters")
+    @Operation(summary = "etf 클러스터 조회", description = "etf의 종목 코드를 기준으로 etf 클러스터를 응답합니다")
+    public ResponseEntity<ApiResponse<List<EtfSectorResponse>>> getEtfCluster(@Parameter(description = "etf 종목 코드") @PathVariable String ticker) {
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(
+                    etfService.getSectorClusters(ticker)));
+    }
 
     @PostMapping
     @Operation(summary = "etf 목록 조회", description = "etf 조건에 맞는 etf 목록을 페이징하여 응답합니다")

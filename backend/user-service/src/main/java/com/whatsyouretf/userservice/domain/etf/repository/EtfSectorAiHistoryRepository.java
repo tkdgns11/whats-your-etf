@@ -32,10 +32,11 @@ public interface EtfSectorAiHistoryRepository extends JpaRepository<EtfSectorAiH
      * ETF의 모든 그룹 최신 AI 분석 조회
      */
     @Query(value = """
-        SELECT DISTINCT ON (group_code) *
-        FROM etf_sector_ai_history
-        WHERE etf_id = :etfId
+        SELECT DISTINCT ON (group_code) h.*
+        FROM etf_sector_ai_history AS h
+                JOIN etf AS e ON h.etf_id = e.id
+        WHERE e.stock_code = :ticker
         ORDER BY group_code, base_date DESC
         """, nativeQuery = true)
-    List<EtfSectorAiHistory> findLatestAllByEtfId(@Param("etfId") Long etfId);
+    List<EtfSectorAiHistory> findLatestAllByEtfTicker(@Param("ticker") String ticker);
 }

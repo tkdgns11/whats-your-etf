@@ -52,16 +52,16 @@ public interface EtfStockCompositionRepository extends JpaRepository<EtfStockCom
         SELECT esc FROM EtfStockComposition esc
         JOIN FETCH esc.stock s
         JOIN FETCH s.company c
-        WHERE esc.etf.id = :etfId
+        WHERE esc.etf.stockCode = :ticker
           AND c.industryGroup = :groupCode
           AND esc.baseDate = (
               SELECT MAX(e.baseDate) FROM EtfStockComposition e
-              WHERE e.etf.id = :etfId
+              WHERE e.etf.stockCode = :ticker
           )
         ORDER BY esc.weightPct DESC
         """)
-    List<EtfStockComposition> findByEtfIdAndGroupCode(
-            @Param("etfId") Long etfId,
+    List<EtfStockComposition> findByEtfTickerAndGroupCode(
+            @Param("ticker") String ticker,
             @Param("groupCode") String groupCode
     );
 }
