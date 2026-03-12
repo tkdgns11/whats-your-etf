@@ -41,7 +41,7 @@ fun MyPageScreen(
     onHoldingEtfMoreClick: () -> Unit = {},
     onLikedEtfListClick: () -> Unit = {},
     onPasswordChangeClick: () -> Unit = {},
-    onNotificationSettingClick: () -> Unit = {},
+    onAlertSettingClick: () -> Unit = {},
     onThemeModeClick: () -> Unit = {},
     onFaqClick: () -> Unit = {},
     onTermsClick: () -> Unit = {},
@@ -77,7 +77,7 @@ fun MyPageScreen(
         onHoldingEtfMoreClick = onHoldingEtfMoreClick,
         onLikedEtfListClick = onLikedEtfListClick,
         onPasswordChangeClick = onPasswordChangeClick,
-        onNotificationSettingClick = onNotificationSettingClick,
+        onAlertSettingClick = onAlertSettingClick,
         onThemeModeClick = onThemeModeClick,
         onFaqClick = onFaqClick,
         onTermsClick = onTermsClick,
@@ -102,7 +102,7 @@ private fun MyPageScreenContent(
     onHoldingEtfMoreClick: () -> Unit,
     onLikedEtfListClick: () -> Unit,
     onPasswordChangeClick: () -> Unit,
-    onNotificationSettingClick: () -> Unit,
+    onAlertSettingClick: () -> Unit,
     onThemeModeClick: () -> Unit,
     onFaqClick: () -> Unit,
     onTermsClick: () -> Unit,
@@ -153,7 +153,7 @@ private fun MyPageScreenContent(
                         )
 
                         myPageSettingsSection(
-                            onNotificationSettingClick = onNotificationSettingClick,
+                            onAlertSettingClick = onAlertSettingClick,
                             onThemeModeClick = onThemeModeClick
                         )
 
