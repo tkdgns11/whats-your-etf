@@ -34,6 +34,10 @@ public class Etf {
     @Column(nullable = false, length = 200)
     private String name;
 
+    /** ETF 영문명 (예: KOSPI 200 Index Tracking Fund) */
+    @Column(name = "english_name", length = 200)
+    private String englishName;
+
     /** 전략 유형 (MARKET/THEME/DIVIDEND/BOND/DERIVATIVE) */
     @Column(name = "strategy_type", length = 30)
     private String strategyType;

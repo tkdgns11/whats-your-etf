@@ -59,9 +59,11 @@ ETF 구성종목의 산업 섹터를 분류합니다. 클러스터 버블 차트
 
 ---
 
-## GET /api/v1/etf/{ticker}
+## GET /api/v1/etfs/{ticker}/clusters
 
-ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
+ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
+
+> ETF 기본 정보는 `GET /api/v1/etfs/{ticker}`에서 조회
 
 ### Request
 
@@ -77,23 +79,7 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
   "message": "Success",
   "code": "OK",
   "data": {
-    "ticker": "091160",
-    "name": "KODEX 반도체",
-    "englishName": "KODEX Semiconductor",
-    "riskLevel": 4,
-    "currentPrice": 42350,
-    "changeAmount": 520,
-    "changeRate": 1.24,
-    "iNav": 42380,
-    "iNavChangeAmount": 550,
-    "iNavChangeRate": 1.31,
-    "returnRate1M": 5.67,
-    "volume": 1523000,
-    "manager": "삼성자산운용",
-    "volatility": "높음",
-    "expenseRatio": 0.45,
-    "netAsset": 1250000000000,
-    "listedDate": "2006-06-27",
+    "englishName": "KOSPI 200 Index Tracking Fund",
     "sectors": [
       {
         "name": "반도체",
@@ -153,13 +139,6 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 
 ### 화면 매핑
 
-#### ETF 헤더 (ClusterTab)
-| API 필드 | 화면 표시 |
-|----------|----------|
-| riskLevel | 위험등급 배지 (1:안정형 ~ 5:공격투자형) |
-| ticker | 중앙 대형 텍스트 |
-| englishName | 영문명 (작은 텍스트) |
-
 #### 클러스터 버블 차트
 | API 필드 | 화면 표시 |
 |----------|----------|
@@ -168,12 +147,6 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 | sectors[].name | 아이콘 매핑 (반도체→Memory, 금융→AccountBalance 등) |
 
 버블 크기: `percentage` 값에 비례
-
-#### 가격/거래량 카드
-| API 필드 | 화면 표시 |
-|----------|----------|
-| currentPrice | 현재가 (천단위 콤마) |
-| volume | 거래량 (억/만 단위 변환) |
 
 #### 영향력 종목 섹션
 | API 필드 | 화면 표시 |
@@ -198,14 +171,12 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 
 - [x] `EtfController.java` 구현 완료
 - [x] `EtfService.java` 구현 완료
-- [x] `EtfDetailResponse.java` DTO 구현 완료
+- [x] `EtfClusterResponse.java` DTO 구현 완료
 
 ### 구현된 조회 로직
 
 ```
-etf (기본 정보)
-    ↓
-etf_prices (최신 시세)
+etf (기본 정보 - englishName)
     ↓
 etf_sector_cluster (섹터 클러스터 - 버블 차트)
     ↓
@@ -216,11 +187,11 @@ etf_stock_composition → stock → company_info (구성 종목)
 
 - 섹터별 상위 5개 종목 반환
 - 영향력 종목 상위 5개 반환
-- 위험등급: HIGH_RISK → 5, STABLE → 1 매핑
+- 위험등급: AGGRESSIVE → 5, STABLE → 1 매핑
 - 변동성: 1년 변동률 기준 문자열 변환
 
 ## 안드로이드 구현 상태
 
 - [x] `EtfApiService.kt` 존재
 - [x] `EtfDetailResponse.kt` DTO 존재
-- [ ] API 경로 수정 필요 (`api/etf/{ticker}` → `/api/v1/etf/{ticker}`)
+- [ ] API 경로 수정 필요 → `/api/v1/etfs/{ticker}/clusters`

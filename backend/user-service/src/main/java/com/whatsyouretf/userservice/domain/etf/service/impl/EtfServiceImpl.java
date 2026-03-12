@@ -44,10 +44,30 @@ public class EtfServiceImpl implements EtfService {
 
 
     /**
-     * 섹터 클러스터 조회 (버블 차트용)
+     * ETF 클러스터 데이터 조회 (영문명 + 섹터 + 영향력 종목)
      */
     @Override
-    public List<EtfSectorResponse> getSectorClusters(String ticker) {
+    public EtfClusterResponse getClusterData(String ticker) {
+        // ETF 조회 (영문명)
+        Etf etf = etfReader.read(ticker);
+
+        // 섹터 클러스터 조회
+        List<EtfSectorResponse> sectors = getSectorClusters(ticker);
+
+        // 영향력 종목 조회
+        List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
+
+        return EtfClusterResponse.builder()
+                .englishName(etf.getEnglishName())
+                .sectors(sectors)
+                .influentialStocks(influentialStocks)
+                .build();
+    }
+
+    /**
+     * 섹터 클러스터 조회 (버블 차트용)
+     */
+    private List<EtfSectorResponse> getSectorClusters(String ticker) {
         // 섹터 클러스터 조회
         List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfTicker(ticker);
 
