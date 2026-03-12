@@ -46,7 +46,19 @@ class NewsListViewModel @Inject constructor(
     /** Repository에서 뉴스 목록을 받아 화면 상태로 변환한다. */
     private fun loadNews() {
         viewModelScope.launch {
-            _uiState.update { UiState.Loading }
+            val currentData = (_uiState.value as? UiState.Success)?.data
+            if (currentData == null) {
+                _uiState.update { UiState.Loading }
+            } else {
+                _uiState.update {
+                    UiState.Success(
+                        currentData.copy(
+                            selectedCategoryCode = selectedCategoryCode,
+                            isRefreshing = true
+                        )
+                    )
+                }
+            }
             when (val result = newsRepository.getNewsList(category = selectedCategoryCode)) {
                 is BaseResult.Success -> {
                     _uiState.update {
@@ -54,13 +66,25 @@ class NewsListViewModel @Inject constructor(
                             NewsListData(
                                 categories = newsCategories,
                                 selectedCategoryCode = selectedCategoryCode,
-                                newsList = result.data.map { it.toUiModel() }
+                                newsList = result.data.map { it.toUiModel() },
+                                isRefreshing = false
                             )
                         )
                     }
                 }
                 is BaseResult.Error -> {
-                    _uiState.update { UiState.Error(result.error.message) }
+                    if (currentData == null) {
+                        _uiState.update { UiState.Error(result.error.message) }
+                    } else {
+                        _uiState.update {
+                            UiState.Success(
+                                currentData.copy(
+                                    selectedCategoryCode = selectedCategoryCode,
+                                    isRefreshing = false
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -95,7 +119,8 @@ class NewsListViewModel @Inject constructor(
 data class NewsListData(
     val categories: List<NewsCategoryUiModel>,
     val selectedCategoryCode: String?,
-    val newsList: List<NewsListItemUiModel>
+    val newsList: List<NewsListItemUiModel>,
+    val isRefreshing: Boolean = false
 )
 
 data class NewsCategoryUiModel(
@@ -114,7 +139,6 @@ data class NewsListItemUiModel(
 
 private val newsCategories = listOf(
     NewsCategoryUiModel(code = null, label = "전체"),
-    NewsCategoryUiModel(code = "NEWS_MARKET", label = "시장/경제"),
     NewsCategoryUiModel(code = "NEWS_SEMI", label = "반도체"),
     NewsCategoryUiModel(code = "NEWS_IT", label = "IT/전자"),
     NewsCategoryUiModel(code = "NEWS_BIO", label = "바이오/의약"),
