@@ -62,12 +62,7 @@ fun LoginScreen(
                 viewModel.onKakaoLoginStart()
                 kakaoLoginManager.login(
                     activity = activity,
-                    onSuccess = { profile ->
-                        viewModel.onKakaoLoginSuccess(
-                            userId = profile.userId,
-                            nickname = profile.nickname
-                        )
-                    },
+                    onSuccess = viewModel::onKakaoLoginSuccess,
                     onError = viewModel::onKakaoLoginFailure
                 )
             }

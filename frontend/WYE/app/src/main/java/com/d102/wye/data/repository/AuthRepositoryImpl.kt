@@ -4,8 +4,8 @@ import com.d102.wye.data.local.datastore.AuthTokenDataStore
 import com.d102.wye.data.mapper.toDomain
 import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
+import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
-import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.TokenPair
 import com.d102.wye.domain.repository.AuthRepository
@@ -39,23 +39,22 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * 카카오 SDK 로그인 결과를 서버 없이 임시 세션으로 저장한다.
-     * TODO: API 연동 시 카카오 access token/code를 서버로 보내 우리 서비스 JWT를 발급받도록 교체
-     */
-    override suspend fun loginWithKakao(userId: Long, nickname: String?): BaseResult<Unit> {
-        return try {
-            authTokenDataStore.saveKakaoSession(userId = userId, nickname = nickname)
-            BaseResult.Success(Unit)
-        } catch (e: Exception) {
-            BaseResult.Error(
-                ApiError.unknownError(
-                    e.message ?: "카카오 로그인 세션 저장 중 오류가 발생했습니다"
+    /** 카카오 SDK access token으로 서버 로그인 후 JWT를 저장한다. */
+    override suspend fun loginWithKakao(accessToken: String): BaseResult<TokenPair> {
+        return when (val result = safeApiCall {
+            authApiService.loginWithKakao(KakaoLoginRequest(accessToken = accessToken))
+        }) {
+            is BaseResult.Success -> {
+                val tokenPair = result.data.toDomain()
+                authTokenDataStore.saveTokens(
+                    accessToken = tokenPair.accessToken,
+                    refreshToken = tokenPair.refreshToken
                 )
-            )
+                BaseResult.Success(tokenPair)
+            }
+            is BaseResult.Error -> result
         }
     }
-
 
     // ─────────────────────────────────────────
     // 로그아웃
