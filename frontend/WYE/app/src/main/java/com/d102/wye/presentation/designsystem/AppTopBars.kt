@@ -63,7 +63,7 @@ private fun BaseTopBar(
 @Composable
 fun HomeTopBar(
     onBookmarkClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
+    onAlertClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     BaseTopBar(
@@ -74,7 +74,7 @@ fun HomeTopBar(
             IconButton(onClick = onBookmarkClick) {
                 Icon(Icons.Outlined.BookmarkBorder, contentDescription = "북마크")
             }
-            IconButton(onClick = onNotificationClick) {
+            IconButton(onClick = onAlertClick) {
                 Icon(Icons.Filled.Notifications, contentDescription = "알림")
             }
         },

@@ -53,7 +53,7 @@ interface AuthApiService {
 
     /**
      * FCM 토큰 등록
-     * POST /auth/fcm-token
+     * POST /auth/fcm/token
      * 로그인 후 또는 토큰 갱신 시 서버에 저장
      */
     @POST("auth/fcm/token")

@@ -3,6 +3,7 @@ package com.d102.wye.core.di
 import com.d102.wye.core.app.Constants
 import com.d102.wye.core.network.AuthTokenInterceptor
 import com.d102.wye.core.network.TokenRefreshInterceptor
+import com.d102.wye.data.remote.api.AlertApiService
 import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
 import com.d102.wye.data.remote.api.NewsApiService
@@ -86,6 +87,13 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
+    }
+
+    /** 알림 관련 Retrofit API 인터페이스 구현체를 제공한다. */
+    @Provides
+    @Singleton
+    fun provideAlertApiService(retrofit: Retrofit): AlertApiService {
+        return retrofit.create(AlertApiService::class.java)
     }
 
     /** 뉴스 관련 Retrofit API 인터페이스 구현체를 제공한다. */

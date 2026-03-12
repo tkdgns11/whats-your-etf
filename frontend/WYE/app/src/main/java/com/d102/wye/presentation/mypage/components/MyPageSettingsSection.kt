@@ -4,7 +4,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import com.d102.wye.presentation.designsystem.WyeListItem
 
 fun LazyListScope.myPageSettingsSection(
-    onNotificationSettingClick: () -> Unit,
+    onAlertSettingClick: () -> Unit,
     onThemeModeClick: () -> Unit
 ) {
     item { MyPageSectionTitle(title = "설정") }
@@ -14,7 +14,7 @@ fun LazyListScope.myPageSettingsSection(
             title = "알림 설정",
             showArrow = true,
             showDivider = false,
-            onClick = onNotificationSettingClick
+            onClick = onAlertSettingClick
         )
     }
 
