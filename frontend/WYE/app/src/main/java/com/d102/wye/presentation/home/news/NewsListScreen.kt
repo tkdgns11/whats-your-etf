@@ -85,12 +85,14 @@ fun NewsListScreen(
                 if (searchMode) {
                     // 검색 모드 TopBar
                     Surface(
+                        modifier = Modifier.fillMaxWidth(),
                         color = SurfaceWhite,
                         shadowElevation = 2.dp,
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .statusBarsPadding()
                                 .height(64.dp)
                                 .padding(horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
