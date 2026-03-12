@@ -6,6 +6,7 @@ import com.d102.wye.core.network.TokenRefreshInterceptor
 import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
 import com.d102.wye.data.remote.api.SimulationApiService
+import com.d102.wye.data.remote.api.NewsApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -41,22 +42,23 @@ object NetworkModule {
 
     /**
      * OkHttpClient 제공
+     *
      * AuthTokenInterceptor는 DataStore를 주입받아 자동 생성됨
      */
     @Provides
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
-        authTokenInterceptor: AuthTokenInterceptor,
-        tokenRefreshInterceptor: TokenRefreshInterceptor
+        authTokenInterceptor: AuthTokenInterceptor,  // Hilt가 자동 주입
+        tokenRefreshInterceptor: TokenRefreshInterceptor  // Hilt가 자동 주입
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(Constants.WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(authTokenInterceptor)
-            .addInterceptor(tokenRefreshInterceptor)
+            .addInterceptor(authTokenInterceptor)  // JWT Token 자동 추가
+            .addInterceptor(tokenRefreshInterceptor)  // JWT Token 자동 추가
             .build()
     }
 
@@ -83,6 +85,12 @@ object NetworkModule {
     @Singleton
     fun provideEtfApiService(retrofit: Retrofit): EtfApiService {
         return retrofit.create(EtfApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNewsApiService(retrofit: Retrofit): NewsApiService {
+        return retrofit.create(NewsApiService::class.java)
     }
 
     @Provides

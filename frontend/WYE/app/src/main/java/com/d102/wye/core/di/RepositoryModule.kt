@@ -2,11 +2,13 @@ package com.d102.wye.core.di
 
 import com.d102.wye.data.repository.AuthRepositoryImpl
 import com.d102.wye.data.repository.EtfRepositoryImpl
+import com.d102.wye.data.repository.NewsRepositoryImpl
 import com.d102.wye.data.repository.NotificationRepositoryImpl
 import com.d102.wye.data.repository.SimulationRepositoryImpl
 import com.d102.wye.data.repository.StockRepositoryImpl
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
+import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.domain.repository.NotificationRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.repository.StockRepository
@@ -34,6 +36,12 @@ abstract class RepositoryModule {
     abstract fun bindAuthRepository(
         impl: AuthRepositoryImpl
     ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNewsRepository(
+        impl: NewsRepositoryImpl
+    ): NewsRepository
 
     @Binds
     @Singleton

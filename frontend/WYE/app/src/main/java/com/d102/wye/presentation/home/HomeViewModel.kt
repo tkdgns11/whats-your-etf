@@ -2,8 +2,14 @@ package com.d102.wye.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.News
+import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,10 +19,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    // TODO: Repository 주입
-    // private val marketRepository: MarketRepository,
-    // private val newsRepository: NewsRepository,
-    // private val portfolioRepository: PortfolioRepository
+    private val newsRepository: NewsRepository,
+    // TODO: private val marketRepository: MarketRepository,
+    // TODO: private val portfolioRepository: PortfolioRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Idle)
@@ -30,16 +35,49 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
 
-            // TODO: API 연동 시 아래 mock 제거 후 Repository 병렬 호출로 교체
-            // TODO: coroutineScope {
-            // TODO:   val top10Deferred = async { marketRepository.getTop10ByVolume() }
-            // TODO:   val newsDeferred = async { newsRepository.getRealtimeNews() }
-            // TODO:   val portfolioDeferred = async { portfolioRepository.getPortfolioSummary() }
-            // TODO:   _uiState.update { UiState.Success(...) }
-            // TODO: }
+            when (val newsResult = newsRepository.getNewsList()) {
+                is BaseResult.Success -> {
+                    _uiState.update {
+                        UiState.Success(
+                            mockHomeData().copy(
+                                newsList = newsResult.data
+                                    .take(HOME_NEWS_LIMIT)
+                                    .map { it.toHomeNewsUiModel() }
+                            )
+                        )
+                    }
+                }
 
-            _uiState.update { UiState.Success(mockHomeData()) }
+                is BaseResult.Error -> {
+                    _uiState.update { UiState.Error(newsResult.error.message) }
+                }
+            }
         }
+    }
+
+    /** 뉴스 도메인 모델을 홈 화면 뉴스 카드 UI 모델로 변환한다. */
+    private fun News.toHomeNewsUiModel() = HomeNewsUiModel(
+        id = id,
+        category = categoryName,
+        title = title,
+        timeAgo = publishedAt.toTimeAgo(),
+        source = source,
+        thumbnailUrl = thumbnailUrl
+    )
+
+    /** 서버 시간을 홈 화면 카드용 상대 시간 문자열로 변환한다. */
+    private fun String.toTimeAgo(): String {
+        return runCatching {
+            val publishedAt = LocalDateTime.parse(this, DateTimeFormatter.ISO_DATE_TIME)
+            val duration = Duration.between(publishedAt, LocalDateTime.now())
+            when {
+                duration.toMinutes() < 1 -> "방금 전"
+                duration.toHours() < 1 -> "${duration.toMinutes()}분 전"
+                duration.toDays() < 1 -> "${duration.toHours()}시간 전"
+                duration.toDays() < 7 -> "${duration.toDays()}일 전"
+                else -> publishedAt.toLocalDate().toString()
+            }
+        }.getOrDefault(this)
     }
 
     private fun mockHomeData(): HomeData = HomeData(
@@ -107,3 +145,5 @@ data class HomeNewsUiModel(
     val source: String,
     val thumbnailUrl: String? = null
 )
+
+private const val HOME_NEWS_LIMIT = 2
