@@ -54,6 +54,8 @@ fun SimulationScreen(
     val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
     val savePortfolioState by viewModel.savePortfolioState.collectAsStateWithLifecycle()
 
+    val idleGuideMessage by viewModel.idleGuideMessage.collectAsStateWithLifecycle()
+
     var showDictionaryDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(simulationState) {
@@ -98,7 +100,8 @@ fun SimulationScreen(
         onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
         onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
         onDictionaryClick = { showDictionaryDialog = true },
-        onSaveClick = { viewModel.onSaveIconClick() }
+        onSaveClick = { viewModel.onSaveIconClick() },
+        idleGuideMessage = idleGuideMessage
     )
 }
 
@@ -118,7 +121,8 @@ private fun SimulationScreenContent(
     onWeightChange: (String, Int) -> Unit,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit,
-    onSaveClick: () -> Unit
+    onSaveClick: () -> Unit,
+    idleGuideMessage: String
 ) {
     Column(
         modifier = Modifier
@@ -157,7 +161,8 @@ private fun SimulationScreenContent(
                     simulationState = simulationState,
                     onOverlayToggled = onOverlayToggled,
                     onAiDiagnosisClick = onAiDiagnosisClick,
-                    onDictionaryClick = onDictionaryClick
+                    onDictionaryClick = onDictionaryClick,
+                    idleGuideMessage = idleGuideMessage
                 )
 
                 // 설정 섹션

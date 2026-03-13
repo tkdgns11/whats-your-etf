@@ -38,7 +38,8 @@ import com.d102.wye.presentation.theme.TextSecondary
 fun YieldTrendView(
     formState: SimulationFormState,
     simulationState: UiState<SimulationUiModel>,
-    onOverlayToggled: (Boolean) -> Unit
+    onOverlayToggled: (Boolean) -> Unit,
+    idleGuideMessage: String
 ) {
     Column {
         // ── 내 보유 자산 겹쳐보기 토글 ──────────────────────────────────────
@@ -120,13 +121,15 @@ fun YieldTrendView(
 
         // ── 차트 영역 ────────────────────────────────────────────────────────
         when (simulationState) {
+
             is UiState.Idle -> {
                 // 플레이스홀더
                 DashedContainer(height = 180.dp, strokeWidth = 2.dp) {
                     Text(
-                        text = "ETF를 추가하고 자산의 미래를 확인해보세요",
+                        text = idleGuideMessage,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = IconInactive
+                        color = IconInactive,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

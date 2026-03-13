@@ -51,6 +51,7 @@ import com.d102.wye.presentation.designsystem.WyeCircleIcon
 import com.d102.wye.presentation.simulation.progress.PortfolioItem
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
+import com.d102.wye.presentation.theme.BadgeNeutralFont
 import com.d102.wye.presentation.theme.Border
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -65,6 +66,15 @@ fun PortfolioSection(
     onRemoveClick: (String) -> Unit,
     onWeightChange: (String, Int) -> Unit
 ) {
+    val totalWeight = formState.portfolioItems.sumOf { it.weight }
+
+    // 합계에 따른 색상 분기
+    val badgeColor = when {
+        totalWeight == 100 -> PrimaryGreen
+        totalWeight > 100 -> BadgeNeutralFont
+        else -> IconInactive
+    }
+
     Column(
         modifier = Modifier
             .background(BackGroundLightGreen2)
@@ -81,8 +91,8 @@ fun PortfolioSection(
             val totalWeight = formState.portfolioItems.sumOf { it.weight }
             Box(
                 modifier = Modifier.background(
-                    color = PrimaryGreen,
-                    shape = RoundedCornerShape(12.dp)
+                    color = badgeColor,
+                    shape = RoundedCornerShape(50.dp)
                 ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -186,6 +196,8 @@ private fun PortfolioSliderItemRow(
             )
         )
     }
+
+
 
     WyeCard(
         modifier = Modifier.fillMaxWidth(),

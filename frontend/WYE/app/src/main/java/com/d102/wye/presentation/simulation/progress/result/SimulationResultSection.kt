@@ -22,7 +22,8 @@ fun SimulationResultSection(
     simulationState: UiState<SimulationUiModel>,
     onOverlayToggled: (Boolean) -> Unit,
     onAiDiagnosisClick: () -> Unit,
-    onDictionaryClick: () -> Unit
+    onDictionaryClick: () -> Unit,
+    idleGuideMessage: String
 ) {
     Box {
         SubcomposeLayout(
@@ -33,7 +34,7 @@ fun SimulationResultSection(
         ) { constraints ->
 
             val yieldHeight = subcompose("yield_measure") {
-                YieldTrendView(formState, simulationState, onOverlayToggled)
+                YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
             }.map { it.measure(constraints) }.maxOfOrNull { it.height } ?: 0
 
             val analysisHeight = subcompose("analysis_measure") {
@@ -49,7 +50,7 @@ fun SimulationResultSection(
 
             val content = subcompose("content") {
                 when (formState.selectedTabIndex) {
-                    0 -> YieldTrendView(formState, simulationState, onOverlayToggled)
+                    0 -> YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
                     1 -> PortfolioAnalysisView(formState, simulationState, onDictionaryClick)
                 }
             }.map { it.measure(fixedConstraints) }

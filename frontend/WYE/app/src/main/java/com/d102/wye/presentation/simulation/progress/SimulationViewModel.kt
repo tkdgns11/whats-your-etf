@@ -14,8 +14,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -95,6 +98,17 @@ class SimulationViewModel @Inject constructor(
     // ─────────────────────────────────────────────────────────────────────────
     // UI 이벤트
     // ─────────────────────────────────────────────────────────────────────────
+
+    val idleGuideMessage: StateFlow<String> = _formState.map { form ->
+        when {
+            form.investmentAmount.isBlank() || form.investmentPeriod.isBlank() -> "투자 금액과 기간을 입력하면\n수익률 그래프가 나타납니다."
+            else -> "ETF를 추가하고 자산의 미래를 확인해보세요"
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "분석할 ETF를 먼저 추가해주세요."
+    )
 
     fun onTabSelected(index: Int) =
         _formState.update { it.copy(selectedTabIndex = index) }
@@ -189,7 +203,7 @@ class SimulationViewModel @Inject constructor(
             val amount = form.investmentAmount.toLongOrNull() ?: 0L
             val periodMonths = form.investmentPeriod.toIntOrNull() ?: 0
 
-            // 입력 미완성 → Idle
+            // 입력 미완성
             if (form.portfolioItems.isEmpty() || amount <= 0L || periodMonths <= 0) {
                 _simulationState.update { UiState.Idle }
                 return@launch
