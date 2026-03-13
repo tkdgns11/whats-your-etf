@@ -18,16 +18,18 @@ class SimulationRepositoryImpl @Inject constructor(
 
     /**
      * 여러 ticker를 병렬로 개별 호출 후 Map으로 합산
-     * coroutineScope + async로 동시 요청 → 순차 호출 대비 시간 단축
      */
+    private val SUPPORTED_TICKERS = listOf("069500", "091160", "102780")
     override suspend fun getEtfPriceHistories(
         tickers: List<String>,
         startDate: String?,
         endDate: String?,
         page: Int
     ): BaseResult<Map<String, EtfPriceHistory>> = runCatching {
+        val targetTickers = tickers.filter { it in SUPPORTED_TICKERS }
+
         coroutineScope {
-            val results = tickers.map { ticker ->
+            val results = targetTickers.map { ticker ->
                 async {
                     ticker to simulationService.getEtfPriceHistory(
                         ticker = ticker,
