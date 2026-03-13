@@ -1,13 +1,13 @@
 package com.d102.wye.data.mapper
 
-import com.d102.wye.data.remote.dto.response.EtfDividendHistoryResponseDto
-import com.d102.wye.data.remote.dto.response.EtfPriceHistoryResponseDto
+import com.d102.wye.data.remote.dto.response.EtfDividendHistoryResponse
+import com.d102.wye.data.remote.dto.response.EtfPriceHistoryResponse
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfMonthlyDividend
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.EtfPricePoint
 
-fun EtfPriceHistoryResponseDto.toDomain(ticker: String): EtfPriceHistory =
+fun EtfPriceHistoryResponse.toDomain(ticker: String): EtfPriceHistory =
     EtfPriceHistory(
         ticker = ticker,
         content = content.map { dto ->
@@ -22,7 +22,7 @@ fun EtfPriceHistoryResponseDto.toDomain(ticker: String): EtfPriceHistory =
         last = last
     )
 
-fun EtfDividendHistoryResponseDto.toDomain(ticker: String): EtfDividendHistory =
+fun EtfDividendHistoryResponse.toDomain(ticker: String): EtfDividendHistory =
     EtfDividendHistory(
         etfId = etfId,
         etfName = etfName,

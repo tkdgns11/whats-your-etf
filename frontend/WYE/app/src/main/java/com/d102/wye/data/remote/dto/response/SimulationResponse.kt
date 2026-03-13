@@ -4,14 +4,14 @@ import com.google.gson.annotations.SerializedName
 
 // ─── 가격 이력 ────────────────────────────────────────────────────────────────
 
-data class EtfPricePointDto(
+data class EtfPricePoint(
     @SerializedName("date")        val date: String,
     @SerializedName("stockPrice")  val stockPrice: Long,
     @SerializedName("dailyReturn") val dailyReturn: Double
 )
 
-data class EtfPriceHistoryResponseDto(
-    @SerializedName("content")       val content: List<EtfPricePointDto>,
+data class EtfPriceHistoryResponse(
+    @SerializedName("content")       val content: List<EtfPricePoint>,
     @SerializedName("pageNumber")    val pageNumber: Int,
     @SerializedName("pageSize")      val pageSize: Int,
     @SerializedName("totalElements") val totalElements: Int,
@@ -21,13 +21,13 @@ data class EtfPriceHistoryResponseDto(
 
 // ─── 배당금 이력 ──────────────────────────────────────────────────────────────
 
-data class EtfMonthlyDividendDto(
+data class EtfMonthlyDividend(
     @SerializedName("month")    val month: String,
     @SerializedName("dividend") val dividend: Long
 )
 
-data class EtfDividendHistoryResponseDto(
+data class EtfDividendHistoryResponse(
     @SerializedName("etfId")    val etfId: Long,
     @SerializedName("etfName")  val etfName: String,
-    @SerializedName("dividends") val dividends: List<EtfMonthlyDividendDto>
+    @SerializedName("dividends") val dividends: List<EtfMonthlyDividend>
 )
