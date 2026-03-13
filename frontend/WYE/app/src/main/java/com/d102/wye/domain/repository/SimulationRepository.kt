@@ -6,13 +6,8 @@ import com.d102.wye.domain.model.EtfPriceHistory
 
 interface SimulationRepository {
 
-    /**
-     * ETF 가격 이력 조회 (ticker 개별 호출 → Map으로 반환)
-     * @param tickers   조회할 ETF ticker 목록
-     * @param startDate "yyyy-MM-dd" (null → 서버 기본값)
-     * @param endDate   "yyyy-MM-dd" (null → 오늘)
-     * @param page      페이지 번호 (0-indexed)
-     */
+    // ─── API ─────────────────────────────────────────────────────────────────
+
     suspend fun getEtfPriceHistories(
         tickers: List<String>,
         startDate: String? = null,
@@ -20,15 +15,32 @@ interface SimulationRepository {
         page: Int = 0
     ): BaseResult<Map<String, EtfPriceHistory>>
 
-    /**
-     * ETF 월별 배당금 이력 조회 (ticker 개별 호출 → Map으로 반환)
-     * @param tickers   조회할 ETF ticker 목록
-     * @param startDate "yyyy-MM" (null → 서버 기본값)
-     * @param endDate   "yyyy-MM" (null → 현재)
-     */
     suspend fun getEtfDividendHistories(
         tickers: List<String>,
         startDate: String? = null,
         endDate: String? = null
     ): BaseResult<Map<String, EtfDividendHistory>>
+
+    // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
+
+    /**
+     * API로 받은 가격 이력을 로컬 DB에 저장
+     */
+    suspend fun savePriceHistories(histories: Map<String, EtfPriceHistory>)
+
+    /**
+     * 로컬 DB에서 가격 이력 조회
+     * ETF 추가 후 슬라이더 조작 시 여기서 읽음
+     */
+    suspend fun getCachedPriceHistories(tickers: List<String>): Map<String, EtfPriceHistory>
+
+    /**
+     * 로컬 DB에 해당 ticker 데이터가 있는지 확인
+     */
+    suspend fun hasCachedPriceHistory(ticker: String): Boolean
+
+    /**
+     * ETF 제거 시 로컬 DB 캐시도 삭제
+     */
+    suspend fun deleteCachedPriceHistory(ticker: String)
 }
