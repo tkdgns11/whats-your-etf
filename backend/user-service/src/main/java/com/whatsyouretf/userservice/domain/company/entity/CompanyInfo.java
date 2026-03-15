@@ -81,6 +81,9 @@ public class CompanyInfo {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "corporation_number", length = 50)
+    private String corporationNumber;
+
     /** 데이터 출처 */
     @Column(name = "data_source", length = 50)
     private String dataSource;
