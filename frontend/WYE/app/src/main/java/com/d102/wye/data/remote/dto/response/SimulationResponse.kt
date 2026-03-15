@@ -7,7 +7,8 @@ import com.google.gson.annotations.SerializedName
 data class EtfPricePoint(
     @SerializedName("date")        val date: String,
     @SerializedName("stockPrice")  val stockPrice: Long,
-    @SerializedName("dailyReturn") val dailyReturn: Double
+    @SerializedName("dailyReturn") val dailyReturn: Double,  // 전일 대비 수익률 (%)
+    @SerializedName("nav")         val nav: Double           // 순자산 가치 (원)
 )
 
 data class EtfPriceHistoryResponse(
