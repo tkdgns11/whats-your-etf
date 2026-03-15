@@ -37,11 +37,23 @@ public class PortfolioEtf {
     @JoinColumn(name = "etf_id", nullable = false)
     private Etf etf;
 
-    /** 비중 (%) */
-    @Column(name = "weight_pct", nullable = false, precision = 6, scale = 3)
-    private BigDecimal weightPct;
+    /** etf 갯수 */
+    @Column(name = "etf_count", nullable = false, scale = 3)
+    private BigDecimal etfCount;
 
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public static PortfolioEtf createPortfolioEtf(
+            Portfolio portfolio,
+            Etf etf,
+            BigDecimal etfCount
+    ) {
+        PortfolioEtf portfolioEtf = new PortfolioEtf();
+        portfolioEtf.portfolio = portfolio;
+        portfolioEtf.etf = etf;
+        portfolioEtf.etfCount = etfCount;
+        return portfolioEtf;
+    }
   }

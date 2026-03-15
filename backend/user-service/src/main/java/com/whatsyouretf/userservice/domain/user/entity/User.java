@@ -78,4 +78,10 @@ public class User extends BaseEntity {
         this.socialAccounts.add(socialAccount);
         socialAccount.setUser(this);
     }
+
+    public static User of(Long userId) {
+        User user = new User();
+        user.id = userId;
+        return user;
+    }
 }
