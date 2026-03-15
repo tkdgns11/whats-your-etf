@@ -1,7 +1,5 @@
 package com.whatsyouretf.userservice.domain.portfolio.repository;
 
-import com.whatsyouretf.userservice.common.exception.BusinessException;
-import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioReader;
@@ -11,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 @Component
 @RequiredArgsConstructor
@@ -30,10 +27,6 @@ public class PortfolioReaderImpl implements PortfolioReader {
 
         @Override
         public List<PortfolioEtf> getPortfolioDetail(Long portfolioId) {
-                try {
-                        return portfolioRepository.findByPortfolioId(portfolioId);
-                } catch (NoSuchElementException e) {
-                        throw new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND);
-                }
+                return portfolioRepository.findByPortfolioId(portfolioId);
         }
 }

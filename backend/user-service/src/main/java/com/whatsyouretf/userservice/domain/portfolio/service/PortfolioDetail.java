@@ -1,5 +1,7 @@
 package com.whatsyouretf.userservice.domain.portfolio.service;
 
+import com.whatsyouretf.userservice.common.exception.BusinessException;
+import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.portfolio.controller.PortfolioEtfCount;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
@@ -7,6 +9,7 @@ import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public record PortfolioDetail(
         Long portfolioId,
@@ -18,7 +21,13 @@ public record PortfolioDetail(
         public static PortfolioDetail of(
                 List<PortfolioEtf> etfs
         ) {
-                Portfolio portfolio = etfs.getFirst().getPortfolio();
+                Portfolio portfolio;
+                try {
+                        portfolio = etfs.getFirst().getPortfolio();
+                } catch (NoSuchElementException e) {
+                        throw new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND);
+                }
+
                 return new PortfolioDetail(
                         portfolio.getId(),
                         portfolio.getName(),
