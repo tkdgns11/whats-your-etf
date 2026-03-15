@@ -1,5 +1,6 @@
 package com.d102.wye.domain.usecase.simulation
 
+import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.Portfolio
@@ -20,31 +21,26 @@ class RunSimulationUseCase @Inject constructor(
         val investmentAmount: Long,
         val investmentType: InvestmentType,
         val periodMonths: Int,
-        val priceHistories: Map<String, EtfPriceHistory>,  // ← DB에서 읽은 데이터 직접 전달
+        val priceHistories: Map<String, EtfPriceHistory>,
         val startDate: String? = null,
         val endDate: String? = null
     )
 
     suspend operator fun invoke(params: Params): BaseResult<SimulationResult> {
-        // 가격 이력이 없으면 에러
         if (params.priceHistories.isEmpty()) {
             return BaseResult.Error(
-                com.d102.wye.domain.common.ApiError(
-                    code = -1,
-                    message = "가격 이력 데이터가 없습니다"
-                )
+                ApiError(code = -1, message = "가격 이력 데이터가 없습니다")
             )
         }
 
-        // 백테스트 계산
         val backtestResult = calculateBacktest(
             portfolios = params.portfolios,
             priceHistories = params.priceHistories,
             investmentAmount = params.investmentAmount,
-            investmentType = params.investmentType
+            investmentType = params.investmentType,
+            periodMonths = params.periodMonths  // ← 전달
         )
 
-        // TODO: 펀더멘털 / 배당금은 백엔드 필드 추가 후 연결
         return BaseResult.Success(
             SimulationResult(
                 backtestPoints = backtestResult.points,

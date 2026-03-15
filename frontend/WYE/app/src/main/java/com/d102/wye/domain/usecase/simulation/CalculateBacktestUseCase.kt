@@ -4,6 +4,7 @@ import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.Portfolio
 import com.d102.wye.domain.state.InvestmentType
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.roundToLong
 
@@ -20,13 +21,21 @@ class CalculateBacktestUseCase @Inject constructor() {
         portfolios: List<Portfolio>,
         priceHistories: Map<String, EtfPriceHistory>,
         investmentAmount: Long,
-        investmentType: InvestmentType
+        investmentType: InvestmentType,
+        periodMonths: Int  // ← 추가
     ): Result {
-        val commonDates: List<String> = priceHistories.values
+        // 전체 공통 날짜 교집합
+        val allCommonDates: List<String> = priceHistories.values
             .map { it.content.map { p -> p.date }.toSet() }
             .reduceOrNull { acc, set -> acc.intersect(set) }
             ?.sorted()
             ?: return Result(emptyList(), 0L, 0.0, 0L)
+
+        if (allCommonDates.isEmpty()) return Result(emptyList(), 0L, 0.0, 0L)
+
+        // periodMonths 기간만큼 잘라서 사용
+        val startDate = LocalDate.now().minusMonths(periodMonths.toLong()).toString()
+        val commonDates = allCommonDates.filter { it >= startDate }
 
         if (commonDates.isEmpty()) return Result(emptyList(), 0L, 0.0, 0L)
 
@@ -37,7 +46,7 @@ class CalculateBacktestUseCase @Inject constructor() {
 
         return when (investmentType) {
             InvestmentType.INSTALLMENT -> calcInstallment(
-                portfolios, commonDates, dailyReturnMap, investmentAmount
+                portfolios, commonDates, dailyReturnMap, investmentAmount, periodMonths
             )
             InvestmentType.LUMP_SUM -> calcLumpSum(
                 portfolios, commonDates, dailyReturnMap, investmentAmount
@@ -49,10 +58,10 @@ class CalculateBacktestUseCase @Inject constructor() {
         portfolios: List<Portfolio>,
         dates: List<String>,
         dailyReturnMap: Map<String, Map<String, Double>>,
-        monthlyAmount: Long
+        monthlyAmount: Long,
+        periodMonths: Int
     ): Result {
         var portfolioValue = 0.0
-        var totalInvested = 0.0
         var lastMonth = ""
         val points = mutableListOf<BacktestPoint>()
 
@@ -60,7 +69,6 @@ class CalculateBacktestUseCase @Inject constructor() {
             val month = date.take(7)
             if (month != lastMonth) {
                 portfolioValue += monthlyAmount
-                totalInvested += monthlyAmount
                 lastMonth = month
             }
 
@@ -70,16 +78,19 @@ class CalculateBacktestUseCase @Inject constructor() {
             }
             portfolioValue *= (1.0 + dayReturnPct / 100.0)
 
-            val cumulativeReturn = if (totalInvested > 0)
-                (portfolioValue - totalInvested) / totalInvested * 100.0
+            // totalInvestment 고정값 기준으로 수익률 계산
+            val fixedTotalInvestment = monthlyAmount * periodMonths
+            val cumulativeReturn = if (fixedTotalInvestment > 0)
+                (portfolioValue - fixedTotalInvestment) / fixedTotalInvestment * 100.0
             else 0.0
 
             points.add(BacktestPoint(date = date, value = cumulativeReturn))
         }
 
+        // totalInvestment = 월 납입금 × 기간 (고정)
+        val totalInvestment = monthlyAmount * periodMonths
         val finalReturn = points.lastOrNull()?.value ?: 0.0
-        val totalInvestment = totalInvested.roundToLong()
-        val estimatedFinal = (totalInvested * (1.0 + finalReturn / 100.0)).roundToLong()
+        val estimatedFinal = portfolioValue.roundToLong()  // 실제 포트폴리오 최종값
 
         return Result(
             points = points,
