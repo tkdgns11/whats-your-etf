@@ -408,7 +408,7 @@ public class AuthServiceImpl implements AuthService {
                 .token(refreshTokenValue)
                 .expiresAt(jwtTokenUtil.getExpirationFromToken(refreshTokenValue)
                         .toInstant()
-                        .atZone(java.time.ZoneId.systemDefault())
+                        .atZone(java.time.ZoneId.of("Asia/Seoul"))
                         .toLocalDateTime())
                 .build();
         refreshTokenRepository.save(refreshToken);
