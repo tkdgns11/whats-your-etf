@@ -11,7 +11,7 @@ class StockRepository:
         result = await self.db.execute(select(CompanyInfo).where(CompanyInfo.company_name == corp_name))
         company = result.scalar_one_or_none()
         if not company:
-            company = CompanyInfo(company_name=corp_name, market_type=market_category)
+            company = CompanyInfo(company_name=corp_name)
             self.db.add(company)
             await self.db.flush()
         return company
@@ -30,6 +30,8 @@ class StockRepository:
                 company.region = info["region"]
             if info.get("description"):
                 company.description = info["description"]
+            if info.get("corporation_number"):
+                company.corporation_number = info["corporation_number"]
             await self.db.flush()
 
     async def get_or_create_stock(self, ticker: str, company_id: int, market_type: str = None) -> Stock:

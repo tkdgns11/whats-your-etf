@@ -13,7 +13,7 @@ engine = create_engine(
 )
 
 async_engine = create_async_engine(
-    settings.database_url,
+    settings.get_database_url,
     future=True
 )
 

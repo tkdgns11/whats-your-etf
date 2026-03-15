@@ -25,8 +25,8 @@ async def process_all_etf_events_background(infos: list[dict]):
         async with AsyncSessionLocal() as db:
             try:
                 service = EtfService(db)
-                # 1. 가격 이력 저장
-                await service.save_new_etf_price_histories(ticker, etf_id)
+                # 1. 가격 이력 저장 (테스트를 위해 잠시 주석 처리)
+                # await service.save_new_etf_price_histories(ticker, etf_id)
                 # 2. PDF 분석하여 해외 주식 등 포함시 비활성화 & 국내 주식 DB에 저장
                 await service.check_and_update_etf_active_status(ticker, etf_id)
             except Exception as e:
@@ -102,41 +102,57 @@ class EtfService:
                 await self.process_domestic_stocks(domestic_stocks)
                 logging.info(f"[{ticker}] 국내 상장 주식 {len(domestic_stocks)}건 저장 완료.")
 
-    async def process_domestic_stocks(self, tickers: list[str]):
-        from app.scrapers.data_portal_client import DataPortalClient
-        client = DataPortalClient()
-        for ticker in tickers:
-            # 1. ticker로 사업자등록번호(crno) 및 기본 회사명 조회
-            item_info = await client.get_stock_item_info(ticker)
-            if not item_info:
-                continue
-            
-            corp_name = item_info.get("corpNm")
-            market_type = item_info.get("mrktCtg")
-            corp_number = item_info.get("crno")
-            
-            if not corp_name:
-                continue
-                
-            # 2. Company 저장 (외래키 대상)
-            company = await self.stock_repository.get_or_create_company(corp_name, market_type)
-            
-            # 3. Stock 저장 (Company 외래키 연결)
-            await self.stock_repository.get_or_create_stock(ticker, company.id, market_type)
-            
-            # 4. 사업자등록번호(crno)로 회사 세부정보 조회 및 채우기
-            if corp_number:
-                corp_outline = await client.get_corp_outline(corp_number)
-                if corp_outline:
-                    info = {
-                        "industry_name": corp_outline.get("sicNm"),
-                        "ceo_name": corp_outline.get("enpRprFnm"),
-                        "homepage": corp_outline.get("enpHmpgUrl"),
-                        "region": corp_outline.get("enpBsadr"),
-                        "description": corp_outline.get("enpMainBizNm")
-                    }
-                    await self.stock_repository.update_company_info(company.id, info)
-
             if has_foreign_stock:
                 logger.info(f"ETF {ticker} contains foreign or non-standard stock. Deactivating.")
                 await self.etf_repository.update_etf_active_status(etf_id, False)
+
+    async def process_domestic_stocks(self, tickers: list[str]):
+        from app.scrapers.data_portal_client import DataPortalClient
+        client = DataPortalClient()
+        for idx, ticker in enumerate(tickers, start=1):
+            try:
+                # 1. ticker로 사업자등록번호(crno) 및 기본 회사명 조회
+                item_info = await client.get_stock_item_info(ticker)
+                if not item_info:
+                    # API로 못찾는 경우라도 주식 테이블엔 저장되도록
+                    await self.stock_repository.get_or_create_stock(ticker, None, None)
+                else:
+                    corp_name = item_info.get("corpNm")
+                    market_type = item_info.get("mrktCtg")
+                    corp_number = item_info.get("crno")
+
+                    if not corp_name:
+                        await self.stock_repository.get_or_create_stock(ticker, None, market_type)
+                    else:
+                        # 2. Company 저장 (외래키 대상)
+                        company = await self.stock_repository.get_or_create_company(corp_name)
+
+                        # 3. Stock 저장 (Company 외래키 연결)
+                        await self.stock_repository.get_or_create_stock(ticker, company.id, market_type)
+
+                        # 4. 사업자등록번호(crno)로 회사 세부정보 조회 및 채우기
+                        if corp_number:
+                            corp_outline = await client.get_corp_outline(corp_number)
+                            if corp_outline:
+                                info = {
+                                    "industry_name": corp_outline.get("sicNm"),
+                                    "ceo_name": corp_outline.get("enpRprFnm"),
+                                    "homepage": corp_outline.get("enpHmpgUrl"),
+                                    "region": corp_outline.get("enpBsadr"),
+                                    "description": corp_outline.get("enpMainBizNm"),
+                                    "corporation_number": corp_number
+                                }
+                                await self.stock_repository.update_company_info(company.id, info)
+            except Exception as e:
+                logging.error(f"[{ticker}] 처리 중 오류 발생: {e}")
+                await self.stock_repository.db.rollback()
+                continue
+
+            # 10개마다 중간 commit하여 DB에 즉시 반영
+            if idx % 10 == 0:
+                await self.stock_repository.db.commit()
+                logging.info(f"[진행상황] {idx}/{len(tickers)} 처리 완료, DB commit 완료")
+
+        # 나머지 flush된 데이터 최종 commit
+        await self.stock_repository.db.commit()
+        logging.info(f"[완료] 전체 {len(tickers)}개 주식 정보 저장 완료")

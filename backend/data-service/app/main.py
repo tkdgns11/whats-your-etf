@@ -17,7 +17,7 @@ from app.scrapers.krx_scraper import KrxDisclosureScraper
 from app.schedulers.scheduler import start_scheduler, scheduler
 from app.config import get_settings
 from app.scrapers.keywords import NEWS_CATEGORIES
-
+from app.database import AsyncSessionLocal
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -305,14 +305,7 @@ async def scheduler_status():
         "jobs": jobs
     }
 
-from fastapi import BackgroundTasks
 
-@app.post("/test/test")
-async def test(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_async_db)):
-    from app.services.etf_service import EtfService
-    service = EtfService(db)
-    await service.sync_etf_tickers(background_tasks)
-    return {"message": "ETF sync triggered in background"}
 
 @app.get("/stats")
 async def get_stats(db: Session = Depends(get_db)):
