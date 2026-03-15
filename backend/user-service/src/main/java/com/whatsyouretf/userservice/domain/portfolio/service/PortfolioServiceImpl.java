@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.portfolio.service;
 
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
+import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         @Override
         public Map<Long, List<PortfolioEtfInfo>> getPortfolioInfoMap(List<Long> portfolioIds) {
                 return portfolioReader.getPortfolioInfoMap(portfolioIds);
+        }
+
+        @Override
+        public List<PortfolioEtf> getPortfolio(Long userId, Long portfolioId) {
+                return portfolioReader.getPortfolioDetail(portfolioId);
         }
 
         @Override

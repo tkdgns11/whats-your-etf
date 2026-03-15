@@ -3,7 +3,9 @@ package com.whatsyouretf.userservice.domain.portfolio.controller;
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioInfo;
+import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioDetail;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioFacade;
+import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +24,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class PortfolioController {
         private final PortfolioFacade portfolioFacade;
+        private final PortfolioService portfolioService;
 
         @Operation(summary = "포트폴리오 저장", description = "사용자가 커스텀한 포트폴리오를 저장합니다")
         @PostMapping
@@ -53,5 +56,16 @@ public class PortfolioController {
                 return ResponseEntity
                         .status(HttpStatus.OK)
                         .body(ApiResponse.success(portfolioFacade.getPortfolioList(userDetails.getUserId())));
+        }
+
+        @Operation(summary = "포트폴리오 상세 조회", description = "사용자가 커스텀한 포트폴리오를 상세 조회합니다")
+        @GetMapping("/{portfolioId}")
+        public ResponseEntity<ApiResponse<PortfolioDetail>> getPortfolioDetail(
+                @AuthenticationPrincipal CustomUserDetails userDetails,
+                @PathVariable Long portfolioId
+        ) {
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(PortfolioDetail.of(portfolioService.getPortfolio(userDetails.getUserId(), portfolioId))));
         }
 }
