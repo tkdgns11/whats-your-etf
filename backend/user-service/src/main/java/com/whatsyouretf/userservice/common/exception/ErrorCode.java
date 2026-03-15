@@ -76,7 +76,15 @@ public enum ErrorCode {
     SIMULATION_NOT_FOUND(HttpStatus.NOT_FOUND, "SIM001", "시뮬레이션을 찾을 수 없습니다."),
     SIMULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SIM002", "시뮬레이션 실행에 실패했습니다."),
     INVALID_SIMULATION_PERIOD(HttpStatus.BAD_REQUEST, "SIM003", "잘못된 시뮬레이션 기간입니다."),
-    SIMULATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SIM004", "시뮬레이션 개수 제한을 초과했습니다.");
+    SIMULATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SIM004", "시뮬레이션 개수 제한을 초과했습니다."),
+
+    // File
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE001", "파일 업로드에 실패했습니다."),
+    FILE_EMPTY(HttpStatus.BAD_REQUEST, "FILE002", "파일이 비어있습니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "FILE003", "파일 크기가 제한을 초과했습니다. (최대 5MB)"),
+    FILE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FILE004", "허용되지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 허용)"),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE005", "파일을 찾을 수 없습니다."),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE006", "파일 삭제에 실패했습니다.");
 
     private final HttpStatus status;
     private final String code;

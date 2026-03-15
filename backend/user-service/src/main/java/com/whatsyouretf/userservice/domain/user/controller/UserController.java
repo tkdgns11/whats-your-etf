@@ -11,9 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 사용자 관련 API 컨트롤러
@@ -104,20 +106,59 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("회원 탈퇴 완료"));
     }
 
+    // ==================== 프로필 이미지 ====================
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @param file        업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @Operation(summary = "프로필 이미지 업로드", description = "프로필 이미지를 업로드합니다. 기존 이미지가 있으면 교체됩니다.")
+    @PostMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "이미지 파일 (jpg, jpeg, png, gif, webp / 최대 5MB)")
+            @RequestParam("file") MultipartFile file
+    ) {
+        String imageUrl = userService.uploadProfileImage(userDetails.getUserId(), file);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("프로필 이미지 업로드 완료", imageUrl));
+    }
+
+    /**
+     * 프로필 이미지 삭제
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @return 성공 응답
+     */
+    @Operation(summary = "프로필 이미지 삭제", description = "프로필 이미지를 삭제합니다.")
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        userService.deleteProfileImage(userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("프로필 이미지 삭제 완료"));
+    }
+
     // ==================== 관심 ETF ====================
 
     /**
      * 관심 ETF 목록 조회
      *
      * @param userDetails 인증된 사용자 정보
+     * @param sort        정렬 기준 (RECENT, CHANGE_RATE_DESC, CHANGE_RATE_ASC, NAME_ASC)
      * @return 관심 ETF 목록 (최신 시세 포함)
      */
     @Operation(summary = "관심 ETF 목록 조회", description = "로그인한 사용자의 관심 ETF 목록을 조회합니다.")
     @GetMapping("/me/favorites")
     public ResponseEntity<ApiResponse<FavoriteEtfListResponse>> getFavoriteEtfs(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "정렬 기준: RECENT(최근등록순), CHANGE_RATE_DESC(등락률높은순), CHANGE_RATE_ASC(등락률낮은순), NAME_ASC(이름순)")
+            @RequestParam(defaultValue = "RECENT") FavoriteSortType sort
     ) {
-        FavoriteEtfListResponse response = userService.getFavoriteEtfs(userDetails.getUserId());
+        FavoriteEtfListResponse response = userService.getFavoriteEtfs(userDetails.getUserId(), sort);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

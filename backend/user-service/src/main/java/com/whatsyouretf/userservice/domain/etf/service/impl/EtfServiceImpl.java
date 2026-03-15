@@ -7,6 +7,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorAiHistory;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorCluster;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfStockClusterMappingRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRepository;
 import com.whatsyouretf.userservice.domain.etf.service.EtfPriceReader;
 import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
@@ -39,8 +40,17 @@ public class EtfServiceImpl implements EtfService {
     private final EtfSectorClusterRepository sectorClusterRepository;
     private final EtfSectorAiHistoryRepository sectorAiHistoryRepository;
     private final EtfStockCompositionRepository stockCompositionRepository;
+    private final EtfStockClusterMappingRepository clusterMappingRepository;
+
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
+
+    // 클러스터 타입 상수
+    private static final String CLUSTER_TYPE_GROUP = "GROUP_CODE";
+    private static final String CLUSTER_TYPE_SUB_SECTOR = "SUB_SECTOR";
+
+    // 테마형 ETF 전략 타입
+    private static final String STRATEGY_THEME = "테마형";
 
 
 
@@ -52,8 +62,12 @@ public class EtfServiceImpl implements EtfService {
         // ETF 조회 (영문명)
         Etf etf = etfReader.read(ticker);
 
+        // 테마형 여부 판단
+        boolean isThemeEtf = isThemeEtf(etf);
+        String clusterType = isThemeEtf ? CLUSTER_TYPE_SUB_SECTOR : CLUSTER_TYPE_GROUP;
+
         // 섹터 클러스터 조회
-        List<EtfSectorResponse> sectors = getSectorClusters(ticker);
+        List<EtfSectorResponse> sectors = getSectorClusters(ticker, clusterType, isThemeEtf);
 
         // 영향력 종목 조회
         List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
@@ -65,6 +79,13 @@ public class EtfServiceImpl implements EtfService {
                 .build();
     }
 
+    /**
+     * 테마형 ETF 여부 판단
+     */
+    private boolean isThemeEtf(Etf etf) {
+        return STRATEGY_THEME.equalsIgnoreCase(etf.getStrategyType());
+    }
+
     @Override
     public Map<String, Etf> getEtfListInTickers(List<String> list) {
         return etfReader.getValidEtfs(list);
@@ -72,10 +93,14 @@ public class EtfServiceImpl implements EtfService {
 
     /**
      * 섹터 클러스터 조회 (버블 차트용)
+     *
+     * @param ticker ETF 티커
+     * @param clusterType 클러스터 타입 (GROUP_CODE / SUB_SECTOR)
+     * @param isThemeEtf 테마형 ETF 여부
      */
-    private List<EtfSectorResponse> getSectorClusters(String ticker) {
+    private List<EtfSectorResponse> getSectorClusters(String ticker, String clusterType, boolean isThemeEtf) {
         // 섹터 클러스터 조회
-        List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfTicker(ticker);
+        List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfTickerAndClusterType(ticker, clusterType);
 
         if (clusters.isEmpty()) {
             return List.of();
@@ -92,11 +117,18 @@ public class EtfServiceImpl implements EtfService {
         // 섹터별 종목 조회하여 응답 생성
         return clusters.stream()
             .map(cluster -> {
-                // 해당 섹터 종목들 조회
-                List<EtfSectorStockResponse> stocks = getSectorStocks(ticker, cluster.getGroupCode());
+                // 해당 섹터 종목들 조회 (테마형: sector_code로, 시장형: group_code로)
+                List<EtfSectorStockResponse> stocks = isThemeEtf
+                    ? getSectorStocksBySectorCode(ticker, cluster.getIndustryCode())
+                    : getSectorStocksByGroupCode(ticker, cluster.getGroupCode());
+
+                // 섹터명 결정: 테마형은 subSector, 시장형은 groupName
+                String sectorName = isThemeEtf
+                    ? (cluster.getSubSector() != null ? cluster.getSubSector() : cluster.getIndustryName())
+                    : (cluster.getGroupName() != null ? cluster.getGroupName() : cluster.getIndustryName());
 
                 return EtfSectorResponse.builder()
-                    .name(cluster.getGroupName() != null ? cluster.getGroupName() : cluster.getIndustryName())
+                    .name(sectorName)
                     .percentage(cluster.getWeightPct())
                     .stocks(stocks)
                     .aiAnalysis(aiAnalysisMap.get(cluster.getGroupCode()))
@@ -106,23 +138,53 @@ public class EtfServiceImpl implements EtfService {
     }
 
     /**
-     * 섹터별 종목 목록 조회
+     * 섹터별 종목 목록 조회 - 세분류(sector_code)로 조회 (테마형 ETF용)
+     * etf_stock_cluster_mapping 테이블 활용
      */
-    private List<EtfSectorStockResponse> getSectorStocks(String ticker, String groupCode) {
+    private List<EtfSectorStockResponse> getSectorStocksBySectorCode(String ticker, String sectorCode) {
+        if (sectorCode == null) {
+            return List.of();
+        }
+
+        return clusterMappingRepository.findByEtfTickerAndSectorCode(ticker, sectorCode).stream()
+                .limit(MAX_SECTOR_STOCKS)
+                .map(mapping -> {
+                    var comp = mapping.getComposition();
+                    var stock = comp.getStock();
+                    var company = stock.getCompany();
+
+                    return EtfSectorStockResponse.builder()
+                            .ticker(stock.getTicker())
+                            .name(company != null ? company.getCompanyName() : null)
+                            .percentage(comp.getWeightPct())
+                            .build();
+                })
+                .toList();
+    }
+
+    /**
+     * 섹터별 종목 목록 조회 - 그룹코드로 조회 (시장형 ETF용)
+     * etf_stock_cluster_mapping 테이블 + industry_classification 조인
+     */
+    private List<EtfSectorStockResponse> getSectorStocksByGroupCode(String ticker, String groupCode) {
         if (groupCode == null) {
             return List.of();
         }
 
-        return stockCompositionRepository.findByEtfTickerAndGroupCode(ticker, groupCode).stream()
+        return clusterMappingRepository.findByEtfTickerAndGroupCode(ticker, groupCode).stream()
                 .limit(MAX_SECTOR_STOCKS)
-                .map(comp -> EtfSectorStockResponse.builder()
-                        .ticker(comp.getStock().getTicker())
-                        .name(comp.getStock().getCompany() != null
-                                ? comp.getStock().getCompany().getCompanyName()
-                                : null)
-                        .percentage(comp.getWeightPct())
-                    .build())
-            .toList();
+                .map(mapping -> {
+                    var comp = mapping.getComposition();
+                    var stock = comp.getStock();
+                    var company = stock.getCompany();
+
+                    return EtfSectorStockResponse.builder()
+                            .ticker(stock.getTicker())
+                            .name(company != null ? company.getCompanyName() : null)
+                            .percentage(comp.getWeightPct())
+                            .build();
+                })
+                .toList();
     }
 
     /**

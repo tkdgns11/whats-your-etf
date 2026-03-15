@@ -38,7 +38,7 @@ public class PortfolioEtf {
     private Etf etf;
 
     /** etf 갯수 */
-    @Column(name = "etf_count", nullable = false, scale = 3)
+    @Column(name = "etf_count", scale = 3)
     private BigDecimal etfCount;
 
     @Column(name = "created_at")
