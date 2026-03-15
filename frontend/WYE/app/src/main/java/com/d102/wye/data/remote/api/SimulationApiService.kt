@@ -1,9 +1,12 @@
 package com.d102.wye.data.remote.api
 
+import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.EtfDividendHistoryResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryResponse
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -30,4 +33,13 @@ interface SimulationApiService {
         @Query("startDate") startDate: String? = null,
         @Query("endDate") endDate: String? = null
     ): BaseResponse<EtfDividendHistoryResponse>
+
+
+    /**
+     * 포트폴리오 저장
+     */
+    @POST("portfolios")
+    suspend fun savePortfolio(
+        @Body request: SavePortfolioRequest
+    ): BaseResponse<Unit>
 }

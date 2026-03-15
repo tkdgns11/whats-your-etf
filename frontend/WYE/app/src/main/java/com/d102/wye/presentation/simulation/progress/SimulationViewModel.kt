@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiDiagnosisResult
+import com.d102.wye.domain.model.EtfCountItem
+import com.d102.wye.domain.model.SavePortfolioParams
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.domain.usecase.simulation.RunSimulationUseCase
@@ -90,6 +92,7 @@ class SimulationViewModel @Inject constructor(
                             simulationRepository.savePriceHistories(result.data)
                             Timber.d("[DB] 가격 이력 저장 완료 | tickers=${result.data.keys}")
                         }
+
                         is BaseResult.Error -> {
                             Timber.e("[API] 가격 이력 조회 실패 | message=${result.error.message}")
                             _simulationState.update { UiState.Error(result.error.message) }
@@ -148,6 +151,7 @@ class SimulationViewModel @Inject constructor(
         when {
             form.investmentAmount.isBlank() || form.investmentPeriod.isBlank() ->
                 "투자 금액과 기간을 입력하면\n수익률 그래프가 나타납니다."
+
             else -> "ETF를 추가하고 자산의 미래를 확인해보세요"
         }
     }.stateIn(
@@ -187,11 +191,14 @@ class SimulationViewModel @Inject constructor(
         fetchAiDiagnosis()
     }
 
-    fun onAiDialogDismiss() { _showAiDialog.value = false }
+    fun onAiDialogDismiss() {
+        _showAiDialog.value = false
+    }
 
     private fun fetchAiDiagnosis() {
         if (_aiDiagnosisState.value is UiState.Loading ||
-            _aiDiagnosisState.value is UiState.Success) return
+            _aiDiagnosisState.value is UiState.Success
+        ) return
 
         viewModelScope.launch {
             Timber.d("[AI] AI 진단 요청 시작")
@@ -216,7 +223,9 @@ class SimulationViewModel @Inject constructor(
     // 저장
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun onSaveIconClick() { _showSaveDialog.value = true }
+    fun onSaveIconClick() {
+        _showSaveDialog.value = true
+    }
 
     fun onSaveDialogDismiss() {
         _showSaveDialog.value = false
@@ -225,16 +234,49 @@ class SimulationViewModel @Inject constructor(
 
     fun savePortfolio(portfolioName: String) {
         if (_savePortfolioState.value is UiState.Loading) return
+
+        val form = _formState.value
+        val amount = form.investmentAmount.toLongOrNull() ?: 0L
+        val period = form.investmentPeriod.toIntOrNull() ?: 0
+
+        val defaultName = "포트폴리오 ${LocalDate.now().toString()}"
+
         Timber.d("[Save] 포트폴리오 저장 요청 | name=$portfolioName")
+
         viewModelScope.launch {
             _savePortfolioState.update { UiState.Loading }
-            delay(1000) // TODO: 실제 저장 API 호출
-            _savePortfolioState.update { UiState.Success(Unit) }
-            _showSaveDialog.value = false
-            Timber.d("[Save] 포트폴리오 저장 완료 | name=$portfolioName")
+
+            // count 계산: (investAmount × weight / 100) / currentPrice
+            // TODO: currentPrice는 탐색 API 연동 후 PortfolioItem에서 가져오기
+            val etfs = form.portfolioItems.map { item ->
+                EtfCountItem(
+                    ticker = item.ticker,
+                    counts = 0  // TODO: (amount × item.weight / 100) / item.currentPrice
+                )
+            }
+
+            when (val result = simulationRepository.savePortfolio(
+                SavePortfolioParams(
+                    portfolioName = portfolioName.ifBlank { defaultName },
+                    investType = form.investmentType,
+                    investAmount = amount,
+                    investPeriod = period,
+                    etfs = etfs
+                )
+            )) {
+                is BaseResult.Success -> {
+                    Timber.d("[Save] 포트폴리오 저장 완료 | name=$portfolioName")
+                    _savePortfolioState.update { UiState.Success(Unit) }
+                    _showSaveDialog.value = false
+                }
+
+                is BaseResult.Error -> {
+                    Timber.e("[Save] 포트폴리오 저장 실패 | ${result.error.message}")
+                    _savePortfolioState.update { UiState.Error(result.error.message) }
+                }
+            }
         }
     }
-
     // ─────────────────────────────────────────────────────────────────────────
     // 계산 트리거 (300ms debounce)
     // ─────────────────────────────────────────────────────────────────────────
@@ -284,6 +326,7 @@ class SimulationViewModel @Inject constructor(
                         UiState.Success(result.data.toUiModel(form.investmentType))
                     }
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("[Calc] 계산 실패 | message=${result.error.message}")
                     _simulationState.update { UiState.Error(result.error.message) }

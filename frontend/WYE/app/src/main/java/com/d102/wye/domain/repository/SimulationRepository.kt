@@ -3,6 +3,7 @@ package com.d102.wye.domain.repository
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
+import com.d102.wye.domain.model.SavePortfolioParams
 
 interface SimulationRepository {
 
@@ -20,6 +21,9 @@ interface SimulationRepository {
         startDate: String? = null,
         endDate: String? = null
     ): BaseResult<Map<String, EtfDividendHistory>>
+
+    suspend fun savePortfolio(params: SavePortfolioParams): BaseResult<Unit>
+
 
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
 
