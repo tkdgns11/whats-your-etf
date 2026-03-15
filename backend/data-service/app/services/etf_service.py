@@ -7,6 +7,8 @@ from app.config import get_settings
 from app.repositories.etf_repository import EtfRepository, EtfPriceRepository
 from app.scrapers.dependencies import get_pykrx_client
 
+from app.repositories.stock_repository import StockRepository
+
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
@@ -14,25 +16,32 @@ from fastapi import BackgroundTasks
 from app.database import AsyncSessionLocal
 import traceback
 
-async def process_etf_events_background(ticker: str, etf_id: int):
+_krx_api_semaphore = asyncio.Semaphore(5)
+
+async def process_all_etf_events_background(infos: list[dict]):
     from app.services.etf_service import EtfService
-    async with AsyncSessionLocal() as db:
-        try:
-            service = EtfService(db)
-            # 1. 가격 이력 저장
-            await service.save_new_etf_price_histories(ticker, etf_id)
-            # 2. PDF 분석하여 해외 주식 포함시 비활성화 처리
-            await service.check_and_update_etf_active_status(ticker, etf_id)
-        except Exception as e:
-            logger.error(f"Error processing ETF events for {ticker}: {e}")
-            logger.error(traceback.format_exc())
+    
+    async def _process_one(ticker: str, etf_id: int):
+        async with AsyncSessionLocal() as db:
+            try:
+                service = EtfService(db)
+                # 1. 가격 이력 저장
+                await service.save_new_etf_price_histories(ticker, etf_id)
+                # 2. PDF 분석하여 해외 주식 등 포함시 비활성화 & 국내 주식 DB에 저장
+                await service.check_and_update_etf_active_status(ticker, etf_id)
+            except Exception as e:
+                logger.error(f"Error processing ETF events for {ticker}: {e}")
+                logger.error(traceback.format_exc())
+
+    tasks = [_process_one(meta["ticker"], meta["id"]) for meta in infos]
+    await asyncio.gather(*tasks)
 
 class EtfService:
     def __init__(self, db: AsyncSession):
         self.etf_repository = EtfRepository(db)
         self.etf_price_repository = EtfPriceRepository(db)
+        self.stock_repository = StockRepository(db)
         self.pykrx_client = get_pykrx_client()
-        self.semaphore = asyncio.Semaphore(5)
 
     async def sync_etf_tickers(self, background_tasks: BackgroundTasks = None):
         # 오늘 자 기준 상장된 etf ticker 리스트
@@ -48,18 +57,12 @@ class EtfService:
         infos = await self.etf_repository.save_initial_etf_infos(etfs)
 
         if background_tasks:
-            for meta in infos:
-                background_tasks.add_task(process_etf_events_background, meta["ticker"], meta["id"])
+            background_tasks.add_task(process_all_etf_events_background, infos)
         else:
-            # 백그라운드 태스크가 없으면 동기(gather)로 처리
-            tasks = [
-                process_etf_events_background(meta["ticker"], meta["id"])
-                for meta in infos
-            ]
-            await asyncio.gather(*tasks)
+            await process_all_etf_events_background(infos)
 
     async def save_new_etf_price_histories(self, ticker: str, etf_id: int):
-        async with self.semaphore:  # 동시성 제어
+        async with _krx_api_semaphore:  # 동시성 제어
             await asyncio.sleep(0.2) # pykrx API 서버 호출 제한(CD006/CD003 등) 방지
             price_histories = await self.pykrx_client.get_price_history(ticker)
 
@@ -77,7 +80,7 @@ class EtfService:
             logging.info(f"[{ticker}] DB에 가격 이력 데이터 {len(price_histories)}건 적재 완료.")
 
     async def check_and_update_etf_active_status(self, ticker: str, etf_id: int):
-        async with self.semaphore:
+        async with _krx_api_semaphore:
             await asyncio.sleep(0.2) # pykrx API 서버 호출 제한 방지
             pdf_tickers = await self.pykrx_client.get_etf_pdf_tickers(ticker)
             if not pdf_tickers:
@@ -87,11 +90,53 @@ class EtfService:
             # 6자리 숫자가 아닌 경우 해외 주식이나 기타 상품으로 간주하여 비활성화
             # User requirement: "pdf 안에 살펴 보면서 해외 주식이 포함된 etf는 isactive =false가 되도록 해주시면됩니다"
             has_foreign_stock = False
+            domestic_stocks = []
             for pdf_ticker in pdf_tickers:
                 if not (pdf_ticker.isdigit() and len(pdf_ticker) == 6):
                     has_foreign_stock = True
-                    break
+                else:
+                    domestic_stocks.append(pdf_ticker)
             
+            if domestic_stocks:
+                logging.info(f"[{ticker}] 국내 상장 주식 {len(domestic_stocks)}건 DB insert 및 회사정보 수집 중...")
+                await self.process_domestic_stocks(domestic_stocks)
+                logging.info(f"[{ticker}] 국내 상장 주식 {len(domestic_stocks)}건 저장 완료.")
+
+    async def process_domestic_stocks(self, tickers: list[str]):
+        from app.scrapers.data_portal_client import DataPortalClient
+        client = DataPortalClient()
+        for ticker in tickers:
+            # 1. ticker로 사업자등록번호(crno) 및 기본 회사명 조회
+            item_info = await client.get_stock_item_info(ticker)
+            if not item_info:
+                continue
+            
+            corp_name = item_info.get("corpNm")
+            market_type = item_info.get("mrktCtg")
+            corp_number = item_info.get("crno")
+            
+            if not corp_name:
+                continue
+                
+            # 2. Company 저장 (외래키 대상)
+            company = await self.stock_repository.get_or_create_company(corp_name, market_type)
+            
+            # 3. Stock 저장 (Company 외래키 연결)
+            await self.stock_repository.get_or_create_stock(ticker, company.id, market_type)
+            
+            # 4. 사업자등록번호(crno)로 회사 세부정보 조회 및 채우기
+            if corp_number:
+                corp_outline = await client.get_corp_outline(corp_number)
+                if corp_outline:
+                    info = {
+                        "industry_name": corp_outline.get("sicNm"),
+                        "ceo_name": corp_outline.get("enpRprFnm"),
+                        "homepage": corp_outline.get("enpHmpgUrl"),
+                        "region": corp_outline.get("enpBsadr"),
+                        "description": corp_outline.get("enpMainBizNm")
+                    }
+                    await self.stock_repository.update_company_info(company.id, info)
+
             if has_foreign_stock:
                 logger.info(f"ETF {ticker} contains foreign or non-standard stock. Deactivating.")
                 await self.etf_repository.update_etf_active_status(etf_id, False)

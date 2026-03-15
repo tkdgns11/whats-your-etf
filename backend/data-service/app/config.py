@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     krx_id: str = ""
     krx_pw: str = ""
 
+    data_portal_company_service_key: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"

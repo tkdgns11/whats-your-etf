@@ -31,12 +31,10 @@ class CompanyInfo(Base):
     __tablename__ = "company_info"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    stock_code = Column(String(20), unique=True, nullable=False)
-    stock_name = Column(String(100), nullable=False)
-    aliases = Column(JSONB)  # 회사명 별칭 (UI 표시용)
+    company_name = Column(String(100), nullable=False)
 
     market_type = Column(String(20))  # KOSPI / KOSDAQ / NYSE / NASDAQ
-    industry_code = Column(String(10), ForeignKey("industry_classification.code", ondelete="SET NULL"))
+    industry_code = Column(String(20)) # JPA Entity length 20
     industry_name = Column(String(100))
     industry_group = Column(String(50))
 
@@ -54,8 +52,5 @@ class CompanyInfo(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationship
-    industry = relationship("IndustryClassification")
-
     def __repr__(self):
-        return f"<Company(code={self.stock_code}, name={self.stock_name})>"
+        return f"<Company(name={self.company_name})>"

@@ -9,7 +9,7 @@ class Stock(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     # company_id = Column(BigInteger, ForeignKey("company_info.id")) # 주석 처리된 FK를 연결하려면 company_info 테이블이 필요하다.
     company_id = Column(BigInteger, ForeignKey("company_info.id", ondelete="SET NULL"), nullable=True) # User JPA Entity 참고
-    ticker = Column(String(20), nullable=False)
+    ticker = Column(String(20), nullable=False, unique=True)
     close = Column(DECIMAL(14, 2))
     listing_date = Column(Date)
     face_value = Column(Integer)
