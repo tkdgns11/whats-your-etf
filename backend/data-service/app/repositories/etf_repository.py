@@ -40,6 +40,13 @@ class EtfRepository:
 
         return [{"id": row.id, "ticker":row.stock_code} for row in result.all()]
 
+    async def update_etf_active_status(self, etf_id: int, is_active: bool):
+        from sqlalchemy import update
+        stmt = update(ETF).where(ETF.id == etf_id).values(is_active=is_active)
+        await self.db.execute(stmt)
+        await self.db.commit()
+
+
 
 class EtfPriceRepository:
     def __init__(self, db: AsyncSession):

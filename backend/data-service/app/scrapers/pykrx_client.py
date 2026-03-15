@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 from typing import Any, List, Dict
 
@@ -44,13 +45,19 @@ class PykrxClient:
             pykrx로부터 데이터를 가져와 스키마 구조에 맞는 List[Dict]로 변환합니다.
             """
             end_date = datetime.date.today().strftime("%Y%m%d")
+            logging.info(f"[{ticker}] pykrx에서 가격 이력 호출 중... ({start_date} ~ {end_date})")
 
             # pykrx의 ETF OHLCV API는 NAV와 등락률을 포함합니다.
-            df = await to_thread.run_sync(
-                stock.get_etf_ohlcv_by_date, start_date, end_date, ticker
-            )
+            try:
+                df = await to_thread.run_sync(
+                    stock.get_etf_ohlcv_by_date, start_date, end_date, ticker
+                )
+            except Exception as e:
+                logging.error(f"[{ticker}] pykrx 가격 이력 호출 중 예외 발생: {e}")
+                return []
 
             if df is None or df.empty:
+                logging.info(f"[{ticker}] pykrx에서 불러온 가격 데이터가 없습니다.")
                 return []
 
             df = df.reset_index()
@@ -60,17 +67,42 @@ class PykrxClient:
             history_data = []
             for _, row in df.iterrows():
                 history_data.append({
-                    "trade_date": row['날짜'].date(),
-                    "close": float(row['종가']),
-                    "nav": float(row['NAV']),
-                    "volume": int(row['거래량']),
-                    "change_rate": float(row['등락률'])
+                    "trade_date": row.get('날짜', row.name).date() if hasattr(row.get('날짜', row.name), 'date') else row.get('날짜', row.name),
+                    "close": float(row.get('종가', 0)),
+                    "nav": float(row.get('NAV', 0)),
+                    "volume": int(row.get('거래량', 0)),
+                    "change_rate": float(row.get('등락률', 0.0))
                 })
-
+            
+            logging.info(f"[{ticker}] pykrx에서 가격 이력 데이터 {len(history_data)}건 조회 성공.")
             return history_data
         else:
             logging.error("로그인 실패")
             return []
+
+    async def get_etf_pdf_tickers(self, ticker: str) -> List[str]:
+        if self.krx_session_manager.login():
+            today_str = datetime.date.today().strftime("%Y%m%d")
+            logging.info(f"[{ticker}] pykrx에서 PDF(구성종목) 데이터 조회 중...")
+            try:
+                df = await to_thread.run_sync(
+                    stock.get_etf_portfolio_deposit_file, ticker
+                )
+                if df is None or df.empty:
+                    logging.info(f"[{ticker}] PDF 구성종목 데이터가 없습니다.")
+                    return []
+                
+                # The index contains the component tickers
+                pdf_list = df.index.tolist()
+                logging.info(f"[{ticker}] PDF 구성종목 {len(pdf_list)}개 조회 성공.")
+                return pdf_list
+            except Exception as e:
+                logging.error(f"Failed to fetch PDF for {ticker}: {e}")
+                return []
+        else:
+            logging.error("로그인 실패")
+            return []
+
 
 
 @dataclass

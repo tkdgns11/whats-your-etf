@@ -305,11 +305,14 @@ async def scheduler_status():
         "jobs": jobs
     }
 
+from fastapi import BackgroundTasks
+
 @app.post("/test/test")
-async def test(db: AsyncSession = Depends(get_async_db)):
+async def test(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_async_db)):
     from app.services.etf_service import EtfService
     service = EtfService(db)
-    await service.sync_etf_tickers()
+    await service.sync_etf_tickers(background_tasks)
+    return {"message": "ETF sync triggered in background"}
 
 @app.get("/stats")
 async def get_stats(db: Session = Depends(get_db)):
