@@ -15,7 +15,5 @@ public interface PortfolioService {
 
         List<Portfolio> getPortfolioList(Long userId);
 
-        List<PortfolioEtfInfo> getPortfolioInfo(Long portfolioId);
-
         Map<Long, List<PortfolioEtfInfo>> getPortfolioInfoMap(List<Long> portfolioIds);
 }

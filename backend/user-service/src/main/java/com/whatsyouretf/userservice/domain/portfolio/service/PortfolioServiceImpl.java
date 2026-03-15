@@ -29,11 +29,6 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
 
         @Override
-        public List<PortfolioEtfInfo> getPortfolioInfo(Long portfolioId) {
-                return portfolioReader.getPortfolioEtf(portfolioId);
-        }
-
-        @Override
         public Map<Long, List<PortfolioEtfInfo>> getPortfolioInfoMap(List<Long> portfolioIds) {
                 return portfolioReader.getPortfolioInfoMap(portfolioIds);
         }
