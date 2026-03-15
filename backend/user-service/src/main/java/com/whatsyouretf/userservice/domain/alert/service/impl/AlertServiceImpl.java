@@ -164,6 +164,12 @@ public class AlertServiceImpl implements AlertService {
     }
 
     @Override
+    @Transactional
+    public void deleteAllFcmTokens(Long userId) {
+        fcmTokenRepository.deleteAllByUserId(userId);
+    }
+
+    @Override
     public AlertTypeListResponse getAlertTypes() {
         List<AlertType> alertTypes = alertTypeRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
 

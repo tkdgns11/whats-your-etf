@@ -66,6 +66,10 @@ public class User extends BaseEntity {
         }
     }
 
+    public void clearProfileImage() {
+        this.profileImage = null;
+    }
+
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }

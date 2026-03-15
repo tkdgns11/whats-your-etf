@@ -154,14 +154,19 @@ public class AuthController {
     /**
      * 로그아웃
      * <p>
-     * Refresh Token을 폐기하여 로그아웃 처리합니다.
+     * Refresh Token을 폐기하고, FCM 토큰이 전달된 경우 해당 기기의 푸시 알림을 해제합니다.
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @param request FCM 토큰 (선택)
      */
-    @Operation(summary = "로그아웃", description = "로그아웃 처리 (Refresh Token 폐기)")
+    @Operation(summary = "로그아웃", description = "로그아웃 처리 (Refresh Token 폐기, FCM 토큰 삭제)")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody(required = false) LogoutRequest request
     ) {
-        authService.logout(userDetails.getUserId());
+        String fcmToken = (request != null) ? request.getFcmToken() : null;
+        authService.logout(userDetails.getUserId(), fcmToken);
         return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
     }
 
