@@ -34,6 +34,9 @@ import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
+private val PositiveColor = Color(0xFFE53935)  // 상승 → 빨강
+private val NegativeColor = Color(0xFF1565C0)  // 하락 → 파랑
+
 @Composable
 fun YieldTrendView(
     formState: SimulationFormState,
@@ -85,14 +88,34 @@ fun YieldTrendView(
 
         // ── 요약 카드 3개 ────────────────────────────────────────────────────
         val uiModel = (simulationState as? UiState.Success)?.data
+
         val cardItems = listOf(
-            "예상 수익금" to (uiModel?.estimatedFinalAsset ?: "-"),
-            "수익률"     to (uiModel?.yieldRate ?: "-"),
-            "총 투자금"  to (uiModel?.totalInvestment ?: "-")
+            Triple(
+                "예상 수익금",
+                uiModel?.estimatedFinalAsset ?: "-",
+                uiModel?.netProfit ?: "-"
+            ) to (uiModel?.let {
+                if (it.isPositiveReturn) PositiveColor else NegativeColor
+            } ?: TextSecondary),
+            Triple(
+                "수익률",
+                uiModel?.yieldRate ?: "-",
+                if (uiModel?.isPositiveReturn == true) "▲ 상승"
+                else if (uiModel != null) "▼ 하락"
+                else "-"
+            ) to (uiModel?.let {
+                if (it.isPositiveReturn) PositiveColor else NegativeColor
+            } ?: TextSecondary),
+            Triple(
+                "총 투자금",
+                uiModel?.totalInvestment ?: "-",
+                "변동없음"
+            ) to TextSecondary  // 항상 회색
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            cardItems.forEach { (title, value) ->
+            cardItems.forEach { (card, subColor) ->
+                val (title, value, subText) = card
                 ResultCard(
                     modifier = Modifier
                         .weight(1f)
@@ -100,18 +123,28 @@ fun YieldTrendView(
                     borderColor = PrimaryGreen.copy(alpha = 0.1f),
                     backgroundColor = PrimaryGreen.copy(alpha = 0.05f)
                 ) {
-                    Column {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.labelLarge,
                             color = TextSecondary
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = value,
                             style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
                             color = TextPrimary
                         )
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (subText != "-") {
+                            Text(
+                                text = subText,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = subColor,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.End
+                            )
+                        }
                     }
                 }
             }
@@ -121,9 +154,7 @@ fun YieldTrendView(
 
         // ── 차트 영역 ────────────────────────────────────────────────────────
         when (simulationState) {
-
             is UiState.Idle -> {
-                // 플레이스홀더
                 DashedContainer(height = 180.dp, strokeWidth = 2.dp) {
                     Text(
                         text = idleGuideMessage,
@@ -135,7 +166,6 @@ fun YieldTrendView(
             }
 
             is UiState.Loading -> {
-                // 비중 합계가 100%가 아닐 때 안내 문구
                 val totalWeight = formState.portfolioItems.sumOf { it.weight }
                 DashedContainer(height = 180.dp, strokeWidth = 2.dp) {
                     Column(
@@ -146,7 +176,7 @@ fun YieldTrendView(
                             Text(
                                 text = "비중 합계: $totalWeight%",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = if (totalWeight > 100) Color(0xFFE53935) else TextPrimary
+                                color = if (totalWeight > 100) PositiveColor else TextPrimary
                             )
                             Text(
                                 text = if (totalWeight > 100) "비중 합계가 100%를 초과했습니다"
@@ -171,7 +201,6 @@ fun YieldTrendView(
             }
 
             is UiState.Success -> {
-                // 백테스트 차트
                 BacktestChart(
                     points = simulationState.data.backtestPoints,
                     investmentType = simulationState.data.investmentType,
@@ -185,7 +214,7 @@ fun YieldTrendView(
                     Text(
                         text = simulationState.message,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFE53935),
+                        color = PositiveColor,
                         textAlign = TextAlign.Center
                     )
                 }

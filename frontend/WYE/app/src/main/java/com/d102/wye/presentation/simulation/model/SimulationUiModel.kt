@@ -10,34 +10,33 @@ import com.d102.wye.domain.state.InvestmentType
 data class SimulationUiModel(
     // 요약 카드
     val estimatedFinalAsset: String,  // "1억 2,345만원"
+    val netProfit: String,            // "+2,345만원" or "-500만원"
     val yieldRate: String,            // "+12.34%" or "-5.67%"
     val totalInvestment: String,      // "3,600만원"
 
     // 펀더멘털
-    val per: String,   // "12.5배"
-    val pbr: String,   // "1.2배"
-    val roe: String,   // "9.8%"
+    val per: String,
+    val pbr: String,
+    val roe: String,
 
     // 배당금
-    val expectedAnnualDividend: String,   // "24만원"
-    val expectedMonthlyDividend: String,  // "2만원"
+    val expectedAnnualDividend: String,
+    val expectedMonthlyDividend: String,
 
-    // 차트 데이터 (raw 값 그대로 — Canvas가 직접 계산에 사용)
+    // 차트 데이터
     val backtestPoints: List<BacktestPoint>,
     val investmentType: InvestmentType,
     val isPositiveReturn: Boolean
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 변환 확장함수
-// ─────────────────────────────────────────────────────────────────────────────
-
 fun SimulationResult.toUiModel(investmentType: InvestmentType): SimulationUiModel {
     val isPositive = totalReturn >= 0.0
     val returnSign = if (isPositive) "+" else ""
+    val netProfitValue = estimatedFinalValue - totalInvestment
 
     return SimulationUiModel(
         estimatedFinalAsset = estimatedFinalValue.formatAmount(),
+        netProfit = "${if (netProfitValue >= 0) "+" else ""}${netProfitValue.formatAmount()}",
         yieldRate = "$returnSign${String.format("%.2f", totalReturn)}%",
         totalInvestment = totalInvestment.formatAmount(),
         per = "${String.format("%.1f", fundamentals.per)}배",
@@ -51,14 +50,11 @@ fun SimulationResult.toUiModel(investmentType: InvestmentType): SimulationUiMode
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 포맷팅 유틸 (simulation feature 내부 전용)
-// ─────────────────────────────────────────────────────────────────────────────
-
 private fun Long.formatAmount(): String {
-    val eok = this / 100_000_000L
-    val man = (this % 100_000_000L) / 10_000L
-    val won = this % 10_000L
+    val abs = Math.abs(this)
+    val eok = abs / 100_000_000L
+    val man = (abs % 100_000_000L) / 10_000L
+    val won = abs % 10_000L
 
     return when {
         eok > 0 && man > 0 -> "${eok}억 ${"%,d".format(man)}만원"

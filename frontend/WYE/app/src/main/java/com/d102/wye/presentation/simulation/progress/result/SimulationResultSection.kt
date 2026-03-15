@@ -63,7 +63,7 @@ fun SimulationResultSection(
         AiDiagnosisButton(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
+                .padding(end = 16.dp),
             isEmpty = simulationState !is UiState.Success,
             onClick = onAiDiagnosisClick
         )
