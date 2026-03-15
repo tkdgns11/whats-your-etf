@@ -20,7 +20,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
@@ -34,8 +33,8 @@ import kotlin.math.abs
 /**
  * 백테스트 라인 차트
  *
- * - 적립형: y축 = 누적 수익률 (%), 0% 기준선 표시
- * - 거치형: y축 = 평가 금액 (원)
+ * - 적립형: y축 = 월말 평가금액 (원), 월별 포인트
+ * - 거치형: y축 = 일별 평가금액 (원), 일별 포인트
  * - 좌 → 우 순차 드로우 애니메이션
  */
 @Composable
@@ -45,7 +44,7 @@ fun BacktestChart(
     isPositive: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (points.isEmpty()) return
+    if (points.size < 2) return
 
     val progress = remember(points) { Animatable(0f) }
     LaunchedEffect(points) {
@@ -73,18 +72,6 @@ fun BacktestChart(
 
             fun xOf(i: Int) = (i.toFloat() / (points.size - 1)) * w
             fun yOf(v: Double) = h - ((v - minVal) / range * h).toFloat()
-
-            // 0% 기준선 (적립형 + 0이 범위 안에 있을 때)
-            if (investmentType == InvestmentType.INSTALLMENT && minVal < 0.0 && maxVal > 0.0) {
-                val zeroY = yOf(0.0)
-                drawLine(
-                    color = Color.Gray.copy(alpha = 0.4f),
-                    start = Offset(0f, zeroY),
-                    end = Offset(w, zeroY),
-                    strokeWidth = 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
-                )
-            }
 
             // 수평 그리드 (3줄)
             repeat(3) { i ->
