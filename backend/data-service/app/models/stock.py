@@ -1,4 +1,3 @@
-"""주식 모델"""
 from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship

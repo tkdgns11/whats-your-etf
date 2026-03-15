@@ -125,8 +125,30 @@ async def krx_disclosure_job():
         db.close()
 
 
+async def etf_sync_job():
+    """ETF 티커 동기화 + 구성 주식/회사 정보 저장 (매일 05:00 KST)"""
+    logger.info("=== ETF 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_tickers()
+            logger.info("=== ETF 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 동기화 실패: {e}")
+
 def start_scheduler():
     """스케줄러 시작"""
+    # ETF 티커 동기화 + 주식/회사 정보 저장 (매일 05:00 KST)
+    scheduler.add_job(
+        etf_sync_job,
+        trigger=CronTrigger(hour=5, minute=0, timezone='Asia/Seoul'),
+        id="etf_sync_job",
+        name="ETF Daily Sync",
+        replace_existing=True
+    )
+
     # ETF 구성종목 뉴스 크롤링 (매일 07:00 KST)
     # - 상위 100개 ETF + 사용자 관심 ETF + 포트폴리오 ETF 구성종목
     scheduler.add_job(
@@ -149,5 +171,6 @@ def start_scheduler():
     scheduler.start()
     logger.info(
         f"스케줄러 시작:\n"
+        f"  - ETF 동기화: 매일 05:00 KST\n"
         f"  - ETF 구성종목 뉴스: 매일 07:00 KST"
     )

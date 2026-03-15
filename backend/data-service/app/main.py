@@ -2,12 +2,13 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from app.database import get_db, SessionLocal
+from app.database import get_db, SessionLocal, get_async_db
 from app.models.news import NewsArticle
 from app.models.etf_disclosure import EtfDisclosure
 from app.models.etf import ETF, ETFSectorCluster
@@ -16,7 +17,7 @@ from app.scrapers.krx_scraper import KrxDisclosureScraper
 from app.schedulers.scheduler import start_scheduler, scheduler
 from app.config import get_settings
 from app.scrapers.keywords import NEWS_CATEGORIES
-
+from app.database import AsyncSessionLocal
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -303,6 +304,7 @@ async def scheduler_status():
         "running": scheduler.running,
         "jobs": jobs
     }
+
 
 
 @app.get("/stats")

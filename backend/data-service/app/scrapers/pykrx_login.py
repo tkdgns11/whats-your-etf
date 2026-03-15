@@ -15,6 +15,7 @@ class KrxSessionManager:
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         )
         self.session.headers.update({"User-Agent": self._UA})
+        self.patch_pykrx(webio)
 
     def patch_pykrx(self, webio_module):
         """pykrx의 webio 모듈에 현재 세션을 주입합니다 (클로저 활용)."""
@@ -72,7 +73,6 @@ class KrxSessionManager:
             success = (error_code == "CD001")
             if success:
                 logging.info("KRX 로그인 성공")
-                self.patch_pykrx(webio_module=webio)
             else:
                 logging.error(f"KRX 로그인 실패. 코드: {error_code}")
             return success

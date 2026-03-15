@@ -1,5 +1,6 @@
 """회사정보 및 산업분류 모델"""
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, Integer, Text, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Boolean, Date, TIMESTAMP, Integer, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -42,9 +43,6 @@ class CompanyInfo(Base):
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    # Relationship
-    industry = relationship("IndustryClassification")
 
     def __repr__(self):
         return f"<Company(id={self.id}, name={self.company_name})>"
