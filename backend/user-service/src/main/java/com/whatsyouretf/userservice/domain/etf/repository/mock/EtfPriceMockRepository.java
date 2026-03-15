@@ -49,10 +49,10 @@ public class EtfPriceMockRepository {
                 log.debug(Arrays.toString(line));
                 EtfPriceInfo etfPriceInfo = new EtfPriceInfo(
                     LocalDate.parse(line[0]),
-                    new BigDecimal(line[1]),
+                    new BigDecimal(line[3]),
                     new BigDecimal(line[2]),
                     Long.valueOf(line[4]),
-                    new BigDecimal(line[3])
+                    new BigDecimal(line[1])
                 );
                 log.info(etfPriceInfo.toString());
                 temp.add(etfPriceInfo);
