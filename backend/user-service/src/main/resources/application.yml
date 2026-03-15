@@ -6,7 +6,7 @@ spring:
 
   # Database
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:whatsyouretf}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:whatsyouretf}?options=-c%20timezone=Asia/Seoul
     username: ${DB_USERNAME:wye}
     password: ${DB_PASSWORD:wye1234}
     driver-class-name: org.postgresql.Driver
@@ -23,6 +23,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
     show-sql: ${SHOW_SQL:true}
     open-in-view: false
 
