@@ -64,16 +64,4 @@ public interface UserService {
      * 관심 ETF 여부 확인
      */
     boolean isFavoriteEtf(Long userId, Long etfId);
-
-    // ==================== 보유 ETF (마이데이터) ====================
-
-    /**
-     * 보유 ETF 목록 조회
-     */
-    HoldingEtfListResponse getHoldingEtfs(Long userId);
-
-    /**
-     * 마이데이터 동기화 (Mock)
-     */
-    HoldingEtfListResponse syncMyData(Long userId);
 }

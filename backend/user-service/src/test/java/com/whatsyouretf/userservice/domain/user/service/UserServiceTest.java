@@ -9,7 +9,6 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
-import com.whatsyouretf.userservice.domain.user.entity.UserHoldingEtf;
 import com.whatsyouretf.userservice.domain.user.repository.UserFavoriteEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserHoldingEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
@@ -39,7 +38,6 @@ import static org.mockito.BDDMockito.*;
  * 테스트 범위:
  * - 사용자 정보 조회/수정
  * - 관심 ETF (조회, 추가, 삭제)
- * - 보유 ETF (조회, 마이데이터 동기화)
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService 단위 테스트")
@@ -84,7 +82,7 @@ class UserServiceTest {
                 .id(100L)
                 .stockCode("069500")
                 .name("KODEX 200")
-                .category("국내주식형")
+                .sector("국내주식형")
                 .assetManager("삼성자산운용")
                 .isActive(true)
                 .build();
@@ -179,7 +177,7 @@ class UserServiceTest {
             given(etfPriceRepository.findLatestByEtfIds(List.of(100L))).willReturn(List.of(testEtfPrice));
 
             // when
-            FavoriteEtfListResponse response = userService.getFavoriteEtfs(1L);
+            FavoriteEtfListResponse response = userService.getFavoriteEtfs(1L, FavoriteSortType.RECENT);
 
             // then
             assertThat(response).isNotNull();
@@ -196,7 +194,7 @@ class UserServiceTest {
             given(userRepository.existsById(999L)).willReturn(false);
 
             // when & then
-            assertThatThrownBy(() -> userService.getFavoriteEtfs(999L))
+            assertThatThrownBy(() -> userService.getFavoriteEtfs(999L, FavoriteSortType.RECENT))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("code", ErrorCode.USER_NOT_FOUND);
         }
@@ -312,126 +310,6 @@ class UserServiceTest {
 
             // then
             assertThat(result).isFalse();
-        }
-    }
-
-    // ========== 보유 ETF 테스트 ==========
-
-    @Nested
-    @DisplayName("보유 ETF 테스트")
-    class HoldingEtfTest {
-
-        @Test
-        @DisplayName("보유 ETF 목록 조회 - 정상 조회")
-        void getHoldingEtfs_Success() {
-            // given
-            UserHoldingEtf holding = UserHoldingEtf.builder()
-                    .id(1L)
-                    .user(testUser)
-                    .etf(testEtf)
-                    .quantity(10)
-                    .avgPrice(BigDecimal.valueOf(30000))
-                    .syncedAt(LocalDateTime.now())
-                    .build();
-
-            given(userRepository.existsById(1L)).willReturn(true);
-            given(userHoldingEtfRepository.findAllByUserIdWithEtf(1L)).willReturn(List.of(holding));
-            given(etfPriceRepository.findLatestByEtfIds(List.of(100L))).willReturn(List.of(testEtfPrice));
-
-            // when
-            HoldingEtfListResponse response = userService.getHoldingEtfs(1L);
-
-            // then
-            assertThat(response).isNotNull();
-            assertThat(response.getTotalCount()).isEqualTo(1);
-            assertThat(response.getHoldings()).hasSize(1);
-
-            HoldingEtfResponse holdingResponse = response.getHoldings().get(0);
-            assertThat(holdingResponse.getStockCode()).isEqualTo("069500");
-            assertThat(holdingResponse.getQuantity()).isEqualTo(10);
-            assertThat(holdingResponse.getAvgPrice()).isEqualTo(BigDecimal.valueOf(30000));
-            assertThat(holdingResponse.getCurrentPrice()).isEqualTo(BigDecimal.valueOf(35000));
-
-            // 수익률 계산 검증: (35000 * 10 - 30000 * 10) / (30000 * 10) * 100 = 16.67%
-            assertThat(holdingResponse.getEvaluationAmount()).isEqualTo(BigDecimal.valueOf(350000));
-            assertThat(holdingResponse.getProfitLossAmount()).isEqualTo(BigDecimal.valueOf(50000));
-        }
-
-        @Test
-        @DisplayName("보유 ETF 목록 조회 - 사용자가 존재하지 않으면 예외가 발생한다")
-        void getHoldingEtfs_UserNotFound_ThrowsException() {
-            // given
-            given(userRepository.existsById(999L)).willReturn(false);
-
-            // when & then
-            assertThatThrownBy(() -> userService.getHoldingEtfs(999L))
-                    .isInstanceOf(BusinessException.class)
-                    .hasFieldOrPropertyWithValue("code", ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("보유 ETF 목록 조회 - 보유 ETF가 없는 경우 빈 목록을 반환한다")
-        void getHoldingEtfs_Empty_ReturnsEmptyList() {
-            // given
-            given(userRepository.existsById(1L)).willReturn(true);
-            given(userHoldingEtfRepository.findAllByUserIdWithEtf(1L)).willReturn(List.of());
-
-            // when
-            HoldingEtfListResponse response = userService.getHoldingEtfs(1L);
-
-            // then
-            assertThat(response).isNotNull();
-            assertThat(response.getTotalCount()).isZero();
-            assertThat(response.getHoldings()).isEmpty();
-            assertThat(response.getLastSyncedAt()).isNull();
-        }
-
-        @Test
-        @DisplayName("마이데이터 동기화 - 정상 동기화 (Mock)")
-        void syncMyData_Success() {
-            // given
-            given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
-            given(etfRepository.findByIsActiveTrue()).willReturn(List.of(testEtf));
-            given(userHoldingEtfRepository.findByUserIdAndEtfId(anyLong(), anyLong()))
-                    .willReturn(Optional.empty());
-            given(userRepository.existsById(1L)).willReturn(true);
-            given(userHoldingEtfRepository.findAllByUserIdWithEtf(1L)).willReturn(List.of());
-
-            // when
-            HoldingEtfListResponse response = userService.syncMyData(1L);
-
-            // then
-            assertThat(response).isNotNull();
-            then(userHoldingEtfRepository).should().deleteAllByUserId(1L);
-            then(userHoldingEtfRepository).should(atLeastOnce()).save(any(UserHoldingEtf.class));
-        }
-
-        @Test
-        @DisplayName("마이데이터 동기화 - 사용자가 존재하지 않으면 예외가 발생한다")
-        void syncMyData_UserNotFound_ThrowsException() {
-            // given
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.syncMyData(999L))
-                    .isInstanceOf(BusinessException.class)
-                    .hasFieldOrPropertyWithValue("code", ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("마이데이터 동기화 - 활성 ETF가 없는 경우 빈 목록을 반환한다")
-        void syncMyData_NoActiveEtfs_ReturnsEmptyList() {
-            // given
-            given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
-            given(etfRepository.findByIsActiveTrue()).willReturn(List.of());
-
-            // when
-            HoldingEtfListResponse response = userService.syncMyData(1L);
-
-            // then
-            assertThat(response).isNotNull();
-            assertThat(response.getTotalCount()).isZero();
-            assertThat(response.getHoldings()).isEmpty();
         }
     }
 }
