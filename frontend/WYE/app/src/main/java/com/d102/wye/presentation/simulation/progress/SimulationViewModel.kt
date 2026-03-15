@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,27 +31,21 @@ class SimulationViewModel @Inject constructor(
     private val simulationRepository: SimulationRepository
 ) : ViewModel() {
 
-    // 투자 설정 상태
     private val _formState = MutableStateFlow(SimulationFormState())
     val formState: StateFlow<SimulationFormState> = _formState.asStateFlow()
 
-    // 시뮬레이션 결과 상태
     private val _simulationState = MutableStateFlow<UiState<SimulationUiModel>>(UiState.Idle)
     val simulationState: StateFlow<UiState<SimulationUiModel>> = _simulationState.asStateFlow()
 
-    // AI 진단 다이얼로그 표시 여부
     private val _showAiDialog = MutableStateFlow(false)
     val showAiDialog: StateFlow<Boolean> = _showAiDialog.asStateFlow()
 
-    // AI 진단 API 통신 상태
     private val _aiDiagnosisState = MutableStateFlow<UiState<AiDiagnosisResult>>(UiState.Idle)
     val aiDiagnosisState: StateFlow<UiState<AiDiagnosisResult>> = _aiDiagnosisState.asStateFlow()
 
-    // 포트폴리오 저장 다이얼로그 표시 여부
     private val _showSaveDialog = MutableStateFlow(false)
     val showSaveDialog: StateFlow<Boolean> = _showSaveDialog.asStateFlow()
 
-    // 포트폴리오 저장 API 통신 상태
     private val _savePortfolioState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val savePortfolioState: StateFlow<UiState<Unit>> = _savePortfolioState.asStateFlow()
 
@@ -60,21 +56,68 @@ class SimulationViewModel @Inject constructor(
     // ─────────────────────────────────────────────────────────────────────────
 
     fun addPortfolioItems(tickers: List<String>) {
-        _formState.update { current ->
-            val items = current.portfolioItems.toMutableList()
-            tickers.forEach { ticker ->
-                // 이미 담긴 종목은 무시
-                if (items.none { it.ticker == ticker }) {
-                    // TODO: ticker → name API 조회로 교체
-                    items.add(PortfolioItem(ticker = ticker, name = ticker, weight = 0))
+        Timber.d("[Portfolio] addPortfolioItems 호출 | tickers=$tickers")
+
+        viewModelScope.launch {
+            val currentTickers = _formState.value.portfolioItems.map { it.ticker }
+            val newTickers = tickers.filter { it !in currentTickers }
+            Timber.d("[Portfolio] 현재 포트폴리오=$currentTickers | 신규 ticker=$newTickers")
+
+            if (newTickers.isNotEmpty()) {
+                _simulationState.update { UiState.Loading }
+
+                val newToBeFetched = newTickers.filter {
+                    val hasCached = simulationRepository.hasCachedPriceHistory(it)
+                    Timber.d("[Cache] ticker=$it | DB 캐시 존재=$hasCached")
+                    !hasCached
+                }
+
+                if (newToBeFetched.isNotEmpty()) {
+                    // 항상 3년치 고정으로 가져옴
+                    // → 기간 변경해도 DB에 이미 있어서 API 재호출 불필요
+                    val endDate = LocalDate.now().toString()
+                    val startDate = LocalDate.now().minusYears(3).toString()
+                    Timber.d("[API] 가격 이력 API 호출 시작 | tickers=$newToBeFetched | 기간=$startDate ~ $endDate")
+
+                    when (val result = simulationRepository.getEtfPriceHistories(
+                        tickers = newToBeFetched,
+                        startDate = startDate,
+                        endDate = endDate
+                    )) {
+                        is BaseResult.Success -> {
+                            val pointCounts = result.data.mapValues { it.value.content.size }
+                            Timber.d("[API] 가격 이력 조회 성공 | 데이터 건수=$pointCounts")
+                            simulationRepository.savePriceHistories(result.data)
+                            Timber.d("[DB] 가격 이력 저장 완료 | tickers=${result.data.keys}")
+                        }
+                        is BaseResult.Error -> {
+                            Timber.e("[API] 가격 이력 조회 실패 | message=${result.error.message}")
+                            _simulationState.update { UiState.Error(result.error.message) }
+                            return@launch
+                        }
+                    }
+                } else {
+                    Timber.d("[Cache] 모든 ticker DB 캐시 존재 → API 호출 스킵")
                 }
             }
-            current.copy(portfolioItems = items)
+
+            _formState.update { current ->
+                val items = current.portfolioItems.toMutableList()
+                tickers.forEach { ticker ->
+                    if (items.none { it.ticker == ticker }) {
+                        items.add(PortfolioItem(ticker = ticker, name = ticker, weight = 0))
+                    }
+                }
+                current.copy(portfolioItems = items)
+            }
+            Timber.d("[Portfolio] formState 업데이트 완료 | 포트폴리오=${_formState.value.portfolioItems.map { "${it.ticker}(${it.weight}%)" }}")
+
+            triggerCalculation()
         }
-        triggerCalculation()
     }
 
     fun onPortfolioItemRemoved(ticker: String) {
+        Timber.d("[Portfolio] ETF 제거 | ticker=$ticker")
         _formState.update { current ->
             current.copy(
                 portfolioItems = current.portfolioItems.filter { it.ticker != ticker }
@@ -92,6 +135,8 @@ class SimulationViewModel @Inject constructor(
                 }
             )
         }
+        val totalWeight = _formState.value.portfolioItems.sumOf { it.weight }
+        Timber.d("[Weight] ticker=$ticker | 새 비중=${newWeight}% | 전체 합계=${totalWeight}%")
         triggerCalculation()
     }
 
@@ -101,7 +146,8 @@ class SimulationViewModel @Inject constructor(
 
     val idleGuideMessage: StateFlow<String> = _formState.map { form ->
         when {
-            form.investmentAmount.isBlank() || form.investmentPeriod.isBlank() -> "투자 금액과 기간을 입력하면\n수익률 그래프가 나타납니다."
+            form.investmentAmount.isBlank() || form.investmentPeriod.isBlank() ->
+                "투자 금액과 기간을 입력하면\n수익률 그래프가 나타납니다."
             else -> "ETF를 추가하고 자산의 미래를 확인해보세요"
         }
     }.stateIn(
@@ -117,6 +163,7 @@ class SimulationViewModel @Inject constructor(
         _formState.update { it.copy(isOverlayEnabled = enabled) }
 
     fun onInvestmentTypeSelected(type: InvestmentType) {
+        Timber.d("[Form] 투자 방식 변경 | type=$type")
         _formState.update { it.copy(investmentType = type) }
         triggerCalculation()
     }
@@ -140,16 +187,14 @@ class SimulationViewModel @Inject constructor(
         fetchAiDiagnosis()
     }
 
-    fun onAiDialogDismiss() {
-        _showAiDialog.value = false
-    }
+    fun onAiDialogDismiss() { _showAiDialog.value = false }
 
     private fun fetchAiDiagnosis() {
         if (_aiDiagnosisState.value is UiState.Loading ||
-            _aiDiagnosisState.value is UiState.Success
-        ) return
+            _aiDiagnosisState.value is UiState.Success) return
 
         viewModelScope.launch {
+            Timber.d("[AI] AI 진단 요청 시작")
             _aiDiagnosisState.update { UiState.Loading }
             delay(1500) // TODO: 실제 AI 진단 API 호출
             _aiDiagnosisState.update {
@@ -163,6 +208,7 @@ class SimulationViewModel @Inject constructor(
                     )
                 )
             }
+            Timber.d("[AI] AI 진단 완료")
         }
     }
 
@@ -170,9 +216,7 @@ class SimulationViewModel @Inject constructor(
     // 저장
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun onSaveIconClick() {
-        _showSaveDialog.value = true
-    }
+    fun onSaveIconClick() { _showSaveDialog.value = true }
 
     fun onSaveDialogDismiss() {
         _showSaveDialog.value = false
@@ -181,11 +225,13 @@ class SimulationViewModel @Inject constructor(
 
     fun savePortfolio(portfolioName: String) {
         if (_savePortfolioState.value is UiState.Loading) return
+        Timber.d("[Save] 포트폴리오 저장 요청 | name=$portfolioName")
         viewModelScope.launch {
             _savePortfolioState.update { UiState.Loading }
             delay(1000) // TODO: 실제 저장 API 호출
             _savePortfolioState.update { UiState.Success(Unit) }
             _showSaveDialog.value = false
+            Timber.d("[Save] 포트폴리오 저장 완료 | name=$portfolioName")
         }
     }
 
@@ -203,43 +249,49 @@ class SimulationViewModel @Inject constructor(
             val amount = form.investmentAmount.toLongOrNull() ?: 0L
             val periodMonths = form.investmentPeriod.toIntOrNull() ?: 0
 
-            // 입력 미완성
             if (form.portfolioItems.isEmpty() || amount <= 0L || periodMonths <= 0) {
+                Timber.d("[Calc] 입력 미완성 → Idle | portfolios=${form.portfolioItems.size}개 | amount=$amount | period=$periodMonths")
                 _simulationState.update { UiState.Idle }
                 return@launch
             }
 
-            // 비중 합계 100% 미달 → Loading (차트 영역에 안내 표시)
             if (totalWeight != 100) {
+                Timber.d("[Calc] 비중 합계 미달 → Loading 유지 | totalWeight=$totalWeight%")
                 _simulationState.update { UiState.Loading }
                 return@launch
             }
 
+            Timber.d("[Calc] 계산 시작 | portfolios=${form.portfolioItems.map { "${it.ticker}(${it.weight}%)" }} | amount=$amount | period=${periodMonths}개월 | type=${form.investmentType}")
             _simulationState.update { UiState.Loading }
+
+            val tickers = form.portfolioItems.map { it.ticker }
+            val cachedHistories = simulationRepository.getCachedPriceHistories(tickers)
+            val pointCounts = cachedHistories.mapValues { it.value.content.size }
+            Timber.d("[DB] 캐시 조회 완료 | 데이터 건수=$pointCounts")
 
             when (val result = runSimulation(
                 RunSimulationUseCase.Params(
                     portfolios = form.portfolioItems.toDomain(),
                     investmentAmount = amount,
                     investmentType = form.investmentType,
-                    periodMonths = periodMonths
+                    periodMonths = periodMonths,
+                    priceHistories = cachedHistories
                 )
             )) {
-                is BaseResult.Success -> _simulationState.update {
-                    UiState.Success(result.data.toUiModel(form.investmentType))
+                is BaseResult.Success -> {
+                    Timber.d("[Calc] 계산 성공 | estimatedFinalValue=${result.data.estimatedFinalValue} | totalReturn=${result.data.totalReturn}% | totalInvestment=${result.data.totalInvestment}")
+                    _simulationState.update {
+                        UiState.Success(result.data.toUiModel(form.investmentType))
+                    }
                 }
-
-                is BaseResult.Error -> _simulationState.update {
-                    UiState.Error(result.error.message)
+                is BaseResult.Error -> {
+                    Timber.e("[Calc] 계산 실패 | message=${result.error.message}")
+                    _simulationState.update { UiState.Error(result.error.message) }
                 }
             }
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Presentation 전용 모델
-// ─────────────────────────────────────────────────────────────────────────────
 
 data class SimulationFormState(
     val selectedTabIndex: Int = 0,
