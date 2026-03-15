@@ -101,7 +101,6 @@ logging:
     root: INFO
     com.whatsyouretf: DEBUG
     org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
 
 # Swagger
 springdoc:

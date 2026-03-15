@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * ETF 서비스 인터페이스
@@ -37,4 +38,6 @@ public interface EtfService {
     EtfClusterResponse getClusterData(String ticker);
 
     Map<String, Etf> getEtfListInTickers(List<String> list);
+
+    Map<String, EtfCurrentInfo> getEtfCurrentInfoMap(Set<String> tickers);
 }

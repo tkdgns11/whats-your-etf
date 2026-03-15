@@ -23,6 +23,7 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "AUTH006", "이메일 인증이 완료되지 않았습니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH007", "비밀번호 확인이 일치하지 않습니다."),
     WEAK_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH008", "비밀번호 조건을 충족하지 않습니다."),
+    UNAUTHENTICATED(HttpStatus.FORBIDDEN, "AUTH009", "권한이 없습니다."),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER001", "사용자를 찾을 수 없습니다."),

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface EtfReader {
     Etf read(String ticker);
@@ -17,4 +18,6 @@ public interface EtfReader {
     Page<EtfSummary> readEtfList(EtfQuery query, Pageable pageable);
 
     Map<String, Etf> getValidEtfs(List<String> list);
+
+    Map<String, EtfCurrentInfo> getInfosMap(Set<String> tickers);
 }

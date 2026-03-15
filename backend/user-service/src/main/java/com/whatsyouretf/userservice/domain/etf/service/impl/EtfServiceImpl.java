@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -89,6 +90,11 @@ public class EtfServiceImpl implements EtfService {
     @Override
     public Map<String, Etf> getEtfListInTickers(List<String> list) {
         return etfReader.getValidEtfs(list);
+    }
+
+    @Override
+    public Map<String, EtfCurrentInfo> getEtfCurrentInfoMap(Set<String> tickers) {
+        return etfReader.getInfosMap(tickers);
     }
 
     /**
