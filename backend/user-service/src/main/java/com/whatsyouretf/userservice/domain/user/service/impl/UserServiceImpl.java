@@ -245,18 +245,4 @@ public class UserServiceImpl implements UserService {
     public boolean isFavoriteEtf(Long userId, Long etfId) {
         return userFavoriteEtfRepository.existsByUserIdAndEtfId(userId, etfId);
     }
-
-    // ==================== 보유 ETF (마이데이터) ====================
-    // TODO: 마이데이터 연동 기능 구현 필요
-
-    @Override
-    public HoldingEtfListResponse getHoldingEtfs(Long userId) {
-        throw new BusinessException(ErrorCode.MYDATA_NOT_CONNECTED);
-    }
-
-    @Override
-    @Transactional
-    public HoldingEtfListResponse syncMyData(Long userId) {
-        throw new BusinessException(ErrorCode.MYDATA_NOT_CONNECTED);
-    }
 }
