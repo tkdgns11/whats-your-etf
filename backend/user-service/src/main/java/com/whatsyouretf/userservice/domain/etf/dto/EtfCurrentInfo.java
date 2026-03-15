@@ -29,4 +29,8 @@ public record EtfCurrentInfo(
                         currentPrice.subtract(previousPrice)
                 );
         }
+
+        public static EtfCurrentInfo empty() {
+                return new EtfCurrentInfo(null, BigDecimal.valueOf(0),null,null,null,null,null);
+        }
 }

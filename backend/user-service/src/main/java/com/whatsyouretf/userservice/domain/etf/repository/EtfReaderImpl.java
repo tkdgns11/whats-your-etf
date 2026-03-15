@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -41,5 +44,16 @@ public class EtfReaderImpl implements EtfReader {
     public Map<String, Etf> getValidEtfs(List<String> tickers) {
             return etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
                     .collect(Collectors.toMap(Etf::getStockCode, etf -> etf));
+    }
+
+    @Override
+    public Map<String, EtfCurrentInfo> getInfosMap(Set<String> tickers) {
+        return tickers.stream()
+                .map(this::getInfo)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        EtfCurrentInfo::ticker,
+                        Function.identity()
+                ));
     }
 }

@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.portfolio.controller;
 
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioInfo;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioFacade;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -10,10 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "Portfolio", description = "포트폴리오 API")
 @RestController
@@ -42,5 +42,16 @@ public class PortfolioController {
                 return ResponseEntity
                         .status(HttpStatus.OK)
                         .body(ApiResponse.success("포트폴리오를 저장하였습니다"));
+        }
+
+        @Operation(summary = "포트폴리오 목록 조회", description = "사용자가 커스텀한 포트폴리오 목록을 조회합니다")
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<PortfolioInfo>>> getPortfolios(
+                @AuthenticationPrincipal CustomUserDetails userDetails
+        ) {
+
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(ApiResponse.success(portfolioFacade.getPortfolioList(userDetails.getUserId())));
         }
 }
