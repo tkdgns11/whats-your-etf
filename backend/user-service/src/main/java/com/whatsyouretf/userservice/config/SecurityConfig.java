@@ -47,7 +47,7 @@ public class SecurityConfig {
             // News (공개 API)
             "/api/v1/news/**",
             // ETF (공개 API)
-            "/api/v1/etf/**",
+            "/api/v1/etfs/**",
             // Static
             "/error"
     };
@@ -72,7 +72,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
+        // 개발 기간: 모든 origin 허용
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

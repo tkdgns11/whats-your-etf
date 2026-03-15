@@ -25,16 +25,14 @@ public class NewsController {
     private final NewsService newsService;
 
     /**
-     * 최신 뉴스 목록 조회
+     * 최신 뉴스 목록 조회 (카테고리별 최신 20개)
      */
-    @Operation(summary = "최신 뉴스 목록 조회", description = "최신 뉴스 목록을 페이징하여 조회합니다.")
+    @Operation(summary = "최신 뉴스 목록 조회", description = "카테고리별 최신 뉴스 20개를 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<NewsPageResponse>> getLatestNews(
-            @Parameter(description = "페이지 번호 (0부터 시작)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기 (최대 100)") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "카테고리 코드 필터") @RequestParam(required = false) String category
     ) {
-        NewsPageResponse response = newsService.getLatestNews(page, size, category);
+        NewsPageResponse response = newsService.getLatestNews(category);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -51,16 +49,14 @@ public class NewsController {
     }
 
     /**
-     * 뉴스 검색
+     * 뉴스 검색 (최신 20개)
      */
-    @Operation(summary = "뉴스 검색", description = "키워드로 뉴스를 검색합니다.")
+    @Operation(summary = "뉴스 검색", description = "키워드로 뉴스를 검색합니다. 최신 20개를 반환합니다.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<NewsPageResponse>> searchNews(
-            @Parameter(description = "검색 키워드 (2~50자)") @RequestParam String keyword,
-            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "검색 키워드 (2~50자)") @RequestParam String keyword
     ) {
-        NewsPageResponse response = newsService.searchNews(keyword, page, size);
+        NewsPageResponse response = newsService.searchNews(keyword);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -87,6 +83,18 @@ public class NewsController {
             @Parameter(description = "조회 개수 (최대 50)") @RequestParam(defaultValue = "10") int size
     ) {
         StockNewsResponse response = newsService.getStockNews(stockCode, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 포트폴리오 관련 뉴스 조회
+     */
+    @Operation(summary = "포트폴리오 뉴스 조회", description = "포트폴리오 구성 ETF의 종목 관련 뉴스를 조회합니다. 매일 오전 9시 갱신됩니다.")
+    @GetMapping("/portfolio/{portfolioId}")
+    public ResponseEntity<ApiResponse<PortfolioNewsResponse>> getPortfolioNews(
+            @Parameter(description = "포트폴리오 ID") @PathVariable Long portfolioId
+    ) {
+        PortfolioNewsResponse response = newsService.getPortfolioNews(portfolioId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

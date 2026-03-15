@@ -38,7 +38,8 @@ public class AiFeedbackController {
     ) {
         PortfolioReviewResponse response = aiFeedbackService.requestReview(
                 userDetails.getUserId(), request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
     }
 
     /**

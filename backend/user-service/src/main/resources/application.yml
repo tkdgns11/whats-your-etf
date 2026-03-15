@@ -23,7 +23,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: ${SHOW_SQL:true}
     open-in-view: false
 
   # Redis
@@ -33,6 +33,9 @@ spring:
       port: ${REDIS_PORT:6379}
       repositories:
         enabled: false
+    web:
+      pageable:
+        default-page-size: 20
 
   # Mail (Gmail SMTP)
   mail:
@@ -84,6 +87,7 @@ spring:
 # Server
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
 
 # JWT
 jwt:
@@ -97,7 +101,6 @@ logging:
     root: INFO
     com.whatsyouretf: DEBUG
     org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
 
 # Swagger
 springdoc:
@@ -114,6 +117,7 @@ app:
     allowed-origins:
       - http://localhost:3000
       - http://localhost:8080
+      - https://j14d102.p.ssafy.io
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
 
@@ -143,3 +147,9 @@ openai:
   model:
     name: gpt-4o-mini
     max-tokens: 4096
+
+# File Storage
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:uploads}
+  base-url: ${FILE_BASE_URL:http://localhost:8080}
+  max-size: 5MB

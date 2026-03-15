@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 알림 목록 응답 DTO
@@ -22,15 +23,6 @@ public class AlertListResponse {
 
     /** 알림 목록 */
     private List<AlertItem> alerts;
-
-    /** 현재 페이지 */
-    private int page;
-
-    /** 전체 페이지 수 */
-    private int totalPages;
-
-    /** 전체 알림 수 */
-    private long totalElements;
 
     /** 읽지 않은 알림 수 */
     private long unreadCount;
@@ -58,6 +50,9 @@ public class AlertListResponse {
         /** 참조 대상 ID */
         private Long referenceId;
 
+        /** 참조 대상 티커 (ETF인 경우에만 사용) */
+        private String referenceTicker;
+
         /** 알림 제목 */
         private String title;
 
@@ -74,6 +69,23 @@ public class AlertListResponse {
          * Entity -> DTO 변환
          */
         public static AlertItem from(UserAlert alert) {
+            return from(alert, null);
+        }
+
+        /**
+         * Entity -> DTO 변환 (ETF ticker 포함)
+         *
+         * @param alert 알림 엔티티
+         * @param etfTickerMap ETF ID -> stockCode 매핑 (ETF 알림인 경우 ticker 조회용)
+         */
+        public static AlertItem from(UserAlert alert, Map<Long, String> etfTickerMap) {
+            String ticker = null;
+            if (alert.getReferenceType() == ReferenceType.ETF
+                    && alert.getReferenceId() != null
+                    && etfTickerMap != null) {
+                ticker = etfTickerMap.get(alert.getReferenceId());
+            }
+
             return AlertItem.builder()
                     .id(alert.getId())
                     .alertTypeCode(alert.getAlertType().getCode())
@@ -81,6 +93,7 @@ public class AlertListResponse {
                     .category(alert.getAlertType().getCategory())
                     .referenceType(alert.getReferenceType())
                     .referenceId(alert.getReferenceId())
+                    .referenceTicker(ticker)
                     .title(alert.getTitle())
                     .message(alert.getMessage())
                     .isRead(alert.getIsRead())

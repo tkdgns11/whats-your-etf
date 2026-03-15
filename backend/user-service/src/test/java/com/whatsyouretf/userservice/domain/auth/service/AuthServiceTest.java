@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.EmailService;
 import com.whatsyouretf.userservice.common.service.RedisService;
 import com.whatsyouretf.userservice.common.util.JwtTokenUtil;
+import com.whatsyouretf.userservice.domain.alert.repository.FcmTokenRepository;
 import com.whatsyouretf.userservice.domain.auth.dto.*;
 import com.whatsyouretf.userservice.domain.auth.service.impl.AuthServiceImpl;
 import com.whatsyouretf.userservice.domain.user.entity.*;
@@ -60,6 +61,9 @@ class AuthServiceTest {
 
     @Mock
     private LoginHistoryRepository loginHistoryRepository;
+
+    @Mock
+    private FcmTokenRepository fcmTokenRepository;
 
     @Mock
     private JwtTokenUtil jwtTokenUtil;
@@ -452,16 +456,31 @@ class AuthServiceTest {
     class LogoutTest {
 
         @Test
-        @DisplayName("로그아웃 시 모든 Refresh Token이 폐기된다")
-        void logout_Success() {
+        @DisplayName("로그아웃 시 Refresh Token이 폐기된다")
+        void logout_WithoutFcmToken_Success() {
             // given
             Long userId = 1L;
 
             // when
-            authService.logout(userId);
+            authService.logout(userId, null);
 
             // then
             then(refreshTokenRepository).should().revokeAllByUserId(userId);
+        }
+
+        @Test
+        @DisplayName("FCM 토큰과 함께 로그아웃 시 해당 기기의 FCM 토큰도 삭제된다")
+        void logout_WithFcmToken_Success() {
+            // given
+            Long userId = 1L;
+            String fcmToken = "test_fcm_token";
+
+            // when
+            authService.logout(userId, fcmToken);
+
+            // then
+            then(refreshTokenRepository).should().revokeAllByUserId(userId);
+            then(fcmTokenRepository).should().deleteByUserIdAndToken(userId, fcmToken);
         }
     }
 }

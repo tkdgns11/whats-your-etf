@@ -56,6 +56,7 @@ is_read                   읽음여부
 email                     이메일
 password                  비밀번호
 nickname                  닉네임
+profile_image             프로필이미지URL (카카오프로필등)
 last_login_at             마지막로그인일시
 provider                  소셜제공자
 provider_user_id          소셜사용자ID

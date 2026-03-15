@@ -11,9 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 사용자 관련 API 컨트롤러
@@ -104,20 +106,59 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("회원 탈퇴 완료"));
     }
 
+    // ==================== 프로필 이미지 ====================
+
+    /**
+     * 프로필 이미지 업로드
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @param file        업로드할 이미지 파일
+     * @return 업로드된 이미지 URL
+     */
+    @Operation(summary = "프로필 이미지 업로드", description = "프로필 이미지를 업로드합니다. 기존 이미지가 있으면 교체됩니다.")
+    @PostMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "이미지 파일 (jpg, jpeg, png, gif, webp / 최대 5MB)")
+            @RequestParam("file") MultipartFile file
+    ) {
+        String imageUrl = userService.uploadProfileImage(userDetails.getUserId(), file);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("프로필 이미지 업로드 완료", imageUrl));
+    }
+
+    /**
+     * 프로필 이미지 삭제
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @return 성공 응답
+     */
+    @Operation(summary = "프로필 이미지 삭제", description = "프로필 이미지를 삭제합니다.")
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImage(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        userService.deleteProfileImage(userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("프로필 이미지 삭제 완료"));
+    }
+
     // ==================== 관심 ETF ====================
 
     /**
      * 관심 ETF 목록 조회
      *
      * @param userDetails 인증된 사용자 정보
+     * @param sort        정렬 기준 (RECENT, CHANGE_RATE_DESC, CHANGE_RATE_ASC, NAME_ASC)
      * @return 관심 ETF 목록 (최신 시세 포함)
      */
     @Operation(summary = "관심 ETF 목록 조회", description = "로그인한 사용자의 관심 ETF 목록을 조회합니다.")
-    @GetMapping("/me/favorites")
+    @GetMapping("/me/favorites/etfs")
     public ResponseEntity<ApiResponse<FavoriteEtfListResponse>> getFavoriteEtfs(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Parameter(description = "정렬 기준: RECENT(최근등록순), CHANGE_RATE_DESC(등락률높은순), CHANGE_RATE_ASC(등락률낮은순), NAME_ASC(이름순)")
+            @RequestParam(defaultValue = "RECENT") FavoriteSortType sort
     ) {
-        FavoriteEtfListResponse response = userService.getFavoriteEtfs(userDetails.getUserId());
+        FavoriteEtfListResponse response = userService.getFavoriteEtfs(userDetails.getUserId(), sort);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -129,7 +170,7 @@ public class UserController {
      * @return 성공 응답
      */
     @Operation(summary = "관심 ETF 추가", description = "ETF를 관심 목록에 추가합니다.")
-    @PostMapping("/me/favorites/{etfId}")
+    @PostMapping("/me/favorites/etfs/{etfId}")
     public ResponseEntity<ApiResponse<Void>> addFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "ETF ID") @PathVariable Long etfId
@@ -147,7 +188,7 @@ public class UserController {
      * @return 성공 응답
      */
     @Operation(summary = "관심 ETF 삭제", description = "ETF를 관심 목록에서 삭제합니다.")
-    @DeleteMapping("/me/favorites/{etfId}")
+    @DeleteMapping("/me/favorites/etfs/{etfId}")
     public ResponseEntity<ApiResponse<Void>> removeFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "ETF ID") @PathVariable Long etfId
@@ -164,7 +205,7 @@ public class UserController {
      * @return true = 관심 등록됨
      */
     @Operation(summary = "관심 ETF 여부 확인", description = "특정 ETF가 관심 목록에 있는지 확인합니다.")
-    @GetMapping("/me/favorites/{etfId}/check")
+    @GetMapping("/me/favorites/etfs/{etfId}/check")
     public ResponseEntity<ApiResponse<Boolean>> checkFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Parameter(description = "ETF ID") @PathVariable Long etfId
@@ -173,37 +214,4 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(isFavorite));
     }
 
-    // ==================== 보유 ETF (마이데이터) ====================
-
-    /**
-     * 보유 ETF 목록 조회
-     *
-     * @param userDetails 인증된 사용자 정보
-     * @return 보유 ETF 목록 (평가금액, 손익 포함)
-     */
-    @Operation(summary = "보유 ETF 목록 조회", description = "로그인한 사용자의 보유 ETF 목록을 조회합니다.")
-    @GetMapping("/me/holdings")
-    public ResponseEntity<ApiResponse<HoldingEtfListResponse>> getHoldingEtfs(
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
-        HoldingEtfListResponse response = userService.getHoldingEtfs(userDetails.getUserId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * 마이데이터 동기화
-     * <p>
-     * 현재는 Mock 데이터로 동작합니다.
-     *
-     * @param userDetails 인증된 사용자 정보
-     * @return 동기화된 보유 ETF 목록
-     */
-    @Operation(summary = "마이데이터 동기화", description = "마이데이터에서 보유 ETF 정보를 동기화합니다. (Mock)")
-    @PostMapping("/me/holdings/sync")
-    public ResponseEntity<ApiResponse<HoldingEtfListResponse>> syncMyData(
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
-        HoldingEtfListResponse response = userService.syncMyData(userDetails.getUserId());
-        return ResponseEntity.ok(ApiResponse.success("마이데이터 동기화 완료", response));
-    }
 }

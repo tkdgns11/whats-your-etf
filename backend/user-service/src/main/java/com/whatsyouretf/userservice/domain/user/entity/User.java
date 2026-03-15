@@ -66,6 +66,10 @@ public class User extends BaseEntity {
         }
     }
 
+    public void clearProfileImage() {
+        this.profileImage = null;
+    }
+
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
@@ -77,5 +81,11 @@ public class User extends BaseEntity {
     public void addSocialAccount(UserSocialAccount socialAccount) {
         this.socialAccounts.add(socialAccount);
         socialAccount.setUser(this);
+    }
+
+    public static User of(Long userId) {
+        User user = new User();
+        user.id = userId;
+        return user;
     }
 }

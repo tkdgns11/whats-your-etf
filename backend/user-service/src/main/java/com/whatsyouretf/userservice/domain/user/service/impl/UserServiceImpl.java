@@ -2,8 +2,14 @@ package com.whatsyouretf.userservice.domain.user.service.impl;
 
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.common.service.FileStorageService;
+import com.whatsyouretf.userservice.domain.etf.entity.Etf;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
+import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
 import com.whatsyouretf.userservice.domain.user.repository.UserFavoriteEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserHoldingEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
@@ -12,8 +18,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,9 +30,14 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
+    private static final String PROFILE_IMAGE_DIRECTORY = "profiles";
+
     private final UserRepository userRepository;
     private final UserFavoriteEtfRepository userFavoriteEtfRepository;
     private final UserHoldingEtfRepository userHoldingEtfRepository;
+    private final EtfRepository etfRepository;
+    private final EtfPriceRepository etfPriceRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
     public UserResponse getUserById(Long userId) {
@@ -35,6 +49,54 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getMyInfo(Long userId) {
         return getUserById(userId);
+    }
+
+    // ==================== 프로필 이미지 ====================
+
+    @Override
+    @Transactional
+    public String uploadProfileImage(Long userId, MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 기존 프로필 이미지가 있으면 삭제
+        String oldProfileImage = user.getProfileImage();
+        if (oldProfileImage != null && !oldProfileImage.isBlank()) {
+            fileStorageService.delete(oldProfileImage);
+            log.info("기존 프로필 이미지 삭제: {}", oldProfileImage);
+        }
+
+        // 새 이미지 업로드
+        String newImageUrl = fileStorageService.upload(file, PROFILE_IMAGE_DIRECTORY);
+
+        // 사용자 프로필 이미지 URL 업데이트
+        user.updateProfile(user.getNickname(), newImageUrl);
+
+        log.info("프로필 이미지 업로드 완료: userId={}, url={}", userId, newImageUrl);
+        return newImageUrl;
+    }
+
+    @Override
+    @Transactional
+    public void deleteProfileImage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        String profileImage = user.getProfileImage();
+        if (profileImage == null || profileImage.isBlank()) {
+            log.info("삭제할 프로필 이미지 없음: userId={}", userId);
+            return;
+        }
+
+        // 파일 삭제
+        boolean deleted = fileStorageService.delete(profileImage);
+        if (!deleted) {
+            log.warn("프로필 이미지 파일 삭제 실패 (이미 삭제되었거나 존재하지 않음): {}", profileImage);
+        }
+
+        // 사용자 프로필 이미지 URL 제거
+        user.clearProfileImage();
+        log.info("프로필 이미지 삭제 완료: userId={}", userId);
     }
 
     @Override
@@ -71,41 +133,116 @@ public class UserServiceImpl implements UserService {
     }
 
     // ==================== 관심 ETF ====================
-    // TODO: 팀원이 etf repository 구현 후 활성화
 
     @Override
-    public FavoriteEtfListResponse getFavoriteEtfs(Long userId) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+    public FavoriteEtfListResponse getFavoriteEtfs(Long userId, FavoriteSortType sortType) {
+        // 사용자 존재 확인
+        if (!userRepository.existsById(userId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // 관심 ETF 목록 조회
+        List<UserFavoriteEtf> favorites = userFavoriteEtfRepository.findAllByUserIdWithEtf(userId);
+
+        if (favorites.isEmpty()) {
+            return FavoriteEtfListResponse.of(List.of());
+        }
+
+        // ETF ID 목록 추출
+        List<Long> etfIds = favorites.stream()
+                .map(f -> f.getEtf().getId())
+                .collect(Collectors.toList());
+
+        // 최신 시세 조회
+        List<EtfPrice> latestPrices = etfPriceRepository.findLatestByEtfIds(etfIds);
+        Map<Long, EtfPrice> priceMap = latestPrices.stream()
+                .collect(Collectors.toMap(p -> p.getEtf().getId(), p -> p));
+
+        // DTO 변환
+        List<FavoriteEtfResponse> responses = favorites.stream()
+                .map(f -> FavoriteEtfResponse.from(f, priceMap.get(f.getEtf().getId())))
+                .collect(Collectors.toList());
+
+        // 정렬 적용
+        sortFavorites(responses, sortType);
+
+        return FavoriteEtfListResponse.of(responses);
+    }
+
+    /**
+     * 관심 ETF 정렬
+     */
+    private void sortFavorites(List<FavoriteEtfResponse> favorites, FavoriteSortType sortType) {
+        if (sortType == null) {
+            sortType = FavoriteSortType.RECENT;
+        }
+
+        switch (sortType) {
+            case CHANGE_RATE_DESC -> favorites.sort((a, b) -> {
+                if (a.getChangeRate() == null && b.getChangeRate() == null) return 0;
+                if (a.getChangeRate() == null) return 1;
+                if (b.getChangeRate() == null) return -1;
+                return b.getChangeRate().compareTo(a.getChangeRate());
+            });
+            case CHANGE_RATE_ASC -> favorites.sort((a, b) -> {
+                if (a.getChangeRate() == null && b.getChangeRate() == null) return 0;
+                if (a.getChangeRate() == null) return 1;
+                if (b.getChangeRate() == null) return -1;
+                return a.getChangeRate().compareTo(b.getChangeRate());
+            });
+            case NAME_ASC -> favorites.sort((a, b) -> {
+                if (a.getName() == null && b.getName() == null) return 0;
+                if (a.getName() == null) return 1;
+                if (b.getName() == null) return -1;
+                return a.getName().compareTo(b.getName());
+            });
+            case RECENT -> favorites.sort((a, b) -> {
+                if (a.getFavoritedAt() == null && b.getFavoritedAt() == null) return 0;
+                if (a.getFavoritedAt() == null) return 1;
+                if (b.getFavoritedAt() == null) return -1;
+                return b.getFavoritedAt().compareTo(a.getFavoritedAt());
+            });
+        }
     }
 
     @Override
     @Transactional
     public void addFavoriteEtf(Long userId, Long etfId) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // ETF 존재 확인
+        Etf etf = etfRepository.findById(etfId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ETF_NOT_FOUND));
+
+        // 이미 관심 등록 여부 확인
+        if (userFavoriteEtfRepository.existsByUserIdAndEtfId(userId, etfId)) {
+            throw new BusinessException(ErrorCode.ALREADY_FAVORITE);
+        }
+
+        // 관심 ETF 추가
+        UserFavoriteEtf favorite = UserFavoriteEtf.create(user, etf);
+        userFavoriteEtfRepository.save(favorite);
+
+        log.info("관심 ETF 추가: userId={}, etfId={}", userId, etfId);
     }
 
     @Override
     @Transactional
     public void removeFavoriteEtf(Long userId, Long etfId) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+        // 관심 ETF 조회
+        UserFavoriteEtf favorite = userFavoriteEtfRepository.findByUserIdAndEtfId(userId, etfId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FAVORITE_NOT_FOUND));
+
+        // 삭제
+        userFavoriteEtfRepository.delete(favorite);
+
+        log.info("관심 ETF 삭제: userId={}, etfId={}", userId, etfId);
     }
 
     @Override
     public boolean isFavoriteEtf(Long userId, Long etfId) {
-        return false;
-    }
-
-    // ==================== 보유 ETF (마이데이터) ====================
-    // TODO: 팀원이 etf repository 구현 후 활성화
-
-    @Override
-    public HoldingEtfListResponse getHoldingEtfs(Long userId) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
-    }
-
-    @Override
-    @Transactional
-    public HoldingEtfListResponse syncMyData(Long userId) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+        return userFavoriteEtfRepository.existsByUserIdAndEtfId(userId, etfId);
     }
 }

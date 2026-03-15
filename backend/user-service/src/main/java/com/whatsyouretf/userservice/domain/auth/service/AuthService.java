@@ -43,9 +43,12 @@ public interface AuthService {
     AuthResponse refreshToken(String refreshToken);
 
     /**
-     * 로그아웃 (Refresh Token 폐기)
+     * 로그아웃 (Refresh Token 폐기, FCM 토큰 삭제)
+     *
+     * @param userId 사용자 ID
+     * @param fcmToken 현재 기기의 FCM 토큰 (nullable)
      */
-    void logout(Long userId);
+    void logout(Long userId, String fcmToken);
 
     // ========== 비밀번호 재설정 ==========
 

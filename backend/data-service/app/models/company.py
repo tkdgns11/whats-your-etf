@@ -32,25 +32,17 @@ class CompanyInfo(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     company_name = Column(String(100), nullable=False)
+    industry_code = Column(String(10), ForeignKey("industry_classification.code", ondelete="SET NULL"))
+    industry_group = Column(String(50))  # 투자테마 그룹 (IT_SEMI, BIO 등)
 
-    market_type = Column(String(20))  # KOSPI / KOSDAQ / NYSE / NASDAQ
-    industry_code = Column(String(20)) # JPA Entity length 20
-    industry_name = Column(String(100))
-    industry_group = Column(String(50))
-
-    description = Column(Text)
-    listing_date = Column(Date)
-    fiscal_month = Column(Integer)
     ceo_name = Column(String(100))
     homepage = Column(String(200))
     region = Column(String(50))
-    face_value = Column(Integer)
-    listed_shares = Column(BigInteger)
+    description = Column(Text)
+    corporation_number = Column(String(20))
 
-    is_active = Column(Boolean, default=True)
-    data_source = Column(String(50), default='KRX')
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
-        return f"<Company(name={self.company_name})>"
+        return f"<Company(id={self.id}, name={self.company_name})>"

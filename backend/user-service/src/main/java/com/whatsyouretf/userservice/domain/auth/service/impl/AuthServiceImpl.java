@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.EmailService;
 import com.whatsyouretf.userservice.common.service.RedisService;
 import com.whatsyouretf.userservice.common.util.JwtTokenUtil;
+import com.whatsyouretf.userservice.domain.alert.repository.FcmTokenRepository;
 import com.whatsyouretf.userservice.domain.auth.dto.*;
 import com.whatsyouretf.userservice.domain.auth.service.AuthService;
 import com.whatsyouretf.userservice.domain.user.entity.*;
@@ -35,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final LoginHistoryRepository loginHistoryRepository;
+    private final FcmTokenRepository fcmTokenRepository;
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -248,8 +250,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(Long userId) {
+    public void logout(Long userId, String fcmToken) {
+        // Refresh Token 폐기
         refreshTokenRepository.revokeAllByUserId(userId);
+
+        // FCM 토큰이 전달된 경우 해당 기기의 푸시 알림 해제
+        if (fcmToken != null && !fcmToken.isBlank()) {
+            fcmTokenRepository.deleteByUserIdAndToken(userId, fcmToken);
+            log.info("FCM token deleted for user: {}", userId);
+        }
+
         log.info("User logged out: {}", userId);
     }
 
@@ -355,11 +365,13 @@ public class AuthServiceImpl implements AuthService {
                     isNewUser.set(true);
 
                     Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
-                    Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+                    Map<String, Object> profile = kakaoAccount != null
+                            ? (Map<String, Object>) kakaoAccount.get("profile")
+                            : null;
 
-                    String email = (String) kakaoAccount.get("email");
-                    String nickname = (String) profile.get("nickname");
-                    String profileImage = (String) profile.get("profile_image_url");
+                    String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+                    String nickname = profile != null ? (String) profile.get("nickname") : null;
+                    String profileImage = profile != null ? (String) profile.get("profile_image_url") : null;
 
                     User user = email != null
                             ? userRepository.findByEmail(email).orElse(null)

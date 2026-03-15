@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 뉴스 목록 응답 DTO
@@ -39,17 +38,10 @@ public class NewsListResponse {
     /** 발행일시 */
     private LocalDateTime publishedAt;
 
-    /** 관련 종목 목록 */
-    private List<RelatedStockResponse> relatedStocks;
-
     /**
      * Entity -> DTO 변환
      */
     public static NewsListResponse from(NewsArticle article) {
-        List<RelatedStockResponse> relatedStocks = article.getStockMappings().stream()
-                .map(mapping -> RelatedStockResponse.from(mapping.getCompanyInfo()))
-                .toList();
-
         return NewsListResponse.builder()
                 .id(article.getId())
                 .title(article.getTitle())
@@ -58,7 +50,6 @@ public class NewsListResponse {
                 .categoryCode(article.getCategory() != null ? article.getCategory().getCode() : null)
                 .categoryName(article.getCategory() != null ? article.getCategory().getName() : null)
                 .publishedAt(article.getPublishedAt())
-                .relatedStocks(relatedStocks)
                 .build();
     }
 }
