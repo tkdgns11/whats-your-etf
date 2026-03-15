@@ -197,8 +197,6 @@ private fun PortfolioSliderItemRow(
         )
     }
 
-
-
     WyeCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
@@ -215,7 +213,7 @@ private fun PortfolioSliderItemRow(
             ) {
                 // 좌측 로고
                 WyeCircleIcon(
-                    tag = item.ticker,
+                    tag = item.name,
                     count = 2,
                     size = 40.dp,
                     backgroundColor = SurfaceVariant,
@@ -229,13 +227,13 @@ private fun PortfolioSliderItemRow(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = item.ticker,
+                        text = item.name,
                         color = TextPrimary,
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp),
                         maxLines = 1,
                     )
                     Text(
-                        text = item.name,
+                        text = item.ticker,
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
