@@ -2,12 +2,13 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from app.database import get_db, SessionLocal
+from app.database import get_db, SessionLocal, get_async_db
 from app.models.news import NewsArticle
 from app.models.etf_disclosure import EtfDisclosure
 from app.models.etf import ETF, ETFSectorCluster
@@ -304,6 +305,11 @@ async def scheduler_status():
         "jobs": jobs
     }
 
+@app.post("/test/test")
+async def test(db: AsyncSession = Depends(get_async_db)):
+    from app.services.etf_service import EtfService
+    service = EtfService(db)
+    await service.sync_etf_tickers()
 
 @app.get("/stats")
 async def get_stats(db: Session = Depends(get_db)):

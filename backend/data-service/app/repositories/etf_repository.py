@@ -1,24 +1,23 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
 from sqlalchemy import select, insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
-from app.models import ETF
+from app.models import ETF, ETFPrice
 from app.scrapers.pykrx_client import EtfInfo
 
+
 class EtfRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-
     # db에 적재 중인 etf 목록
-    def get_etf_tickers(self) -> list[str]:
+    async def get_etf_tickers(self) -> list[str]:
         stmt = select(ETF.stock_code)
-        return list(self.db.execute(stmt).scalars().all())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
 
-    def save_initial_etf_infos(self, etf_infos: list[EtfInfo]):
+    async def save_initial_etf_infos(self, etf_infos: list[EtfInfo]) -> list[dict]:
         if not etf_infos:
-            return
+            return []
 
         rows = [
             {
@@ -29,5 +28,28 @@ class EtfRepository:
             for etf in etf_infos
         ]
 
-        self.db.execute(insert(ETF), rows)
-        self.db.commit()
+        await self.db.execute(insert(ETF), rows)
+        await self.db.flush()
+
+        tickers = [etf_info.ticker for etf_info in etf_infos]
+
+        result = await self.db.execute(
+            select(ETF.id, ETF.stock_code).where(ETF.stock_code.in_(tickers))
+        )
+        await self.db.commit()
+
+        return [{"id": row.id, "ticker":row.stock_code} for row in result.all()]
+
+
+class EtfPriceRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def save_bulk(self, price_histories):
+        if not price_histories:
+            return
+
+            # SQLAlchemy 2.0 Core 스타일의 Bulk Insert
+        stmt = insert(ETFPrice)
+        await self.db.execute(stmt, price_histories)
+        await self.db.commit()
