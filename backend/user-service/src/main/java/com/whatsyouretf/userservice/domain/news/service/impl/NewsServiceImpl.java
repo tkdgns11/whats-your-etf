@@ -13,6 +13,8 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
+import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,6 +43,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     private final NewsArticleRepository newsArticleRepository;
     private final EtfRepository etfRepository;
     private final EtfPriceRepository etfPriceRepository;
+    private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
     private static final int NEWS_LIST_SIZE = 20;
@@ -206,13 +209,9 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
     }
 
-    // TODO: 포트폴리오 기능 완성 후 활성화
     @Override
-    // @Cacheable(value = "portfolioNews", key = "#portfolioId")
+    @Cacheable(value = "portfolioNews", key = "#portfolioId")
     public PortfolioNewsResponse getPortfolioNews(Long portfolioId) {
-        throw new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND);
-
-        /*
         // 포트폴리오 조회
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
@@ -245,7 +244,6 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                 .news(newsItems)
                 .updatedAt(updatedAt)
                 .build();
-        */
     }
 
     /**

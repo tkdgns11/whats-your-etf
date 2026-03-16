@@ -11,6 +11,13 @@ public interface AuthService {
      */
     AuthResponse processKakaoLogin(String accessToken);
 
+    // ========== 중복 체크 ==========
+
+    /**
+     * 이메일 중복 체크
+     */
+    boolean existsByEmail(String email);
+
     // ========== 이메일 회원가입 ==========
 
     /**

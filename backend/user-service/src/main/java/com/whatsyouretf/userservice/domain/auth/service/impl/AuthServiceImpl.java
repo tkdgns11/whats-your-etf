@@ -68,6 +68,13 @@ public class AuthServiceImpl implements AuthService {
         return generateAuthResponse(user, isNewUser.get(), "KAKAO");
     }
 
+    // ========== 중복 체크 ==========
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
     // ========== 이메일 회원가입 ==========
 
     @Override
