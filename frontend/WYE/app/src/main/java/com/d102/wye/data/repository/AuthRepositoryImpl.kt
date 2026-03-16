@@ -6,6 +6,9 @@ import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.SignupRequest
+import com.d102.wye.data.remote.dto.request.SignupResendRequest
+import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.TokenPair
 import com.d102.wye.domain.repository.AuthRepository
@@ -22,6 +25,64 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
     // 로그인
     // ─────────────────────────────────────────
+
+    /** 회원가입 요청을 보내고 성공 여부만 반환한다. */
+    override suspend fun signup(
+        email: String,
+        password: String,
+        passwordConfirm: String,
+        nickname: String
+    ): BaseResult<Unit> {
+        return when (
+            val result = safeApiCall {
+                authApiService.signup(
+                    SignupRequest(
+                        email = email,
+                        password = password,
+                        passwordConfirm = passwordConfirm,
+                        nickname = nickname
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(Unit)
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 인증 코드를 검증하고 회원가입 완료에 필요한 토큰만 반환한다. */
+    override suspend fun verifySignup(email: String, token: String): BaseResult<TokenPair> {
+        return when (
+            val result = safeApiCall {
+                authApiService.verifySignup(
+                    SignupVerifyRequest(
+                        email = email,
+                        token = token
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> {
+                val tokenPair = result.data.toDomain()
+                BaseResult.Success(tokenPair)
+            }
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 같은 이메일로 회원가입 인증 메일을 다시 발송한다. */
+    override suspend fun resendSignupCode(email: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.resendSignupCode(SignupResendRequest(email = email))
+        }
+    }
+
+    override suspend fun saveAuthTokens(tokenPair: TokenPair) {
+        authTokenDataStore.saveTokens(
+            accessToken = tokenPair.accessToken,
+            refreshToken = tokenPair.refreshToken
+        )
+    }
 
     override suspend fun login(email: String, password: String): BaseResult<TokenPair> {
         return when (val result = safeApiCall { 
@@ -61,7 +122,7 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun logout(): BaseResult<Unit> {
-        return safeApiCall(
+        return safeApiCallWithoutData(
             // 서버 로그아웃 성공/실패 무관하게 로컬 토큰 삭제
             onSuccess = { authTokenDataStore.clearTokens() }
         ) {
@@ -79,7 +140,14 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun registerFcmToken(token: String): BaseResult<Unit> {
-        return safeApiCall { authApiService.registerFcmToken(FcmTokenRequest(token)) }
+        return safeApiCallWithoutData {
+            authApiService.registerFcmToken(
+                FcmTokenRequest(
+                    token = token,
+                    deviceType = "ANDROID"
+                )
+            )
+        }
     }
 
     // ─────────────────────────────────────────

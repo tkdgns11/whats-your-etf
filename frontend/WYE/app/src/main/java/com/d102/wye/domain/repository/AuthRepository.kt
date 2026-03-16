@@ -9,6 +9,23 @@ import kotlinx.coroutines.flow.Flow
  */
 interface AuthRepository {
 
+    /** 이메일 회원가입을 요청한다. */
+    suspend fun signup(
+        email: String,
+        password: String,
+        passwordConfirm: String,
+        nickname: String
+    ): BaseResult<Unit>
+
+    /** 이메일 인증 코드를 확인하고 발급된 JWT를 반환한다. */
+    suspend fun verifySignup(email: String, token: String): BaseResult<TokenPair>
+
+    /** 회원가입 인증 메일을 재발송한다. */
+    suspend fun resendSignupCode(email: String): BaseResult<Unit>
+
+    /** 발급된 토큰을 로컬에 저장해 로그인 상태를 확정한다. */
+    suspend fun saveAuthTokens(tokenPair: TokenPair)
+
     /** 로그인 */
     suspend fun login(email: String, password: String): BaseResult<TokenPair>
 
