@@ -61,7 +61,7 @@ fun ColumnScope.JoinPasswordStep(
     )
     Spacer(modifier = Modifier.weight(1f))
     WyePrimaryButton(
-        text = "가입 완료",
+        text = "인증번호 발송",
         onClick = onNextClick,
         enabled = canProceed
     )

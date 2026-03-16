@@ -1,10 +1,12 @@
 package com.d102.wye.presentation.auth.join
 
+import com.d102.wye.domain.model.TokenPair
+
 enum class JoinStep {
     NICKNAME,
     EMAIL,
-    VERIFICATION,
     PASSWORD,
+    VERIFICATION,
     SUCCESS
 }
 
@@ -17,6 +19,7 @@ data class JoinUiState(
     val passwordConfirm: String = "",
     val isPasswordVisible: Boolean = false,
     val isPasswordConfirmVisible: Boolean = false,
+    val pendingTokenPair: TokenPair? = null,
     val helperMessage: String? = null,
     val errorMessage: String? = null,
     val isLoading: Boolean = false
@@ -25,8 +28,8 @@ data class JoinUiState(
         get() = when (currentStep) {
             JoinStep.NICKNAME -> nickname.isNotBlank()
             JoinStep.EMAIL -> email.isNotBlank()
-            JoinStep.VERIFICATION -> verificationCode.length >= 6
             JoinStep.PASSWORD -> password.isNotBlank() && passwordConfirm.isNotBlank()
+            JoinStep.VERIFICATION -> verificationCode.length >= 6
             JoinStep.SUCCESS -> true
         } && !isLoading
 }
