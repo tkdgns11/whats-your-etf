@@ -48,6 +48,10 @@ public class Portfolio {
     @Column(name = "invest_period")
     private Integer investPeriod;
 
+    @Column(name = "portfolio_type")
+    @Enumerated(EnumType.STRING)
+    private PortfolioType portfolioType;
+
     /** 알림 허용 여부 */
     @Column(name = "is_alert_enabled")
     private Boolean isAlertEnabled = false;
@@ -62,7 +66,13 @@ public class Portfolio {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    public static Portfolio createPortfolio(Long userId, String portfolioName, BigDecimal investAmount, Integer investPeriod) {
+    public static Portfolio createPortfolio(
+        Long userId,
+        String portfolioName,
+        BigDecimal investAmount,
+        Integer investPeriod,
+        PortfolioType portfolioType
+    ) {
         if (investPeriod > 36 || investPeriod < 1) {
             throw new BusinessException(ErrorCode.INVALID_PORTFOLIO_PERIOD);
         }
@@ -73,7 +83,7 @@ public class Portfolio {
         portfolio.investAmount = investAmount;
         portfolio.investPeriod = investPeriod;
         portfolio.prevCloseValue = investAmount;
-
+        portfolio.portfolioType = portfolioType;
         return portfolio;
     }
 }
