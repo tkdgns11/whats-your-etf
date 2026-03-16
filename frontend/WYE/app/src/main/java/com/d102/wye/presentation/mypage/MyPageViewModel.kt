@@ -2,7 +2,9 @@ package com.d102.wye.presentation.mypage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.repository.AuthRepository
+import com.d102.wye.domain.repository.UserRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,8 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    // TODO: Repository 주입
-    // private val userRepository: UserRepository,
+    private val userRepository: UserRepository,
     // private val etfRepository: EtfRepository
 ) : ViewModel() {
 
@@ -35,16 +36,23 @@ class MyPageViewModel @Inject constructor(
     fun loadMyPageData() {
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-
-            // TODO: 유저 정보 + 관심 ETF + 보유 ETF 로드
-            // TODO: coroutineScope {
-            // TODO:   val profileDeferred = async { userRepository.getMyProfile() }
-            // TODO:   val likedDeferred = async { etfRepository.getLikedEtfList().first() }
-            // TODO:   val holdingDeferred = async { userRepository.getMyHoldingEtfs() }
-            // TODO:   _uiState.update { UiState.Success(...) }
-            // TODO: }
-
-            _uiState.update { UiState.Success(mockMyPageData()) }
+            when (val result = userRepository.getMyProfile()) {
+                is BaseResult.Success -> {
+                    // users/me만 먼저 연결하므로 관심 ETF 수와 보유 ETF는 후속 API 연동 전까지 기본값을 쓴다.
+                    _uiState.update {
+                        UiState.Success(
+                            MyPageData(
+                                nickname = result.data.nickname,
+                                nicknameDraft = result.data.nickname,
+                                profileImage = result.data.profileImage,
+                                likedEtfCount = 0,
+                                holdingEtfs = emptyList()
+                            )
+                        )
+                    }
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
         }
     }
 
@@ -131,15 +139,6 @@ class MyPageViewModel @Inject constructor(
             }
         }
     }
-
-    /** 서버 없이 마이페이지를 보여주기 위한 임시 데이터를 만든다. */
-    private fun mockMyPageData(): MyPageData = MyPageData(
-        nickname = "레전드투자자",
-        nicknameDraft = "레전드투자자",
-        profileImage = null,
-        likedEtfCount = 12,
-        holdingEtfs = emptyList() // 보유 ETF 없는 상태 UI
-    )
 }
 
 data class MyPageHoldingEtfUiModel(
