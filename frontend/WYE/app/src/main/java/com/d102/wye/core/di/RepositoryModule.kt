@@ -7,6 +7,7 @@ import com.d102.wye.data.repository.NewsRepositoryImpl
 import com.d102.wye.data.repository.PortfolioRepositoryImpl
 import com.d102.wye.data.repository.SimulationRepositoryImpl
 import com.d102.wye.data.repository.StockRepositoryImpl
+import com.d102.wye.data.repository.UserRepositoryImpl
 import com.d102.wye.domain.repository.AlertRepository
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
@@ -14,6 +15,7 @@ import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.repository.StockRepository
+import com.d102.wye.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -68,4 +70,10 @@ abstract class RepositoryModule {
     abstract fun bindAlertRepository(
         impl: AlertRepositoryImpl
     ): AlertRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(
+        impl: UserRepositoryImpl
+    ): UserRepository
 }
