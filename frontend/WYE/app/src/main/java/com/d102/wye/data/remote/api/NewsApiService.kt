@@ -10,13 +10,17 @@ import retrofit2.http.Query
 
 interface NewsApiService {
 
-    /** 뉴스 목록을 조회한다. 카테고리를 넘기면 해당 카테고리만 조회한다. */
+    /**
+     * 뉴스 목록을 조회 (카테고리를 넘기면 해당 카테고리만 조회)
+     * */
     @GET("news")
     suspend fun getNewsList(
         @Query("category") category: String? = null
     ): Response<BaseResponse<NewsListResponse>>
 
-    /** 뉴스 상세를 조회한다. */
+    /**
+     * 뉴스 상세 조회
+     * */
     @GET("news/{newsId}")
     suspend fun getNewsDetail(
         @Path("newsId") newsId: Long

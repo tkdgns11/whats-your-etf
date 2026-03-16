@@ -17,10 +17,6 @@ object Constants {
     const val KEY_IS_LOGGED_IN = "is_logged_in"
 
     // Database
-    const val DATABASE_NAME = "wye_db"
-    const val DATABASE_VERSION = 1
-
-    // Error Messages
-    const val ERROR_NETWORK = "네트워크 연결을 확인해주세요"
-    const val ERROR_SESSION_EXPIRED = "세션이 만료되었습니다. 다시 로그인해주세요"
+    const val DATABASE_NAME = "etf_database"
+    const val DATABASE_VERSION = 3
 }

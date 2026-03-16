@@ -11,9 +11,6 @@ import retrofit2.http.Path
 
 interface PortfolioApiService {
 
-    /**
-     * 포트폴리오 저장
-     */
     @POST("portfolios")
     suspend fun savePortfolio(
         @Body request: SavePortfolioRequest

@@ -1,13 +1,11 @@
 package com.d102.wye.data.mapper
 
-import com.d102.wye.data.remote.dto.response.ChartPointResponse
 import com.d102.wye.data.remote.dto.response.EtfDetailResponse
 import com.d102.wye.data.remote.dto.response.EtfPeriodReturnResponse
 import com.d102.wye.data.remote.dto.response.EtfResponse
 import com.d102.wye.data.remote.dto.response.EtfReturnChartResponse
 import com.d102.wye.data.remote.dto.response.EtfSectorResponse
 import com.d102.wye.data.remote.dto.response.InfluentialStockResponse
-import com.d102.wye.data.remote.dto.response.SectorStockResponse
 import com.d102.wye.domain.model.ChartPoint
 import com.d102.wye.domain.model.Etf
 import com.d102.wye.domain.model.EtfDetail
@@ -16,10 +14,6 @@ import com.d102.wye.domain.model.EtfReturnChart
 import com.d102.wye.domain.model.EtfSector
 import com.d102.wye.domain.model.InfluentialStock
 import com.d102.wye.domain.model.SectorStock
-
-/**
- * DTO를 domain model로 직접 써도 동작에 문제가 없으면 mapper를 미리 만들 필요 없다
- */
 
 fun EtfResponse.toDomain() = Etf(
     ticker = ticker,
