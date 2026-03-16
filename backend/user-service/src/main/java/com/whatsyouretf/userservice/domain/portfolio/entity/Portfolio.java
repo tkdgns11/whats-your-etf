@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 포트폴리오 엔티티
@@ -66,6 +68,9 @@ public class Portfolio {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<PortfolioEtf> portfolioEtfs = new ArrayList<>();
+
     public static Portfolio createPortfolio(
         Long userId,
         String portfolioName,
@@ -85,5 +90,15 @@ public class Portfolio {
         portfolio.prevCloseValue = investAmount;
         portfolio.portfolioType = portfolioType;
         return portfolio;
+    }
+
+    public static Portfolio of(Long portfolioId) {
+        Portfolio portfolio = new Portfolio();
+        portfolio.id = portfolioId;
+        return portfolio;
+    }
+
+    public void update(String updatedName) {
+        name = updatedName;
     }
 }

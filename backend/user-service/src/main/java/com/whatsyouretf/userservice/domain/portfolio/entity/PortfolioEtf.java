@@ -3,6 +3,7 @@ package com.whatsyouretf.userservice.domain.portfolio.entity;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Cascade;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -7,6 +7,7 @@ import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioType;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +39,18 @@ public class PortfolioServiceImpl implements PortfolioService {
         @Override
         public List<PortfolioEtf> getPortfolio(Long userId, Long portfolioId) {
                 return portfolioReader.getPortfolioDetail(portfolioId);
+        }
+
+        @Override
+        @Transactional
+        public void updatePortfolio(Long portfolioId, String name) {
+                Portfolio portfolio = portfolioReader.getPortfolio(portfolioId);
+                portfolio.update(name);
+        }
+
+        @Override
+        public void deletePortfolio(Long portfolioId) {
+                portfolioStore.deletePortfolio(portfolioId);
         }
 
         @Override

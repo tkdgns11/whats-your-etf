@@ -13,4 +13,6 @@ public interface PortfolioReader {
         Map<Long, List<PortfolioEtfInfo>> getPortfolioInfoMap(List<Long> b);
 
         List<PortfolioEtf> getPortfolioDetail(Long portfolioId);
+
+        Portfolio getPortfolio(Long portfolioId);
 }

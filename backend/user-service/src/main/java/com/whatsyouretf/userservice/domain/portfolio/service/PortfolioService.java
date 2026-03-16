@@ -20,4 +20,8 @@ public interface PortfolioService {
         Map<Long, List<PortfolioEtfInfo>> getPortfolioInfoMap(List<Long> portfolioIds);
 
         List<PortfolioEtf> getPortfolio(Long userId, Long portfolioId);
+
+        void updatePortfolio(Long portfolioId, String name);
+
+        void deletePortfolio(Long portfolioId);
 }
