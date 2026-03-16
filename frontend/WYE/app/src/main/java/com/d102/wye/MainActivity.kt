@@ -9,11 +9,16 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.repository.AuthRepository
+import com.d102.wye.presentation.LaunchSplashScreen
 import com.d102.wye.presentation.navigation.AppEntryViewModel
 import com.d102.wye.presentation.navigation.AppScaffold
 import com.d102.wye.presentation.navigation.Route
@@ -50,13 +55,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // FCM 토큰 가져와서 서버 등록
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            CoroutineScope(Dispatchers.IO).launch {
-                authRepository.registerFcmToken(token)
-            }
-        }
-
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
                 AndroidColor.TRANSPARENT,
@@ -71,7 +69,25 @@ class MainActivity : ComponentActivity() {
             WYETheme {
                 val appEntryViewModel: AppEntryViewModel = hiltViewModel()
                 val isLoggedIn by appEntryViewModel.isLoggedIn.collectAsStateWithLifecycle()
-                if (isLoggedIn != null) {
+                var isSplashFinished by rememberSaveable { mutableStateOf(false) }
+                val shouldShowSplash = !isSplashFinished || isLoggedIn == null
+
+                LaunchedEffect(isLoggedIn) {
+                    // 로그인 이후에만 FCM 토큰을 서버에 등록해 JWT 헤더가 함께 전송되도록 한다.
+                    if (isLoggedIn == true) {
+                        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                            CoroutineScope(Dispatchers.IO).launch {
+                                authRepository.registerFcmToken(token)
+                            }
+                        }
+                    }
+                }
+
+                if (shouldShowSplash) {
+                    LaunchSplashScreen(
+                        onAnimationFinished = { isSplashFinished = true }
+                    )
+                } else {
                     val startDestination = if (isLoggedIn == true) Route.Home.route else Route.Login.route
                     AppScaffold(startDestination = startDestination)
                 }
