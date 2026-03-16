@@ -34,7 +34,7 @@ fun JoinScreen(
         onBackClick = {
             if (uiState.currentStep == JoinStep.NICKNAME) onBackClick() else viewModel.onBackClick()
         },
-        onStartClick = { viewModel.onStartClick(onStartClick) },
+        onStartClick = { viewModel.onStartClick() },
         onNicknameChanged = { viewModel.onNicknameChanged(it) },
         onEmailChanged = { viewModel.onEmailChanged(it) },
         onVerificationCodeChanged = { viewModel.onVerificationCodeChanged(it) },
