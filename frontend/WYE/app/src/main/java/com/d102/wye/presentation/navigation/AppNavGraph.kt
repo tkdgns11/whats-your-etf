@@ -83,7 +83,7 @@ fun AppNavGraph(
                 onCloseClick = { navController.popBackStack() },
                 onLoginClick = {
                     navController.navigate(Route.Login.route) {
-                        popUpTo(Route.PasswordReset.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
