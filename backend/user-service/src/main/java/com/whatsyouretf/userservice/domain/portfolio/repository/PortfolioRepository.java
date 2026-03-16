@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
-        List<Portfolio> findByUser(User user);
+        List<Portfolio> findByUserOrderByCreatedAtDesc(User user);
 
 
         @Query("""
@@ -19,5 +19,4 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
             JOIN FETCH pe.portfolio
             WHERE pe.portfolio.id = :portfolioId
         """)
-        List<PortfolioEtf> findByPortfolioId(@Param("portfolioId") Long portfolioId);
-}
+        List<PortfolioEtf> findByPortfolioId(@Param("portfolioId") Long portfolioId);}

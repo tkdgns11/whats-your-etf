@@ -17,7 +17,7 @@ public class PortfolioReaderImpl implements PortfolioReader {
         private final PortfolioQuerydslRepository portfolioQuerydslRepository;
         @Override
         public List<Portfolio> getUsersPortfolios(Long userId) {
-                return portfolioRepository.findByUser(User.of(userId));
+                return portfolioRepository.findByUserOrderByCreatedAtDesc(User.of(userId));
         }
 
         @Override
