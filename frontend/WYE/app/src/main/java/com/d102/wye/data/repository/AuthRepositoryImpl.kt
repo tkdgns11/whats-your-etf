@@ -6,6 +6,9 @@ import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
 import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
@@ -25,6 +28,49 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
     // 로그인
     // ─────────────────────────────────────────
+
+    /** 비밀번호 재설정 이메일 발송 요청을 보낸다. */
+    override suspend fun requestPasswordReset(email: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.requestPasswordReset(PasswordResetRequest(email = email))
+        }
+    }
+
+    /** 비밀번호 재설정 인증 코드를 검증하고 유효 여부를 반환한다. */
+    override suspend fun verifyPasswordResetCode(email: String, token: String): BaseResult<Boolean> {
+        return when (
+            val result = safeApiCall {
+                authApiService.verifyPasswordResetCode(
+                    PasswordResetVerifyRequest(
+                        email = email,
+                        token = token
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(result.data.valid)
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 검증된 인증 코드로 새 비밀번호를 재설정한다. */
+    override suspend fun resetPassword(
+        email: String,
+        token: String,
+        newPassword: String,
+        newPasswordConfirm: String
+    ): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.resetPassword(
+                PasswordResetConfirmRequest(
+                    email = email,
+                    token = token,
+                    newPassword = newPassword,
+                    newPasswordConfirm = newPasswordConfirm
+                )
+            )
+        }
+    }
 
     /** 회원가입 요청을 보내고 성공 여부만 반환한다. */
     override suspend fun signup(
@@ -82,6 +128,10 @@ class AuthRepositoryImpl @Inject constructor(
             accessToken = tokenPair.accessToken,
             refreshToken = tokenPair.refreshToken
         )
+    }
+
+    override suspend fun clearLocalAuthState() {
+        authTokenDataStore.clearTokens()
     }
 
     override suspend fun login(email: String, password: String): BaseResult<TokenPair> {
