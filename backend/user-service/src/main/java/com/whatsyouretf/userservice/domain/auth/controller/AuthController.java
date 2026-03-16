@@ -59,6 +59,28 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
     }
 
+    // ========== 중복 체크 ==========
+
+    /**
+     * 이메일 중복 체크
+     * <p>
+     * 회원가입 시 이메일 중복 여부를 확인합니다.
+     *
+     * @param email 확인할 이메일
+     * @return 사용 가능 여부
+     */
+    @Operation(summary = "이메일 중복 체크", description = "이메일이 이미 사용 중인지 확인합니다.")
+    @GetMapping("/check/email")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkEmail(
+            @RequestParam String email
+    ) {
+        boolean exists = authService.existsByEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "exists", exists,
+                "available", !exists
+        )));
+    }
+
     // ========== 이메일 회원가입 ==========
 
     /**
