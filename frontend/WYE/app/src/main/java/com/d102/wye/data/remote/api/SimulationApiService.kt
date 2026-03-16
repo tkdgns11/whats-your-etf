@@ -34,12 +34,4 @@ interface SimulationApiService {
         @Query("endDate") endDate: String? = null
     ): BaseResponse<EtfDividendHistoryResponse>
 
-
-    /**
-     * 포트폴리오 저장
-     */
-    @POST("portfolios")
-    suspend fun savePortfolio(
-        @Body request: SavePortfolioRequest
-    ): BaseResponse<Unit>
 }

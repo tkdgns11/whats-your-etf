@@ -7,6 +7,7 @@ import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
 import com.d102.wye.data.remote.api.SimulationApiService
 import com.d102.wye.data.remote.api.NewsApiService
+import com.d102.wye.data.remote.api.PortfolioApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -97,4 +98,9 @@ object NetworkModule {
     @Singleton
     fun provideSimulationService(retrofit: Retrofit): SimulationApiService =
         retrofit.create(SimulationApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providePortfolioApiService(retrofit: Retrofit): PortfolioApiService =
+        retrofit.create(PortfolioApiService::class.java)
 }

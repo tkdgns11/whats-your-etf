@@ -4,12 +4,14 @@ import com.d102.wye.data.repository.AuthRepositoryImpl
 import com.d102.wye.data.repository.EtfRepositoryImpl
 import com.d102.wye.data.repository.NewsRepositoryImpl
 import com.d102.wye.data.repository.NotificationRepositoryImpl
+import com.d102.wye.data.repository.PortfolioRepositoryImpl
 import com.d102.wye.data.repository.SimulationRepositoryImpl
 import com.d102.wye.data.repository.StockRepositoryImpl
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.domain.repository.NotificationRepository
+import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.repository.StockRepository
 import dagger.Binds
@@ -60,4 +62,11 @@ abstract class RepositoryModule {
     abstract fun bindSimulationRepository(
         impl: SimulationRepositoryImpl
     ): SimulationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPortfolioRepository(
+        impl: PortfolioRepositoryImpl
+    ): PortfolioRepository
+
 }

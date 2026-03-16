@@ -6,6 +6,7 @@ import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiDiagnosisResult
 import com.d102.wye.domain.model.EtfCountItem
 import com.d102.wye.domain.model.SavePortfolioParams
+import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.domain.usecase.simulation.RunSimulationUseCase
@@ -30,7 +31,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SimulationViewModel @Inject constructor(
     private val runSimulation: RunSimulationUseCase,
-    private val simulationRepository: SimulationRepository
+    private val simulationRepository: SimulationRepository,
+    private val portfolioRepository: PortfolioRepository
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(SimulationFormState())
@@ -238,24 +240,22 @@ class SimulationViewModel @Inject constructor(
         val form = _formState.value
         val amount = form.investmentAmount.toLongOrNull() ?: 0L
         val period = form.investmentPeriod.toIntOrNull() ?: 0
-
-        val defaultName = "포트폴리오 ${LocalDate.now().toString()}"
+        val defaultName = "포트폴리오 ${LocalDate.now()}"
 
         Timber.d("[Save] 포트폴리오 저장 요청 | name=$portfolioName")
 
         viewModelScope.launch {
             _savePortfolioState.update { UiState.Loading }
 
-            // count 계산: (investAmount × weight / 100) / currentPrice
-            // TODO: currentPrice는 탐색 API 연동 후 PortfolioItem에서 가져오기
+            // TODO: currentPrice 탐색 API 연동 후 실제 counts 계산
             val etfs = form.portfolioItems.map { item ->
                 EtfCountItem(
                     ticker = item.ticker,
-                    counts = 0  // TODO: (amount × item.weight / 100) / item.currentPrice
+                    counts = 0
                 )
             }
 
-            when (val result = simulationRepository.savePortfolio(
+            when (val result = portfolioRepository.savePortfolio(
                 SavePortfolioParams(
                     portfolioName = portfolioName.ifBlank { defaultName },
                     investType = form.investmentType,
@@ -269,7 +269,6 @@ class SimulationViewModel @Inject constructor(
                     _savePortfolioState.update { UiState.Success(Unit) }
                     _showSaveDialog.value = false
                 }
-
                 is BaseResult.Error -> {
                     Timber.e("[Save] 포트폴리오 저장 실패 | ${result.error.message}")
                     _savePortfolioState.update { UiState.Error(result.error.message) }
@@ -277,6 +276,8 @@ class SimulationViewModel @Inject constructor(
             }
         }
     }
+
+
     // ─────────────────────────────────────────────────────────────────────────
     // 계산 트리거 (300ms debounce)
     // ─────────────────────────────────────────────────────────────────────────
@@ -339,7 +340,7 @@ class SimulationViewModel @Inject constructor(
 data class SimulationFormState(
     val selectedTabIndex: Int = 0,
     val isOverlayEnabled: Boolean = false,
-    val investmentType: InvestmentType = InvestmentType.INSTALLMENT,
+    val investmentType: InvestmentType = InvestmentType.REGULAR_SAVING,
     val investmentAmount: String = "",
     val investmentPeriod: String = "",
     val portfolioItems: List<PortfolioItem> = emptyList()

@@ -22,8 +22,6 @@ interface SimulationRepository {
         endDate: String? = null
     ): BaseResult<Map<String, EtfDividendHistory>>
 
-    suspend fun savePortfolio(params: SavePortfolioParams): BaseResult<Unit>
-
 
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
 

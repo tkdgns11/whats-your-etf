@@ -124,28 +124,6 @@ class SimulationRepositoryImpl @Inject constructor(
         BaseResult.Error(ApiError(code = -1, message = e.message ?: "배당금 이력 조회 실패"))
     }
 
-    override suspend fun savePortfolio(params: SavePortfolioParams): BaseResult<Unit> =
-        runCatching {
-            simulationApiService.savePortfolio(
-                SavePortfolioRequest(
-                    portfolioName = params.portfolioName,
-                    investType = params.investType.name,  // "INSTALLMENT" or "LUMP_SUM"
-                    investAmount = params.investAmount,
-                    investPeriod = params.investPeriod,
-                    etfs = params.etfs.map { etf ->
-                        EtfCount(
-                            ticker = etf.ticker,
-                            counts = etf.counts
-                        )
-                    }
-                )
-            )
-            BaseResult.Success(Unit)
-        }.getOrElse { e ->
-            Timber.e("[API] 포트폴리오 저장 실패 | ${e.message}")
-            BaseResult.Error(ApiError(code = -1, message = e.message ?: "포트폴리오 저장 실패"))
-        }
-
 
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
 
