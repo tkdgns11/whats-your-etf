@@ -34,7 +34,7 @@ fun JoinScreen(
         onBackClick = {
             if (uiState.currentStep == JoinStep.NICKNAME) onBackClick() else viewModel.onBackClick()
         },
-        onStartClick = onStartClick,
+        onStartClick = { viewModel.onStartClick(onStartClick) },
         onNicknameChanged = { viewModel.onNicknameChanged(it) },
         onEmailChanged = { viewModel.onEmailChanged(it) },
         onVerificationCodeChanged = { viewModel.onVerificationCodeChanged(it) },
@@ -82,6 +82,7 @@ private fun JoinScreenContent(
             when (uiState.currentStep) {
                 JoinStep.NICKNAME -> JoinNicknameStep(
                     nickname = uiState.nickname,
+                    errorMessage = uiState.errorMessage,
                     canProceed = uiState.canProceed,
                     onNicknameChanged = onNicknameChanged,
                     onNextClick = onNextClick
@@ -89,17 +90,9 @@ private fun JoinScreenContent(
 
                 JoinStep.EMAIL -> JoinEmailStep(
                     email = uiState.email,
+                    errorMessage = uiState.errorMessage,
                     canProceed = uiState.canProceed,
                     onEmailChanged = onEmailChanged,
-                    onNextClick = onNextClick
-                )
-
-                JoinStep.VERIFICATION -> JoinVerificationStep(
-                    verificationCode = uiState.verificationCode,
-                    helperMessage = uiState.helperMessage,
-                    canProceed = uiState.canProceed,
-                    onVerificationCodeChanged = onVerificationCodeChanged,
-                    onResendCodeClick = onResendCodeClick,
                     onNextClick = onNextClick
                 )
 
@@ -115,6 +108,16 @@ private fun JoinScreenContent(
                     onPasswordConfirmChanged = onPasswordConfirmChanged,
                     onPasswordVisibilityToggle = onPasswordVisibilityToggle,
                     onPasswordConfirmVisibilityToggle = onPasswordConfirmVisibilityToggle,
+                    onNextClick = onNextClick
+                )
+
+                JoinStep.VERIFICATION -> JoinVerificationStep(
+                    verificationCode = uiState.verificationCode,
+                    helperMessage = uiState.helperMessage,
+                    errorMessage = uiState.errorMessage,
+                    canProceed = uiState.canProceed,
+                    onVerificationCodeChanged = onVerificationCodeChanged,
+                    onResendCodeClick = onResendCodeClick,
                     onNextClick = onNextClick
                 )
 

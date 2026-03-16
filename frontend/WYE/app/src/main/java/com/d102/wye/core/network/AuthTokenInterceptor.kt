@@ -21,7 +21,6 @@ class AuthTokenInterceptor @Inject constructor(
         private val PUBLIC_URLS = listOf(
             "/auth/login",
             "/auth/signup",
-            "/auth/verify",
             "/auth/password"
         )
     }

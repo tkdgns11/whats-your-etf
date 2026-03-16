@@ -14,6 +14,7 @@ import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,7 +28,10 @@ class WyeFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         CoroutineScope(Dispatchers.IO).launch {
-            authRepository.registerFcmToken(token)
+            // 인증이 필요한 API이므로 로그인된 사용자일 때만 서버에 등록한다.
+            if (authRepository.isLoggedIn.first()) {
+                authRepository.registerFcmToken(token)
+            }
         }
     }
 

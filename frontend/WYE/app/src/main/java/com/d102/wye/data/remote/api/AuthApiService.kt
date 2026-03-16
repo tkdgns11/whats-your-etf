@@ -3,7 +3,11 @@ package com.d102.wye.data.remote.api
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.SignupRequest
+import com.d102.wye.data.remote.dto.request.SignupResendRequest
+import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.SignupResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -32,6 +36,24 @@ interface AuthApiService {
     suspend fun login(
         @Body request: LoginRequest
     ): Response<BaseResponse<TokenResponse>>
+
+    /** 회원가입을 요청하고 인증 메일 발송 결과를 받는다. */
+    @POST("auth/signup")
+    suspend fun signup(
+        @Body request: SignupRequest
+    ): Response<BaseResponse<SignupResponse>>
+
+    /** 이메일 인증 코드를 검증하고 회원가입을 완료한다. */
+    @POST("auth/signup/verify")
+    suspend fun verifySignup(
+        @Body request: SignupVerifyRequest
+    ): Response<BaseResponse<TokenResponse>>
+
+    /** 회원가입 인증 메일을 같은 이메일로 재발송한다. */
+    @POST("auth/signup/resend")
+    suspend fun resendSignupCode(
+        @Body request: SignupResendRequest
+    ): Response<BaseResponse<Unit>>
 
     /**
      * 카카오 로그인

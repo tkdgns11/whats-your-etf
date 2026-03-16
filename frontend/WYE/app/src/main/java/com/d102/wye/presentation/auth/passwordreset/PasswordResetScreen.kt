@@ -139,17 +139,10 @@ private fun PasswordResetScreenContent(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     JoinVerificationSection(
+                        errorText = uiState.errorMessage,
                         helperText = uiState.helperMessage,
                         onResendClick = onResendCodeClick
                     )
-                    uiState.errorMessage?.let { message ->
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
                     Spacer(modifier = Modifier.weight(1f))
                     WyePrimaryButton(
                         text = "다음",
