@@ -40,7 +40,7 @@ fun HomeScreen(
     onNewsMoreClick: () -> Unit = {},
     onPortfolioMoreClick: () -> Unit = {},
     onBookmarkClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
+    onAlertClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,7 +62,7 @@ fun HomeScreen(
         onNewsMoreClick = onNewsMoreClick,
         onPortfolioMoreClick = onPortfolioMoreClick,
         onBookmarkClick = onBookmarkClick,
-        onNotificationClick = onNotificationClick
+        onAlertClick = onAlertClick
     )
 }
 
@@ -75,7 +75,7 @@ private fun HomeScreenContent(
     onNewsMoreClick: () -> Unit,
     onPortfolioMoreClick: () -> Unit,
     onBookmarkClick: () -> Unit,
-    onNotificationClick: () -> Unit
+    onAlertClick: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("거래량 TOP 10", "내 포트폴리오")
@@ -97,7 +97,7 @@ private fun HomeScreenContent(
                             modifier = Modifier.size(30.dp)
                         )
                     }
-                    IconButton(onClick = onNotificationClick) {
+                    IconButton(onClick = onAlertClick) {
                         Icon(
                             imageVector = Icons.Filled.Notifications,
                             contentDescription = "알림",

@@ -1,6 +1,7 @@
 package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
+import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
@@ -32,6 +33,15 @@ interface AuthApiService {
         @Body request: LoginRequest
     ): Response<BaseResponse<TokenResponse>>
 
+    /**
+     * 카카오 로그인
+     * POST /api/v1/auth/oauth/kakao
+     */
+    @POST("auth/oauth/kakao")
+    suspend fun loginWithKakao(
+        @Body request: KakaoLoginRequest
+    ): Response<BaseResponse<TokenResponse>>
+
 
     /**
      * 로그아웃
@@ -43,7 +53,7 @@ interface AuthApiService {
 
     /**
      * FCM 토큰 등록
-     * POST /auth/fcm-token
+     * POST /auth/fcm/token
      * 로그인 후 또는 토큰 갱신 시 서버에 저장
      */
     @POST("auth/fcm/token")

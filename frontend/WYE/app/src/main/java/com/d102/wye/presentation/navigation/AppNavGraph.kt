@@ -24,10 +24,10 @@ import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
 import com.d102.wye.presentation.home.news.NewsDetailScreen
 import com.d102.wye.presentation.home.news.NewsListScreen
-import com.d102.wye.presentation.home.notification.NotificationScreen
+import com.d102.wye.presentation.home.alerts.AlertsScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
-import com.d102.wye.presentation.mypage.notification.NotificationSettingsScreen
+import com.d102.wye.presentation.mypage.alerts.AlertSettingsScreen
 import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
@@ -103,7 +103,7 @@ fun AppNavGraph(
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onBookmarkClick = { navController.navigate(Route.LikedEtfList.route) },
-                onNotificationClick = { navController.navigate(Route.NotificationList.route) },
+                onAlertClick = { navController.navigate(Route.AlertList.route) },
                 onNewsMoreClick = { navController.navigate(Route.NewsList.route) }
 
             )
@@ -138,7 +138,7 @@ fun AppNavGraph(
                 onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onLikedEtfListClick = { navController.navigate(Route.LikedEtfList.route) },
                 onPasswordChangeClick = { navController.navigate(Route.PasswordReset.route) },
-                onNotificationSettingClick = { navController.navigate(Route.NotificationSettings.route) },
+                onAlertSettingClick = { navController.navigate(Route.AlertSettings.route) },
                 onFaqClick = { navController.navigate(Route.Faq.route) },
                 onTermsClick = { navController.navigate(Route.Terms.route) },
                 onLogoutClick = {
@@ -156,8 +156,8 @@ fun AppNavGraph(
             )
         }
 
-        composable(Route.NotificationSettings.route) {
-            NotificationSettingsScreen(
+        composable(Route.AlertSettings.route) {
+            AlertSettingsScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -321,9 +321,12 @@ fun AppNavGraph(
         // 알림 목록
         // ─────────────────────────────────────────
 
-        composable(Route.NotificationList.route) {
-            NotificationScreen(
-                onBack = { navController.popBackStack() }
+        composable(Route.AlertList.route) {
+            AlertsScreen(
+                onBack = { navController.popBackStack() },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
+                onPortfolioClick = { portfolioId -> navController.navigate(Route.StrategyDetail(portfolioId).route) },
             )
         }
 

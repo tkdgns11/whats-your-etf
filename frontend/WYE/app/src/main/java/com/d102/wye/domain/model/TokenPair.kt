@@ -16,7 +16,7 @@ data class TokenPair(
 
 data class UserInfo(
     val id: Long,
-    val email: String,
+    val email: String?,
     val nickname: String,
     val profileImage: String?,
     val loginProvider: LoginProvider

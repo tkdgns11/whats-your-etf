@@ -84,10 +84,10 @@ class LoginViewModel @Inject constructor(
         _uiState.update { it.copy(isKakaoLoading = true, errorMessage = null) }
     }
 
-    /** 카카오 SDK 로그인 성공 결과를 로컬 임시 세션으로 저장한다. */
-    fun onKakaoLoginSuccess(userId: Long, nickname: String?) {
+    /** 카카오 SDK access token으로 서버 로그인 요청을 보낸다. */
+    fun onKakaoLoginSuccess(accessToken: String) {
         viewModelScope.launch {
-            when (val result = authRepository.loginWithKakao(userId = userId, nickname = nickname)) {
+            when (val result = authRepository.loginWithKakao(accessToken = accessToken)) {
                 is BaseResult.Success -> emitLoginSuccess()
                 is BaseResult.Error -> setError(result.error.message)
             }

@@ -12,8 +12,8 @@ interface AuthRepository {
     /** 로그인 */
     suspend fun login(email: String, password: String): BaseResult<TokenPair>
 
-    /** 카카오 SDK 로그인 성공 후 서버 없이 임시 세션을 저장한다. */
-    suspend fun loginWithKakao(userId: Long, nickname: String?): BaseResult<Unit>
+    /** 카카오 SDK access token으로 서버 로그인 후 JWT를 발급받는다. */
+    suspend fun loginWithKakao(accessToken: String): BaseResult<TokenPair>
 
     /** 로그아웃 (토큰 삭제) */
     suspend fun logout(): BaseResult<Unit>

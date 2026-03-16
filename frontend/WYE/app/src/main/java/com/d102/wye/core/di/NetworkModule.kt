@@ -3,11 +3,12 @@ package com.d102.wye.core.di
 import com.d102.wye.core.app.Constants
 import com.d102.wye.core.network.AuthTokenInterceptor
 import com.d102.wye.core.network.TokenRefreshInterceptor
+import com.d102.wye.data.remote.api.AlertApiService
 import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
-import com.d102.wye.data.remote.api.SimulationApiService
 import com.d102.wye.data.remote.api.NewsApiService
 import com.d102.wye.data.remote.api.PortfolioApiService
+import com.d102.wye.data.remote.api.SimulationApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -86,6 +87,12 @@ object NetworkModule {
     @Singleton
     fun provideEtfApiService(retrofit: Retrofit): EtfApiService {
         return retrofit.create(EtfApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAlertApiService(retrofit: Retrofit): AlertApiService {
+        return retrofit.create(AlertApiService::class.java)
     }
 
     @Provides

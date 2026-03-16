@@ -24,7 +24,7 @@ data class UserResponse(
     val id: Long,
 
     @SerializedName("email")
-    val email: String,
+    val email: String?,
 
     @SerializedName("nickname")
     val nickname: String,

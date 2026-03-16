@@ -55,6 +55,7 @@ fun NewsListScreen(
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
+    val categoryScrollState = rememberScrollState()
 
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) focusRequester.requestFocus()
@@ -84,12 +85,14 @@ fun NewsListScreen(
                 if (searchMode) {
                     // 검색 모드 TopBar
                     Surface(
+                        modifier = Modifier.fillMaxWidth(),
                         color = SurfaceWhite,
                         shadowElevation = 2.dp,
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .statusBarsPadding()
                                 .height(64.dp)
                                 .padding(horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -167,6 +170,7 @@ fun NewsListScreen(
         val categories = state?.data?.categories.orEmpty()
         val selectedCategoryCode = state?.data?.selectedCategoryCode
         val allNews = state?.data?.newsList.orEmpty()
+        val isRefreshing = state?.data?.isRefreshing == true
         val displayNews = if (searchQuery.isBlank()) {
             allNews
         } else {
@@ -197,7 +201,7 @@ fun NewsListScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
+                        .horizontalScroll(categoryScrollState)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -216,6 +220,13 @@ fun NewsListScreen(
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
+                }
+                if (isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = PrimaryGreen,
+                        trackColor = SurfaceVariant,
+                    )
                 }
             }
 
