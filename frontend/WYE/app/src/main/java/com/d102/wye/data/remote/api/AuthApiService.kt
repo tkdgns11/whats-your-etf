@@ -3,10 +3,14 @@ package com.d102.wye.data.remote.api
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
 import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.PasswordResetVerifyResponse
 import com.d102.wye.data.remote.dto.response.SignupResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
 import retrofit2.Response
@@ -42,6 +46,24 @@ interface AuthApiService {
     suspend fun signup(
         @Body request: SignupRequest
     ): Response<BaseResponse<SignupResponse>>
+
+    /** 비밀번호 재설정 인증 메일을 요청한다. */
+    @POST("auth/password/reset/request")
+    suspend fun requestPasswordReset(
+        @Body request: PasswordResetRequest
+    ): Response<BaseResponse<Unit>>
+
+    /** 비밀번호 재설정 인증 코드를 검증한다. */
+    @POST("auth/password/reset/verify")
+    suspend fun verifyPasswordResetCode(
+        @Body request: PasswordResetVerifyRequest
+    ): Response<BaseResponse<PasswordResetVerifyResponse>>
+
+    /** 인증 코드 확인 후 새 비밀번호로 재설정한다. */
+    @POST("auth/password/reset")
+    suspend fun resetPassword(
+        @Body request: PasswordResetConfirmRequest
+    ): Response<BaseResponse<Unit>>
 
     /** 이메일 인증 코드를 검증하고 회원가입을 완료한다. */
     @POST("auth/signup/verify")

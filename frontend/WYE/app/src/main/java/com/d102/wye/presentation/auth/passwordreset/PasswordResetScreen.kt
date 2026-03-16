@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import com.d102.wye.presentation.designsystem.WyeVerificationCodeTextField
 import com.d102.wye.presentation.theme.BadgeConservative
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextSecondary
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun PasswordResetScreen(
@@ -45,6 +47,14 @@ fun PasswordResetScreen(
     viewModel: PasswordResetViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.passwordResetEvent.collect { event ->
+            when (event) {
+                PasswordResetEvent.NavigateToLogin -> onLoginClick()
+            }
+        }
+    }
 
     PasswordResetScreenContent(
         uiState = uiState,
@@ -60,7 +70,8 @@ fun PasswordResetScreen(
         onPasswordVisibilityToggle = { viewModel.onPasswordVisibilityToggle() },
         onPasswordConfirmVisibilityToggle = { viewModel.onPasswordConfirmVisibilityToggle() },
         onNextClick = { viewModel.onNextClick() },
-        onResendCodeClick = { viewModel.onResendCodeClick() }
+        onResendCodeClick = { viewModel.onResendCodeClick() },
+        onLoginButtonClick = { viewModel.onLoginClick() }
     )
 }
 
@@ -77,7 +88,8 @@ private fun PasswordResetScreenContent(
     onPasswordVisibilityToggle: () -> Unit,
     onPasswordConfirmVisibilityToggle: () -> Unit,
     onNextClick: () -> Unit,
-    onResendCodeClick: () -> Unit
+    onResendCodeClick: () -> Unit,
+    onLoginButtonClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -222,7 +234,7 @@ private fun PasswordResetScreenContent(
                     Spacer(modifier = Modifier.weight(1f))
                     WyePrimaryButton(
                         text = "로그인 하러 가기",
-                        onClick = onLoginClick
+                        onClick = onLoginButtonClick
                     )
                 }
             }
