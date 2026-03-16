@@ -101,6 +101,83 @@ abstract class BaseRepository {
         }
     }
 
+    /** data 없이 성공 여부만 내려오는 API 응답을 공통 처리한다. */
+    protected suspend fun safeApiCallWithoutData(
+        onSuccess: (suspend () -> Unit)? = null,
+        apiCall: suspend () -> Response<BaseResponse<Unit>>
+    ): BaseResult<Unit> {
+        return try {
+            val response = apiCall()
+
+            if (response.isSuccessful) {
+                val body = response.body()
+
+                when {
+                    // data가 없는 API도 본문 success/code를 확인해 비즈니스 에러를 놓치지 않는다.
+                    body == null -> {
+                        BaseResult.Error(
+                            ApiError(
+                                message = "응답 데이터가 없습니다",
+                                code = response.code(),
+                                type = ApiError.ErrorType.UNKNOWN
+                            )
+                        )
+                    }
+
+                    body.success == false -> {
+                        val resolvedCode = resolveServerCode(
+                            serverCode = body.code,
+                            fallbackCode = response.code()
+                        )
+                        BaseResult.Error(
+                            ApiError(
+                                message = body.message ?: "알 수 없는 오류",
+                                code = resolvedCode,
+                                type = ApiError.getErrorType(resolvedCode)
+                            )
+                        )
+                    }
+
+                    body.code != null && body.code != "OK" -> {
+                        val resolvedCode = resolveServerCode(
+                            serverCode = body.code,
+                            fallbackCode = response.code()
+                        )
+                        BaseResult.Error(
+                            ApiError(
+                                message = body.message ?: "알 수 없는 오류",
+                                code = resolvedCode,
+                                type = ApiError.getErrorType(resolvedCode)
+                            )
+                        )
+                    }
+
+                    else -> {
+                        onSuccess?.invoke()
+                        BaseResult.Success(Unit)
+                    }
+                }
+            } else {
+                BaseResult.Error(
+                    ApiError(
+                        message = "서버 오류: ${response.message()}",
+                        code = response.code(),
+                        type = ApiError.getErrorType(response.code())
+                    )
+                )
+            }
+        } catch (e: SocketTimeoutException) {
+            Timber.e(e, "Timeout error")
+            BaseResult.Error(ApiError.timeoutError())
+        } catch (e: IOException) {
+            Timber.e(e, "Network error")
+            BaseResult.Error(ApiError.networkError())
+        } catch (e: Exception) {
+            Timber.e(e, "Unknown error")
+            BaseResult.Error(ApiError.unknownError(e.message ?: "알 수 없는 오류"))
+        }
+    }
+
     /**
      * BaseResponse 없이 T를 직접 응답하는 API 호출
      * 주로 파일 다운로드, 외부 API 연동 등에서 사용
