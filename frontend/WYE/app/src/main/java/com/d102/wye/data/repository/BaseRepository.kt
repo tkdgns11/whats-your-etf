@@ -4,6 +4,7 @@ import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import retrofit2.HttpException
 import retrofit2.Response
 import timber.log.Timber
@@ -21,6 +22,42 @@ abstract class BaseRepository {
 
     private fun resolveServerCode(serverCode: String?, fallbackCode: Int): Int {
         return serverCode?.toIntOrNull() ?: fallbackCode
+    }
+
+    /** HTTP 에러 응답의 BaseResponse message/code를 읽어 인증 에러 메시지를 그대로 노출한다. */
+    private fun parseErrorResponse(response: Response<*>): ApiError {
+        val fallbackCode = response.code()
+        val fallbackMessage = "서버 오류: ${response.message()}"
+
+        return try {
+            val errorBody = response.errorBody()?.string()
+            if (errorBody.isNullOrBlank()) {
+                ApiError(
+                    message = fallbackMessage,
+                    code = fallbackCode,
+                    type = ApiError.getErrorType(fallbackCode)
+                )
+            } else {
+                val responseType = object : TypeToken<BaseResponse<Any>>() {}.type
+                val parsedBody: BaseResponse<Any> = Gson().fromJson(errorBody, responseType)
+                val resolvedCode = resolveServerCode(
+                    serverCode = parsedBody.code,
+                    fallbackCode = fallbackCode
+                )
+                ApiError(
+                    message = parsedBody.message ?: fallbackMessage,
+                    code = resolvedCode,
+                    type = ApiError.getErrorType(resolvedCode)
+                )
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to parse error body")
+            ApiError(
+                message = fallbackMessage,
+                code = fallbackCode,
+                type = ApiError.getErrorType(fallbackCode)
+            )
+        }
     }
 
     /**
@@ -81,13 +118,7 @@ abstract class BaseRepository {
                 }
             } else {
                 // HTTP 4xx, 5xx
-                BaseResult.Error(
-                    ApiError(
-                        message = "서버 오류: ${response.message()}",
-                        code = response.code(),
-                        type = ApiError.getErrorType(response.code())
-                    )
-                )
+                BaseResult.Error(parseErrorResponse(response))
             }
         } catch (e: SocketTimeoutException) {
             Timber.e(e, "Timeout error")
@@ -158,13 +189,7 @@ abstract class BaseRepository {
                     }
                 }
             } else {
-                BaseResult.Error(
-                    ApiError(
-                        message = "서버 오류: ${response.message()}",
-                        code = response.code(),
-                        type = ApiError.getErrorType(response.code())
-                    )
-                )
+                BaseResult.Error(parseErrorResponse(response))
             }
         } catch (e: SocketTimeoutException) {
             Timber.e(e, "Timeout error")
