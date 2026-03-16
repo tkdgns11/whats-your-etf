@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.portfolio.controller.PortfolioEtfCount;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
+import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,7 +17,8 @@ public record PortfolioDetail(
         String portfolioName,
         List<PortfolioEtfCount> counts,
         BigDecimal investAmount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        PortfolioType portfolioType
 ) {
         public static PortfolioDetail of(
                 List<PortfolioEtf> etfs
@@ -33,7 +35,8 @@ public record PortfolioDetail(
                         portfolio.getName(),
                         etfs.stream().map(etf -> new PortfolioEtfCount(etf.getEtf().getStockCode(), etf.getEtfCount())).toList(),
                         portfolio.getInvestAmount(),
-                        portfolio.getCreatedAt()
+                        portfolio.getCreatedAt(),
+                        portfolio.getPortfolioType()
                 );
         }
 }

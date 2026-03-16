@@ -3,6 +3,7 @@ package com.whatsyouretf.userservice.domain.portfolio.service;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
+import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioType;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         private final PortfolioReader portfolioReader;
 
         @Override
-        public Portfolio savePortfolio(Long userId, String portfolioName, BigDecimal investAmount, Integer investPeriod) {
-                return portfolioStore.storePortfolio(Portfolio.createPortfolio(userId, portfolioName, investAmount, investPeriod));
+        public Portfolio savePortfolio(Long userId, String portfolioName, BigDecimal investAmount, Integer investPeriod, PortfolioType portfolioType) {
+                return portfolioStore.storePortfolio(Portfolio.createPortfolio(userId, portfolioName, investAmount, investPeriod, portfolioType));
         }
 
         @Override

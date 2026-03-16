@@ -39,7 +39,8 @@ public class PortfolioController {
                         userDetails.getUserId(),
                         request.portfolioName(),
                         request.investAmount(),
-                        request.investPeriod()
+                        request.investPeriod(),
+                        request.portfolioType()
                 );
 
                 return ResponseEntity
