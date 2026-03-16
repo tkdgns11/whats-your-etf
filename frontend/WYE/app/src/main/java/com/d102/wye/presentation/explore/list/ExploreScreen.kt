@@ -40,6 +40,7 @@ import timber.log.Timber
 fun ExploreScreen(
     title: String = "탐색",
     isSelectionMode: Boolean = false,
+    initialSelectedTickers: List<String> = emptyList(),
     onEtfClick: (ticker: String, riskLevel: Int) -> Unit,
     onBackClick: (() -> Unit)? = null,
     onSelectionComplete: ((List<String>) -> Unit)? = null,
@@ -53,6 +54,13 @@ fun ExploreScreen(
     val selectedTickers by viewModel.selectedTickers.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(initialSelectedTickers) {
+        if (initialSelectedTickers.isNotEmpty()) {
+            viewModel.initializeSelection(initialSelectedTickers)
+        }
+    }
+
     LaunchedEffect(uiState) {
         if (uiState is UiState.Error) {
             snackbarHostState.showSnackbar((uiState as UiState.Error).message)

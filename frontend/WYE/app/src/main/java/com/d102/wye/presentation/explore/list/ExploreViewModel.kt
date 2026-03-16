@@ -50,15 +50,11 @@ class ExploreViewModel @Inject constructor(
 //                applyFilter()
 //            }
 
-            // TODO: API 연동 시 mockEtfList 대신 etfRepository.getEtfList()를 collect해서 사용한다.
+    // TODO: API 연동 시 mockEtfList 대신 etfRepository.getEtfList()를 collect해서 사용한다.
             mockEtfList = listOf(
-                EtfListItemUiModel("KODEX200", "KODEX 200", 32_450, 1.24, 400, 1, likedTickers.contains("KODEX200")),
-                EtfListItemUiModel("TIGER나스닥", "TIGER 미국나스닥100", 104_820, 2.15, 2_210, 1, likedTickers.contains("TIGER나스닥")),
-                EtfListItemUiModel("ACESP500", "ACE 미국S&P500", 15_340, 0.85, 130, 1, likedTickers.contains("ACESP500")),
-                EtfListItemUiModel("SOL배당", "SOL 미국배당다우존스", 10_120, 0.42, 45, 3, likedTickers.contains("SOL배당")),
-                EtfListItemUiModel("KODEX인버스", "KODEX 200선물인버스2X", 2_145, -2.31, -50, 5, likedTickers.contains("KODEX인버스")),
-                EtfListItemUiModel("TIGER나스닥2", "TIGER 미국나스닥100(레버리지)", 104_820, 2.15, 2_210, 1, likedTickers.contains("TIGER나스닥2")),
-                EtfListItemUiModel("SOL배당2", "SOL 미국배당다우존스(월배당)", 10_120, 0.42, 45, 1, likedTickers.contains("SOL배당2")),
+                EtfListItemUiModel("069500", "KODEX 200", 32_450, 1.24, 400, 1, likedTickers.contains("069500")),
+                EtfListItemUiModel("091160", "KODEX 반도체", 42_350, 2.15, 890, 4, likedTickers.contains("091160")),
+                EtfListItemUiModel("102780", "KODEX 인버스", 2_145, -1.20, -26, 5, likedTickers.contains("102780")),
             )
             applyFilter()
         }
@@ -111,6 +107,10 @@ class ExploreViewModel @Inject constructor(
 
     fun clearSelection() {
         _selectedTickers.update { emptySet() }
+    }
+
+    fun initializeSelection(tickers: List<String>) {
+        _selectedTickers.update { tickers.toSet() }
     }
 
     private fun observeLikedEtfs() {

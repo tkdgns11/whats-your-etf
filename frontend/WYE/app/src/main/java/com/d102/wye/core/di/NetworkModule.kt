@@ -7,6 +7,8 @@ import com.d102.wye.data.remote.api.AlertApiService
 import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.api.EtfApiService
 import com.d102.wye.data.remote.api.NewsApiService
+import com.d102.wye.data.remote.api.PortfolioApiService
+import com.d102.wye.data.remote.api.SimulationApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -49,16 +51,16 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
-        authTokenInterceptor: AuthTokenInterceptor,  // Hilt가 자동 주입
-        tokenRefreshInterceptor: TokenRefreshInterceptor  // Hilt가 자동 주입
+        authTokenInterceptor: AuthTokenInterceptor,
+        tokenRefreshInterceptor: TokenRefreshInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(Constants.WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(authTokenInterceptor)  // JWT Token 자동 추가
-            .addInterceptor(tokenRefreshInterceptor)  // JWT Token 자동 추가
+            .addInterceptor(authTokenInterceptor)
+            .addInterceptor(tokenRefreshInterceptor)
             .build()
     }
 
@@ -75,31 +77,37 @@ object NetworkModule {
             .build()
     }
 
-    /** ETF 관련 Retrofit API 인터페이스 구현체를 제공한다. */
-    @Provides
-    @Singleton
-    fun provideEtfApiService(retrofit: Retrofit): EtfApiService {
-        return retrofit.create(EtfApiService::class.java)
-    }
-
-    /** 인증 관련 Retrofit API 인터페이스 구현체를 제공한다. */
     @Provides
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
     }
 
-    /** 알림 관련 Retrofit API 인터페이스 구현체를 제공한다. */
+    @Provides
+    @Singleton
+    fun provideEtfApiService(retrofit: Retrofit): EtfApiService {
+        return retrofit.create(EtfApiService::class.java)
+    }
+
     @Provides
     @Singleton
     fun provideAlertApiService(retrofit: Retrofit): AlertApiService {
         return retrofit.create(AlertApiService::class.java)
     }
 
-    /** 뉴스 관련 Retrofit API 인터페이스 구현체를 제공한다. */
     @Provides
     @Singleton
     fun provideNewsApiService(retrofit: Retrofit): NewsApiService {
         return retrofit.create(NewsApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideSimulationService(retrofit: Retrofit): SimulationApiService =
+        retrofit.create(SimulationApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun providePortfolioApiService(retrofit: Retrofit): PortfolioApiService =
+        retrofit.create(PortfolioApiService::class.java)
 }

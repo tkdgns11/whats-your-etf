@@ -33,6 +33,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
+import java.time.LocalDate
 
 @Composable
 fun PortfolioSaveDialog(
@@ -40,16 +41,17 @@ fun PortfolioSaveDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
-    // 텍스트 필드 입력 상태 관리
     var portfolioName by remember { mutableStateOf("") }
+
+    // 기본 이름: 오늘 날짜
+    val defaultName = "포트폴리오 ${LocalDate.now()}"
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f),
+            modifier = Modifier.fillMaxWidth(0.9f),
             shape = RoundedCornerShape(24.dp),
             color = Color.White
         ) {
@@ -57,7 +59,6 @@ fun PortfolioSaveDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 1. 타이틀
                 Text(
                     text = "포트폴리오 저장하기",
                     style = MaterialTheme.typography.titleMedium,
@@ -66,7 +67,6 @@ fun PortfolioSaveDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. 설명 텍스트
                 Text(
                     text = "나만의 투자 전략을 식별할 수 있는 이름을 지어주세요.\n저장한 포트폴리오는 나의 전략에서 확인할 수 있습니다.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -76,7 +76,6 @@ fun PortfolioSaveDialog(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // 3. 입력 필드 영역 (왼쪽 정렬)
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "포트폴리오 명칭",
@@ -88,12 +87,11 @@ fun PortfolioSaveDialog(
                     OutlinedTextField(
                         value = portfolioName,
                         onValueChange = { portfolioName = it },
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = TextPrimary
-                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimary),
                         placeholder = {
+                            // 입력 없으면 기본 날짜 이름 표시
                             Text(
-                                text = "예: 하반기 공격적 성장 전략",
+                                text = defaultName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = IconInactive
                             )
@@ -113,12 +111,10 @@ fun PortfolioSaveDialog(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // 4. 하단 버튼 2개 (취소 / 저장 완료)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 취소 버튼 (연한 회색 배경)
                     WyePrimaryButton(
                         modifier = Modifier.weight(1f),
                         text = "취소",
@@ -127,15 +123,24 @@ fun PortfolioSaveDialog(
                         onClick = onDismiss
                     )
 
-                    // 저장 완료 버튼
                     WyePrimaryButton(
                         modifier = Modifier.weight(1f),
-                        text = "저장 완료",
+                        text = if (saveState is UiState.Loading) "저장 중..." else "저장 완료",
                         onClick = {
-                            if (portfolioName.isNotBlank()) {
-                                onSave(portfolioName)
-                            }
-                        }
+                            // 이름 비어있으면 기본 날짜 이름으로 저장
+                            onSave(portfolioName.ifBlank { defaultName })
+                        },
+                        enabled = saveState !is UiState.Loading
+                    )
+                }
+
+                // 저장 실패 시 에러 메시지
+                if (saveState is UiState.Error) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = saveState.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFE53935)
                     )
                 }
             }

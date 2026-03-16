@@ -51,6 +51,7 @@ import com.d102.wye.presentation.designsystem.WyeCircleIcon
 import com.d102.wye.presentation.simulation.progress.PortfolioItem
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
+import com.d102.wye.presentation.theme.BadgeNeutralFont
 import com.d102.wye.presentation.theme.Border
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -65,6 +66,15 @@ fun PortfolioSection(
     onRemoveClick: (String) -> Unit,
     onWeightChange: (String, Int) -> Unit
 ) {
+    val totalWeight = formState.portfolioItems.sumOf { it.weight }
+
+    // 합계에 따른 색상 분기
+    val badgeColor = when {
+        totalWeight == 100 -> PrimaryGreen
+        totalWeight > 100 -> BadgeNeutralFont
+        else -> IconInactive
+    }
+
     Column(
         modifier = Modifier
             .background(BackGroundLightGreen2)
@@ -81,8 +91,8 @@ fun PortfolioSection(
             val totalWeight = formState.portfolioItems.sumOf { it.weight }
             Box(
                 modifier = Modifier.background(
-                    color = PrimaryGreen,
-                    shape = RoundedCornerShape(12.dp)
+                    color = badgeColor,
+                    shape = RoundedCornerShape(50.dp)
                 ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -140,9 +150,14 @@ fun PortfolioSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(
+                        color = PrimaryGreen.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                     .clickable { onAddClick() }
-                    .padding(vertical = 8.dp), // 클릭 영역 확보
+                    .padding(vertical = 14.dp),
                 horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -154,7 +169,7 @@ fun PortfolioSection(
                 Text(
                     text = "ETF 종목 추가하기",
                     style = MaterialTheme.typography.titleSmall,
-                    color = PrimaryGreen // 텍스트도 초록색으로
+                    color = PrimaryGreen
                 )
             }
         }
@@ -198,7 +213,7 @@ private fun PortfolioSliderItemRow(
             ) {
                 // 좌측 로고
                 WyeCircleIcon(
-                    tag = item.ticker,
+                    tag = item.name,
                     count = 2,
                     size = 40.dp,
                     backgroundColor = SurfaceVariant,
@@ -212,13 +227,13 @@ private fun PortfolioSliderItemRow(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = item.ticker,
+                        text = item.name,
                         color = TextPrimary,
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp),
                         maxLines = 1,
                     )
                     Text(
-                        text = item.name,
+                        text = item.ticker,
                         color = TextSecondary,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,

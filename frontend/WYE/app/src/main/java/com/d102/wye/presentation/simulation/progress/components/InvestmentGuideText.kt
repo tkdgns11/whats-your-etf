@@ -39,7 +39,7 @@ fun InvestmentGuideText(
 
     // 투자 유형에 따른 텍스트 포맷팅
     val annotatedText = buildAnnotatedString {
-        if (type == InvestmentType.INSTALLMENT) {
+        if (type == InvestmentType.REGULAR_SAVING) {
             // [적립형] 매월 00원씩 00개월 동안 총 00원을 투자하게 됩니다.
             val totalAmount = formatter.format(amount * period)
 

@@ -277,7 +277,13 @@ fun AppNavGraph(
 
             SimulationScreen(
                 onBackClick = { navController.popBackStack() },
-                onAddEtfClick = { navController.navigate(Route.SimulationAddStock.route) },
+                onAddEtfClick = { currentTickers ->
+                    // 현재 포트폴리오 tickers를 SimulationAddStock 화면에 전달
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("current_tickers", currentTickers.toTypedArray())
+                    navController.navigate(Route.SimulationAddStock.route)
+                },
                 viewModel = viewModel
             )
         }
@@ -285,15 +291,24 @@ fun AppNavGraph(
         // ─────────────────────────────────────────
         // 시뮬레이션에서 '추가하기'를 눌렀을 때 띄울 탐색 화면
         // ─────────────────────────────────────────
-        composable(Route.SimulationAddStock.route) {
+        composable(Route.SimulationAddStock.route) { backStackEntry ->
+            // 이전 화면(Simulation)에서 넘긴 현재 포트폴리오 tickers
+            val currentTickers = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<Array<String>>("current_tickers")
+                ?.toList()
+                ?: emptyList()
+
             ExploreScreen(
                 title = "종목 추가",
                 isSelectionMode = true,
+                initialSelectedTickers = currentTickers,
                 onBackClick = { navController.popBackStack() },
                 onEtfClick = { ticker, riskLevel ->
                     navController.navigate(Route.EtfDetail(ticker, riskLevel).route)
                 },
                 onSelectionComplete = { tickers ->
+                    // 전체 선택 목록(기존 + 새로 추가) 반환
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("selected_tickers", tickers.toTypedArray())
