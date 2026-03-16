@@ -46,7 +46,7 @@ class CalculateBacktestUseCase @Inject constructor() {
             }
 
         return when (investmentType) {
-            InvestmentType.INSTALLMENT -> calcInstallment(
+            InvestmentType.REGULAR_SAVING -> calcInstallment(
                 portfolios, commonDates, priceMap, investmentAmount, periodMonths
             )
             InvestmentType.LUMP_SUM -> calcLumpSum(

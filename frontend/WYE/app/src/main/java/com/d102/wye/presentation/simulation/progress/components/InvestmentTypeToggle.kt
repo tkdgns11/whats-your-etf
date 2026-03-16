@@ -36,20 +36,20 @@ fun InvestmentTypeToggle(
             .background(SurfaceDivider, RoundedCornerShape(12.dp)),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        val isInstallment = selectedType == InvestmentType.INSTALLMENT
+        val isREGULARSAVING = selectedType == InvestmentType.REGULAR_SAVING
 
         // 적립형 버튼
         ToggleItem(
             text = "적립형",
-            isSelected = isInstallment,
+            isSelected = isREGULARSAVING,
             modifier = Modifier.weight(1f),
-            onClick = { onTypeSelected(InvestmentType.INSTALLMENT) }
+            onClick = { onTypeSelected(InvestmentType.REGULAR_SAVING) }
         )
 
         // 거치형 버튼
         ToggleItem(
             text = "거치형",
-            isSelected = !isInstallment,
+            isSelected = !isREGULARSAVING,
             modifier = Modifier.weight(1f),
             onClick = { onTypeSelected(InvestmentType.LUMP_SUM) }
         )
