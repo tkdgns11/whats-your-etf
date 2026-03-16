@@ -5,8 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
-import com.whatsyouretf.userservice.domain.ai.dto.*;
-import com.whatsyouretf.userservice.domain.ai.entity.*;
+import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewRequest;
+import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewResponse;
+import com.whatsyouretf.userservice.domain.ai.entity.AiPrompt;
+import com.whatsyouretf.userservice.domain.ai.entity.PortfolioAiFeedback;
 import com.whatsyouretf.userservice.domain.ai.repository.AiPromptRepository;
 import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.ai.service.AiFeedbackService;
@@ -15,9 +17,6 @@ import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,33 +75,6 @@ public class AiFeedbackServiceImpl implements AiFeedbackService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 
         return PortfolioReviewResponse.from(result, parseKeywords(result.getKeywords()));
-    }
-
-    @Override
-    public PortfolioReviewResponse getReview(Long userId, Long reviewId) {
-        PortfolioAiFeedback feedback = feedbackRepository.findByIdAndUserId(reviewId, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
-
-        return PortfolioReviewResponse.from(feedback, parseKeywords(feedback.getKeywords()));
-    }
-
-    @Override
-    public ReviewHistoryResponse getReviewHistory(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        Page<PortfolioAiFeedback> feedbackPage = feedbackRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-
-        List<ReviewHistoryResponse.ReviewSummary> reviews = feedbackPage.getContent().stream()
-                .map(feedback -> ReviewHistoryResponse.ReviewSummary.from(
-                        feedback,
-                        parseKeywords(feedback.getKeywords())))
-                .toList();
-
-        return ReviewHistoryResponse.builder()
-                .reviews(reviews)
-                .page(page)
-                .totalPages(feedbackPage.getTotalPages())
-                .totalElements(feedbackPage.getTotalElements())
-                .build();
     }
 
     /**
