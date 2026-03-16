@@ -4,15 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,7 +34,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.R
 import com.d102.wye.presentation.designsystem.WyeTabs
-import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.home.components.HomePortfolioTab
 import com.d102.wye.presentation.home.components.HomeTop10Tab
 import com.d102.wye.presentation.model.UiState
@@ -66,6 +72,7 @@ fun HomeScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
     uiState: UiState<HomeData>,
@@ -83,11 +90,24 @@ private fun HomeScreenContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            WyeTopBar(
-                title = "홈",
+            CenterAlignedTopAppBar(
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_logo),
+                            contentDescription = "로고",
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .height(48.dp)
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = onBookmarkClick) {
                         Icon(
@@ -104,7 +124,10 @@ private fun HomeScreenContent(
                             tint = PrimaryGreen
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
 
             WyeTabs(

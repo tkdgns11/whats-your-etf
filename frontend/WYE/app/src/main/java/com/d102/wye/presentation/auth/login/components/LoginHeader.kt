@@ -44,19 +44,12 @@ fun LoginHeader(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(Modifier.height(20.dp))
+
             Image(
                 painter = painterResource(R.drawable.ic_logo),
-                contentDescription = "로고"
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Text(
-                text = "What's Your ETF",
-                style = MaterialTheme.typography.titleLarge,
-                color = PrimaryGreen,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold
+                contentDescription = "로고",
+                modifier = Modifier.padding(start = 16.dp)
             )
         }
 
