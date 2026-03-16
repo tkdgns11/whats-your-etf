@@ -73,11 +73,7 @@ fun AppNavGraph(
         composable(Route.Join.route) {
             JoinScreen(
                 onBackClick = { navController.popBackStack() },
-                onStartClick = {
-                    navController.navigate(Route.Home.route) {
-                        popUpTo(Route.Login.route) { inclusive = true }
-                    }
-                }
+                onStartClick = {}
             )
         }
 

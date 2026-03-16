@@ -148,8 +148,8 @@ class JoinViewModel @Inject constructor(
         }
     }
 
-    /** 성공 화면에서 시작하기를 누르면 토큰 저장을 확정하고 이동을 실행한다. */
-    fun onStartClick(onComplete: () -> Unit) {
+    /** 성공 화면에서 시작하기를 누르면 토큰 저장을 확정한다. */
+    fun onStartClick() {
         val tokenPair = _uiState.value.pendingTokenPair
         if (tokenPair == null) {
             setError("회원가입 정보를 다시 확인해 주세요.")
@@ -160,7 +160,6 @@ class JoinViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             authRepository.saveAuthTokens(tokenPair)
             _uiState.update { it.copy(isLoading = false) }
-            onComplete()
         }
     }
 
