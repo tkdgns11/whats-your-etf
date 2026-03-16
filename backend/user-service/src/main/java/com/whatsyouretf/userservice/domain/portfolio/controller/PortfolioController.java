@@ -69,4 +69,27 @@ public class PortfolioController {
                         .status(HttpStatus.OK)
                         .body(ApiResponse.success(PortfolioDetail.of(portfolioService.getPortfolio(userDetails.getUserId(), portfolioId))));
         }
+
+        @Operation(summary = "포트폴리오 수정", description = "사용자가 커스텀한 포트폴리오를 수정합니다")
+        @PutMapping
+        public ResponseEntity<ApiResponse<Void>> updatePortfolio(
+            @RequestBody UpdatePortfolioRequest request
+        ) {
+                portfolioService.updatePortfolio(request.portfolioId(), request.name());
+
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(ApiResponse.success("포트폴리오 이름을 수정하였습니다"));
+        }
+
+
+        @Operation(summary = "포트폴리오 수정", description = "사용자가 커스텀한 포트폴리오를 수정합니다")
+        @DeleteMapping("/{portfolioId}")
+        public ResponseEntity<ApiResponse<Void>> deletePortfolio(@PathVariable Long portfolioId) {
+                portfolioService.deletePortfolio(portfolioId);
+
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(ApiResponse.success("포트폴리오를 삭제하였습니다"));
+        }
 }

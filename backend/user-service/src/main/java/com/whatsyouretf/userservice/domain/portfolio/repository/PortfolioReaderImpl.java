@@ -1,5 +1,7 @@
 package com.whatsyouretf.userservice.domain.portfolio.repository;
 
+import com.whatsyouretf.userservice.common.exception.BusinessException;
+import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioReader;
@@ -28,5 +30,10 @@ public class PortfolioReaderImpl implements PortfolioReader {
         @Override
         public List<PortfolioEtf> getPortfolioDetail(Long portfolioId) {
                 return portfolioRepository.findByPortfolioId(portfolioId);
+        }
+
+        @Override
+        public Portfolio getPortfolio(Long portfolioId) {
+                return portfolioRepository.findById(portfolioId).orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
         }
 }

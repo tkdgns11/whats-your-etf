@@ -10,4 +10,6 @@ public interface PortfolioStore {
         void storePortfolioEtfs(Portfolio portfolio, Map<String, Etf> etfs, List<PortfolioCommand> list);
 
         Portfolio storePortfolio(Portfolio portfolio);
+
+        void deletePortfolio(Long portfolioId);
 }

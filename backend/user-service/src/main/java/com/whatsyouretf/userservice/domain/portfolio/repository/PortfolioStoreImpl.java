@@ -32,4 +32,9 @@ public class PortfolioStoreImpl implements PortfolioStore {
         public Portfolio storePortfolio(Portfolio portfolio) {
                 return portfolioRepository.save(portfolio);
         }
+
+        @Override
+        public void deletePortfolio(Long portfolioId) {
+                portfolioRepository.delete(Portfolio.of(portfolioId));
+        }
 }
