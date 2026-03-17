@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.UserRepository
+import com.d102.wye.domain.usecase.user.ValidateNicknameUseCase
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class MyPageViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
+    private val validateNicknameUseCase: ValidateNicknameUseCase,
     // private val etfRepository: EtfRepository
 ) : ViewModel() {
 
@@ -61,7 +63,8 @@ class MyPageViewModel @Inject constructor(
         updateSuccessState { data ->
             data.copy(
                 isNicknameDialogVisible = true,
-                nicknameDraft = data.nickname
+                nicknameDraft = data.nickname,
+                nicknameValidationMessage = null
             )
         }
     }
@@ -72,15 +75,20 @@ class MyPageViewModel @Inject constructor(
             data.copy(
                 isNicknameDialogVisible = false,
                 nicknameDraft = data.nickname,
-                isNicknameSaving = false
+                isNicknameSaving = false,
+                nicknameValidationMessage = null
             )
         }
     }
 
     /** 닉네임 입력 초안을 최대 20자로 제한해 저장한다. */
     fun onNicknameDraftChange(value: String) {
+        val draft = value.take(20)
         updateSuccessState { data ->
-            data.copy(nicknameDraft = value.take(20))
+            data.copy(
+                nicknameDraft = draft,
+                nicknameValidationMessage = validateNicknameDraft(draft)
+            )
         }
     }
 
@@ -102,22 +110,38 @@ class MyPageViewModel @Inject constructor(
     fun saveNickname() {
         val currentState = _uiState.value as? UiState.Success ?: return
         val newNickname = currentState.data.nicknameDraft.trim()
-        if (newNickname.isEmpty()) return
+        val validationMessage = validateNickname(newNickname)
+        if (validationMessage != null) {
+            updateSuccessState { data ->
+                data.copy(nicknameValidationMessage = validationMessage)
+            }
+            return
+        }
 
         viewModelScope.launch {
-            updateSuccessState { data -> data.copy(isNicknameSaving = true) }
-
-            // TODO: userRepository.updateNickname(newNickname)
-            // TODO: 성공 시 서버 응답의 최신 닉네임으로 profile state 갱신
-            // TODO: 실패 시 에러 메시지 스낵바 노출 후 isNicknameSaving 롤백
-
             updateSuccessState { data ->
                 data.copy(
-                    nickname = newNickname,
-                    nicknameDraft = newNickname,
-                    isNicknameDialogVisible = false,
-                    isNicknameSaving = false
+                    isNicknameSaving = true,
+                    nicknameValidationMessage = null
                 )
+            }
+            when (val result = userRepository.updateMyProfile(nickname = newNickname)) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            nickname = result.data.nickname,
+                            nicknameDraft = result.data.nickname,
+                            profileImage = result.data.profileImage,
+                            isNicknameDialogVisible = false,
+                            isNicknameSaving = false,
+                            nicknameValidationMessage = null
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isNicknameSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
             }
         }
     }
@@ -139,6 +163,16 @@ class MyPageViewModel @Inject constructor(
             }
         }
     }
+
+    private fun validateNicknameDraft(nickname: String): String? {
+        if (nickname.isEmpty()) return null
+        return validateNicknameUseCase(nickname.trim())
+    }
+
+    private fun validateNickname(nickname: String): String? = when {
+        nickname.isEmpty() -> null
+        else -> validateNicknameUseCase(nickname)
+    }
 }
 
 data class MyPageHoldingEtfUiModel(
@@ -154,9 +188,11 @@ data class MyPageData(
     val likedEtfCount: Int,
     val holdingEtfs: List<MyPageHoldingEtfUiModel>,
     val isNicknameDialogVisible: Boolean = false,
-    val isNicknameSaving: Boolean = false
+    val isNicknameSaving: Boolean = false,
+    val nicknameValidationMessage: String? = null
 )
 
 sealed interface MyPageEvent {
     data object LogoutSuccess : MyPageEvent
+    data class ShowMessage(val message: String) : MyPageEvent
 }

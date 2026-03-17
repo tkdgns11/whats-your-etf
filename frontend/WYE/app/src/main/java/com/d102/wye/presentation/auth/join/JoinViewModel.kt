@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.repository.AuthRepository
+import com.d102.wye.domain.usecase.user.ValidateNicknameUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class JoinViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val validateNicknameUseCase: ValidateNicknameUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JoinUiState())
@@ -59,12 +61,13 @@ class JoinViewModel @Inject constructor(
         when (current.currentStep) {
             JoinStep.NICKNAME -> {
                 val nickname = current.nickname.trim()
-                // 인증 문서 기준: 닉네임은 2~20자, 한글/영문/숫자만 허용한다.
-                when {
-                    nickname.isBlank() -> setError("닉네임을 입력해 주세요.")
-                    nickname.length !in 2..20 -> setError("닉네임은 2자 이상 20자 이하로 입력해 주세요.")
-                    !NICKNAME_REGEX.matches(nickname) -> setError("닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.")
-                    else -> {
+                if (nickname.isBlank()) {
+                    setError("닉네임을 입력해 주세요.")
+                } else {
+                    val validationMessage = validateNicknameUseCase(nickname)
+                    if (validationMessage != null) {
+                        setError(validationMessage)
+                    } else {
                         _uiState.update {
                             it.copy(
                                 currentStep = JoinStep.EMAIL,
@@ -224,7 +227,6 @@ class JoinViewModel @Inject constructor(
 
     companion object {
         private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
-        private val NICKNAME_REGEX = Regex("^[가-힣A-Za-z0-9]+$")
         private val PASSWORD_REGEX =
             Regex("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,72}$")
     }
