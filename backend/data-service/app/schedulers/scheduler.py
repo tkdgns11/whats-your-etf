@@ -20,10 +20,9 @@ scheduler = AsyncIOScheduler()
 
 
 async def scrape_stock_news_job():
-    """ETF 구성종목 뉴스 크롤링 + AI 분석 (매일 07:00 KST)
+    """ETF 구성종목 뉴스 크롤링 (매일 03:00 KST)
 
-    1. 뉴스 크롤링: 상위 100개 ETF + 사용자 관심 ETF 구성종목
-    2. AI 분석: 미분석 뉴스 자동 처리 (요약, 키워드, ETF 추천)
+    뉴스 크롤링만 수행. AI 분석은 별도 스케줄러에서 실행.
     """
     logger.info("=== 종목뉴스 크롤링 시작 ===")
 
@@ -87,14 +86,27 @@ async def scrape_stock_news_job():
             f"  매핑추가: {total_stats['mapped']}건"
         )
 
-        # AI 분석 자동 실행 (신규 뉴스가 있을 때만)
-        if total_stats["new"] > 0:
-            logger.info("=== AI 뉴스 분석 시작 ===")
-            analyzed = await analyze_unprocessed_news(db, limit=total_stats["new"] + 10)
-            logger.info(f"=== AI 분석 완료: {analyzed}건 처리 ===")
-
     except Exception as e:
         logger.error(f"종목뉴스 크롤링 실패: {e}")
+    finally:
+        db.close()
+
+
+async def news_ai_analysis_job():
+    """뉴스 AI 분석 (매일 07:00, 12:00, 17:00 KST)
+
+    미분석 뉴스를 AI로 분석 (요약, 키워드, ETF 추천)
+    크롤링(03:00)과 분리하여 독립적으로 실행
+    """
+    logger.info("=== AI 뉴스 분석 시작 ===")
+
+    db = SessionLocal()
+
+    try:
+        analyzed = await analyze_unprocessed_news(db, limit=200)
+        logger.info(f"=== AI 분석 완료: {analyzed}건 처리 ===")
+    except Exception as e:
+        logger.error(f"AI 뉴스 분석 실패: {e}")
     finally:
         db.close()
 
@@ -149,15 +161,26 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # ETF 구성종목 뉴스 크롤링 (매일 07:00 KST)
+    # ETF 구성종목 뉴스 크롤링 (매일 03:00 KST)
     # - 상위 100개 ETF + 사용자 관심 ETF + 포트폴리오 ETF 구성종목
     scheduler.add_job(
         scrape_stock_news_job,
-        trigger=CronTrigger(hour=7, minute=0, timezone='Asia/Seoul'),
+        trigger=CronTrigger(hour=3, minute=0, timezone='Asia/Seoul'),
         id="stock_news_scraping",
         name="ETF Stock News Scraping",
         replace_existing=True
     )
+
+    # AI 뉴스 분석 (매일 07:00, 12:00, 17:00 KST)
+    # 크롤링(03:00)과 분리하여 독립적으로 실행
+    for hour in [7, 12, 17]:
+        scheduler.add_job(
+            news_ai_analysis_job,
+            trigger=CronTrigger(hour=hour, minute=0, timezone='Asia/Seoul'),
+            id=f"news_ai_analysis_{hour}",
+            name=f"News AI Analysis ({hour}:00)",
+            replace_existing=True
+        )
 
     # KRX KIND 공시 체크 - 비활성화 (크롤러 문제 해결 후 활성화)
     # scheduler.add_job(
@@ -171,6 +194,7 @@ def start_scheduler():
     scheduler.start()
     logger.info(
         f"스케줄러 시작:\n"
+        f"  - ETF 구성종목 뉴스: 매일 03:00 KST\n"
         f"  - ETF 동기화: 매일 05:00 KST\n"
-        f"  - ETF 구성종목 뉴스: 매일 07:00 KST"
+        f"  - AI 뉴스 분석: 매일 07:00, 12:00, 17:00 KST"
     )
