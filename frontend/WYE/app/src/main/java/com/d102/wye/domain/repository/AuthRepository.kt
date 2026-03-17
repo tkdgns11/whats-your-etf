@@ -12,6 +12,9 @@ interface AuthRepository {
     /** 회원가입 전 이메일 사용 가능 여부를 확인한다. */
     suspend fun checkEmailAvailability(email: String): BaseResult<Boolean>
 
+    /** 가입된 이메일인지 확인한다. */
+    suspend fun checkEmailExists(email: String): BaseResult<Boolean>
+
     /** 비밀번호 재설정 메일 발송을 요청한다. */
     suspend fun requestPasswordReset(email: String): BaseResult<Unit>
 
