@@ -1,5 +1,6 @@
 package com.d102.wye.data.repository
 
+import com.d102.wye.core.app.Constants
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
@@ -27,7 +28,10 @@ abstract class BaseRepository {
     /** HTTP 에러 응답의 BaseResponse message/code를 읽어 인증 에러 메시지를 그대로 노출한다. */
     private fun parseErrorResponse(response: Response<*>): ApiError {
         val fallbackCode = response.code()
-        val fallbackMessage = "서버 오류: ${response.message()}"
+        val fallbackMessage = when (fallbackCode) {
+            401, 403 -> Constants.ERROR_SESSION_EXPIRED
+            else -> "서버 오류: ${response.message()}"
+        }
 
         return try {
             val errorBody = response.errorBody()?.string()

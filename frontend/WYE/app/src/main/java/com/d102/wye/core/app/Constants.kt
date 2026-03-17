@@ -15,6 +15,7 @@ object Constants {
     const val KEY_REFRESH_TOKEN = "refresh_token"
     const val KEY_USER_ID = "user_id"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
+    const val KEY_SESSION_EXPIRED = "session_expired"
 
     // Database
     const val DATABASE_NAME = "wye_db"

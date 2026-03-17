@@ -2,7 +2,10 @@ package com.d102.wye.presentation.mypage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.repository.AuthRepository
+import com.d102.wye.domain.repository.UserRepository
+import com.d102.wye.domain.usecase.user.ValidateNicknameUseCase
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,8 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    // TODO: Repository 주입
-    // private val userRepository: UserRepository,
+    private val userRepository: UserRepository,
+    private val validateNicknameUseCase: ValidateNicknameUseCase,
     // private val etfRepository: EtfRepository
 ) : ViewModel() {
 
@@ -35,16 +38,23 @@ class MyPageViewModel @Inject constructor(
     fun loadMyPageData() {
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-
-            // TODO: 유저 정보 + 관심 ETF + 보유 ETF 로드
-            // TODO: coroutineScope {
-            // TODO:   val profileDeferred = async { userRepository.getMyProfile() }
-            // TODO:   val likedDeferred = async { etfRepository.getLikedEtfList().first() }
-            // TODO:   val holdingDeferred = async { userRepository.getMyHoldingEtfs() }
-            // TODO:   _uiState.update { UiState.Success(...) }
-            // TODO: }
-
-            _uiState.update { UiState.Success(mockMyPageData()) }
+            when (val result = userRepository.getMyProfile()) {
+                is BaseResult.Success -> {
+                    // users/me만 먼저 연결하므로 관심 ETF 수와 보유 ETF는 후속 API 연동 전까지 기본값을 쓴다.
+                    _uiState.update {
+                        UiState.Success(
+                            MyPageData(
+                                nickname = result.data.nickname,
+                                nicknameDraft = result.data.nickname,
+                                profileImage = result.data.profileImage,
+                                likedEtfCount = 0,
+                                holdingEtfs = emptyList()
+                            )
+                        )
+                    }
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
         }
     }
 
@@ -53,7 +63,8 @@ class MyPageViewModel @Inject constructor(
         updateSuccessState { data ->
             data.copy(
                 isNicknameDialogVisible = true,
-                nicknameDraft = data.nickname
+                nicknameDraft = data.nickname,
+                nicknameValidationMessage = null
             )
         }
     }
@@ -64,15 +75,20 @@ class MyPageViewModel @Inject constructor(
             data.copy(
                 isNicknameDialogVisible = false,
                 nicknameDraft = data.nickname,
-                isNicknameSaving = false
+                isNicknameSaving = false,
+                nicknameValidationMessage = null
             )
         }
     }
 
     /** 닉네임 입력 초안을 최대 20자로 제한해 저장한다. */
     fun onNicknameDraftChange(value: String) {
+        val draft = value.take(20)
         updateSuccessState { data ->
-            data.copy(nicknameDraft = value.take(20))
+            data.copy(
+                nicknameDraft = draft,
+                nicknameValidationMessage = validateNicknameDraft(draft)
+            )
         }
     }
 
@@ -81,12 +97,47 @@ class MyPageViewModel @Inject constructor(
         if (imageUri.isBlank()) return
 
         viewModelScope.launch {
-            updateSuccessState { data -> data.copy(profileImage = imageUri) }
+            updateSuccessState { data ->
+                data.copy(isProfileImageSaving = true)
+            }
 
-            // TODO: userRepository.updateProfileImage(imageUri)
-            // TODO: 업로드용 multipart/file 변환은 data 레이어에서 처리
-            // TODO: 성공 시 서버가 내려준 최신 profileImageUrl로 다시 갱신
-            // TODO: 실패 시 기존 이미지로 롤백하고 에러 스낵바 노출
+            when (val result = userRepository.uploadProfileImage(imageUri)) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            profileImage = result.data.profileImage,
+                            isProfileImageSaving = false
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isProfileImageSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
+            }
+        }
+    }
+
+    fun deleteProfileImage() {
+        viewModelScope.launch {
+            updateSuccessState { data ->
+                data.copy(isProfileImageSaving = true)
+            }
+
+            when (val result = userRepository.deleteProfileImage()) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            profileImage = result.data.profileImage,
+                            isProfileImageSaving = false
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isProfileImageSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
+            }
         }
     }
 
@@ -94,22 +145,38 @@ class MyPageViewModel @Inject constructor(
     fun saveNickname() {
         val currentState = _uiState.value as? UiState.Success ?: return
         val newNickname = currentState.data.nicknameDraft.trim()
-        if (newNickname.isEmpty()) return
+        val validationMessage = validateNickname(newNickname)
+        if (validationMessage != null) {
+            updateSuccessState { data ->
+                data.copy(nicknameValidationMessage = validationMessage)
+            }
+            return
+        }
 
         viewModelScope.launch {
-            updateSuccessState { data -> data.copy(isNicknameSaving = true) }
-
-            // TODO: userRepository.updateNickname(newNickname)
-            // TODO: 성공 시 서버 응답의 최신 닉네임으로 profile state 갱신
-            // TODO: 실패 시 에러 메시지 스낵바 노출 후 isNicknameSaving 롤백
-
             updateSuccessState { data ->
                 data.copy(
-                    nickname = newNickname,
-                    nicknameDraft = newNickname,
-                    isNicknameDialogVisible = false,
-                    isNicknameSaving = false
+                    isNicknameSaving = true,
+                    nicknameValidationMessage = null
                 )
+            }
+            when (val result = userRepository.updateMyProfile(nickname = newNickname)) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            nickname = result.data.nickname,
+                            nicknameDraft = result.data.nickname,
+                            profileImage = result.data.profileImage,
+                            isNicknameDialogVisible = false,
+                            isNicknameSaving = false,
+                            nicknameValidationMessage = null
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isNicknameSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
             }
         }
     }
@@ -132,14 +199,15 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
-    /** 서버 없이 마이페이지를 보여주기 위한 임시 데이터를 만든다. */
-    private fun mockMyPageData(): MyPageData = MyPageData(
-        nickname = "레전드투자자",
-        nicknameDraft = "레전드투자자",
-        profileImage = null,
-        likedEtfCount = 12,
-        holdingEtfs = emptyList() // 보유 ETF 없는 상태 UI
-    )
+    private fun validateNicknameDraft(nickname: String): String? {
+        if (nickname.isEmpty()) return null
+        return validateNicknameUseCase(nickname.trim())
+    }
+
+    private fun validateNickname(nickname: String): String? = when {
+        nickname.isEmpty() -> null
+        else -> validateNicknameUseCase(nickname)
+    }
 }
 
 data class MyPageHoldingEtfUiModel(
@@ -155,9 +223,12 @@ data class MyPageData(
     val likedEtfCount: Int,
     val holdingEtfs: List<MyPageHoldingEtfUiModel>,
     val isNicknameDialogVisible: Boolean = false,
-    val isNicknameSaving: Boolean = false
+    val isNicknameSaving: Boolean = false,
+    val nicknameValidationMessage: String? = null,
+    val isProfileImageSaving: Boolean = false
 )
 
 sealed interface MyPageEvent {
     data object LogoutSuccess : MyPageEvent
+    data class ShowMessage(val message: String) : MyPageEvent
 }
