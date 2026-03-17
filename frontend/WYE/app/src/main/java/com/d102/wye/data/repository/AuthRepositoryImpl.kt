@@ -29,6 +29,17 @@ class AuthRepositoryImpl @Inject constructor(
     // 로그인
     // ─────────────────────────────────────────
 
+    override suspend fun checkEmailAvailability(email: String): BaseResult<Boolean> {
+        return when (
+            val result = safeApiCall {
+                authApiService.checkEmailAvailability(email = email)
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(result.data.available)
+            is BaseResult.Error -> result
+        }
+    }
+
     /** 비밀번호 재설정 이메일 발송 요청을 보낸다. */
     override suspend fun requestPasswordReset(email: String): BaseResult<Unit> {
         return safeApiCallWithoutData {

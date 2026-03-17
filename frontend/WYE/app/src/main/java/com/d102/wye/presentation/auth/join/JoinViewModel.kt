@@ -80,10 +80,11 @@ class JoinViewModel @Inject constructor(
             }
 
             JoinStep.EMAIL -> {
-                if (!EMAIL_REGEX.matches(current.email.trim())) {
+                val email = current.email.trim()
+                if (!EMAIL_REGEX.matches(email)) {
                     setError("올바른 이메일 형식을 입력해 주세요.")
                 } else {
-                    _uiState.update { it.copy(currentStep = JoinStep.PASSWORD, email = current.email.trim(), errorMessage = null) }
+                    checkEmailAvailability(email)
                 }
             }
 
@@ -192,6 +193,30 @@ class JoinViewModel @Inject constructor(
                             helperMessage = "인증번호 재전송",
                             errorMessage = null
                         )
+                    }
+                }
+                is BaseResult.Error -> setError(result.error.message)
+            }
+        }
+    }
+
+    /** 이메일 중복 여부를 확인하고 사용 가능할 때만 비밀번호 단계로 이동한다. */
+    private fun checkEmailAvailability(email: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = authRepository.checkEmailAvailability(email)) {
+                is BaseResult.Success -> {
+                    if (result.data) {
+                        _uiState.update {
+                            it.copy(
+                                currentStep = JoinStep.PASSWORD,
+                                email = email,
+                                isLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    } else {
+                        setError("이미 존재하는 이메일입니다.")
                     }
                 }
                 is BaseResult.Error -> setError(result.error.message)
