@@ -74,19 +74,6 @@ public class NewsController {
     }
 
     /**
-     * 종목 관련 뉴스 조회
-     */
-    @Operation(summary = "종목 뉴스 조회", description = "특정 종목의 뉴스를 조회합니다.")
-    @GetMapping("/stock/{stockCode}")
-    public ResponseEntity<ApiResponse<StockNewsResponse>> getStockNews(
-            @Parameter(description = "종목 코드 (6자리)") @PathVariable String stockCode,
-            @Parameter(description = "조회 개수 (최대 50)") @RequestParam(defaultValue = "10") int size
-    ) {
-        StockNewsResponse response = newsService.getStockNews(stockCode, size);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
      * 포트폴리오 관련 뉴스 조회
      */
     @Operation(summary = "포트폴리오 뉴스 조회", description = "포트폴리오 구성 ETF의 종목 관련 뉴스를 조회합니다. 매일 오전 9시 갱신됩니다.")

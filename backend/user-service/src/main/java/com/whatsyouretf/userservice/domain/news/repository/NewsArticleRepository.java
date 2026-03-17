@@ -78,31 +78,37 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     boolean existsBySourceUrl(String sourceUrl);
 
     /**
-     * 포트폴리오 관련 뉴스 조회 (포트폴리오 구성 ETF들의 종목 뉴스)
-     * - portfolio_etf JOIN etf JOIN etf_stock_composition JOIN stock JOIN news_stock_mapping
-     * <p>
-     * 2단계 처리:
-     * 1. 스코어로 상위 N개 선택: score = relevance × recency_multiplier
-     *    - relevance = MAX(portfolio_etf.weight_pct × etf_stock.weight_pct)
-     *    - recency_multiplier = 1 / (1 + 경과일수 × 0.3)
-     * 2. 선택된 뉴스를 최신순(published_at DESC)으로 정렬하여 반환
+     * 포트폴리오 관련 뉴스 조회 (투자금액 × 종목비중 × 최신성으로 점수 계산)
+     * - etf_prices의 최신 종가 사용
+     * - 최신성: 1 / (1 + 경과일수 × 0.3)
+     * - 점수 높은 순으로 상위 N개 반환
      */
     @Query(value = """
-            SELECT * FROM (
-                SELECT n.* FROM news_article n
-                JOIN news_stock_mapping nsm ON nsm.news_id = n.id
-                JOIN stock s ON s.company_id = nsm.company_id
-                JOIN etf_stock_composition ec ON ec.stock_id = s.id
-                JOIN portfolio_etf pe ON pe.etf_id = ec.etf_id
-                WHERE pe.portfolio_id = :portfolioId AND n.is_active = true AND n.content_summary IS NOT NULL
-                GROUP BY n.id
-                ORDER BY (
-                    MAX(pe.weight_pct * ec.weight_pct) *
-                    (1.0 / (1.0 + EXTRACT(EPOCH FROM (NOW() - n.published_at)) / 86400.0 * 0.3))
-                ) DESC
-                LIMIT :limit
-            ) AS top_news
-            ORDER BY published_at DESC
+            WITH latest_prices AS (
+                SELECT DISTINCT ON (etf_id) etf_id, close
+                FROM etf_prices
+                ORDER BY etf_id, trade_date DESC
+            )
+            SELECT n.id as newsId,
+                   MAX(pe.etf_count * lp.close * ec.weight_pct * (1.0 / (1 + EXTRACT(EPOCH FROM (NOW() - n.published_at)) / 86400 * 0.3))) as relevanceScore
+            FROM news_article n
+            JOIN news_stock_mapping nsm ON nsm.news_id = n.id
+            JOIN stock s ON s.company_id = nsm.company_id
+            JOIN etf_stock_composition ec ON ec.stock_id = s.id
+            JOIN portfolio_etf pe ON pe.etf_id = ec.etf_id
+            JOIN latest_prices lp ON lp.etf_id = pe.etf_id
+            WHERE pe.portfolio_id = :portfolioId AND n.is_active = true AND n.content_summary IS NOT NULL
+            GROUP BY n.id
+            ORDER BY relevanceScore DESC
+            LIMIT :limit
             """, nativeQuery = true)
-    List<NewsArticle> findByPortfolioId(@Param("portfolioId") Long portfolioId, @Param("limit") int limit);
+    List<PortfolioNewsProjection> findPortfolioNewsByRelevance(@Param("portfolioId") Long portfolioId, @Param("limit") int limit);
+
+    /**
+     * 포트폴리오 뉴스 Projection
+     */
+    interface PortfolioNewsProjection {
+        Long getNewsId();
+        java.math.BigDecimal getRelevanceScore();
+    }
 }

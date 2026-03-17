@@ -41,15 +41,6 @@ public interface NewsService {
     EtfNewsResponse getEtfNews(Long etfId, int size);
 
     /**
-     * 종목 관련 뉴스 조회
-     *
-     * @param ticker 종목 코드 (티커)
-     * @param size   조회 개수
-     * @return 종목 뉴스 응답
-     */
-    StockNewsResponse getStockNews(String ticker, int size);
-
-    /**
      * 포트폴리오 관련 뉴스 조회
      * <p>
      * 포트폴리오 구성 ETF의 종목들과 관련된 최신 뉴스 5개를 반환합니다.
