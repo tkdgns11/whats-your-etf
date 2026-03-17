@@ -1,8 +1,8 @@
-package com.whatsyouretf.userservice.domain.company.controller;
+package com.whatsyouretf.userservice.domain.company.service;
 
 import java.math.BigDecimal;
 
-public record StockEtfResponse(
+public record EtfIncludesStock(
     String etfName,
     String manager,
     String ticker,

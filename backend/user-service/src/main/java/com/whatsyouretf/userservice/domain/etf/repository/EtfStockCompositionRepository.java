@@ -64,4 +64,12 @@ public interface EtfStockCompositionRepository extends JpaRepository<EtfStockCom
             @Param("ticker") String ticker,
             @Param("groupCode") String groupCode
     );
+
+    @Query("""
+        SELECT esc FROM EtfStockComposition esc
+        JOIN FETCH esc.stock s
+        JOIN FETCH esc.etf e
+        WHERE esc.stock.ticker = :ticker
+    """)
+    List<EtfStockComposition> getEtfStockCompositionByStockTicker(@Param("ticker") String ticker);
 }

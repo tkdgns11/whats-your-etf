@@ -3,13 +3,18 @@ package com.whatsyouretf.userservice.domain.company.controller;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.company.dto.RelatedStockResponse;
 import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
+import com.whatsyouretf.userservice.domain.company.service.EtfIncludesStock;
+import com.whatsyouretf.userservice.domain.company.service.StockFacade;
 import com.whatsyouretf.userservice.domain.company.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -23,6 +28,7 @@ import java.util.List;
 public class StockController {
 
     private final StockService stockService;
+    private final StockFacade stockFacade;
 
     /**
      * 종목 태그 조회
@@ -57,12 +63,12 @@ public class StockController {
             ApiResponse.success(stockService.getStockInfo(ticker)));
     }
 
-//    @Operation(summary = "주식 종목 포함 etf 조회", description = "주식이 포함된 etf를 조회합니다.")
-//    @GetMapping("/{ticker}/etfs")
-//    public ResponseEntity<ApiResponse<List<StockEtfResponse>>> getStockEtfs(
-//        @Parameter(description = "종목 티커 (6자리)") @PathVariable String ticker
-//    ) {
-//        return ResponseEntity.ok(
-//            ApiResponse.success(ticker));
-//    }
+    @Operation(summary = "주식 종목 포함 etf 조회", description = "주식이 포함된 etf를 조회합니다.")
+    @GetMapping("/{ticker}/etfs")
+    public ResponseEntity<ApiResponse<List<EtfIncludesStock>>> getStockEtfs(
+        @Parameter(description = "종목 티커 (6자리)") @PathVariable String ticker
+    ) {
+        return ResponseEntity
+                .ok(ApiResponse.success(stockFacade.getIncludingStock(ticker)));
+    }
 }
