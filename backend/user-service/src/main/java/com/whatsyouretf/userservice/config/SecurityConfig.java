@@ -48,6 +48,8 @@ public class SecurityConfig {
             "/api/v1/news/**",
             // ETF (공개 API)
             "/api/v1/etfs/**",
+            // Stock (공개 API)
+            "/api/v1/stocks/**",
             // Static
             "/error"
     };
