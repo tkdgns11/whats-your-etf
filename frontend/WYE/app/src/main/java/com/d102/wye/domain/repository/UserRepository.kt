@@ -13,4 +13,10 @@ interface UserRepository {
         nickname: String? = null,
         profileImage: String? = null
     ): BaseResult<UserProfile>
+
+    /** 프로필 이미지를 업로드하고 최신 프로필을 반환한다. */
+    suspend fun uploadProfileImage(imageUri: String): BaseResult<UserProfile>
+
+    /** 프로필 이미지를 삭제하고 최신 프로필을 반환한다. */
+    suspend fun deleteProfileImage(): BaseResult<UserProfile>
 }

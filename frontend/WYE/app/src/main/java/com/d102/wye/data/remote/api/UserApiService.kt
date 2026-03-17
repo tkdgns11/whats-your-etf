@@ -2,10 +2,15 @@ package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.UserProfileResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.Part
 import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
 
 interface UserApiService {
@@ -19,4 +24,15 @@ interface UserApiService {
     suspend fun updateMyProfile(
         @Body request: UpdateUserProfileRequest
     ): Response<BaseResponse<UserProfileResponse>>
+
+    /** multipart로 프로필 이미지를 업로드한다. */
+    @Multipart
+    @POST("users/me/profile-image")
+    suspend fun uploadProfileImage(
+        @Part file: MultipartBody.Part
+    ): Response<BaseResponse<String>>
+
+    /** 서버에 저장된 프로필 이미지를 삭제한다. */
+    @DELETE("users/me/profile-image")
+    suspend fun deleteProfileImage(): Response<BaseResponse<Unit>>
 }

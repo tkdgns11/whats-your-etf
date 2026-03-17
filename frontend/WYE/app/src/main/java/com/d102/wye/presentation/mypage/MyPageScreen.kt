@@ -86,7 +86,8 @@ fun MyPageScreen(
         onNicknameDraftChange = { viewModel.onNicknameDraftChange(it) },
         onNicknameEditDismiss = { viewModel.dismissNicknameEditDialog() },
         onNicknameSave = { viewModel.saveNickname() },
-        onProfileImageEditClick = {
+        onProfileImageDelete = { viewModel.deleteProfileImage() },
+        onProfileImageChange = {
             photoPickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
@@ -111,7 +112,8 @@ private fun MyPageScreenContent(
     onNicknameDraftChange: (String) -> Unit,
     onNicknameEditDismiss: () -> Unit,
     onNicknameSave: () -> Unit,
-    onProfileImageEditClick: () -> Unit
+    onProfileImageDelete: () -> Unit,
+    onProfileImageChange: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -135,7 +137,8 @@ private fun MyPageScreenContent(
                                 MyPageProfileHeader(
                                     nickname = uiState.data.nickname,
                                     profileImage = uiState.data.profileImage,
-                                    onProfileImageEditClick = onProfileImageEditClick
+                                    onProfileImageChangeClick = onProfileImageChange,
+                                    onProfileImageDeleteClick = onProfileImageDelete
                                 )
                             }
                         }

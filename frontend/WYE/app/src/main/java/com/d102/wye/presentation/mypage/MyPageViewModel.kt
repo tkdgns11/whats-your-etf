@@ -97,12 +97,47 @@ class MyPageViewModel @Inject constructor(
         if (imageUri.isBlank()) return
 
         viewModelScope.launch {
-            updateSuccessState { data -> data.copy(profileImage = imageUri) }
+            updateSuccessState { data ->
+                data.copy(isProfileImageSaving = true)
+            }
 
-            // TODO: userRepository.updateProfileImage(imageUri)
-            // TODO: 업로드용 multipart/file 변환은 data 레이어에서 처리
-            // TODO: 성공 시 서버가 내려준 최신 profileImageUrl로 다시 갱신
-            // TODO: 실패 시 기존 이미지로 롤백하고 에러 스낵바 노출
+            when (val result = userRepository.uploadProfileImage(imageUri)) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            profileImage = result.data.profileImage,
+                            isProfileImageSaving = false
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isProfileImageSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
+            }
+        }
+    }
+
+    fun deleteProfileImage() {
+        viewModelScope.launch {
+            updateSuccessState { data ->
+                data.copy(isProfileImageSaving = true)
+            }
+
+            when (val result = userRepository.deleteProfileImage()) {
+                is BaseResult.Success -> {
+                    updateSuccessState { data ->
+                        data.copy(
+                            profileImage = result.data.profileImage,
+                            isProfileImageSaving = false
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    updateSuccessState { data -> data.copy(isProfileImageSaving = false) }
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
+            }
         }
     }
 
@@ -189,7 +224,8 @@ data class MyPageData(
     val holdingEtfs: List<MyPageHoldingEtfUiModel>,
     val isNicknameDialogVisible: Boolean = false,
     val isNicknameSaving: Boolean = false,
-    val nicknameValidationMessage: String? = null
+    val nicknameValidationMessage: String? = null,
+    val isProfileImageSaving: Boolean = false
 )
 
 sealed interface MyPageEvent {
