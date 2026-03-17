@@ -10,6 +10,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository.PortfolioNewsProjection;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
@@ -26,8 +27,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -203,12 +204,6 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
     }
 
-    // TODO: 팀원이 etf/company repository 구현 후 활성화
-    @Override
-    public StockNewsResponse getStockNews(String ticker, int size) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
-    }
-
     @Override
     @Cacheable(value = "portfolioNews", key = "#portfolioId")
     public PortfolioNewsResponse getPortfolioNews(Long portfolioId) {
@@ -216,8 +211,27 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
-        // 포트폴리오 관련 뉴스 조회 (관련성 높은 순 + 최신 5개)
-        List<NewsArticle> articles = newsArticleRepository.findByPortfolioId(portfolioId, MAX_PORTFOLIO_NEWS);
+        // 관련성 높은 뉴스 ID 조회 (전일 종가 × ETF 수량 × 종목비중 기준)
+        List<PortfolioNewsProjection> projections = newsArticleRepository.findPortfolioNewsByRelevance(portfolioId, MAX_PORTFOLIO_NEWS);
+
+        if (projections.isEmpty()) {
+            return PortfolioNewsResponse.builder()
+                    .portfolioId(portfolio.getId())
+                    .portfolioName(portfolio.getName())
+                    .news(List.of())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 뉴스 ID 목록 추출
+        List<Long> newsIds = projections.stream()
+                .map(PortfolioNewsProjection::getNewsId)
+                .toList();
+
+        // 뉴스 조회 및 최신순 정렬
+        List<NewsArticle> articles = newsArticleRepository.findAllById(newsIds).stream()
+                .sorted(Comparator.comparing(NewsArticle::getPublishedAt).reversed())
+                .toList();
 
         // DTO 변환
         List<PortfolioNewsResponse.PortfolioNewsItem> newsItems = articles.stream()
@@ -232,9 +246,9 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                 .toList();
 
         // 오늘 오전 9시 기준 시각 계산
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime todayNineAm = now.toLocalDate().atTime(9, 0);
-        java.time.LocalDateTime updatedAt = now.isBefore(todayNineAm)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayNineAm = now.toLocalDate().atTime(9, 0);
+        LocalDateTime updatedAt = now.isBefore(todayNineAm)
                 ? todayNineAm.minusDays(1)
                 : todayNineAm;
 
