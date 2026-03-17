@@ -11,8 +11,9 @@
 | 01 | [인증.md](01_인증.md) | LoginScreen | 2개 |
 | 02 | [뉴스.md](02_뉴스.md) | NewsListScreen, NewsDetailScreen, PortfolioDetailScreen | 4개 |
 | 03 | [ETF_클러스터.md](03_ETF_클러스터.md) | EtfDetailScreen, ClusterTab | 1개 |
-| 04 | [AI_포트폴리오_진단.md](04_AI_포트폴리오_진단.md) | AiDiagnosisDialog | 3개 |
+| 04 | [AI_포트폴리오_진단.md](04_AI_포트폴리오_진단.md) | AiDiagnosisDialog | 1개 |
 | 05 | [알림.md](05_알림.md) | NotificationScreen, NotificationSettingsScreen | 5개 |
+| 07 | [종목.md](07_종목.md) | StockDetailScreen | 2개 |
 
 ---
 
@@ -43,8 +44,12 @@
 | Method | Endpoint | 설명 | 백엔드 | 안드로이드 |
 |--------|----------|------|:------:|:----------:|
 | POST | `/api/v1/ai/portfolio/review` | 포트폴리오 진단 | O | X |
-| GET | `/api/v1/ai/portfolio/review/{reviewId}` | 리뷰 결과 조회 | O | X |
-| GET | `/api/v1/ai/portfolio/reviews` | 리뷰 히스토리 | O | X |
+
+### 종목
+| Method | Endpoint | 설명 | 백엔드 | 안드로이드 |
+|--------|----------|------|:------:|:----------:|
+| GET | `/api/v1/stocks/{ticker}/tags` | 종목 태그 | O | X |
+| GET | `/api/v1/stocks/{ticker}/related` | 관련 종목 | O | X |
 
 ### 알림
 | Method | Endpoint | 설명 | 백엔드 | 안드로이드 |
@@ -65,6 +70,7 @@
 - [x] 뉴스 목록/상세/검색 API (relatedEtfs 포함)
 - [x] ETF 상세 API (클러스터 + 영향력 종목)
 - [x] AI 포트폴리오 진단 API
+- [x] 종목 태그/관련 종목 API
 
 ### 안드로이드 (WYE)
 - [ ] 카카오 로그인 연동
@@ -72,6 +78,7 @@
 - [ ] 뉴스 API 서비스/DTO
 - [x] ETF API 서비스/DTO (경로 수정 필요)
 - [ ] AI API 서비스/DTO
+- [ ] 종목 API 서비스/DTO
 
 ---
 

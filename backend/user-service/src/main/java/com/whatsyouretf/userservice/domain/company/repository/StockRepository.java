@@ -45,4 +45,24 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
      * 회사 ID 목록으로 주식 목록 조회 (배치)
      */
     List<Stock> findByCompanyIdIn(List<Long> companyIds);
+
+    /**
+     * 같은 산업 그룹의 관련 종목 조회 (자기 자신 제외, 상위 N개)
+     * industry_classification 테이블의 group_name 기준
+     */
+    @Query("""
+        SELECT s FROM Stock s
+        JOIN FETCH s.company c
+        JOIN IndustryClassification ic ON c.industryCode = ic.code
+        JOIN IndustryClassification ic2 ON ic2.code = :industryCode
+        WHERE ic.groupName = ic2.groupName
+        AND s.ticker != :excludeTicker
+        AND s.isActive = true
+        ORDER BY c.listedShares DESC
+        """)
+    List<Stock> findRelatedStocksByIndustryCode(
+            @Param("industryCode") String industryCode,
+            @Param("excludeTicker") String excludeTicker,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

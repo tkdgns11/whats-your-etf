@@ -65,6 +65,9 @@ public enum ErrorCode {
     ETF_COMPOSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF003", "ETF 구성종목 정보를 찾을 수 없습니다."),
     SECTOR_CLUSTER_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF004", "섹터 클러스터 정보를 찾을 수 없습니다."),
 
+    // Stock
+    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "STOCK001", "종목을 찾을 수 없습니다."),
+
     // Portfolio
     PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "PORTFOLIO001", "포트폴리오를 찾을 수 없습니다."),
     PORTFOLIO_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PORTFOLIO002", "포트폴리오 접근 권한이 없습니다."),
