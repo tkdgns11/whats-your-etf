@@ -10,12 +10,15 @@ import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.EmailCheckResponse
 import com.d102.wye.data.remote.dto.response.PasswordResetVerifyResponse
 import com.d102.wye.data.remote.dto.response.SignupResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 /**
  * 인증 관련 Retrofit API 인터페이스
@@ -31,6 +34,12 @@ import retrofit2.http.POST
  *   - T                   : 실제 데이터 타입
  */
 interface AuthApiService {
+
+    /** 회원가입 전 이메일 중복 여부를 확인한다. */
+    @GET("auth/check/email")
+    suspend fun checkEmailAvailability(
+        @Query("email") email: String
+    ): Response<BaseResponse<EmailCheckResponse>>
 
     /**
      * 이메일 로그인

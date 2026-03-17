@@ -19,6 +19,7 @@ class AuthTokenInterceptor @Inject constructor(
         // 토큰이 필요 없는 URL 패턴 (로그인, 회원가입, 이메일 인증 등)
         // 서버 API 확정되면 실제 경로로 교체
         private val PUBLIC_URLS = listOf(
+            "/auth/check/email",
             "/auth/login",
             "/auth/signup",
             "/auth/password"

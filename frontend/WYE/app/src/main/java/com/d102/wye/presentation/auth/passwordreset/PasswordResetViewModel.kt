@@ -63,7 +63,7 @@ class PasswordResetViewModel @Inject constructor(
                 if (!EMAIL_REGEX.matches(email)) {
                     setError("올바른 이메일 형식을 입력해 주세요.")
                 } else {
-                    requestPasswordReset(email)
+                    checkPasswordResetEmail(email)
                 }
             }
 
@@ -127,6 +127,23 @@ class PasswordResetViewModel @Inject constructor(
     /** 화면에 표시할 에러 메시지를 저장하고 로딩 상태를 해제한다. */
     private fun setError(message: String) {
         _uiState.update { it.copy(isLoading = false, errorMessage = message) }
+    }
+
+    /** 가입된 이메일일 때만 비밀번호 재설정 메일 요청을 진행한다. */
+    private fun checkPasswordResetEmail(email: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = authRepository.checkEmailExists(email)) {
+                is BaseResult.Success -> {
+                    if (result.data) {
+                        requestPasswordReset(email)
+                    } else {
+                        setError("아이디를 찾을 수 없습니다.")
+                    }
+                }
+                is BaseResult.Error -> setError(result.error.message)
+            }
+        }
     }
 
     /** 비밀번호 재설정 메일을 요청하고 인증번호 입력 단계로 이동한다. */
