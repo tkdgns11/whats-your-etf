@@ -4,9 +4,66 @@
 
 ---
 
-## GET /api/v1/etf/{ticker}
+## 코드값 정의
 
-ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
+### 위험등급 (riskLevel)
+
+ETF의 투자 위험도를 1~5 단계로 나타냅니다. 금융투자협회 기준에 따라 분류됩니다.
+
+| riskLevel | 표시 텍스트 | 색상 | 설명 | 투자 성향 |
+|-----------|------------|------|------|----------|
+| `1` | 안정형 | Blue (#2196F3) | 원금 손실 가능성 매우 낮음 | 예금 대안, 안정 추구 |
+| `2` | 안정추구형 | Teal (#009688) | 원금 손실 가능성 낮음 | 채권형, 안정 수익 추구 |
+| `3` | 위험중립형 | Yellow (#FFC107) | 원금 손실 가능성 보통 | 혼합형, 균형 투자 |
+| `4` | 적극투자형 | Orange (#FF9800) | 원금 손실 가능성 높음 | 주식형, 성장 추구 |
+| `5` | 공격투자형 | Red (#F44336) | 원금 손실 가능성 매우 높음 | 레버리지/인버스, 고수익 추구 |
+
+### 변동성 (volatility)
+
+1년 기준 ETF 가격 변동 정도를 나타냅니다.
+
+| volatility | 설명 | 기준 (연간 표준편차) |
+|------------|------|---------------------|
+| `매우 낮음` | 가격 변동이 거의 없음 | < 5% |
+| `낮음` | 가격 변동이 적음 | 5% ~ 10% |
+| `보통` | 일반적인 변동 수준 | 10% ~ 20% |
+| `높음` | 가격 변동이 큼 | 20% ~ 30% |
+| `매우 높음` | 가격 변동이 매우 큼 | > 30% |
+
+### 섹터명 & 아이콘 매핑
+
+ETF 구성종목의 산업 섹터를 분류합니다. 클러스터 버블 차트에서 사용됩니다.
+
+| 섹터명 | 영문명 | Material Icon | 설명 |
+|--------|--------|---------------|------|
+| 반도체 | Semiconductor | `Memory` | 메모리, 시스템반도체, 장비 |
+| 금융 | Finance | `AccountBalance` | 은행, 증권, 보험, 카드 |
+| 헬스케어/바이오 | Healthcare | `LocalHospital` | 제약, 바이오, 의료기기 |
+| 에너지 | Energy | `Bolt` | 정유, 가스, 신재생에너지 |
+| IT/테크 | IT/Tech | `Computer` | 소프트웨어, 인터넷, 플랫폼 |
+| 소비재 | Consumer | `ShoppingCart` | 유통, 식품, 의류, 화장품 |
+| 산업재 | Industrial | `Factory` | 기계, 조선, 방산, 건설장비 |
+| 통신 | Telecom | `CellTower` | 통신사, 미디어, 방송 |
+| 유틸리티 | Utility | `WaterDrop` | 전력, 가스, 수도 |
+| 부동산 | Real Estate | `Home` | 리츠, 건설, 부동산 개발 |
+| 자동차 | Automobile | `DirectionsCar` | 완성차, 부품, 전기차 |
+| 화학/소재 | Chemical | `Science` | 정밀화학, 철강, 비철금속 |
+| 기타 | Others | `Category` | 분류되지 않은 기타 섹터 |
+
+### 에러 코드
+
+| 코드 | HTTP 상태 | 메시지 | 설명 | 대응 방법 |
+|------|----------|--------|------|----------|
+| `ETF001` | 404 | ETF를 찾을 수 없습니다 | 존재하지 않는 ticker | 올바른 티커 확인 |
+| `ETF002` | 404 | 시세 정보가 없습니다 | ETF 가격 데이터 없음 | 장 마감 후 조회 또는 새로고침 |
+
+---
+
+## GET /api/v1/etfs/{ticker}/clusters
+
+ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
+
+> ETF 기본 정보는 `GET /api/v1/etfs/{ticker}`에서 조회
 
 ### Request
 
@@ -19,24 +76,10 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 ```json
 {
   "success": true,
+  "message": "Success",
+  "code": "OK",
   "data": {
-    "ticker": "091160",
-    "name": "KODEX 반도체",
-    "englishName": "KODEX Semiconductor",
-    "riskLevel": 4,
-    "currentPrice": 42350,
-    "changeAmount": 520,
-    "changeRate": 1.24,
-    "iNav": 42380,
-    "iNavChangeAmount": 550,
-    "iNavChangeRate": 1.31,
-    "returnRate1M": 5.67,
-    "volume": 1523000,
-    "manager": "삼성자산운용",
-    "volatility": "높음",
-    "expenseRatio": 0.45,
-    "netAsset": 1250000000000,
-    "listedDate": "2006-06-27",
+    "englishName": "KOSPI 200 Index Tracking Fund",
     "sectors": [
       {
         "name": "반도체",
@@ -89,18 +132,12 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
         "changeRate": -0.72
       }
     ]
-  }
+  },
+  "timestamp": "2025-03-10T14:30:00"
 }
 ```
 
 ### 화면 매핑
-
-#### ETF 헤더 (ClusterTab)
-| API 필드 | 화면 표시 |
-|----------|----------|
-| riskLevel | 위험등급 배지 (1:안정형 ~ 5:공격투자형) |
-| ticker | 중앙 대형 텍스트 |
-| englishName | 영문명 (작은 텍스트) |
 
 #### 클러스터 버블 차트
 | API 필드 | 화면 표시 |
@@ -110,12 +147,6 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 | sectors[].name | 아이콘 매핑 (반도체→Memory, 금융→AccountBalance 등) |
 
 버블 크기: `percentage` 값에 비례
-
-#### 가격/거래량 카드
-| API 필드 | 화면 표시 |
-|----------|----------|
-| currentPrice | 현재가 (천단위 콤마) |
-| volume | 거래량 (억/만 단위 변환) |
 
 #### 영향력 종목 섹션
 | API 필드 | 화면 표시 |
@@ -136,48 +167,16 @@ ETF 상세 조회 (섹터 클러스터 + 영향력 종목 포함)
 
 ---
 
-## 위험등급 매핑
-
-| riskLevel | 표시 텍스트 | 색상 |
-|-----------|------------|------|
-| 1 | 안정형 | Blue |
-| 2 | 안정추구형 | Teal |
-| 3 | 위험중립형 | Yellow |
-| 4 | 적극투자형 | Orange |
-| 5 | 공격투자형 | Red |
-
----
-
-## 섹터 아이콘 매핑
-
-| 섹터명 | 아이콘 |
-|--------|--------|
-| 반도체 | Memory |
-| 금융 | AccountBalance |
-| 헬스케어/바이오 | LocalHospital |
-| 에너지 | Bolt |
-| IT/테크 | Computer |
-| 소비재 | ShoppingCart |
-| 산업재 | Factory |
-| 통신 | CellTower |
-| 유틸리티 | WaterDrop |
-| 부동산 | Home |
-| 기타 | Category |
-
----
-
 ## 백엔드 구현 상태
 
 - [x] `EtfController.java` 구현 완료
 - [x] `EtfService.java` 구현 완료
-- [x] `EtfDetailResponse.java` DTO 구현 완료
+- [x] `EtfClusterResponse.java` DTO 구현 완료
 
 ### 구현된 조회 로직
 
 ```
-etf (기본 정보)
-    ↓
-etf_prices (최신 시세)
+etf (기본 정보 - englishName)
     ↓
 etf_sector_cluster (섹터 클러스터 - 버블 차트)
     ↓
@@ -188,11 +187,11 @@ etf_stock_composition → stock → company_info (구성 종목)
 
 - 섹터별 상위 5개 종목 반환
 - 영향력 종목 상위 5개 반환
-- 위험등급: HIGH_RISK → 5, STABLE → 1 매핑
+- 위험등급: AGGRESSIVE → 5, STABLE → 1 매핑
 - 변동성: 1년 변동률 기준 문자열 변환
 
 ## 안드로이드 구현 상태
 
 - [x] `EtfApiService.kt` 존재
 - [x] `EtfDetailResponse.kt` DTO 존재
-- [ ] API 경로 수정 필요 (`api/etf/{ticker}` → `/api/v1/etf/{ticker}`)
+- [ ] API 경로 수정 필요 → `/api/v1/etfs/{ticker}/clusters`

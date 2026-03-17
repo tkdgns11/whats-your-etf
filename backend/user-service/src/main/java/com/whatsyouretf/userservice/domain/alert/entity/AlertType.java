@@ -20,7 +20,7 @@ public class AlertType {
 
     /** 알림 유형 코드 (PK) */
     @Id
-    @Column(length = 30)
+    @Column(length = 50)
     private String code;
 
     /** 알림 유형명 */
@@ -31,6 +31,10 @@ public class AlertType {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private AlertCategory category;
+
+    /** 설정 그룹 (사용자 설정 화면 단위) */
+    @Column(name = "setting_group", nullable = false, length = 30)
+    private String settingGroup;
 
     /** 설명 */
     @Column(length = 200)

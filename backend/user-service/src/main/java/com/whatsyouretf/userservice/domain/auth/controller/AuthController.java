@@ -2,6 +2,8 @@ package com.whatsyouretf.userservice.domain.auth.controller;
 
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
+import com.whatsyouretf.userservice.domain.alert.dto.FcmTokenRequest;
+import com.whatsyouretf.userservice.domain.alert.service.AlertService;
 import com.whatsyouretf.userservice.domain.auth.dto.*;
 import com.whatsyouretf.userservice.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +32,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AlertService alertService;
 
     // ========== OAuth ==========
 
@@ -54,6 +57,28 @@ public class AuthController {
                     .body(ApiResponse.success("회원가입 및 로그인 성공", response));
         }
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
+    }
+
+    // ========== 중복 체크 ==========
+
+    /**
+     * 이메일 중복 체크
+     * <p>
+     * 회원가입 시 이메일 중복 여부를 확인합니다.
+     *
+     * @param email 확인할 이메일
+     * @return 사용 가능 여부
+     */
+    @Operation(summary = "이메일 중복 체크", description = "이메일이 이미 사용 중인지 확인합니다.")
+    @GetMapping("/check/email")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkEmail(
+            @RequestParam String email
+    ) {
+        boolean exists = authService.existsByEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+                "exists", exists,
+                "available", !exists
+        )));
     }
 
     // ========== 이메일 회원가입 ==========
@@ -151,15 +176,40 @@ public class AuthController {
     /**
      * 로그아웃
      * <p>
-     * Refresh Token을 폐기하여 로그아웃 처리합니다.
+     * Refresh Token을 폐기하고, FCM 토큰이 전달된 경우 해당 기기의 푸시 알림을 해제합니다.
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @param request FCM 토큰 (선택)
      */
-    @Operation(summary = "로그아웃", description = "로그아웃 처리 (Refresh Token 폐기)")
+    @Operation(summary = "로그아웃", description = "로그아웃 처리 (Refresh Token 폐기, FCM 토큰 삭제)")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody(required = false) LogoutRequest request
     ) {
-        authService.logout(userDetails.getUserId());
+        String fcmToken = (request != null) ? request.getFcmToken() : null;
+        authService.logout(userDetails.getUserId(), fcmToken);
         return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
+    }
+
+    // ========== FCM 토큰 ==========
+
+    /**
+     * FCM 토큰 등록
+     * <p>
+     * 푸시 알림을 위한 FCM 토큰을 등록합니다.
+     * 로그인 직후 호출해야 합니다.
+     * 로그아웃 시 자동으로 삭제됩니다.
+     */
+    @Operation(summary = "FCM 토큰 등록", description = "푸시 알림을 위한 FCM 토큰을 등록합니다.")
+    @PostMapping("/fcm/token")
+    public ResponseEntity<ApiResponse<Void>> registerFcmToken(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody FcmTokenRequest request
+    ) {
+        alertService.registerFcmToken(userDetails.getUserId(), request);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(ApiResponse.success("FCM 토큰이 등록되었습니다."));
     }
 
     // ========== 비밀번호 재설정 ==========

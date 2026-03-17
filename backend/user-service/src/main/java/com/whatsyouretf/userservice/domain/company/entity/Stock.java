@@ -30,7 +30,7 @@ public class Stock {
     private CompanyInfo company;
 
     /** 종목코드 (티커) */
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String ticker;
 
     /** 종가 */

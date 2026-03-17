@@ -49,6 +49,11 @@ public interface AlertService {
     void deleteFcmToken(Long userId, String token);
 
     /**
+     * 사용자의 모든 FCM 토큰 삭제 (회원 탈퇴 시)
+     */
+    void deleteAllFcmTokens(Long userId);
+
+    /**
      * 알림 유형 목록 조회
      */
     AlertTypeListResponse getAlertTypes();

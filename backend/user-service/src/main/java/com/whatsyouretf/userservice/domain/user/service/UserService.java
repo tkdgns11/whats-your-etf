@@ -2,12 +2,26 @@ package com.whatsyouretf.userservice.domain.user.service;
 
 import com.whatsyouretf.userservice.domain.user.dto.*;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public interface UserService {
 
     /**
      * 사용자 조회 (ID)
      */
     UserResponse getUserById(Long userId);
+
+    // ==================== 프로필 이미지 ====================
+
+    /**
+     * 프로필 이미지 업로드
+     */
+    String uploadProfileImage(Long userId, MultipartFile file);
+
+    /**
+     * 프로필 이미지 삭제
+     */
+    void deleteProfileImage(Long userId);
 
     /**
      * 내 정보 조회
@@ -34,7 +48,7 @@ public interface UserService {
     /**
      * 관심 ETF 목록 조회
      */
-    FavoriteEtfListResponse getFavoriteEtfs(Long userId);
+    FavoriteEtfListResponse getFavoriteEtfs(Long userId, FavoriteSortType sortType);
 
     /**
      * 관심 ETF 추가
@@ -50,16 +64,4 @@ public interface UserService {
      * 관심 ETF 여부 확인
      */
     boolean isFavoriteEtf(Long userId, Long etfId);
-
-    // ==================== 보유 ETF (마이데이터) ====================
-
-    /**
-     * 보유 ETF 목록 조회
-     */
-    HoldingEtfListResponse getHoldingEtfs(Long userId);
-
-    /**
-     * 마이데이터 동기화 (Mock)
-     */
-    HoldingEtfListResponse syncMyData(Long userId);
 }

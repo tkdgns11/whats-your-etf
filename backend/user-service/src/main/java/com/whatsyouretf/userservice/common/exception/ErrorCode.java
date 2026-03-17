@@ -23,6 +23,7 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "AUTH006", "이메일 인증이 완료되지 않았습니다."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH007", "비밀번호 확인이 일치하지 않습니다."),
     WEAK_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH008", "비밀번호 조건을 충족하지 않습니다."),
+    UNAUTHENTICATED(HttpStatus.FORBIDDEN, "AUTH009", "권한이 없습니다."),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER001", "사용자를 찾을 수 없습니다."),
@@ -64,18 +65,30 @@ public enum ErrorCode {
     ETF_COMPOSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF003", "ETF 구성종목 정보를 찾을 수 없습니다."),
     SECTOR_CLUSTER_NOT_FOUND(HttpStatus.NOT_FOUND, "ETF004", "섹터 클러스터 정보를 찾을 수 없습니다."),
 
+    // Stock
+    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "STOCK001", "종목을 찾을 수 없습니다."),
+
     // Portfolio
     PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "PORTFOLIO001", "포트폴리오를 찾을 수 없습니다."),
     PORTFOLIO_ACCESS_DENIED(HttpStatus.FORBIDDEN, "PORTFOLIO002", "포트폴리오 접근 권한이 없습니다."),
     DUPLICATE_PORTFOLIO_NAME(HttpStatus.CONFLICT, "PORTFOLIO003", "이미 사용 중인 포트폴리오 이름입니다."),
     PORTFOLIO_ETF_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PORTFOLIO004", "포트폴리오 ETF 개수 제한을 초과했습니다."),
     INVALID_WEIGHT_SUM(HttpStatus.BAD_REQUEST, "PORTFOLIO005", "ETF 비중 합계가 100%가 아닙니다."),
+    INVALID_PORTFOLIO_PERIOD(HttpStatus.BAD_REQUEST, "PORTFOLIO006", "유효하지 않은 투자 기간입니다."),
 
     // Simulation
     SIMULATION_NOT_FOUND(HttpStatus.NOT_FOUND, "SIM001", "시뮬레이션을 찾을 수 없습니다."),
     SIMULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "SIM002", "시뮬레이션 실행에 실패했습니다."),
     INVALID_SIMULATION_PERIOD(HttpStatus.BAD_REQUEST, "SIM003", "잘못된 시뮬레이션 기간입니다."),
-    SIMULATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SIM004", "시뮬레이션 개수 제한을 초과했습니다.");
+    SIMULATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SIM004", "시뮬레이션 개수 제한을 초과했습니다."),
+
+    // File
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE001", "파일 업로드에 실패했습니다."),
+    FILE_EMPTY(HttpStatus.BAD_REQUEST, "FILE002", "파일이 비어있습니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "FILE003", "파일 크기가 제한을 초과했습니다. (최대 5MB)"),
+    FILE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FILE004", "허용되지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 허용)"),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "FILE005", "파일을 찾을 수 없습니다."),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE006", "파일 삭제에 실패했습니다.");
 
     private final HttpStatus status;
     private final String code;

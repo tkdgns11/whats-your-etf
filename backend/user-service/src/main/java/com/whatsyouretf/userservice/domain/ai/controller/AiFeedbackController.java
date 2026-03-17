@@ -2,10 +2,10 @@ package com.whatsyouretf.userservice.domain.ai.controller;
 
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
-import com.whatsyouretf.userservice.domain.ai.dto.*;
+import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewRequest;
+import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewResponse;
 import com.whatsyouretf.userservice.domain.ai.service.AiFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,32 +42,4 @@ public class AiFeedbackController {
                 .body(ApiResponse.success(response));
     }
 
-    /**
-     * 리뷰 결과 조회
-     */
-    @Operation(summary = "리뷰 결과 조회", description = "요청한 AI 리뷰 결과를 조회합니다.")
-    @GetMapping("/portfolio/review/{reviewId}")
-    public ResponseEntity<ApiResponse<PortfolioReviewResponse>> getReview(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "리뷰 ID") @PathVariable Long reviewId
-    ) {
-        PortfolioReviewResponse response = aiFeedbackService.getReview(
-                userDetails.getUserId(), reviewId);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * 내 리뷰 히스토리 조회
-     */
-    @Operation(summary = "리뷰 히스토리 조회", description = "내 AI 리뷰 히스토리를 조회합니다.")
-    @GetMapping("/portfolio/reviews")
-    public ResponseEntity<ApiResponse<ReviewHistoryResponse>> getReviewHistory(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "10") int size
-    ) {
-        ReviewHistoryResponse response = aiFeedbackService.getReviewHistory(
-                userDetails.getUserId(), page, size);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
 }

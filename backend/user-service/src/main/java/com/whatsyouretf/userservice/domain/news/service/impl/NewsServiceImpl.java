@@ -13,6 +13,8 @@ import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
+import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,6 +43,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     private final NewsArticleRepository newsArticleRepository;
     private final EtfRepository etfRepository;
     private final EtfPriceRepository etfPriceRepository;
+    private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
     private static final int NEWS_LIST_SIZE = 20;
@@ -54,10 +57,10 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
         List<NewsArticle> articles;
         if (categoryCode != null && !categoryCode.isBlank()) {
-            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueOrderByPublishedAtDesc(categoryCode, pageable)
+            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(categoryCode, pageable)
                     .getContent();
         } else {
-            articles = newsArticleRepository.findByIsActiveTrueOrderByPublishedAtDesc(pageable)
+            articles = newsArticleRepository.findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(pageable)
                     .getContent();
         }
 
@@ -206,13 +209,9 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
     }
 
-    // TODO: 포트폴리오 기능 완성 후 활성화
     @Override
-    // @Cacheable(value = "portfolioNews", key = "#portfolioId")
+    @Cacheable(value = "portfolioNews", key = "#portfolioId")
     public PortfolioNewsResponse getPortfolioNews(Long portfolioId) {
-        throw new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND);
-
-        /*
         // 포트폴리오 조회
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
@@ -245,15 +244,14 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                 .news(newsItems)
                 .updatedAt(updatedAt)
                 .build();
-        */
     }
 
     /**
-     * 매일 오전 9시에 포트폴리오 뉴스 캐시 초기화
+     * 매일 오전 9시(KST)에 포트폴리오 뉴스 캐시 초기화
      */
-    @Scheduled(cron = "0 0 9 * * *")
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     @CacheEvict(value = "portfolioNews", allEntries = true)
     public void clearPortfolioNewsCache() {
-        log.info("포트폴리오 뉴스 캐시 초기화 완료 (매일 오전 9시)");
+        log.info("포트폴리오 뉴스 캐시 초기화 완료 (매일 오전 9시 KST)");
     }
 }

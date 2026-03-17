@@ -45,15 +45,20 @@ ETF : 섹터 분포 시각화 = 1 : 1
 
 ## 2. 분류 체계
 
-ETF의 `category`에 따라 다른 분류 방식을 적용합니다.
+> **현재 DB 데이터 기준** (2024년 기준)
+> - `strategy_type`: 시장 대표, 테마형, 배당형, 채권형, 기타
+> - `category`: 국내주식형 (현재 데이터는 국내주식형만 존재)
+> - `sector`: 12개 넓은 카테고리 (전자 / IT, 금융, 자동차 등)
 
-| category | sector 예시 | cluster_type | 버블 예시 |
-|----------|-------------|--------------|-----------|
-| **시장형** | - | GROUP_CODE | 반도체(IT_SEMI), 금융(FINANCE), 바이오(BIO), 지주회사(HOLDING)... |
-| **테마형** | 반도체, 2차전지 | SUB_SECTOR | 메모리(SEMI_MEM), 장비(SEMI_EQP), 팹리스(SEMI_FBL)... |
-| **테마형** | 금융, 헬스케어 | INDUSTRY | 은행, 증권, 보험... |
+ETF의 `strategy_type`에 따라 다른 분류 방식을 적용합니다.
+
+| strategy_type | sector 예시 | cluster_type | 버블 예시 |
+|---------------|-------------|--------------|-----------|
+| **시장 대표** | - | GROUP_CODE | 반도체(IT_SEMI), 금융(FINANCE), 바이오(BIO), 지주회사(HOLDING)... |
+| **테마형** | 전자 / IT, 자동차 | SUB_SECTOR | 메모리(SEMI_MEM), 장비(SEMI_EQP), 2차전지(BATTERY)... |
+| **테마형** | 금융, 바이오 / 의약 | INDUSTRY | 은행, 증권, 보험... |
 | **배당형** | - | GROUP_CODE | 금융(FINANCE), 통신(TELECOM), 이벤트(EVENT)... |
-| **파생형** | - | **ASSET_TYPE** | **선물, 채권, 현금, ETF, 우선주** |
+| **기타** (파생형) | - | **ASSET_TYPE** | **선물, 채권, 현금, ETF, 우선주** |
 
 > **group_code 목록 (21개 + 기타 3개)**:
 > IT_SEMI, IT_ELEC, IT_SW, ENERGY, AUTO, BIO, CHEM, STEEL, MACHINERY, CONSTRUCT,
@@ -86,8 +91,25 @@ ETF 구성종목은 **2개 테이블**에 분산 저장됩니다:
 
 | sector 값 | 의미 | 구성종목 테이블 | 클러스터 방식 |
 |-----------|------|-----------------|---------------|
-| **값 있음** (반도체, 금융...) | 주식 기반 ETF | `etf_stock_composition` 위주 | GROUP_CODE/SUB_SECTOR |
-| **NULL/빈값** | 파생상품 기반 ETF | `etf_other_composition` 위주 | ASSET_TYPE |
+| **값 있음** (전자 / IT, 금융, 자동차...) | 주식 기반 테마형 ETF | `etf_stock_composition` 위주 | SUB_SECTOR/INDUSTRY |
+| **NULL/빈값** | 시장 대표/배당형/파생형 ETF | `etf_stock_composition` 또는 `etf_other_composition` | GROUP_CODE/ASSET_TYPE |
+
+#### 현재 DB의 sector 값 (12개)
+
+| sector | 대표 ETF |
+|--------|---------|
+| 전자 / IT | TIGER 반도체, KODEX AI반도체, TIGER 소프트웨어 |
+| 금융 | TIGER 은행, KODEX 증권, TIGER 지주회사 |
+| 자동차 | TIGER 2차전지, KODEX 자동차 |
+| 바이오 / 의약 | TIGER 헬스케어, KODEX 바이오 |
+| 에너지 / 유틸리티 | TIGER 신재생에너지, KODEX 기후변화솔루션 |
+| 건설 | TIGER 200 건설, KODEX 건설 |
+| 통신 / 미디어 | TIGER K게임, KODEX K콘텐츠 |
+| 유통 / 소매 | TIGER 200 생활소비재 |
+| 화학 / 소재 | TIGER 200 철강소재 |
+| 철강 / 금속 | KODEX 철강 |
+| 운송 | KODEX 운송 |
+| 기타 | TIGER 삼성그룹, TIGER 모멘텀 |
 
 #### 파생상품 ETF 예시 (12개)
 
@@ -203,7 +225,7 @@ industry_classification 테이블 JOIN
 
 ---
 
-#### Case 1: KODEX 200 (시장 ETF) → cluster_type = GROUP_CODE
+#### Case 1: KODEX 200 (시장 대표) → cluster_type = GROUP_CODE
 
 **group_code로 집계 → 큰 산업군으로 묶음**
 
@@ -226,7 +248,7 @@ industry_classification 테이블 JOIN
 
 ---
 
-#### Case 2: KODEX 반도체 (테마 ETF) → cluster_type = SUB_SECTOR
+#### Case 2: TIGER 반도체 (테마형, sector=전자 / IT) → cluster_type = SUB_SECTOR
 
 **소분류 → 세분류 변환 후 표시 → 반도체 내 세부 분류**
 
@@ -262,7 +284,7 @@ etf_stock_cluster_mapping (ETF별 섹터 매핑)
 
 ---
 
-#### Case 3: KODEX 금융 (섹터 ETF) → cluster_type = INDUSTRY
+#### Case 3: TIGER 은행 (테마형, sector=금융) → cluster_type = INDUSTRY
 
 **parent_code(중분류)로 집계 → 금융 내 세부 업종**
 
@@ -287,22 +309,20 @@ etf_stock_cluster_mapping (ETF별 섹터 매핑)
 
 ### 2.2 cluster_type 결정 로직
 
-> **TODO**: `etf.sector`와 `industry_classification` 매핑 방식 결정 필요
-> - 현재: `etf.sector`는 텍스트 값 (반도체, 금융 등)
-> - 문제: ETF 테마는 산업분류와 1:1 매핑 안 될 수 있음 (예: 미래차, 메타버스)
-> - 팀원 데이터 확인 후 FK 매핑 여부 결정
-
 `etf` 테이블의 2가지 필드를 사용하여 cluster_type을 결정합니다:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        ETF 테이블 필드                               │
 ├─────────────────┬───────────────────────────────────────────────────┤
-│ category        │ 시장형, 테마형, 배당형, 채권형, 파생형              │
+│ strategy_type   │ 시장 대표, 테마형, 배당형, 채권형, 기타             │
 │                 │ → cluster_type 결정의 주요 기준                    │
 ├─────────────────┼───────────────────────────────────────────────────┤
-│ sector          │ 반도체, 2차전지, AI, 금융, 바이오, 자동차...        │
+│ sector          │ 전자 / IT, 금융, 자동차, 바이오 / 의약 등 (12개)    │
 │                 │ → 테마형 ETF의 세부 분류 (테마형일 때만 사용)        │
+├─────────────────┼───────────────────────────────────────────────────┤
+│ category        │ 국내주식형, 해외주식형, 채권형, 원자재형, 통화형     │
+│                 │ → 자산 유형 분류                                   │
 └─────────────────┴───────────────────────────────────────────────────┘
 ```
 
@@ -312,49 +332,53 @@ etf_stock_cluster_mapping (ETF별 섹터 매핑)
 def determine_cluster_type(etf) -> str | None:
     """ETF 유형에 따라 cluster_type 결정"""
 
-    # 시장형 ETF (KODEX 200, KOSPI 등) → 22개 그룹코드로 집계
-    if etf.category == "시장형":
+    # 시장 대표 ETF (KODEX 200, KOSPI 등) → 22개 그룹코드로 집계
+    if etf.strategy_type == "시장 대표":
         return "GROUP_CODE"
 
     # 테마형 ETF → sector에 따라 다른 집계 방식
-    elif etf.category == "테마형":
-        # 좁은 테마 (반도체, 2차전지 등) → 세분류로 상세 표시
-        narrow_themes = ["반도체", "2차전지", "AI", "로봇", "자동차"]
-        if etf.sector in narrow_themes:
+    elif etf.strategy_type == "테마형":
+        # 세분류가 의미있는 섹터 → SUB_SECTOR로 상세 표시
+        sub_sector_types = ["전자 / IT", "자동차", "에너지 / 유틸리티"]
+        if etf.sector in sub_sector_types:
             return "SUB_SECTOR"
 
-        # 넓은 섹터 (금융, 헬스케어 등) → 중분류로 표시
-        broad_sectors = ["금융", "헬스케어", "에너지", "소비재"]
-        if etf.sector in broad_sectors:
+        # 중분류가 의미있는 섹터 → INDUSTRY로 표시
+        industry_types = ["금융", "바이오 / 의약"]
+        if etf.sector in industry_types:
             return "INDUSTRY"
 
-        # 기타 테마 → 기본 세분류
-        return "SUB_SECTOR"
-
-    # 배당형 ETF → 어떤 산업군에서 배당을 주는지
-    elif etf.category == "배당형":
+        # 기타 테마 → 기본 GROUP_CODE
         return "GROUP_CODE"
 
-    # 채권형, 파생형 → 클러스터 시각화 제외
+    # 배당형 ETF → 어떤 산업군에서 배당을 주는지
+    elif etf.strategy_type == "배당형":
+        return "GROUP_CODE"
+
+    # 채권형, 기타 (파생형) → ASSET_TYPE 또는 제외
+    elif etf.strategy_type == "기타":
+        return "ASSET_TYPE"  # 파생상품 ETF
+
     else:
-        return None
+        return None  # 채권형 등
 ```
 
 #### 적용 예시
 
-| ETF | category | sector | cluster_type | 버블 표시 |
-|-----|----------|--------|--------------|-----------|
-| KODEX 200 | 시장형 | - | GROUP_CODE | 반도체, 금융, 바이오... |
-| KODEX 반도체 | 테마형 | 반도체 | SUB_SECTOR | 메모리, 장비, 팹리스... |
-| KODEX 금융 | 테마형 | 금융 | INDUSTRY | 은행, 증권, 보험... |
+| ETF | strategy_type | sector | cluster_type | 버블 표시 |
+|-----|---------------|--------|--------------|-----------|
+| KODEX 200 | 시장 대표 | - | GROUP_CODE | 반도체, 금융, 바이오... |
+| TIGER 반도체 | 테마형 | 전자 / IT | SUB_SECTOR | 메모리, 장비, 팹리스... |
+| TIGER 2차전지 | 테마형 | 자동차 | SUB_SECTOR | 배터리셀, 소재, 장비... |
+| KODEX 은행 | 테마형 | 금융 | INDUSTRY | 은행, 증권, 보험... |
+| TIGER 헬스케어 | 테마형 | 바이오 / 의약 | INDUSTRY | 제약, 바이오, 의료기기... |
 | KODEX 고배당 | 배당형 | - | GROUP_CODE | 금융, 통신, 유틸리티... |
-| KODEX 국채 | 채권형 | - | **null** | (클러스터 없음) |
-| KODEX 레버리지 | 파생형 | - | **null** | (클러스터 없음) |
+| KODEX 인버스 | 기타 | - | ASSET_TYPE | 선물, 채권, 현금... |
 
 ### 2.3 집계 쿼리 예시
 
 ```sql
--- GROUP_CODE 집계 (시장 ETF)
+-- GROUP_CODE 집계 (시장 대표/배당형 ETF)
 SELECT
     ic.group_code,
     ic.group_name,
@@ -368,7 +392,7 @@ WHERE esc.etf_id = :etf_id
 GROUP BY ic.group_code, ic.group_name
 ORDER BY total_weight DESC;
 
--- SUB_SECTOR 집계 (테마 ETF: 반도체, 2차전지 등)
+-- SUB_SECTOR 집계 (테마형 ETF: 전자 / IT, 자동차, 에너지 / 유틸리티)
 -- etf_stock_cluster_mapping 테이블 사용
 SELECT
     escm.sector_code as sub_sector,
@@ -382,7 +406,7 @@ WHERE escm.etf_id = :etf_id
 GROUP BY escm.sector_code, ic.name
 ORDER BY total_weight DESC;
 
--- INDUSTRY 집계 (섹터 ETF: 금융, 헬스케어 등)
+-- INDUSTRY 집계 (테마형 ETF: 금융, 바이오 / 의약)
 SELECT
     ic.parent_code as industry_code,
     parent_ic.name as industry_name,
@@ -906,15 +930,15 @@ fun getSectorIcon(sectorName: String): ImageVector {
 │   company_info   │  종목 → 산업코드 매핑
 └────────┬─────────┘
          │
-         ├─── [시장/배당형 ETF] ─────────────────────────────┐
-         │                                                    │
-         ▼ JOIN                                               │
-┌──────────────────────┐                                     │
-│ industry_classification │  산업코드 → group_code 매핑       │
-└────────┬────────────────┘                                  │
-         │                                                    │
-         │                                                    │
-┌────────┴─── [테마형 ETF] ──────────────────────────────────┼───┐
+         ├─── [시장 대표/배당형 ETF] ───────────────────────────┐
+         │                                                      │
+         ▼ JOIN                                                 │
+┌──────────────────────┐                                       │
+│ industry_classification │  산업코드 → group_code 매핑         │
+└────────┬────────────────┘                                    │
+         │                                                      │
+         │                                                      │
+┌────────┴─── [테마형 ETF] ────────────────────────────────────┼───┐
 │                                                            │   │
 ▼                                                            │   │
 ┌─────────────────────────────┐                              │   │

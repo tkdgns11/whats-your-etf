@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.models.news import NewsArticle
 from app.models.news_stock import NewsStockMapping
 from app.models.company import CompanyInfo
+from app.models.stock import Stock
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,16 @@ class StockNewsScraper:
     """
 
     BASE_URL = "https://finance.naver.com"
+
+    # User-Agent 로테이션 (429 Rate Limit 방지)
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ]
+
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -65,17 +76,32 @@ class StockNewsScraper:
             await self.client.aclose()
 
     async def _get_with_retry(self, url: str, max_retries: int = 3) -> Optional[str]:
-        """재시도 로직이 포함된 GET 요청"""
+        """재시도 로직이 포함된 GET 요청 (429 Rate Limit 대응)"""
         for attempt in range(max_retries):
             try:
-                await asyncio.sleep(random.uniform(0.5, 1.5))
+                # 요청 간 랜덤 대기 (2~4초로 증가)
+                await asyncio.sleep(random.uniform(2.0, 4.0))
+
+                # 매 요청마다 User-Agent 변경
+                self.client.headers["User-Agent"] = random.choice(self.USER_AGENTS)
+
                 response = await self.client.get(url)
                 response.raise_for_status()
                 return response.text
+            except httpx.HTTPStatusError as e:
+                # 429 Too Many Requests 특별 처리
+                if e.response.status_code == 429:
+                    wait_time = 30 + (attempt * 15)  # 30초, 45초, 60초
+                    logger.warning(f"429 Rate Limit - {wait_time}초 대기 후 재시도: {url}")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.warning(f"요청 실패 (시도 {attempt + 1}/{max_retries}): {url} - {e}")
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(3 * (attempt + 1))
             except Exception as e:
                 logger.warning(f"요청 실패 (시도 {attempt + 1}/{max_retries}): {url} - {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 * (attempt + 1))
+                    await asyncio.sleep(3 * (attempt + 1))
         return None
 
     async def get_news_links(self, stock_code: str) -> List[str]:
@@ -129,9 +155,18 @@ class StockNewsScraper:
             logger.warning(f"제목 추출 실패: {news_url}")
             return None
 
-        # 본문
+        # 본문 (문단 구분 유지)
         content_el = soup.select_one("#dic_area") or soup.select_one("#newsct_article")
-        content = content_el.get_text(strip=True) if content_el else ""
+        content = ""
+        if content_el:
+            # <br> 태그를 줄바꿈으로 변환
+            for br in content_el.find_all("br"):
+                br.replace_with("\n")
+            # 텍스트 추출 후 문단 정리
+            raw_text = content_el.get_text(separator="\n")
+            # 연속 줄바꿈 정리 (3개 이상 → 2개)
+            lines = [line.strip() for line in raw_text.split("\n")]
+            content = "\n\n".join(line for line in lines if line)
 
         # 언론사
         source_el = soup.select_one("a.media_end_head_top_logo img")
@@ -239,17 +274,22 @@ class StockNewsScraper:
         Returns:
             {"total": int, "new": int, "mapped": int}
         """
-        # 회사 정보 조회
-        company = self.db.query(CompanyInfo).filter(
-            CompanyInfo.stock_code == stock_code,
-            CompanyInfo.is_active == True
+        # 주식 정보 조회 (ticker로 검색)
+        stock = self.db.query(Stock).filter(
+            Stock.ticker == stock_code,
+            Stock.is_active == True
         ).first()
 
-        if not company:
-            logger.warning(f"회사 정보 없음: {stock_code}")
+        if not stock:
+            logger.warning(f"주식 정보 없음: {stock_code}")
             return {"total": 0, "new": 0, "mapped": 0}
 
-        category = self._get_category_from_industry(company.industry_group)
+        # 회사 정보 조회 (카테고리용)
+        company = self.db.query(CompanyInfo).filter(
+            CompanyInfo.id == stock.company_id
+        ).first() if stock.company_id else None
+
+        category = self._get_category_from_industry(company.industry_group if company else None)
         stats = {"total": 0, "new": 0, "mapped": 0}
 
         # 뉴스 링크 추출 (메인 페이지에서)
@@ -274,7 +314,8 @@ class StockNewsScraper:
 
             if existing:
                 # 이미 있는 뉴스면 매핑만 추가
-                self._add_stock_mapping(existing.id, company.id)
+                if stock.company_id:
+                    self._add_stock_mapping(existing.id, stock.company_id)
                 stats["mapped"] += 1
                 continue
 
@@ -297,7 +338,8 @@ class StockNewsScraper:
             self.db.flush()  # ID 생성
 
             # 종목 매핑
-            self._add_stock_mapping(news.id, company.id)
+            if stock.company_id:
+                self._add_stock_mapping(news.id, stock.company_id)
 
             stats["new"] += 1
             logger.info(f"뉴스 저장: [{stock_code}] {article.title[:30]}...")
@@ -346,16 +388,17 @@ class StockNewsScraper:
         total_stats = {"total": 0, "new": 0, "mapped": 0}
 
         for comp in compositions:
-            company = self.db.query(CompanyInfo).filter(
-                CompanyInfo.id == comp.company_id
+            # company_id로 stock 조회하여 ticker 얻기
+            stock = self.db.query(Stock).filter(
+                Stock.company_id == comp.company_id,
+                Stock.is_active == True
             ).first()
 
-            if not company:
+            if not stock:
                 continue
 
             stats = await self.scrape_stock_news(
-                stock_code=company.stock_code,
-                max_pages=1,
+                stock_code=stock.ticker,
                 max_articles=max_articles_per_stock
             )
 
