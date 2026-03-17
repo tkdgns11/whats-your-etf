@@ -4,16 +4,17 @@ import com.d102.wye.data.local.dao.LikedEtfDao
 import com.d102.wye.data.mapper.toDomain
 import com.d102.wye.data.mapper.toLikedEntity
 import com.d102.wye.data.remote.api.EtfApiService
+import com.d102.wye.data.remote.dto.request.EtfListRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
-import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.common.map
+import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfDetail
-import com.d102.wye.domain.model.EtfPeriodReturn
-import com.d102.wye.domain.model.EtfReturnChart
+import com.d102.wye.domain.model.EtfLikeData
+import com.d102.wye.domain.model.EtfPage
+import com.d102.wye.domain.model.EtfPriceData
 import com.d102.wye.domain.repository.EtfRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,55 +25,34 @@ class EtfRepositoryImpl @Inject constructor(
     private val likedEtfDao: LikedEtfDao,
 ) : BaseRepository(), EtfRepository {
 
-    // 1분마다 polling
-    override fun getEtfList(): Flow<List<Etf>> = flow {
-        while (true) {
-            val result = safeApiCall { etfApiService.getEtfList() }
-            if (result is BaseResult.Success) {
-                emit(result.data.map { it.toDomain() })
-            }
-            delay(60_000L)
-        }
-    }
+    override suspend fun getEtfList(request: EtfListRequest, page: Int): BaseResult<EtfPage> =
+        safeApiCall { etfApiService.getEtfList(request, page) }
+            .map { EtfPage(items = it.content.map { item -> item.toDomain() }, isLast = it.last) }
 
-    override fun getLikedEtfList(): Flow<List<Etf>> =
+    override fun getLikedEtfList(): Flow<List<EtfLikeData>> =
         likedEtfDao.getLikedEtfs().map { entities -> entities.map { it.toDomain() } }
 
-    override suspend fun toggleLike(etf: Etf): BaseResult<Boolean> {
+    override suspend fun toggleLike(data: EtfLikeData): BaseResult<Boolean> {
         return try {
-            val isCurrentlyLiked = likedEtfDao.isLiked(etf.ticker)
+            val isCurrentlyLiked = likedEtfDao.isLiked(data.ticker)
             if (isCurrentlyLiked) {
-                likedEtfDao.deleteLikedEtf(etf.ticker)
+                likedEtfDao.deleteLikedEtf(data.ticker)
             } else {
-                likedEtfDao.insertLikedEtf(etf.toLikedEntity())
+                likedEtfDao.insertLikedEtf(data.toLikedEntity())
             }
-
-            // TODO: API 연동 시 etfApiService.toggleLike(etf.ticker)를 호출하고 서버 응답과 로컬 캐시를 동기화한다.
             BaseResult.Success(!isCurrentlyLiked)
         } catch (e: Exception) {
             BaseResult.Error(ApiError.unknownError(e.message ?: "관심 ETF 처리 중 오류가 발생했습니다"))
         }
     }
 
-    override suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail> {
-        return when (val result = safeApiCall { etfApiService.getEtfDetail(ticker) }) {
-            is BaseResult.Success -> BaseResult.Success(result.data.toDomain())
-            is BaseResult.Error   -> result
-        }
-    }
+    override suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail> =
+        safeApiCall { etfApiService.getEtfDetail(ticker) }.map { it.toDomain() }
 
-    override suspend fun getEtfReturnChart(ticker: String, period: String): BaseResult<EtfReturnChart> {
-        return when (val result = safeApiCall { etfApiService.getEtfReturnChart(ticker, period) }) {
-            is BaseResult.Success -> BaseResult.Success(result.data.toDomain())
-            is BaseResult.Error   -> result
-        }
-    }
+    override suspend fun getEtfCluster(ticker: String): BaseResult<EtfClusterData> =
+        safeApiCall { etfApiService.getEtfCluster(ticker) }.map { it.toDomain() }
 
-    override suspend fun getEtfPeriodReturn(ticker: String): BaseResult<EtfPeriodReturn> {
-        return when (val result = safeApiCall { etfApiService.getEtfPeriodReturn(ticker) }) {
-            is BaseResult.Success -> BaseResult.Success(result.data.toDomain())
-            is BaseResult.Error   -> result
-        }
-    }
-
+    override suspend fun getEtfPriceHistory(ticker: String, startDate: String, endDate: String, size: Int): BaseResult<List<EtfPriceData>> =
+        safeApiCall { etfApiService.getEtfPriceHistory(ticker, startDate, endDate, size = size) }
+            .map { it.toDomain() }
 }

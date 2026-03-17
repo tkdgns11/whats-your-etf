@@ -1,17 +1,19 @@
 package com.d102.wye.domain.repository
 
+import com.d102.wye.data.remote.dto.request.EtfListRequest
 import com.d102.wye.domain.common.BaseResult
-import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfDetail
-import com.d102.wye.domain.model.EtfPeriodReturn
-import com.d102.wye.domain.model.EtfReturnChart
+import com.d102.wye.domain.model.EtfLikeData
+import com.d102.wye.domain.model.EtfPage
+import com.d102.wye.domain.model.EtfPriceData
 import kotlinx.coroutines.flow.Flow
 
 interface EtfRepository {
-    fun getEtfList(): Flow<List<Etf>>
-    fun getLikedEtfList(): Flow<List<Etf>>
-    suspend fun toggleLike(etf: Etf): BaseResult<Boolean>
+    suspend fun getEtfList(request: EtfListRequest = EtfListRequest(), page: Int = 0): BaseResult<EtfPage>
+    fun getLikedEtfList(): Flow<List<EtfLikeData>>
+    suspend fun toggleLike(data: EtfLikeData): BaseResult<Boolean>
     suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail>
-    suspend fun getEtfReturnChart(ticker: String, period: String): BaseResult<EtfReturnChart>
-    suspend fun getEtfPeriodReturn(ticker: String): BaseResult<EtfPeriodReturn>
+    suspend fun getEtfCluster(ticker: String): BaseResult<EtfClusterData>
+    suspend fun getEtfPriceHistory(ticker: String, startDate: String, endDate: String, size: Int = 300): BaseResult<List<EtfPriceData>>
 }
