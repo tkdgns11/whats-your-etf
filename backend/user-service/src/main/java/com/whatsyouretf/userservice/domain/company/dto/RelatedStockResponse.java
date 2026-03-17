@@ -26,13 +26,17 @@ public class RelatedStockResponse {
     /** 관계 유형 (동종 업계, 서플라이 체인 등) */
     private String relationType;
 
-    public static RelatedStockResponse from(Stock stock, String industryName) {
+    /** 회사 로고 URL */
+    private String logoUrl;
+
+    public static RelatedStockResponse from(Stock stock, String industryName, String logoUrl) {
         return RelatedStockResponse.builder()
                 .ticker(stock.getTicker())
                 .companyName(stock.getCompany().getCompanyName())
                 .industryCode(stock.getCompany().getIndustryCode())
                 .industryName(industryName)
                 .relationType("동종 업계")
+                .logoUrl(logoUrl)
                 .build();
     }
 }

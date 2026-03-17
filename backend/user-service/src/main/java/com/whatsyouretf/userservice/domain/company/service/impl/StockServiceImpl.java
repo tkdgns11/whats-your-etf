@@ -11,6 +11,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import com.whatsyouretf.userservice.domain.etf.repository.IndustryClassificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,9 @@ public class StockServiceImpl implements StockService {
 
     private final StockRepository stockRepository;
     private final IndustryClassificationRepository industryClassificationRepository;
+
+    @Value("${app.logo.base-url}")
+    private String logoBaseUrl;
 
     private static final int DEFAULT_RELATED_LIMIT = 3;
 
@@ -88,8 +92,16 @@ public class StockServiceImpl implements StockService {
                             .findByCode(s.getCompany().getIndustryCode())
                             .map(IndustryClassification::getName)
                             .orElse(null);
-                    return RelatedStockResponse.from(s, industryName);
+                    String logoUrl = buildLogoUrl(s.getCompany().getId());
+                    return RelatedStockResponse.from(s, industryName, logoUrl);
                 })
                 .toList();
+    }
+
+    /**
+     * 회사 로고 URL 생성
+     */
+    private String buildLogoUrl(Long companyId) {
+        return logoBaseUrl + "/" + companyId + ".png";
     }
 }
