@@ -8,4 +8,12 @@ public record EtfIncludesStock(
     String ticker,
     BigDecimal ratio
 ) {
+        public static EtfIncludesStock of(
+                String etfName,
+                String code,
+                String ticker,
+                BigDecimal ratio
+        ) {
+                return new EtfIncludesStock(etfName, AssetManager.getCompanyNameByCode(code), ticker, ratio);
+        }
 }

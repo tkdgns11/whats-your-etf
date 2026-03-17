@@ -19,7 +19,7 @@ public class StockFacade {
                 return etfsIncludingStock.stream()
                         .map(etfStockComposition -> {
                                 Etf etf = etfStockComposition.getEtf();
-                                return new EtfIncludesStock(
+                                return EtfIncludesStock.of(
                                         etf.getName(),
                                         etf.getAssetManager(),
                                         etf.getStockCode(),
