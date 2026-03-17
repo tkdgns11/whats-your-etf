@@ -51,7 +51,9 @@ public class SecurityConfig {
             // Stock (공개 API)
             "/api/v1/stocks/**",
             // Static
-            "/error"
+            "/error",
+            // Uploads (프로필 이미지 등)
+            "/uploads/**"
     };
 
     @Bean
