@@ -108,10 +108,11 @@ fun ExploreScreen(
                 )
             }
         }
-    ) { _ ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .padding(top = innerPadding.calculateTopPadding()),
         ) {
             SearchRow(
                 query = filterState.query,
