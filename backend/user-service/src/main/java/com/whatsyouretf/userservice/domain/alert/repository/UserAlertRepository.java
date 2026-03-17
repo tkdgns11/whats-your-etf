@@ -80,4 +80,11 @@ public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
     @Modifying
     @Query("DELETE FROM UserAlert ua WHERE ua.user.id = :userId AND ua.isRead = true")
     int deleteAllReadByUserId(@Param("userId") Long userId);
+
+    /**
+     * 사용자의 알림 전체 삭제
+     */
+    @Modifying
+    @Query("DELETE FROM UserAlert ua WHERE ua.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }
