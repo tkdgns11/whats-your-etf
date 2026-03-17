@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.theme.EtfFall
 import com.d102.wye.presentation.theme.EtfNeutral
 import com.d102.wye.presentation.theme.EtfRise
@@ -26,13 +26,12 @@ fun EtfPriceChange(changeRate: Double, changeAmount: Long) {
         Text(
             text = "$sign${"%.2f".format(changeRate)}%",
             color = changeColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
             text = "$arrow ${"%,d".format(changeAmount)}",
             color = changeColor,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
         )
     }
 }
