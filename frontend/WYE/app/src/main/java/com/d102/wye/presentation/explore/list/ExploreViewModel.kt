@@ -2,11 +2,12 @@ package com.d102.wye.presentation.explore.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.d102.wye.domain.model.Etf
+import com.d102.wye.data.remote.dto.request.EtfListRequest
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.state.EtfFilterState
-import com.d102.wye.domain.usecase.etf.FilterEtfListUseCase
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
     private val etfRepository: EtfRepository,
-    private val filterEtfListUseCase: FilterEtfListUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<ExploreData>>(UiState.Idle)
@@ -29,11 +29,17 @@ class ExploreViewModel @Inject constructor(
     private val _filterState = MutableStateFlow(EtfFilterState())
     val filterState: StateFlow<EtfFilterState> = _filterState.asStateFlow()
 
-    private var rawEtfList: List<Etf> = emptyList()
-    private var mockEtfList: List<EtfListItemUiModel> = emptyList()
-    private var likedTickers: Set<String> = emptySet()
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
-    // 다중 선택 상태를 관리하는 StateFlow 추가
+    private val _sortedBy = MutableStateFlow<String?>(null)
+    val sortedBy: StateFlow<String?> = _sortedBy.asStateFlow()
+
+    private var rawEtfList: List<EtfListItemUiModel> = emptyList()
+    private var likedTickers: Set<String> = emptySet()
+    private var currentPage = 0
+    private var isLastPage = false
+
     private val _selectedTickers = MutableStateFlow<Set<String>>(emptySet())
     val selectedTickers: StateFlow<Set<String>> = _selectedTickers.asStateFlow()
 
@@ -42,21 +48,40 @@ class ExploreViewModel @Inject constructor(
         loadEtfList()
     }
 
-    fun loadEtfList() {
+    fun loadEtfList(filter: EtfFilterState = _filterState.value) {
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-//            etfRepository.getEtfList().collect { etfList ->
-//                rawEtfList = etfList
-//                applyFilter()
-//            }
+            currentPage = 0
+            isLastPage = false
+            rawEtfList = emptyList()
 
-    // TODO: API 연동 시 mockEtfList 대신 etfRepository.getEtfList()를 collect해서 사용한다.
-            mockEtfList = listOf(
-                EtfListItemUiModel("069500", "KODEX 200", 32_450, 1.24, 400, 1, likedTickers.contains("069500")),
-                EtfListItemUiModel("091160", "KODEX 반도체", 42_350, 2.15, 890, 4, likedTickers.contains("091160")),
-                EtfListItemUiModel("102780", "KODEX 인버스", 2_145, -1.20, -26, 5, likedTickers.contains("102780")),
-            )
-            applyFilter()
+            when (val result = etfRepository.getEtfList(filter.toRequest(_sortedBy.value), page = 0)) {
+                is BaseResult.Success -> {
+                    isLastPage = result.data.isLast
+                    rawEtfList = result.data.items.map { it.toUiModel(likedTickers) }
+                    applyFilter()
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
+        }
+    }
+
+    fun loadMore() {
+        if (isLastPage || _isLoadingMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.update { true }
+            val nextPage = currentPage + 1
+            when (val result = etfRepository.getEtfList(_filterState.value.toRequest(_sortedBy.value), page = nextPage)) {
+                is BaseResult.Success -> {
+                    currentPage = nextPage
+                    isLastPage = result.data.isLast
+                    rawEtfList = (rawEtfList + result.data.items.map { it.toUiModel(likedTickers) })
+                        .distinctBy { it.ticker }
+                    applyFilter()
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
+            _isLoadingMore.update { false }
         }
     }
 
@@ -75,15 +100,20 @@ class ExploreViewModel @Inject constructor(
         applyFilter()
     }
 
+    fun onSortChanged(sortedBy: String?) {
+        _sortedBy.update { sortedBy }
+        loadEtfList()
+    }
+
     fun onFilterChanged(filter: EtfFilterState) {
         _filterState.update { filter }
-        applyFilter()
+        loadEtfList(filter)
     }
 
     fun onLikeToggled(ticker: String) {
-        val target = mockEtfList.firstOrNull { it.ticker == ticker } ?: return
+        val target = rawEtfList.firstOrNull { it.ticker == ticker } ?: return
         viewModelScope.launch {
-            when (val result = etfRepository.toggleLike(target.toDomain())) {
+            when (val result = etfRepository.toggleLike(target.toEtfLikeData())) {
                 is BaseResult.Success -> Unit
                 is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
             }
@@ -93,11 +123,7 @@ class ExploreViewModel @Inject constructor(
     fun toggleSelection(ticker: String) {
         _selectedTickers.update { currentSet ->
             Timber.d("$ticker selected")
-            if (currentSet.contains(ticker)) {
-                currentSet - ticker // 있으면 제거
-            } else {
-                currentSet + ticker // 없으면 추가
-            }
+            if (currentSet.contains(ticker)) currentSet - ticker else currentSet + ticker
         }
     }
 
@@ -107,10 +133,6 @@ class ExploreViewModel @Inject constructor(
 
     fun clearSelection() {
         _selectedTickers.update { emptySet() }
-    }
-
-    fun initializeSelection(tickers: List<String>) {
-        _selectedTickers.update { tickers.toSet() }
     }
 
     private fun observeLikedEtfs() {
@@ -123,64 +145,60 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun syncLikeState() {
-        if (mockEtfList.isEmpty()) return
-        mockEtfList = mockEtfList.map { it.copy(isLiked = likedTickers.contains(it.ticker)) }
+        if (rawEtfList.isEmpty()) return
+        rawEtfList = rawEtfList.map { it.copy(isLiked = likedTickers.contains(it.ticker)) }
         applyFilter()
     }
 
     private fun applyFilter() {
         val filter = _filterState.value
-        // TODO: 실제 API 연동 시 rawEtfList 사용으로 교체
-        // val filtered = filterEtfListUseCase(rawEtfList, filter).map { it.toUiModel() }
-        // val all = rawEtfList.map { it.toUiModel() }
         val filtered = if (filter.query.isBlank()) {
-            mockEtfList
+            rawEtfList
         } else {
-            mockEtfList.filter {
+            rawEtfList.filter {
                 when (filter.searchScope) {
                     "etf"   -> it.name.contains(filter.query, ignoreCase = true)
                     "stock" -> it.ticker.contains(filter.query, ignoreCase = true)
                     else    -> it.name.contains(filter.query, ignoreCase = true) ||
-                               it.ticker.contains(filter.query, ignoreCase = true)
+                            it.ticker.contains(filter.query, ignoreCase = true)
                 }
             }
         }
         _uiState.update {
-            UiState.Success(ExploreData(etfList = mockEtfList, filteredList = filtered, filter = filter))
+            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = filtered, filter = filter))
         }
     }
 }
 
-// ─── presentation 전용 변환 ───────────────────────────────────────
-private fun Etf.toUiModel() = EtfListItemUiModel(
-    ticker = ticker,
-    name = name,
-    currentPrice = currentPrice,
-    changeRate = changeRate,
-    changeAmount = changeAmount,
-    riskLevel = riskLevel,
-    isLiked = false,  // TODO: API 연동 시 관심 ETF 상태를 서버 응답 또는 로컬 캐시와 함께 매핑
+// ─── EtfFilterState → EtfListRequest 변환 ───────────────────────
+private fun EtfFilterState.toRequest(sortedBy: String? = null) = EtfListRequest(
+    riskType = riskType,
+    strategy = strategy,
+    isDerivatives = hasDerivative,
+    isLeverage = hasLeverage,
+    isInverse = hasInverse,
+    sortedBy = sortedBy,
 )
 
-private fun EtfListItemUiModel.toDomain() = Etf(
+// ─── Domain → UiModel 변환 ───────────────────────────────────────
+private fun Etf.toUiModel(likedTickers: Set<String>) = EtfListItemUiModel(
     ticker = ticker,
     name = name,
     currentPrice = currentPrice,
     changeRate = changeRate,
     changeAmount = changeAmount,
-    volume = 0L,
-    riskLevel = riskLevel,
-    investmentStrategy = "",
-    assetClass = "",
-    theme = "",
-    dividendRate = 0.0,
-    dividendCycle = "",
-    hasDerivative = false,
-    per = 0.0,
-    pbr = 0.0,
-    roe = 0.0,
-    expenseRatio = 0.0,
-    netAsset = 0L,
+    riskType = riskType,
+    isLiked = likedTickers.contains(ticker) || isFavorite,
+)
+
+// ─── UiModel → EtfLikeData 변환 (toggleLike 전용) ────────────────
+private fun EtfListItemUiModel.toEtfLikeData() = EtfLikeData(
+    ticker = ticker,
+    name = name,
+    currentPrice = currentPrice,
+    changeRate = changeRate,
+    changeAmount = changeAmount,
+    riskType = riskType,
 )
 
 data class ExploreData(
@@ -195,6 +213,6 @@ data class EtfListItemUiModel(
     val currentPrice: Long,
     val changeRate: Double,
     val changeAmount: Long,
-    val riskLevel: Int,
+    val riskType: String,
     val isLiked: Boolean,
 )

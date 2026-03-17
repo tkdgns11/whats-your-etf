@@ -29,12 +29,20 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
+private val sortOptions = listOf("거래량 순", "등락률 순", "시가총액 순")
+private val sortValues  = listOf("TRADING_VOLUME", "DAILY_RETURN", "MARKET_CAPITALIZATION")
+
+fun sortLabelOf(value: String?) = sortOptions[sortValues.indexOf(value).coerceAtLeast(0)]
+
 // ── 정렬 ───────────────────────────────────────────────────────
 @Composable
-fun SortRow(modifier: Modifier = Modifier) {
-    val sortOptions = listOf("거래량 순", "등락률 순", "시가총액 순")
+fun SortRow(
+    selectedSort: String?,
+    onSortChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var expanded by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(sortOptions[0]) }
+    val selected = sortLabelOf(selectedSort)
 
     Row(
         modifier = modifier,
@@ -90,7 +98,7 @@ fun SortRow(modifier: Modifier = Modifier) {
                                 )
                             }
                         },
-                        onClick = { selected = option; expanded = false },
+                        onClick = { onSortChanged(sortValues[sortOptions.indexOf(option)]); expanded = false },
                     )
                 }
             }

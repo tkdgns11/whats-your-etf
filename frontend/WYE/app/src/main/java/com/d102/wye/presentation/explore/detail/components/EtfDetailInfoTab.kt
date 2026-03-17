@@ -59,7 +59,7 @@ fun EtfDetailInfoTab(
     val showPrice by viewModel.showPrice.collectAsStateWithLifecycle()
     val showKospi by viewModel.showKospi.collectAsStateWithLifecycle()
     val showSp500 by viewModel.showSp500.collectAsStateWithLifecycle()
-    var productInfoExpanded by remember { mutableStateOf(false) }
+    var productInfoExpanded by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -69,7 +69,7 @@ fun EtfDetailInfoTab(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // 가격 그리드
-        PriceGrid(detail = detail)
+        PriceGrid(detail = detail, periodReturn = periodReturn)
 
         // 상품정보 토글
         ProductInfoSection(
@@ -113,10 +113,19 @@ fun EtfDetailInfoTab(
 // ── 가격 그리드 ────────────────────────────────────────────────
 
 @Composable
-private fun PriceGrid(detail: EtfDetail) {
-    val changeColor = if (detail.changeRate >= 0) EtfRise else EtfFall
-    val sign = if (detail.changeAmount >= 0) "+" else ""
-    val iNavSign = if (detail.iNavChangeAmount >= 0) "+" else ""
+private fun PriceGrid(detail: EtfDetail, periodReturn: UiState<EtfPeriodReturn>) {
+    val changeColor = if (detail.dailyFluctuationRatio >= 0) EtfRise else EtfFall
+    val sign        = if (detail.dailyFluctuation >= 0) "+" else ""
+    val iNavSign    = if (detail.inavChangeAmount >= 0) "+" else ""
+
+    val nav1M = (periodReturn as? UiState.Success)?.data?.nav1M
+    val returnText  = if (nav1M != null) "${"%.2f".format(nav1M)}%" else "--"
+    val returnColor = when {
+        nav1M == null -> TextSecondary
+        nav1M >= 0    -> EtfRise
+        else          -> EtfFall
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -125,15 +134,15 @@ private fun PriceGrid(detail: EtfDetail) {
             PriceCard(
                 label = "현재가",
                 value = "%,d원".format(detail.currentPrice),
-                sub = "$sign${"%,d".format(detail.changeAmount)}원 (${"%.2f".format(detail.changeRate)}%)",
+                sub = "$sign${"%,d".format(detail.dailyFluctuation)}원 (${"%.2f".format(detail.dailyFluctuationRatio)}%)",
                 subColor = changeColor,
                 modifier = Modifier.weight(1f),
             )
             PriceCard(
                 label = "기준가(iNAV)",
-                value = "%,d원".format(detail.iNav),
-                sub = "$iNavSign${"%,d".format(detail.iNavChangeAmount)}원 (${"%.2f".format(detail.iNavChangeRate)}%)",
-                subColor = if (detail.iNavChangeRate >= 0) EtfRise else EtfFall,
+                value = "%,d원".format(detail.inav),
+                sub = "$iNavSign${"%,d".format(detail.inavChangeAmount)}원 (${"%.2f".format(detail.inavChangeRate)}%)",
+                subColor = if (detail.inavChangeRate >= 0) EtfRise else EtfFall,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -143,9 +152,9 @@ private fun PriceGrid(detail: EtfDetail) {
         ) {
             PriceCard(
                 label = "수익률(1개월)",
-                value = "${if (detail.returnRate1M >= 0) "+" else ""}${"%.2f".format(detail.returnRate1M)}%",
+                value = returnText,
+                valueColor = returnColor,
                 sub = "최근 30일 기준",
-                valueColor = if (detail.returnRate1M >= 0) EtfRise else EtfFall,
                 modifier = Modifier.weight(1f),
             )
             PriceCard(
@@ -199,18 +208,20 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
     ) {
         Column {
             if (expanded) {
-                val rows = listOf(
-                    "운용사" to detail.manager,
-                    "투자위험" to "${detail.riskLevel}등급",
-                    "변동성" to (if (detail.volatility.isBlank()) "----" else detail.volatility),
-                    "총보수(수수료)" to "연 ${"%.4f".format(detail.expenseRatio)}%",
-                    "순자산" to "%,d 억원".format(detail.netAsset / 100_000_000),
-                    "상장일" to detail.listedDate,
-                )
-                rows.forEachIndexed { index, (label, value) ->
-                    InfoRow(label, value)
-                    if (index < rows.lastIndex) HorizontalDivider(color = Divider)
-                }
+                val aumText = "%,d 억원".format(detail.aum / 100_000_000)
+                val listingText = detail.listingDate.replace("-", ".")
+
+                InfoRow("운용사", detail.company)
+                HorizontalDivider(color = Divider)
+                RiskRow(detail)
+                HorizontalDivider(color = Divider)
+                InfoRow("변동성", "----")
+                HorizontalDivider(color = Divider)
+                InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%", valueColor = PrimaryGreen)
+                HorizontalDivider(color = Divider)
+                InfoRow("순자산", aumText)
+                HorizontalDivider(color = Divider)
+                InfoRow("상장일", listingText)
                 HorizontalDivider(color = Divider)
             }
             Row(
@@ -238,14 +249,48 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun RiskRow(detail: EtfDetail) {
+    val dotColor = when (detail.riskGrade) {
+        1    -> BadgeConservativeFont
+        2    -> BadgeConservativeGrowthFont
+        3    -> BadgeNeutralFont
+        4    -> BadgeActiveFont
+        else -> BadgeAggressiveFont
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("투자위험", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = TextSecondary)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(dotColor),
+            )
+            Text(
+                "${detail.riskGrade}등급 (${detail.riskType})",
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+                color = TextPrimary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String, valueColor: Color = TextPrimary) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = TextSecondary)
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
+        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = valueColor)
     }
 }
 
@@ -565,11 +610,79 @@ private fun PeriodReturnTable(data: EtfPeriodReturn) {
         ) {
             TableHeader()
             HorizontalDivider(color = Divider)
-            TableRow("NAV (%)",    data.nav1M,   data.nav3M,   data.nav6M)
+            TableRow("NAV (%)",  data.nav1M,   data.nav3M,   data.nav6M)
             HorizontalDivider(color = Divider)
-            TableRow("기초지수 (%)", data.index1M, data.index3M, data.index6M)
-            HorizontalDivider(color = Divider)
-            TableRow("종가 (%)",   data.price1M, data.price3M, data.price6M)
+            TableRow("종가 (%)", data.price1M, data.price3M, data.price6M)
+        }
+
+        PeriodReturnBarChart(data = data)
+    }
+}
+
+@Composable
+private fun PeriodReturnBarChart(data: EtfPeriodReturn) {
+    val navColor   = PrimaryGreen
+    val priceColor = EtfFall
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(bottom = 8.dp),
+    ) {
+        listOf("NAV" to navColor, "종가" to priceColor).forEach { (label, color) ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(color))
+                Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceVariant)
+            .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        val periods = listOf(
+            listOf(data.nav1M, data.price1M),
+            listOf(data.nav3M, data.price3M),
+            listOf(data.nav6M, data.price6M),
+        )
+        val colors = listOf(navColor, priceColor)
+        val maxAbs = periods.flatten().maxOfOrNull { kotlin.math.abs(it) }?.takeIf { it > 0 } ?: 1.0
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(130.dp)) {
+            val zeroY  = size.height / 2f
+            drawLine(color = Color(0xFFCCCCCC), start = Offset(0f, zeroY), end = Offset(size.width, zeroY), strokeWidth = 1.5f)
+
+            val groupW  = size.width / 3f
+            val barW    = groupW * 0.25f
+            val spacing = barW * 0.5f
+
+            periods.forEachIndexed { gi, group ->
+                val cx     = groupW * gi + groupW / 2f
+                val startX = cx - (2 * barW + spacing) / 2f
+                group.forEachIndexed { bi, value ->
+                    val barH = (kotlin.math.abs(value) / maxAbs * zeroY).toFloat().coerceAtLeast(2f)
+                    val x    = startX + bi * (barW + spacing)
+                    val top  = if (value >= 0) zeroY - barH else zeroY
+                    drawRect(color = colors[bi], topLeft = Offset(x, top), size = Size(barW, barH))
+                }
+            }
+        }
+
+        // 기간 라벨
+        Row(modifier = Modifier.fillMaxWidth()) {
+            listOf("1개월", "3개월", "6개월").forEach { label ->
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }

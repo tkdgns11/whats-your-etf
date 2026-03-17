@@ -13,7 +13,7 @@ import com.d102.wye.data.local.entity.LikedEtfEntity
         EtfPriceHistoryEntity::class,
 //        EtfFundamentalsEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -79,24 +79,26 @@ fun QuickFilterRow(
 
 // ── 빠른 필터 칩 ───────────────────────────────────────────────
 fun activeFilterCount(f: EtfFilterState): Int =
-    f.riskLevels.size +
-            f.themes.size +
+    f.themes.size +
             listOfNotNull(
-                f.strategy, f.dividendRateRange, f.dividendCycle,
+                f.riskType, f.strategy, f.dividendRateRange, f.dividendCycle,
                 f.peRange, f.pbRange, f.roeRange, f.expenseRatioRange, f.netAssetRange,
                 f.hasDerivative?.let { "" },
                 f.hasLeverage?.let { "" },
                 f.hasInverse?.let { "" }).size
 
+private val riskLabels = mapOf(
+    "CONSERVATIVE" to "안정형",
+    "STABLE"       to "안정추구형",
+    "MODERATE"     to "위험중립형",
+    "ACTIVE"       to "적극투자형",
+    "AGGRESSIVE"   to "공격투자형",
+)
+
 fun buildActiveChips(f: EtfFilterState): List<Pair<String, EtfFilterState>> {
     val chips = mutableListOf<Pair<String, EtfFilterState>>()
 
-    val riskLabels = mapOf(1 to "안정형", 2 to "안정추구형", 3 to "위험중립형", 4 to "적극투자형", 5 to "공격투자형")
-    f.riskLevels.forEach { level ->
-        riskLabels[level]?.let { label ->
-            chips += label to f.copy(riskLevels = f.riskLevels - level)
-        }
-    }
+    f.riskType?.let { riskLabels[it]?.let { label -> chips += label to f.copy(riskType = null) } }
     f.strategy?.let { chips += it to f.copy(strategy = null, themes = emptySet()) }
     f.themes.forEach { theme -> chips += theme to f.copy(themes = f.themes - theme) }
 

@@ -298,7 +298,6 @@ fun AppNavGraph(
             ExploreScreen(
                 title = "종목 추가",
                 isSelectionMode = true,
-                initialSelectedTickers = currentTickers,
                 onBackClick = { navController.popBackStack() },
                 onEtfClick = { ticker, riskLevel ->
                     navController.navigate(Route.EtfDetail(ticker, riskLevel).route)
