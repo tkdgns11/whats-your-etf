@@ -28,4 +28,9 @@ public interface UserNotificationSettingRepository extends JpaRepository<UserNot
      * 사용자 ID와 알림 유형 코드로 조회
      */
     Optional<UserNotificationSetting> findByUserIdAndAlertTypeCode(Long userId, String alertTypeCode);
+
+    /**
+     * 사용자의 알림 설정 전체 삭제
+     */
+    void deleteAllByUserId(Long userId);
 }

@@ -3,10 +3,13 @@ package com.whatsyouretf.userservice.domain.user.service.impl;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.FileStorageService;
+import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
+import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioRepository;
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
@@ -38,6 +41,9 @@ public class UserServiceImpl implements UserService {
     private final EtfRepository etfRepository;
     private final EtfPriceRepository etfPriceRepository;
     private final FileStorageService fileStorageService;
+    private final PortfolioRepository portfolioRepository;
+    private final UserAlertRepository userAlertRepository;
+    private final UserNotificationSettingRepository userNotificationSettingRepository;
 
     @Override
     public UserResponse getUserById(Long userId) {
@@ -124,12 +130,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deactivateUser(Long userId) {
+    public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        user.deactivate();
-        log.info("User deactivated: {}", userId);
+        // 프로필 이미지 삭제
+        String profileImage = user.getProfileImage();
+        if (profileImage != null && !profileImage.isBlank()) {
+            fileStorageService.delete(profileImage);
+            log.info("프로필 이미지 삭제: {}", profileImage);
+        }
+
+        // 관련 데이터 삭제 (순서 중요: FK 제약조건 고려)
+        userAlertRepository.deleteAllByUserId(userId);
+        userNotificationSettingRepository.deleteAllByUserId(userId);
+        portfolioRepository.deleteAllByUserId(userId);
+        userFavoriteEtfRepository.deleteAllByUserId(userId);
+        userHoldingEtfRepository.deleteAllByUserId(userId);
+        // socialAccounts는 User 엔티티에서 cascade로 자동 삭제됨
+
+        // 사용자 삭제 (hard delete)
+        userRepository.delete(user);
+        log.info("User deleted (hard delete): {}", userId);
     }
 
     // ==================== 관심 ETF ====================
