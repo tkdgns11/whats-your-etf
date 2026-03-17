@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * ETF 관련 API Controller
  */
@@ -74,5 +76,18 @@ public class EtfController {
                                             .map(etfSummary -> EtfListResponse.of(
                                                     etfSummary,
                                                     etfService.getEtfCurrentInfo(etfSummary.ticker()))))));
+    }
+
+    @GetMapping
+    @Operation(summary = "etf top10 조회", description = "etf 실시간 거래량 top10 을 조회합니다.")
+    public ResponseEntity<ApiResponse<List<EtfTopTenListResponse>>> getTopTenEtfList() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        etfService.getTopTenList()
+                                .stream()
+                                .map(EtfTopTenListResponse::from)
+                                .toList()
+                ));
     }
 }

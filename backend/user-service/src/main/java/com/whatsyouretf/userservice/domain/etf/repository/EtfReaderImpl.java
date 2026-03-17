@@ -56,4 +56,9 @@ public class EtfReaderImpl implements EtfReader {
                         Function.identity()
                 ));
     }
+
+    @Override
+    public List<EtfCurrentInfo> getTopTenEtfs() {
+        return etfCache.getTopTenEtfsAndSortedByVolume();
+    }
 }

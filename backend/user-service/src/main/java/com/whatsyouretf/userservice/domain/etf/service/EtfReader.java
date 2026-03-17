@@ -20,4 +20,6 @@ public interface EtfReader {
     Map<String, Etf> getValidEtfs(List<String> list);
 
     Map<String, EtfCurrentInfo> getInfosMap(Set<String> tickers);
+
+    List<EtfCurrentInfo> getTopTenEtfs();
 }

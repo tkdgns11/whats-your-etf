@@ -99,6 +99,11 @@ public class EtfServiceImpl implements EtfService {
         return etfStockCompositionRepository.getEtfStockCompositionByStockTicker(ticker);
     }
 
+    @Override
+    public List<EtfCurrentInfo> getTopTenList() {
+        return etfReader.getTopTenEtfs();
+    }
+
     /**
      * 섹터 클러스터 조회 (버블 차트용)
      *

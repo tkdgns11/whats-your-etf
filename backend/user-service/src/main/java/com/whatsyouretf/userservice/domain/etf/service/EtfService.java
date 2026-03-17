@@ -43,4 +43,6 @@ public interface EtfService {
     Map<String, EtfCurrentInfo> getEtfCurrentInfoMap(Set<String> tickers);
 
     List<EtfStockComposition> getEtfsIncludingStock(String ticker);
+
+    List<EtfCurrentInfo> getTopTenList();
 }
