@@ -92,7 +92,7 @@ public class StockServiceImpl implements StockService {
                             .findByCode(s.getCompany().getIndustryCode())
                             .map(IndustryClassification::getName)
                             .orElse(null);
-                    String logoUrl = buildLogoUrl(s.getCompany().getId());
+                    String logoUrl = buildLogoUrl(s.getTicker());
                     return RelatedStockResponse.from(s, industryName, logoUrl);
                 })
                 .toList();
@@ -101,7 +101,7 @@ public class StockServiceImpl implements StockService {
     /**
      * 회사 로고 URL 생성
      */
-    private String buildLogoUrl(Long companyId) {
-        return logoBaseUrl + "/" + companyId + ".png";
+    private String buildLogoUrl(String ticker) {
+        return logoBaseUrl + "/" + ticker + ".png";
     }
 }
