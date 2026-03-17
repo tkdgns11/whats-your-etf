@@ -13,6 +13,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import com.whatsyouretf.userservice.domain.etf.repository.IndustryClassificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,10 @@ public class StockServiceImpl implements StockService {
     private final StockRepository stockRepository;
     private final IndustryClassificationRepository industryClassificationRepository;
     private final StockCache stockCache;
+
+    @Value("${app.logo.base-url}")
+    private String logoBaseUrl;
+
     private static final int DEFAULT_RELATED_LIMIT = 3;
 
     @Override
@@ -90,7 +95,8 @@ public class StockServiceImpl implements StockService {
                             .findByCode(s.getCompany().getIndustryCode())
                             .map(IndustryClassification::getName)
                             .orElse(null);
-                    return RelatedStockResponse.from(s, industryName);
+                    String logoUrl = buildLogoUrl(s.getTicker());
+                    return RelatedStockResponse.from(s, industryName, logoUrl);
                 })
                 .toList();
     }
@@ -98,5 +104,12 @@ public class StockServiceImpl implements StockService {
     @Override
     public StockInfo getStockInfo(String ticker) {
         return stockCache.get(ticker);
+    }
+
+    /**
+     * 회사 로고 URL 생성
+     */
+    private String buildLogoUrl(String ticker) {
+        return logoBaseUrl + "/" + ticker + ".png";
     }
 }

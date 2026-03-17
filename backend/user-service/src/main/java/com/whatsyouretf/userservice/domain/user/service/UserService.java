@@ -39,9 +39,9 @@ public interface UserService {
     boolean checkNicknameDuplicate(String nickname);
 
     /**
-     * 회원 탈퇴
+     * 회원 탈퇴 (hard delete)
      */
-    void deactivateUser(Long userId);
+    void deleteUser(Long userId);
 
     // ==================== 관심 ETF ====================
 
