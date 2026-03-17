@@ -63,8 +63,9 @@ fun MyPageScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.event.collect { event ->
-            if (event == MyPageEvent.LogoutSuccess) {
-                onLogoutClick()
+            when (event) {
+                MyPageEvent.LogoutSuccess -> onLogoutClick()
+                is MyPageEvent.ShowMessage -> snackbarHostState.showSnackbar(message = event.message)
             }
         }
     }
@@ -167,6 +168,7 @@ private fun MyPageScreenContent(
                         NicknameEditDialog(
                             currentNickname = uiState.data.nickname,
                             nicknameDraft = uiState.data.nicknameDraft,
+                            validationMessage = uiState.data.nicknameValidationMessage,
                             isSaving = uiState.data.isNicknameSaving,
                             onNicknameChange = onNicknameDraftChange,
                             onDismiss = onNicknameEditDismiss,

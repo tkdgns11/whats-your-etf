@@ -17,11 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.EtfRise
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceWhite
@@ -33,6 +35,7 @@ import com.d102.wye.presentation.theme.TextSecondary
 fun NicknameEditDialog(
     currentNickname: String,
     nicknameDraft: String,
+    validationMessage: String?,
     isSaving: Boolean,
     onNicknameChange: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -115,6 +118,17 @@ fun NicknameEditDialog(
                             unfocusedContainerColor = SurfaceWhite,
                             cursorColor = TextPrimary
                         )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = validationMessage
+                            ?: "닉네임은 2자 이상 20자 이하, 한글/영문/숫자만 사용할 수 있습니다.",
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (validationMessage != null) EtfRise else TextSecondary,
+                        textAlign = TextAlign.Center,
                     )
                 }
 

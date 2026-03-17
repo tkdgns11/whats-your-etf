@@ -6,15 +6,16 @@ import com.d102.wye.domain.model.SocialAccount
 import com.d102.wye.domain.model.UserProfile
 
 fun UserProfileResponse.toDomain() = UserProfile(
-    id = id,
-    email = email,
-    nickname = nickname,
+    id = id ?: 0L,
+    email = email.orEmpty(),
+    nickname = nickname.orEmpty(),
     profileImage = profileImage,
-    role = role,
-    isActive = isActive,
+    role = role.orEmpty(),
+    isActive = isActive ?: false,
     lastLoginAt = lastLoginAt,
-    createdAt = createdAt,
-    socialAccounts = socialAccounts.map { it.toDomain() }
+    createdAt = createdAt.orEmpty(),
+    // PATCH /users/me 응답에는 socialAccounts가 없어 null일 수 있다.
+    socialAccounts = socialAccounts.orEmpty().map { it.toDomain() }
 )
 
 fun SocialAccountResponse.toDomain() = SocialAccount(

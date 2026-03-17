@@ -4,23 +4,23 @@ import com.google.gson.annotations.SerializedName
 
 data class UserProfileResponse(
     @SerializedName("id")
-    val id: Long,
+    val id: Long? = null,
     @SerializedName("email")
-    val email: String,
+    val email: String? = null,
     @SerializedName("nickname")
-    val nickname: String,
+    val nickname: String? = null,
     @SerializedName("profileImage")
-    val profileImage: String?,
+    val profileImage: String? = null,
     @SerializedName("role")
-    val role: String,
+    val role: String? = null,
     @SerializedName("isActive")
-    val isActive: Boolean,
+    val isActive: Boolean? = null,
     @SerializedName("lastLoginAt")
     val lastLoginAt: String?,
     @SerializedName("createdAt")
-    val createdAt: String,
+    val createdAt: String? = null,
     @SerializedName("socialAccounts")
-    val socialAccounts: List<SocialAccountResponse> = emptyList()
+    val socialAccounts: List<SocialAccountResponse>? = null
 )
 
 data class SocialAccountResponse(
