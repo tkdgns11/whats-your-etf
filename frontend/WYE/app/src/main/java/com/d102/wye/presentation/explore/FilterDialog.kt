@@ -267,16 +267,16 @@ fun FilterDialog(
 
                     // ROE
                     FilterSection(title = "ROE") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                "5% 미만" to "under5",
-                                "5 - 15%" to "5-15",
-                                "15% 이상" to "over15"
-                            ).forEach { (label, value) ->
-                                WyeSelectableChip(
-                                    label = label,
-                                    selected = filter.roeRange == value,
-                                    onClick = { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) },
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            listOf(
+                                                "5% 미만" to "under5",
+                                                "5 - 15%" to "5-15",
+                                                "15% 이상" to "over15"
+                                            ).forEach { (label, value) ->
+                                                WyeSelectableChip(
+                                                    label = label,
+                                                    selected = filter.roeRange == value,
+                                                    onClick = { onFilterChanged(filter.copy(roeRange = if (filter.roeRange == value) null else value)) },
                                     unselectedColor = BackGroundLightGreen,
                                     showBorder = false,
                                 )
