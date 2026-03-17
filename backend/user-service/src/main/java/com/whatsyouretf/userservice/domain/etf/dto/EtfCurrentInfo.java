@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 
 public record EtfCurrentInfo(
         String ticker,
+        String name,
         BigDecimal currentPrice,
         BigDecimal previousPrice,
         Long volume,
@@ -14,6 +15,7 @@ public record EtfCurrentInfo(
 ) {
         public static EtfCurrentInfo update(
                 String ticker,
+                String name,
                 BigDecimal currentPrice,
                 BigDecimal previousPrice,
                 Long volume,
@@ -21,6 +23,7 @@ public record EtfCurrentInfo(
         ) {
                 return new EtfCurrentInfo(
                         ticker,
+                        name,
                         currentPrice,
                         previousPrice,
                         volume,
@@ -31,6 +34,6 @@ public record EtfCurrentInfo(
         }
 
         public static EtfCurrentInfo empty() {
-                return new EtfCurrentInfo(null, BigDecimal.valueOf(0),null,null,null,null,null);
+                return new EtfCurrentInfo(null, "", BigDecimal.valueOf(0),null,null,null,null,null);
         }
 }

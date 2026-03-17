@@ -1,10 +1,7 @@
 package com.whatsyouretf.userservice.domain.etf.service.impl;
 
 import com.whatsyouretf.userservice.domain.etf.dto.*;
-import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorAiHistory;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfSectorCluster;
+import com.whatsyouretf.userservice.domain.etf.entity.*;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfStockClusterMappingRepository;
@@ -52,7 +49,7 @@ public class EtfServiceImpl implements EtfService {
 
     // 테마형 ETF 전략 타입
     private static final String STRATEGY_THEME = "테마형";
-
+    private final EtfStockCompositionRepository etfStockCompositionRepository;
 
 
     /**
@@ -95,6 +92,16 @@ public class EtfServiceImpl implements EtfService {
     @Override
     public Map<String, EtfCurrentInfo> getEtfCurrentInfoMap(Set<String> tickers) {
         return etfReader.getInfosMap(tickers);
+    }
+
+    @Override
+    public List<EtfStockComposition> getEtfsIncludingStock(String ticker) {
+        return etfStockCompositionRepository.getEtfStockCompositionByStockTicker(ticker);
+    }
+
+    @Override
+    public List<EtfCurrentInfo> getTopTenList() {
+        return etfReader.getTopTenEtfs();
     }
 
     /**

@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
+import com.whatsyouretf.userservice.domain.etf.entity.EtfStockComposition;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -40,4 +41,8 @@ public interface EtfService {
     Map<String, Etf> getEtfListInTickers(List<String> list);
 
     Map<String, EtfCurrentInfo> getEtfCurrentInfoMap(Set<String> tickers);
+
+    List<EtfStockComposition> getEtfsIncludingStock(String ticker);
+
+    List<EtfCurrentInfo> getTopTenList();
 }
