@@ -207,4 +207,10 @@ class AuthRepositoryImpl @Inject constructor(
     override val isLoggedIn: Flow<Boolean> = authTokenDataStore.isLoggedIn
 
     override val accessToken: Flow<String?> = authTokenDataStore.accessToken
+
+    override val sessionExpired: Flow<Boolean> = authTokenDataStore.sessionExpired
+
+    override suspend fun consumeSessionExpired() {
+        authTokenDataStore.consumeSessionExpired()
+    }
 }

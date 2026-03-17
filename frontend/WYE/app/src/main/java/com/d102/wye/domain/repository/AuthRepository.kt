@@ -60,4 +60,10 @@ interface AuthRepository {
 
     /** Access Token Flow — 필요한 경우 직접 참조 */
     val accessToken: Flow<String?>
+
+    /** 세션 만료로 강제 로그아웃됐는지 여부 */
+    val sessionExpired: Flow<Boolean>
+
+    /** 세션 만료 안내를 소비 처리한다. */
+    suspend fun consumeSessionExpired()
 }

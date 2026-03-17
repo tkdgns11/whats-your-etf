@@ -30,9 +30,9 @@ class TokenRefreshInterceptor @Inject constructor(
         val originalRequest = chain.request()
         val response = chain.proceed(originalRequest)
 
-        if (response.code != 401) return response
+        if (response.code != 401 && response.code != 403) return response
 
-        Timber.w("Access token expired (401), attempting token refresh")
+        Timber.w("Auth failure (${response.code}), attempting token refresh")
 
         // AuthTokenDataStore에서 Refresh Token 읽기
         val refreshToken = runBlocking {
@@ -41,7 +41,7 @@ class TokenRefreshInterceptor @Inject constructor(
 
         if (refreshToken.isNullOrEmpty()) {
             Timber.e("No refresh token found, clearing auth data")
-            runBlocking { authTokenDataStore.clearTokens() }
+            runBlocking { authTokenDataStore.clearTokensBySessionExpired() }
             return response
         }
 
@@ -50,7 +50,7 @@ class TokenRefreshInterceptor @Inject constructor(
 
         if (newTokenPair == null) {
             Timber.e("Token refresh failed, clearing auth data")
-            runBlocking { authTokenDataStore.clearTokens() }
+            runBlocking { authTokenDataStore.clearTokensBySessionExpired() }
             return response
         }
 
@@ -105,7 +105,8 @@ class TokenRefreshInterceptor @Inject constructor(
 
             val tokenData = parsedResponse.data ?: return null
             val newAccessToken = tokenData.accessToken.takeIf { it.isNotEmpty() } ?: return null
-            val newRefreshToken = tokenData.refreshToken.takeIf { it.isNotEmpty() } ?: return null
+            // refresh API는 accessToken만 재발급하고 refreshToken은 생략할 수 있다.
+            val newRefreshToken = tokenData.refreshToken.takeIf { it.isNotEmpty() } ?: refreshToken
 
             Pair(newAccessToken, newRefreshToken)
         } catch (e: Exception) {

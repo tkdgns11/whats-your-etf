@@ -32,6 +32,7 @@ class AuthTokenDataStore @Inject constructor(
     private val accessTokenKey = stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)
     private val refreshTokenKey = stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)
     private val isLoggedInKey = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
+    private val sessionExpiredKey = booleanPreferencesKey(Constants.KEY_SESSION_EXPIRED)
 
     // ─────────────────────────────────────────
     // Read (Flow)
@@ -46,6 +47,9 @@ class AuthTokenDataStore @Inject constructor(
     /** 로그인 상태 Flow — MainActivity/AuthViewModel에서 startDestination 분기에 사용 */
     val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[isLoggedInKey] ?: false }
 
+    /** 토큰 만료 등으로 강제 로그아웃됐는지 여부 */
+    val sessionExpired: Flow<Boolean> = dataStore.data.map { it[sessionExpiredKey] ?: false }
+
     // ─────────────────────────────────────────
     // Write
     // ─────────────────────────────────────────
@@ -59,6 +63,7 @@ class AuthTokenDataStore @Inject constructor(
             preferences[accessTokenKey] = accessToken
             preferences[refreshTokenKey] = refreshToken
             preferences[isLoggedInKey] = true
+            preferences[sessionExpiredKey] = false
         }
     }
 
@@ -92,6 +97,24 @@ class AuthTokenDataStore @Inject constructor(
             preferences.remove(accessTokenKey)
             preferences.remove(refreshTokenKey)
             preferences[isLoggedInKey] = false
+            preferences[sessionExpiredKey] = false
+        }
+    }
+
+    /** 세션 만료로 인한 강제 로그아웃 처리 */
+    suspend fun clearTokensBySessionExpired() {
+        dataStore.edit { preferences ->
+            preferences.remove(accessTokenKey)
+            preferences.remove(refreshTokenKey)
+            preferences[isLoggedInKey] = false
+            preferences[sessionExpiredKey] = true
+        }
+    }
+
+    /** 세션 만료 안내를 한 번 보여준 뒤 소비 처리 */
+    suspend fun consumeSessionExpired() {
+        dataStore.edit { preferences ->
+            preferences[sessionExpiredKey] = false
         }
     }
 }
