@@ -1,7 +1,6 @@
 package com.d102.wye.presentation.explore
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.ui.unit.sp
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
@@ -51,6 +50,8 @@ import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 import com.d102.wye.presentation.theme.WYETheme
 
+private fun <T> Set<T>.toggle(item: T): Set<T> = if (item in this) this - item else this + item
+
 @Composable
 fun FilterDialog(
     filter: EtfFilterState,
@@ -91,26 +92,22 @@ fun FilterDialog(
                     // 위험 분류
                     FilterSection(title = "위험 분류") {
                         val riskItems = listOf(
-                            Triple(1, "안정형", "예금 보호 확정\n금리 추구형"),
-                            Triple(2, "안정추구형", "투자원금 손실\n최소화"),
-                            Triple(3, "위험중립형", "투자에 따른\n수익·손실 인지"),
-                            Triple(4, "적극투자형", "높은 수익 위해\n위험 감수"),
-                            Triple(5, "공격투자형", "원금 손실 감수\n고위험 투자"),
+                            Triple("CONSERVATIVE", "안정형", "예금 보호 확정\n금리 추구형"),
+                            Triple("STABLE", "안정추구형", "투자원금 손실\n최소화"),
+                            Triple("MODERATE", "위험중립형", "투자에 따른\n수익·손실 인지"),
+                            Triple("ACTIVE", "적극투자형", "높은 수익 위해\n위험 감수"),
+                            Triple("AGGRESSIVE", "공격투자형", "원금 손실 감수\n고위험 투자"),
                         )
                         // 1행: 안정형 안정추구형 위험중립형
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            riskItems.take(3).forEach { (level, label, desc) ->
+                            riskItems.take(3).forEach { (type, label, desc) ->
                                 WyeSelectableChip(
                                     label = label,
                                     description = desc,
-                                    selected = level in filter.riskLevels,
+                                    selected = filter.riskType == type,
                                     onClick = {
                                         onFilterChanged(
-                                            filter.copy(
-                                                riskLevels = filter.riskLevels.toggle(
-                                                    level
-                                                )
-                                            )
+                                            filter.copy(riskType = if (filter.riskType == type) null else type)
                                         )
                                     },
                                     modifier = Modifier.weight(1f),
@@ -121,18 +118,14 @@ fun FilterDialog(
                         }
                         // 2행: 적극투자형 공격투자형
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            riskItems.drop(3).forEach { (level, label, desc) ->
+                            riskItems.drop(3).forEach { (type, label, desc) ->
                                 WyeSelectableChip(
                                     label = label,
                                     description = desc,
-                                    selected = level in filter.riskLevels,
+                                    selected = filter.riskType == type,
                                     onClick = {
                                         onFilterChanged(
-                                            filter.copy(
-                                                riskLevels = filter.riskLevels.toggle(
-                                                    level
-                                                )
-                                            )
+                                            filter.copy(riskType = if (filter.riskType == type) null else type)
                                         )
                                     },
                                     modifier = Modifier.weight(1f),
@@ -394,7 +387,7 @@ private fun ThemeFilterSection(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 "투자 테마",
-                style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
+                style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -441,7 +434,7 @@ private fun FilterSection(title: String, content: @Composable ColumnScope.() -> 
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp), color = TextPrimary)
+            Text(title, style = MaterialTheme.typography.titleSmall, color = TextPrimary)
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = if (expanded) "접기" else "펼치기",
@@ -475,7 +468,7 @@ private fun LockedFilterSection(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 title,
-                style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
+                style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -505,210 +498,4 @@ private fun LockedFilterSection(
     }
 }
 
-// Set 토글 헬퍼
-private fun <T> Set<T>.toggle(item: T): Set<T> = if (item in this) this - item else this + item
 
-@Preview(showBackground = true, widthDp = 400, heightDp = 900)
-@Composable
-private fun FilterDialogPreview() {
-    val filter = EtfFilterState(
-        riskLevels = setOf(1, 3),
-        strategy = "테마형",
-        themes = setOf("전자 / IT", "바이오 / 의약"),
-        dividendCycle = "월",
-        hasDerivative = false,
-    )
-    val riskItems = listOf(
-        Triple(1, "안정형", "예금 보호 확정\n금리 추구형"),
-        Triple(2, "안정추구형", "투자원금 손실\n최소화"),
-        Triple(3, "위험중립형", "투자에 따른\n수익·손실 인지"),
-        Triple(4, "적극투자형", "높은 수익 위해\n위험 감수"),
-        Triple(5, "공격투자형", "원금 손실 감수\n고위험 투자"),
-    )
-    WYETheme {
-        Surface(modifier = Modifier.fillMaxSize(), shape = MaterialTheme.shapes.large) {
-            Column {
-                FilterDialogHeader(onReset = {}, onDismiss = {})
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Spacer(Modifier.height(4.dp))
-                    FilterSection(title = "위험 분류") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            riskItems.take(3).forEach { (level, label, desc) ->
-                                WyeSelectableChip(
-                                    label = label,
-                                    selected = level in filter.riskLevels,
-                                    onClick = {},
-                                    modifier = Modifier.weight(1f),
-                                    description = desc
-                                )
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            riskItems.drop(3).forEach { (level, label, desc) ->
-                                WyeSelectableChip(
-                                    label = label,
-                                    selected = level in filter.riskLevels,
-                                    onClick = {},
-                                    modifier = Modifier.weight(1f),
-                                    description = desc
-                                )
-                            }
-                            Spacer(Modifier.weight(1f))
-                        }
-                    }
-                    FilterSection(title = "투자 전략") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("시장 대표", "테마형", "배당형", "채권형").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = filter.strategy == s,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "투자 테마") {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(
-                                "전자 / IT",
-                                "바이오 / 의약",
-                                "에너지 / 유틸리티",
-                                "자동차",
-                                "화학 / 소재",
-                                "철강 / 금속",
-                                "식품 / 음료",
-                                "금융",
-                                "건설",
-                                "운송",
-                                "유통 / 소매",
-                                "통신 / 미디어",
-                                "기타"
-                            ).forEach { t ->
-                                WyeSelectableChip(
-                                    label = t,
-                                    selected = t in filter.themes,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "배당률") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("0 - 5%", "5 - 10%").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "배당주기") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("월", "반기", "분기", "년").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = filter.dividendCycle == s,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "파생상품") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            WyeSelectableChip(
-                                label = "O",
-                                selected = filter.hasDerivative == true,
-                                onClick = {})
-                            WyeSelectableChip(
-                                label = "X",
-                                selected = filter.hasDerivative == false,
-                                onClick = {})
-                        }
-                    }
-                    LockedFilterSection(
-                        title = "레버리지",
-                        locked = filter.hasDerivative != true,
-                        selected = filter.hasLeverage,
-                        onChanged = {})
-                    LockedFilterSection(
-                        title = "인버스",
-                        locked = filter.hasDerivative != true,
-                        selected = filter.hasInverse,
-                        onChanged = {})
-                    FilterSection(title = "P/E") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("10배 이하", "10 - 20배", "20배 이상").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "P/B") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("1배 미만", "1 - 3배", "3배 이상").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "ROE") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("5% 미만", "5 - 15%", "15% 이상").forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "운용보수(수수료)") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                "0.05% 미만",
-                                "0.05 - 0.5%",
-                                "0.5% 이상"
-                            ).forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    FilterSection(title = "순자산액") {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                "100억 미만",
-                                "100 - 1000억",
-                                "1000억 이상"
-                            ).forEach { s ->
-                                WyeSelectableChip(
-                                    label = s,
-                                    selected = false,
-                                    onClick = {})
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                }
-                WyePrimaryButton(
-                    text = "42개의 결과 보기",
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                )
-            }
-        }
-    }
-}
