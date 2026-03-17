@@ -130,7 +130,7 @@ private fun InfluentialStocksSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "영향을 많이 끼치는 종목",
+            "현재 이 ETF에 영향을 많이 끼치는 종목은?",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = TextPrimary,
         )
