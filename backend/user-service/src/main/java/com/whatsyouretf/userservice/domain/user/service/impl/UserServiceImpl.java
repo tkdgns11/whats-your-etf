@@ -112,7 +112,7 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        user.updateProfile(request.getNickname(), request.getProfileImage());
+        user.updateProfile(request.getNickname(), null);
 
         return UserResponse.fromWithoutSocialAccounts(user);
     }
