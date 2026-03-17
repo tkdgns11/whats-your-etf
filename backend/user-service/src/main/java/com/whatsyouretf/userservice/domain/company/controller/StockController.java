@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.company.controller;
 
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.company.dto.RelatedStockResponse;
+import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 import com.whatsyouretf.userservice.domain.company.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,5 +46,14 @@ public class StockController {
     ) {
         List<RelatedStockResponse> response = stockService.getRelatedStocks(ticker);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "주식 시세 조회", description = "주식의 시세를 조회합니다.")
+    @GetMapping("/{ticker}")
+    public ResponseEntity<ApiResponse<StockInfo>> getStockInfo(
+        @Parameter(description = "종목 티커 (6자리)") @PathVariable String ticker
+    ) {
+        return ResponseEntity.ok(
+            ApiResponse.success(stockService.getStockInfo(ticker)));
     }
 }

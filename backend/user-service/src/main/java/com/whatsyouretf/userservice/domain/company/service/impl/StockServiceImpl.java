@@ -2,10 +2,12 @@ package com.whatsyouretf.userservice.domain.company.service.impl;
 
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 import com.whatsyouretf.userservice.domain.company.dto.RelatedStockResponse;
 import com.whatsyouretf.userservice.domain.company.entity.CompanyInfo;
 import com.whatsyouretf.userservice.domain.company.entity.Stock;
 import com.whatsyouretf.userservice.domain.company.repository.StockRepository;
+import com.whatsyouretf.userservice.domain.company.service.StockCache;
 import com.whatsyouretf.userservice.domain.company.service.StockService;
 import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import com.whatsyouretf.userservice.domain.etf.repository.IndustryClassificationRepository;
@@ -29,7 +31,7 @@ public class StockServiceImpl implements StockService {
 
     private final StockRepository stockRepository;
     private final IndustryClassificationRepository industryClassificationRepository;
-
+    private final StockCache stockCache;
     private static final int DEFAULT_RELATED_LIMIT = 3;
 
     @Override
@@ -91,5 +93,10 @@ public class StockServiceImpl implements StockService {
                     return RelatedStockResponse.from(s, industryName);
                 })
                 .toList();
+    }
+
+    @Override
+    public StockInfo getStockInfo(String ticker) {
+        return stockCache.get(ticker);
     }
 }

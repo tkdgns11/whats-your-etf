@@ -1,6 +1,7 @@
 package com.whatsyouretf.userservice.domain.company.service;
 
 import com.whatsyouretf.userservice.domain.company.dto.RelatedStockResponse;
+import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 
 import java.util.List;
 
@@ -24,4 +25,6 @@ public interface StockService {
      * @return 관련 종목 목록
      */
     List<RelatedStockResponse> getRelatedStocks(String ticker);
+
+    StockInfo getStockInfo(String ticker);
 }
