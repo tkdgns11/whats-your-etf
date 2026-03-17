@@ -56,4 +56,13 @@ public class StockController {
         return ResponseEntity.ok(
             ApiResponse.success(stockService.getStockInfo(ticker)));
     }
+
+//    @Operation(summary = "주식 종목 포함 etf 조회", description = "주식이 포함된 etf를 조회합니다.")
+//    @GetMapping("/{ticker}/etfs")
+//    public ResponseEntity<ApiResponse<List<StockEtfResponse>>> getStockEtfs(
+//        @Parameter(description = "종목 티커 (6자리)") @PathVariable String ticker
+//    ) {
+//        return ResponseEntity.ok(
+//            ApiResponse.success(ticker));
+//    }
 }
