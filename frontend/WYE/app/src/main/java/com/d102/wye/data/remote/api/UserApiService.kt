@@ -1,6 +1,7 @@
 package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.FavoriteEtfListResponse
 import com.d102.wye.data.remote.dto.response.UserProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -11,6 +12,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Query
 import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
 
 interface UserApiService {
@@ -18,6 +20,12 @@ interface UserApiService {
     /** 현재 로그인한 사용자의 프로필 정보를 조회한다. */
     @GET("users/me")
     suspend fun getMyProfile(): Response<BaseResponse<UserProfileResponse>>
+
+    /** 현재 로그인한 사용자의 관심 ETF 목록을 조회한다. */
+    @GET("users/me/favorites/etfs")
+    suspend fun getFavoriteEtfs(
+        @Query("sort") sort: String = "RECENT"
+    ): Response<BaseResponse<FavoriteEtfListResponse>>
 
     /** 변경할 필드만 전달해 내 프로필을 수정한다. */
     @PATCH("users/me")

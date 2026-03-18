@@ -11,6 +11,8 @@ import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
+import com.d102.wye.domain.model.FavoriteEtfList
+import com.d102.wye.domain.model.FavoriteEtfSort
 import com.d102.wye.domain.model.UserProfile
 import com.d102.wye.domain.repository.UserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,6 +33,12 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getMyProfile(): BaseResult<UserProfile> {
         return safeApiCall {
             userApiService.getMyProfile()
+        }.map { it.toDomain() }
+    }
+
+    override suspend fun getFavoriteEtfs(sort: FavoriteEtfSort): BaseResult<FavoriteEtfList> {
+        return safeApiCall {
+            userApiService.getFavoriteEtfs(sort = sort.queryValue)
         }.map { it.toDomain() }
     }
 
