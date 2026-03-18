@@ -22,12 +22,18 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val userApiService: UserApiService,
     @ApplicationContext private val context: Context
 ) : BaseRepository(), UserRepository {
+
+    private val _favoriteEtfChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    override val favoriteEtfChanged: Flow<Unit> = _favoriteEtfChanged.asSharedFlow()
 
     /** 마이페이지에서 사용할 내 프로필 정보를 서버에서 조회한다. */
     override suspend fun getMyProfile(): BaseResult<UserProfile> {
@@ -42,9 +48,27 @@ class UserRepositoryImpl @Inject constructor(
         }.map { it.toDomain() }
     }
 
-    override suspend fun checkFavoriteEtf(etfId: Long): BaseResult<Boolean> {
+    override suspend fun checkFavoriteEtf(ticker: String): BaseResult<Boolean> {
         return safeApiCall {
-            userApiService.checkFavoriteEtf(etfId = etfId)
+            userApiService.checkFavoriteEtf(ticker = ticker)
+        }
+    }
+
+    override suspend fun addFavoriteEtf(ticker: String): BaseResult<Unit> {
+        Timber.d("[FavoriteEtf] add request | ticker=$ticker")
+        return safeApiCallWithoutData(
+            onSuccess = { _favoriteEtfChanged.tryEmit(Unit) }
+        ) {
+            userApiService.addFavoriteEtf(ticker = ticker)
+        }
+    }
+
+    override suspend fun deleteFavoriteEtf(ticker: String): BaseResult<Unit> {
+        Timber.d("[FavoriteEtf] delete request | ticker=$ticker")
+        return safeApiCallWithoutData(
+            onSuccess = { _favoriteEtfChanged.tryEmit(Unit) }
+        ) {
+            userApiService.deleteFavoriteEtf(ticker = ticker)
         }
     }
 

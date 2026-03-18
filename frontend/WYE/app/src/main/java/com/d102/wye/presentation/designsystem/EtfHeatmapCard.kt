@@ -42,6 +42,7 @@ fun EtfHeatmapCard(
         changeRate < 0 -> EtfFall
         else           -> EtfNeutral
     }
+    val textColor = if (changeRate == 0.0) Color.Black else Color.White
 
     // 등락률 크기에 비례해 알파(채도) 조절 (0.4 ~ 1.0)
     val alpha = (0.4f + (kotlin.math.abs(changeRate) / 5.0).coerceAtMost(0.6)).toFloat()
@@ -60,7 +61,7 @@ fun EtfHeatmapCard(
         // ETF 이름 (상단 왼쪽)
         Text(
             text = etfName,
-            color = Color.Black,
+            color = textColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
@@ -71,7 +72,7 @@ fun EtfHeatmapCard(
         // 등락률 (하단 왼쪽)
         Text(
             text = rateText,
-            color = Color.Black,
+            color = textColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.BottomStart),

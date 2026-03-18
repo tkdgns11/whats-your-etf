@@ -35,12 +35,11 @@ fun FavoriteEtfListResponse.toDomain() = FavoriteEtfList(
 )
 
 fun FavoriteEtfResponse.toDomain() = FavoriteEtf(
-    etfId = etfId,
-    ticker = stockCode,
+    ticker = ticker,
     name = name,
     category = category,
     assetManager = assetManager,
-    currentPrice = currentPrice,
+    currentPrice = currentPrice.toLong(),
     changeRate = changeRate,
     favoritedAt = favoritedAt
 )

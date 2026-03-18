@@ -29,10 +29,22 @@ interface UserApiService {
     ): Response<BaseResponse<FavoriteEtfListResponse>>
 
     /** 특정 ETF가 관심 ETF에 등록되어 있는지 확인한다. */
-    @GET("users/me/favorites/etfs/{etfId}/check")
+    @GET("users/me/favorites/etfs/{ticker}/check")
     suspend fun checkFavoriteEtf(
-        @Path("etfId") etfId: Long
+        @Path("ticker") ticker: String
     ): Response<BaseResponse<Boolean>>
+
+    /** 특정 ETF를 관심 ETF에 추가한다. */
+    @POST("users/me/favorites/etfs/{ticker}")
+    suspend fun addFavoriteEtf(
+        @Path("ticker") ticker: String
+    ): Response<BaseResponse<Unit>>
+
+    /** 특정 ETF를 관심 ETF에서 삭제한다. */
+    @DELETE("users/me/favorites/etfs/{ticker}")
+    suspend fun deleteFavoriteEtf(
+        @Path("ticker") ticker: String
+    ): Response<BaseResponse<Unit>>
 
     /** 변경할 필드만 전달해 내 프로필을 수정한다. */
     @PATCH("users/me")

@@ -6,7 +6,6 @@ data class FavoriteEtfList(
 )
 
 data class FavoriteEtf(
-    val etfId: Long,
     val ticker: String,
     val name: String,
     val category: String?,

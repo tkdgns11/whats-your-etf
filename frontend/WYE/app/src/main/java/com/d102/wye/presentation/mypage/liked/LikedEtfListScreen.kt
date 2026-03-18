@@ -115,7 +115,7 @@ fun LikedEtfListScreen(
                                     changeAmount = etf.changeAmount,
                                     riskType = etf.riskType,
                                     isLiked = etf.isLiked,
-                                    onLikeToggled = { viewModel.onLikeToggled() },
+                                    onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
                                     onClick = { onEtfClick(etf.ticker) }
                                 )
                             }
