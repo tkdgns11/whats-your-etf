@@ -50,6 +50,12 @@ public class Etf {
     @Column(name = "asset_manager", length = 50)
     private String assetManager;
 
+    @Column(name = "is_krx_only")
+    private Boolean isKrxOnly;
+
+    @Column(name = "is_derivatives")
+    private Boolean isDerivatives;
+
     /** 레버리지 ETF 여부 */
     @Column(name = "is_leveraged")
     @Builder.Default
