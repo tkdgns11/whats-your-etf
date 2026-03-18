@@ -18,6 +18,7 @@ import com.d102.wye.domain.model.TopVolumeEtf
 
 // POST /api/v1/etfs 리스트 항목 → Etf (API가 주는 7개 필드만)
 fun EtfListItemResponse.toDomain() = Etf(
+    etfId = etfId,
     ticker = ticker,
     name = etfName,
     currentPrice = etfPrice,

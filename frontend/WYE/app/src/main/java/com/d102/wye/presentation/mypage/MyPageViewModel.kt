@@ -3,6 +3,7 @@ package com.d102.wye.presentation.mypage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.FavoriteEtfSort
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.domain.repository.UserRepository
 import com.d102.wye.domain.usecase.user.ValidateNicknameUseCase
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +33,7 @@ class MyPageViewModel @Inject constructor(
     val event: SharedFlow<MyPageEvent> = _event
 
     init {
+        observeFavoriteEtfChanges()
         loadMyPageData()
     }
 
@@ -38,22 +41,29 @@ class MyPageViewModel @Inject constructor(
     fun loadMyPageData() {
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
-            when (val result = userRepository.getMyProfile()) {
+            val profileResult = userRepository.getMyProfile()
+            val favoriteResult = userRepository.getFavoriteEtfs(FavoriteEtfSort.RECENT)
+
+            when (profileResult) {
+                is BaseResult.Error -> _uiState.update { UiState.Error(profileResult.error.message) }
                 is BaseResult.Success -> {
-                    // users/me만 먼저 연결하므로 관심 ETF 수와 보유 ETF는 후속 API 연동 전까지 기본값을 쓴다.
+                    val likedEtfCount = when (favoriteResult) {
+                        is BaseResult.Success -> favoriteResult.data.totalCount
+                        is BaseResult.Error -> 0
+                    }
+
                     _uiState.update {
                         UiState.Success(
                             MyPageData(
-                                nickname = result.data.nickname,
-                                nicknameDraft = result.data.nickname,
-                                profileImage = result.data.profileImage,
-                                likedEtfCount = 0,
+                                nickname = profileResult.data.nickname,
+                                nicknameDraft = profileResult.data.nickname,
+                                profileImage = profileResult.data.profileImage,
+                                likedEtfCount = likedEtfCount,
                                 holdingEtfs = emptyList()
                             )
                         )
                     }
                 }
-                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
             }
         }
     }
@@ -195,6 +205,21 @@ class MyPageViewModel @Inject constructor(
             when (current) {
                 is UiState.Success -> UiState.Success(transform(current.data))
                 else -> current
+            }
+        }
+    }
+
+    private fun observeFavoriteEtfChanges() {
+        viewModelScope.launch {
+            userRepository.favoriteEtfChanged.collectLatest {
+                when (val result = userRepository.getFavoriteEtfs(FavoriteEtfSort.RECENT)) {
+                    is BaseResult.Success -> {
+                        updateSuccessState { data ->
+                            data.copy(likedEtfCount = result.data.totalCount)
+                        }
+                    }
+                    is BaseResult.Error -> Unit
+                }
             }
         }
     }

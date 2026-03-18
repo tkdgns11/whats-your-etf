@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.domain.model.FavoriteEtfSort
 import com.d102.wye.presentation.designsystem.EtfListItem
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
@@ -43,6 +44,7 @@ import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.SurfaceWhite
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun LikedEtfListScreen(
@@ -59,6 +61,14 @@ fun LikedEtfListScreen(
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.event.collect { event ->
+            when (event) {
+                is LikedEtfListEvent.ShowMessage -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             WyeTopBar(
@@ -67,6 +77,8 @@ fun LikedEtfListScreen(
             )
 
             LikedEtfSortRow(
+                selectedSort = (uiState as? UiState.Success)?.data?.selectedSort ?: FavoriteEtfSort.RECENT,
+                onSortSelected = viewModel::onSortChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -124,10 +136,19 @@ fun LikedEtfListScreen(
 }
 
 @Composable
-private fun LikedEtfSortRow(modifier: Modifier = Modifier) {
-    val sortOptions = listOf("거래량 순", "등락률 순", "시가총액 순")
+private fun LikedEtfSortRow(
+    selectedSort: FavoriteEtfSort,
+    onSortSelected: (FavoriteEtfSort) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val sortOptions = listOf(
+        FavoriteEtfSort.RECENT to "최근 등록순",
+        FavoriteEtfSort.CHANGE_RATE_DESC to "등락률 높은순",
+        FavoriteEtfSort.CHANGE_RATE_ASC to "등락률 낮은순",
+        FavoriteEtfSort.NAME_ASC to "이름순"
+    )
     var expanded by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(sortOptions[0]) }
+    val selectedLabel = sortOptions.firstOrNull { it.first == selectedSort }?.second ?: "최근 등록순"
 
     Row(
         modifier = modifier,
@@ -144,7 +165,7 @@ private fun LikedEtfSortRow(modifier: Modifier = Modifier) {
                     .padding(horizontal = 12.dp, vertical = 7.dp)
             ) {
                 Text(
-                    text = selected,
+                    text = selectedLabel,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary,
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall
@@ -163,12 +184,12 @@ private fun LikedEtfSortRow(modifier: Modifier = Modifier) {
                 containerColor = SurfaceWhite,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                sortOptions.forEach { option ->
-                    val isSelected = selected == option
+                sortOptions.forEach { (sort, label) ->
+                    val isSelected = selectedSort == sort
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = option,
+                                text = label,
                                 color = if (isSelected) PrimaryGreen else TextPrimary
                             )
                         },
@@ -183,7 +204,7 @@ private fun LikedEtfSortRow(modifier: Modifier = Modifier) {
                             }
                         },
                         onClick = {
-                            selected = option
+                            onSortSelected(sort)
                             expanded = false
                         }
                     )
