@@ -6,6 +6,7 @@ import com.d102.wye.data.remote.dto.response.EtfListItemResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryPageResponse
 import com.d102.wye.data.remote.dto.response.EtfPricePointResponse
 import com.d102.wye.data.remote.dto.response.EtfSectorResponse
+import com.d102.wye.data.remote.dto.response.TopVolumeEtfResponse
 import com.d102.wye.domain.model.Etf
 import com.d102.wye.domain.model.EtfCluster
 import com.d102.wye.domain.model.EtfClusterData
@@ -13,6 +14,7 @@ import com.d102.wye.domain.model.EtfClusterStock
 import com.d102.wye.domain.model.EtfDetail
 import com.d102.wye.domain.model.EtfPriceData
 import com.d102.wye.domain.model.InfluentialStock
+import com.d102.wye.domain.model.TopVolumeEtf
 
 // POST /api/v1/etfs 리스트 항목 → Etf (API가 주는 7개 필드만)
 fun EtfListItemResponse.toDomain() = Etf(
@@ -79,3 +81,11 @@ fun EtfPricePointResponse.toDomain() = EtfPriceData(
 
 // price-history 페이지 → List<EtfPricePoint>
 fun EtfPriceHistoryPageResponse.toDomain() = content.map { it.toDomain() }
+
+// GET /api/v1/etfs 거래량 TOP 10 항목 → TopVolumeEtf
+fun TopVolumeEtfResponse.toDomain() = TopVolumeEtf(
+    ticker = ticker,
+    name = name,
+    dailyReturn = dailyReturn,
+    volume = volume
+)

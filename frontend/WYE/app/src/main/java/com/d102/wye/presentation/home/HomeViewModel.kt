@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.News
+import com.d102.wye.domain.model.TopVolumeEtf
+import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
-    // TODO: private val marketRepository: MarketRepository,
+    private val etfRepository: EtfRepository,
     // TODO: private val portfolioRepository: PortfolioRepository
 ) : ViewModel() {
 
@@ -35,21 +39,29 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
 
-            when (val newsResult = newsRepository.getNewsList()) {
-                is BaseResult.Success -> {
-                    _uiState.update {
-                        UiState.Success(
-                            mockHomeData().copy(
-                                newsList = newsResult.data
-                                    .take(HOME_NEWS_LIMIT)
-                                    .map { it.toHomeNewsUiModel() }
-                            )
-                        )
-                    }
-                }
+            coroutineScope {
+                val newsDeferred = async { newsRepository.getNewsList() }
+                val topVolumeDeferred = async { etfRepository.getTopVolumeEtfs() }
 
-                is BaseResult.Error -> {
-                    _uiState.update { UiState.Error(newsResult.error.message) }
+                when (val newsResult = newsDeferred.await()) {
+                    is BaseResult.Error -> _uiState.update { UiState.Error(newsResult.error.message) }
+                    is BaseResult.Success -> {
+                        when (val topVolumeResult = topVolumeDeferred.await()) {
+                            is BaseResult.Success -> {
+                                _uiState.update {
+                                    UiState.Success(
+                                        mockHomeData().copy(
+                                            top10Etfs = topVolumeResult.data.map { it.toHomeTop10UiModel() },
+                                            newsList = newsResult.data
+                                                .take(HOME_NEWS_LIMIT)
+                                                .map { it.toHomeNewsUiModel() }
+                                        )
+                                    )
+                                }
+                            }
+                            is BaseResult.Error -> _uiState.update { UiState.Error(topVolumeResult.error.message) }
+                        }
+                    }
                 }
             }
         }
@@ -63,6 +75,13 @@ class HomeViewModel @Inject constructor(
         timeAgo = publishedAt.toTimeAgo(),
         source = source,
         thumbnailUrl = thumbnailUrl
+    )
+
+    /** 거래량 TOP 10 도메인 모델을 홈 탭 UI 모델로 변환한다. */
+    private fun TopVolumeEtf.toHomeTop10UiModel() = Top10EtfUiModel(
+        ticker = ticker,
+        name = name,
+        changeRate = dailyReturn
     )
 
     /** 서버 시간을 홈 화면 카드용 상대 시간 문자열로 변환한다. */
@@ -81,18 +100,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun mockHomeData(): HomeData = HomeData(
-        top10Etfs = listOf(
-            Top10EtfUiModel("069500", "KODEX 200", 1.24),
-            Top10EtfUiModel("360750", "TIGER 미국 S&P500", 0.85),
-            Top10EtfUiModel("114800", "KODEX 인버스", -0.98),
-            Top10EtfUiModel("091160", "KODEX 반도체", 1.10),
-            Top10EtfUiModel("133690", "TIGER 나스닥100", 0.42),
-            Top10EtfUiModel("122630", "KODEX 레버리지", -0.12),
-            Top10EtfUiModel("305720", "KODEX 2차전지", -1.54),
-            Top10EtfUiModel("438900", "SOL 미국배당", 0.15),
-            Top10EtfUiModel("371460", "TIGER 차이나전기차SOL", -0.72),
-            Top10EtfUiModel("360200", "ACE 미국 S&P500", 0.81)
-        ),
+        top10Etfs = emptyList(),
         portfolio = PortfolioSummaryUiModel(
             name = "내 포트폴리오 1",
             totalAmount = "123,456,789 원",

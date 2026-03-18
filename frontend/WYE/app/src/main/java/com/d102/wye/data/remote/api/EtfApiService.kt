@@ -6,6 +6,7 @@ import com.d102.wye.data.remote.dto.response.EtfClusterDataResponse
 import com.d102.wye.data.remote.dto.response.EtfDetailResponse
 import com.d102.wye.data.remote.dto.response.EtfPageResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryPageResponse
+import com.d102.wye.data.remote.dto.response.TopVolumeEtfResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -14,6 +15,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface EtfApiService {
+
+    // 홈 거래량 TOP 10 ETF 조회 GET /api/v1/etfs
+    @GET("etfs")
+    suspend fun getTopVolumeEtfs(): Response<BaseResponse<List<TopVolumeEtfResponse>>>
 
     // ETF 목록 조회 POST /api/v1/etfs
     @POST("etfs")
