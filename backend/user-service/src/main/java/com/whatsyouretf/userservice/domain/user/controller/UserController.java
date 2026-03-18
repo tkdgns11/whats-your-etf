@@ -166,16 +166,16 @@ public class UserController {
      * 관심 ETF 추가
      *
      * @param userDetails 인증된 사용자 정보
-     * @param etfId       ETF ID
+     * @param ticker      ETF 종목코드
      * @return 성공 응답
      */
     @Operation(summary = "관심 ETF 추가", description = "ETF를 관심 목록에 추가합니다.")
-    @PostMapping("/me/favorites/etfs/{etfId}")
+    @PostMapping("/me/favorites/etfs/{ticker}")
     public ResponseEntity<ApiResponse<Void>> addFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "ETF ID") @PathVariable Long etfId
+            @Parameter(description = "ETF 종목코드") @PathVariable String ticker
     ) {
-        userService.addFavoriteEtf(userDetails.getUserId(), etfId);
+        userService.addFavoriteEtf(userDetails.getUserId(), ticker);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("관심 ETF 추가 완료"));
     }
@@ -184,16 +184,16 @@ public class UserController {
      * 관심 ETF 삭제
      *
      * @param userDetails 인증된 사용자 정보
-     * @param etfId       ETF ID
+     * @param ticker      ETF 종목코드
      * @return 성공 응답
      */
     @Operation(summary = "관심 ETF 삭제", description = "ETF를 관심 목록에서 삭제합니다.")
-    @DeleteMapping("/me/favorites/etfs/{etfId}")
+    @DeleteMapping("/me/favorites/etfs/{ticker}")
     public ResponseEntity<ApiResponse<Void>> removeFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "ETF ID") @PathVariable Long etfId
+            @Parameter(description = "ETF 종목코드") @PathVariable String ticker
     ) {
-        userService.removeFavoriteEtf(userDetails.getUserId(), etfId);
+        userService.removeFavoriteEtf(userDetails.getUserId(), ticker);
         return ResponseEntity.ok(ApiResponse.success("관심 ETF 삭제 완료"));
     }
 
@@ -201,16 +201,16 @@ public class UserController {
      * 관심 ETF 여부 확인
      *
      * @param userDetails 인증된 사용자 정보
-     * @param etfId       ETF ID
+     * @param ticker      ETF 종목코드
      * @return true = 관심 등록됨
      */
     @Operation(summary = "관심 ETF 여부 확인", description = "특정 ETF가 관심 목록에 있는지 확인합니다.")
-    @GetMapping("/me/favorites/etfs/{etfId}/check")
+    @GetMapping("/me/favorites/etfs/{ticker}/check")
     public ResponseEntity<ApiResponse<Boolean>> checkFavoriteEtf(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Parameter(description = "ETF ID") @PathVariable Long etfId
+            @Parameter(description = "ETF 종목코드") @PathVariable String ticker
     ) {
-        boolean isFavorite = userService.isFavoriteEtf(userDetails.getUserId(), etfId);
+        boolean isFavorite = userService.isFavoriteEtf(userDetails.getUserId(), ticker);
         return ResponseEntity.ok(ApiResponse.success(isFavorite));
     }
 
