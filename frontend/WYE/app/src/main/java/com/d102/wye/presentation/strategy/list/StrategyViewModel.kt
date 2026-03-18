@@ -21,8 +21,15 @@ class StrategyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<StrategyListData>>(UiState.Idle)
     val uiState: StateFlow<UiState<StrategyListData>> = _uiState.asStateFlow()
 
-    init {
-        loadStrategies()
+    private val _showEditDialog = MutableStateFlow<StrategyCardUiModel?>(null)
+    val showEditDialog: StateFlow<StrategyCardUiModel?> = _showEditDialog.asStateFlow()
+
+    fun onEditClick(strategy: StrategyCardUiModel) {
+        _showEditDialog.value = strategy
+    }
+
+    fun onEditDialogDismiss() {
+        _showEditDialog.value = null
     }
 
     fun loadStrategies() {
@@ -68,6 +75,29 @@ class StrategyViewModel @Inject constructor(
                             )
                         )
                     }
+                }
+                is BaseResult.Error -> Unit // TODO: 에러 처리
+            }
+        }
+    }
+
+    fun onUpdateStrategy(portfolioId: Long, newName: String) {
+        viewModelScope.launch {
+            when (portfolioRepository.updatePortfolio(portfolioId, newName)) {
+                is BaseResult.Success -> {
+                    val current = (_uiState.value as? UiState.Success)?.data ?: return@launch
+                    _uiState.update {
+                        UiState.Success(
+                            current.copy(
+                                strategies = current.strategies.map { strategy ->
+                                    if (strategy.id == portfolioId.toString())
+                                        strategy.copy(title = newName)
+                                    else strategy
+                                }
+                            )
+                        )
+                    }
+                    _showEditDialog.value = null
                 }
                 is BaseResult.Error -> Unit // TODO: 에러 처리
             }

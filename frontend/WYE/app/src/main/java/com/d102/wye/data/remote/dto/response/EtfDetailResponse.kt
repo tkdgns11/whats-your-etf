@@ -38,5 +38,5 @@ data class EtfPricePointResponse(
     @SerializedName("date") val date: String,
     @SerializedName("stockPrice") val stockPrice: Long,
     @SerializedName("dailyReturn") val dailyReturn: Double,
-    @SerializedName("nav") val nav: Long,
+    @SerializedName("nav") val nav: Double,
 )

@@ -40,6 +40,8 @@ fun StockDetailScreen(
     viewModel: StockDetailViewModel = hiltViewModel(),
 ) {
     val stockState by viewModel.stockState.collectAsStateWithLifecycle()
+    val relatedStocksState by viewModel.relatedStocksState.collectAsStateWithLifecycle()
+    val tagsState by viewModel.tagsState.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -55,6 +57,8 @@ fun StockDetailScreen(
 
             is UiState.Success -> StockDetailContent(
                 stock = state.data,
+                tags = (tagsState as? UiState.Success)?.data ?: state.data.tags,
+                relatedStocks = (relatedStocksState as? UiState.Success)?.data ?: emptyList(),
                 onEtfListClick = { onEtfListClick(state.data.ticker) },
                 onEtfClick = onEtfClick,
                 onRelatedStockClick = onRelatedStockClick,
@@ -74,6 +78,8 @@ fun StockDetailScreen(
 @Composable
 private fun StockDetailContent(
     stock: Stock,
+    tags: List<String>,
+    relatedStocks: List<RelatedStock>,
     onEtfListClick: () -> Unit,
     onEtfClick: (String) -> Unit,
     onRelatedStockClick: (String) -> Unit,
@@ -97,7 +103,7 @@ private fun StockDetailContent(
 
         // ── 태그 칩 ───────────────────────────────────────────────
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            stock.tags.forEach { tag -> TagChip(tag) }
+            tags.forEach { tag -> TagChip(tag) }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -164,7 +170,7 @@ private fun StockDetailContent(
         SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
         Spacer(Modifier.height(16.dp))
 
-        stock.relatedStocks.forEach { related ->
+        relatedStocks.forEach { related ->
             RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
             HorizontalDivider(color = Divider)
         }

@@ -2,6 +2,7 @@ package com.d102.wye.core.di
 
 import android.content.Context
 import androidx.room.Room
+import com.d102.wye.core.app.Constants.DATABASE_NAME
 import com.d102.wye.data.local.dao.EtfPriceHistoryDao
 import com.d102.wye.data.local.dao.LikedEtfDao
 import com.d102.wye.data.local.database.AppDatabase
@@ -15,8 +16,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
-    private const val DATABASE_NAME = "etf_database"
 
     @Provides
     @Singleton

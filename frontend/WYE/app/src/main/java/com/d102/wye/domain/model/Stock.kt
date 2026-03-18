@@ -27,7 +27,5 @@ data class StockEtf(
 data class RelatedStock(
     val ticker: String,
     val name: String,
-    val description: String,           // 동종 업계 (반도체)
-    val currentPrice: Long,
-    val changeRate: Double,
+    val description: String,           // 동종 업계 (반도체) — relationType (industryName)
 )

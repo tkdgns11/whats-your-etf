@@ -2,9 +2,9 @@ package com.d102.wye.presentation.explore.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.d102.wye.data.remote.dto.request.EtfListRequest
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.model.EtfFilter
 import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.state.EtfFilterState
@@ -55,7 +55,7 @@ class ExploreViewModel @Inject constructor(
             isLastPage = false
             rawEtfList = emptyList()
 
-            when (val result = etfRepository.getEtfList(filter.toRequest(_sortedBy.value), page = 0)) {
+            when (val result = etfRepository.getEtfList(filter.toFilter(_sortedBy.value), page = 0)) {
                 is BaseResult.Success -> {
                     isLastPage = result.data.isLast
                     rawEtfList = result.data.items.map { it.toUiModel(likedTickers) }
@@ -71,7 +71,7 @@ class ExploreViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoadingMore.update { true }
             val nextPage = currentPage + 1
-            when (val result = etfRepository.getEtfList(_filterState.value.toRequest(_sortedBy.value), page = nextPage)) {
+            when (val result = etfRepository.getEtfList(_filterState.value.toFilter(_sortedBy.value), page = nextPage)) {
                 is BaseResult.Success -> {
                     currentPage = nextPage
                     isLastPage = result.data.isLast
@@ -170,8 +170,8 @@ class ExploreViewModel @Inject constructor(
     }
 }
 
-// ─── EtfFilterState → EtfListRequest 변환 ───────────────────────
-private fun EtfFilterState.toRequest(sortedBy: String? = null) = EtfListRequest(
+// ─── EtfFilterState → EtfFilter 변환 ────────────────────────────
+private fun EtfFilterState.toFilter(sortedBy: String? = null) = EtfFilter(
     riskType = riskType,
     strategy = strategy,
     isDerivatives = hasDerivative,

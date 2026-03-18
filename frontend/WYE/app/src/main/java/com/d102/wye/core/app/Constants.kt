@@ -18,10 +18,12 @@ object Constants {
     const val KEY_SESSION_EXPIRED = "session_expired"
 
     // Database
-    const val DATABASE_NAME = "wye_db"
-    const val DATABASE_VERSION = 1
+    const val DATABASE_NAME = "etf_database"
+    const val DATABASE_VERSION = 4
+
 
     // Error Messages
     const val ERROR_NETWORK = "네트워크 연결을 확인해주세요"
     const val ERROR_SESSION_EXPIRED = "세션이 만료되었습니다. 다시 로그인해주세요"
+
 }

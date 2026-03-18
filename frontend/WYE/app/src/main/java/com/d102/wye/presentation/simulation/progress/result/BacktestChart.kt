@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.theme.PrimaryGreen
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 import kotlin.math.abs
 
@@ -36,13 +37,17 @@ import kotlin.math.abs
  * - 적립형: y축 = 월말 평가금액 (원), 월별 포인트
  * - 거치형: y축 = 일별 평가금액 (원), 일별 포인트
  * - 좌 → 우 순차 드로우 애니메이션
+ *
+ * - isDashed = false (기본): 실선 + 컬러 (시뮬레이션 / 최근 성과)
+ * - isDashed = true: 점선 + 회색 (과거 1년 성과)
  */
 @Composable
 fun BacktestChart(
     points: List<BacktestPoint>,
     investmentType: InvestmentType,
     isPositive: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDashed: Boolean = false
 ) {
     if (points.size < 2) return
 
@@ -53,7 +58,13 @@ fun BacktestChart(
     }
     val animProgress by progress.asState()
 
-    val lineColor = if (isPositive) PrimaryGreen else Color(0xFFE53935)
+    // 점선이면 회색, 아니면 수익률에 따라 색상
+    val lineColor = when {
+        isDashed -> TextSecondary
+        isPositive -> PrimaryGreen
+        else -> TextPrimary
+    }
+
     val values = points.map { it.value }
     val minVal = values.min()
     val maxVal = values.max()
@@ -73,7 +84,7 @@ fun BacktestChart(
             fun xOf(i: Int) = (i.toFloat() / (points.size - 1)) * w
             fun yOf(v: Double) = h - ((v - minVal) / range * h).toFloat()
 
-            // 수평 그리드 (3줄)
+            // 수평 그리드
             repeat(3) { i ->
                 val y = h * ((i + 1) / 4f)
                 drawLine(
@@ -84,33 +95,39 @@ fun BacktestChart(
                 )
             }
 
-            // 그라디언트 채우기
-            val fillPath = Path().apply {
-                moveTo(xOf(0), h)
-                lineTo(xOf(0), yOf(values[0]))
-                for (i in 1 until drawCount) {
-                    val x0 = xOf(i - 1); val y0 = yOf(values[i - 1])
-                    val x1 = xOf(i);     val y1 = yOf(values[i])
-                    val cx = (x0 + x1) / 2f
-                    cubicTo(cx, y0, cx, y1, x1, y1)
+            // 그라디언트 채우기 (실선일 때만)
+            if (!isDashed) {
+                val fillPath = Path().apply {
+                    moveTo(xOf(0), h)
+                    lineTo(xOf(0), yOf(values[0]))
+                    for (i in 1 until drawCount) {
+                        val x0 = xOf(i - 1);
+                        val y0 = yOf(values[i - 1])
+                        val x1 = xOf(i);
+                        val y1 = yOf(values[i])
+                        val cx = (x0 + x1) / 2f
+                        cubicTo(cx, y0, cx, y1, x1, y1)
+                    }
+                    lineTo(xOf(drawCount - 1), h)
+                    close()
                 }
-                lineTo(xOf(drawCount - 1), h)
-                close()
-            }
-            drawPath(
-                path = fillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(lineColor.copy(alpha = 0.25f), Color.Transparent),
-                    startY = 0f, endY = h
+                drawPath(
+                    path = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(lineColor.copy(alpha = 0.25f), Color.Transparent),
+                        startY = 0f, endY = h
+                    )
                 )
-            )
+            }
 
-            // 라인
+            // 라인 (점선 여부에 따라 pathEffect 적용)
             val linePath = Path().apply {
                 moveTo(xOf(0), yOf(values[0]))
                 for (i in 1 until drawCount) {
-                    val x0 = xOf(i - 1); val y0 = yOf(values[i - 1])
-                    val x1 = xOf(i);     val y1 = yOf(values[i])
+                    val x0 = xOf(i - 1);
+                    val y0 = yOf(values[i - 1])
+                    val x1 = xOf(i);
+                    val y1 = yOf(values[i])
                     val cx = (x0 + x1) / 2f
                     cubicTo(cx, y0, cx, y1, x1, y1)
                 }
@@ -118,11 +135,14 @@ fun BacktestChart(
             drawPath(
                 path = linePath,
                 color = lineColor,
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(
+                    width = 2.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
             )
 
-            // 마지막 포인트 점
-            if (animProgress >= 0.99f) {
+            // 마지막 포인트 점 (실선일 때만)
+            if (!isDashed && animProgress >= 0.99f) {
                 val lastX = xOf(drawCount - 1)
                 val lastY = yOf(values[drawCount - 1])
                 drawCircle(color = lineColor, radius = 4.dp.toPx(), center = Offset(lastX, lastY))
@@ -134,18 +154,19 @@ fun BacktestChart(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = 8.dp)
                 .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             listOf(
                 points.first().date.toDateLabel(),
                 points[points.size / 2].date.toDateLabel(),
-                "오늘"
+                points.last().date.toDateLabel()
             ).forEach { label ->
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = TextSecondary
+                    color = TextPrimary
                 )
             }
         }

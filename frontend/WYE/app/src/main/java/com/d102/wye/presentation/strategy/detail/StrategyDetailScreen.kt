@@ -33,6 +33,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 @Composable
 fun StrategyDetailScreen(
     onBackClick: () -> Unit,
+    onNewsClick: (Long) -> Unit = {},
     viewModel: StrategyDetailViewModel = hiltViewModel()
 ) {
     val detailState by viewModel.detailState.collectAsStateWithLifecycle()
@@ -49,7 +50,8 @@ fun StrategyDetailScreen(
     StrategyDetailScreenContent(
         detailState = detailState,
         snackbarHostState = snackbarHostState,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        onNewsClick = onNewsClick
     )
 }
 
@@ -57,7 +59,8 @@ fun StrategyDetailScreen(
 private fun StrategyDetailScreenContent(
     detailState: UiState<StrategyDetailData>,
     snackbarHostState: SnackbarHostState,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNewsClick: (Long) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -86,7 +89,7 @@ private fun StrategyDetailScreenContent(
                         PerformanceSection(state.data.recentPerformance, isMain = true)
                         PerformanceSection(state.data.pastPerformance, isMain = false)
                         TimelineSection(state.data.timelines)
-                        NewsSection(state.data.relatedNews)
+                        NewsSection(state.data.relatedNews, onNewsClick = onNewsClick)
                         WyePrimaryButton(
                             text = "닫기",
                             onClick = onBackClick,
