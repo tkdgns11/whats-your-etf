@@ -1,5 +1,6 @@
 package com.whatsyouretf.userservice.domain.company.entity;
 
+import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,9 +33,10 @@ public class CompanyInfo {
     @Column(name = "market_type", length = 20)
     private String marketType;
 
-    /** 산업분류 코드 (세분류: SEMI_HBM 등) */
-    @Column(name = "industry_code", length = 20)
-    private String industryCode;
+    /** 산업분류 (세분류: SEMI_HBM 등) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "industry_code")
+    private IndustryClassification industry;
 
     /** 산업분류명 (WICS 소분류: 반도체와반도체장비 등) */
     @Column(name = "industry_name", length = 100)

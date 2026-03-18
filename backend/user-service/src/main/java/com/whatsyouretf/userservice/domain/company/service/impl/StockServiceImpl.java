@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 주식 서비스 구현체
@@ -53,19 +56,16 @@ public class StockServiceImpl implements StockService {
 
         // 2. industry_classification에서 그룹명과 세분류명 조회
         CompanyInfo company = stock.getCompany();
-        String industryCode = company.getIndustryCode();
-        if (industryCode != null && !industryCode.isEmpty()) {
-            industryClassificationRepository.findByCode(industryCode)
-                    .ifPresent(ic -> {
-                        // 그룹명 (대분류): 반도체, 전자/IT, 바이오/의약 등
-                        if (ic.getGroupName() != null && !ic.getGroupName().isEmpty()) {
-                            tags.add(ic.getGroupName());
-                        }
-                        // 세분류명: LED/조명, 시스템 반도체 등
-                        if (ic.getName() != null && !ic.getName().isEmpty()) {
-                            tags.add(ic.getName());
-                        }
-                    });
+        IndustryClassification industry = company.getIndustry();
+        if (industry != null) {
+            // 그룹명 (대분류): 반도체, 전자/IT, 바이오/의약 등
+            if (industry.getGroupName() != null && !industry.getGroupName().isEmpty()) {
+                tags.add(industry.getGroupName());
+            }
+            // 세분류명: LED/조명, 시스템 반도체 등
+            if (industry.getName() != null && !industry.getName().isEmpty()) {
+                tags.add(industry.getName());
+            }
         }
 
         return tags;
@@ -77,24 +77,26 @@ public class StockServiceImpl implements StockService {
         Stock stock = stockRepository.findByTickerWithCompany(ticker)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
 
-        String industryCode = stock.getCompany().getIndustryCode();
-        if (industryCode == null || industryCode.isBlank()) {
+        IndustryClassification industry = stock.getCompany().getIndustry();
+        if (industry == null) {
             return List.of();
         }
 
         // 같은 산업분류의 관련 종목 조회 (3개 고정)
         List<Stock> relatedStocks = stockRepository.findRelatedStocksByIndustryCode(
-                industryCode,
+                industry.getCode(),
                 ticker,
                 PageRequest.of(0, DEFAULT_RELATED_LIMIT)
         );
 
+        if (relatedStocks.isEmpty()) {
+            return List.of();
+        }
+
         return relatedStocks.stream()
                 .map(s -> {
-                    String industryName = industryClassificationRepository
-                            .findByCode(s.getCompany().getIndustryCode())
-                            .map(IndustryClassification::getName)
-                            .orElse(null);
+                    IndustryClassification ic = s.getCompany().getIndustry();
+                    String industryName = ic != null ? ic.getName() : null;
                     String logoUrl = buildLogoUrl(s.getTicker());
                     return RelatedStockResponse.from(s, industryName, logoUrl);
                 })
