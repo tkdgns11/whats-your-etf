@@ -27,13 +27,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
-import com.d102.wye.presentation.simulation.progress.result.PortfolioSaveDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
@@ -79,11 +79,18 @@ fun SimulationScreen(
     }
 
     if (showSaveDialog) {
-        PortfolioSaveDialog(
-            saveState = savePortfolioState,
+        val defaultName = "포트폴리오 ${java.time.LocalDate.now()}"
+        WyePortfolioDialog(
+            title = "포트폴리오 저장하기",
+            description = "나만의 투자 전략을 식별할 수 있는 이름을 지어주세요.\n저장한 포트폴리오는 나의 전략에서 확인할 수 있습니다.",
+            initialName = "",
+            placeholder = defaultName,
+            confirmButtonText = if (savePortfolioState is UiState.Loading) "저장 중..." else "저장 완료",
+            isLoading = savePortfolioState is UiState.Loading,
+            errorMessage = (savePortfolioState as? UiState.Error)?.message,
             onDismiss = { viewModel.onSaveDialogDismiss() },
-            onSave = {
-                viewModel.savePortfolio(it)
+            onConfirm = { name ->
+                viewModel.savePortfolio(name.ifBlank { defaultName })
                 onSaveClick()
             }
         )

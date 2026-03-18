@@ -3,6 +3,7 @@ package com.d102.wye.data.repository
 import com.d102.wye.data.remote.api.PortfolioApiService
 import com.d102.wye.data.remote.dto.request.EtfCount
 import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
+import com.d102.wye.data.remote.dto.request.UpdatePortfolioRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.PortfolioCount
@@ -93,4 +94,16 @@ class PortfolioRepositoryImpl @Inject constructor(
             Timber.e("[API] 포트폴리오 삭제 실패 | id=$portfolioId | ${e.message}")
             BaseResult.Error(ApiError(code = -1, message = e.message ?: "포트폴리오 삭제 실패"))
         }
+
+    override suspend fun updatePortfolio(portfolioId: Long, name: String): BaseResult<Unit> =
+        runCatching {
+            portfolioApiService.updatePortfolio(
+                UpdatePortfolioRequest(portfolioId = portfolioId, name = name)
+            )
+            BaseResult.Success(Unit)
+        }.getOrElse { e ->
+            Timber.e("[API] 포트폴리오 수정 실패 | id=$portfolioId | ${e.message}")
+            BaseResult.Error(ApiError(code = -1, message = e.message ?: "포트폴리오 수정 실패"))
+        }
+
 }

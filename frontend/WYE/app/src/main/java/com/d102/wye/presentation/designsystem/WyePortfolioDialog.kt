@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.progress.result
+package com.d102.wye.presentation.designsystem
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,26 +25,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.d102.wye.presentation.designsystem.WyePrimaryButton
-import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.Divider
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
-import java.time.LocalDate
 
 @Composable
-fun PortfolioSaveDialog(
-    saveState: UiState<Unit>,
+fun WyePortfolioDialog(
+    title: String,
+    description: String,
+    initialName: String = "",
+    placeholder: String = "",
+    confirmButtonText: String = "확인",
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onConfirm: (String) -> Unit
 ) {
-    var portfolioName by remember { mutableStateOf("") }
-
-    // 기본 이름: 오늘 날짜
-    val defaultName = "포트폴리오 ${LocalDate.now()}"
+    var name by remember { mutableStateOf(initialName) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -60,15 +60,13 @@ fun PortfolioSaveDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "포트폴리오 저장하기",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
-
                 Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
-                    text = "나만의 투자 전략을 식별할 수 있는 이름을 지어주세요.\n저장한 포트폴리오는 나의 전략에서 확인할 수 있습니다.",
+                    text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center
@@ -76,6 +74,7 @@ fun PortfolioSaveDialog(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // 입력 필드 섹션
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "포트폴리오 명칭",
@@ -83,15 +82,13 @@ fun PortfolioSaveDialog(
                         color = PrimaryGreen
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-
                     OutlinedTextField(
-                        value = portfolioName,
-                        onValueChange = { portfolioName = it },
+                        value = name,
+                        onValueChange = { name = it },
                         textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimary),
                         placeholder = {
-                            // 입력 없으면 기본 날짜 이름 표시
                             Text(
-                                text = defaultName,
+                                text = placeholder,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = IconInactive
                             )
@@ -111,6 +108,7 @@ fun PortfolioSaveDialog(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // 버튼 섹션
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -122,23 +120,19 @@ fun PortfolioSaveDialog(
                         textColor = TextSecondary,
                         onClick = onDismiss
                     )
-
                     WyePrimaryButton(
                         modifier = Modifier.weight(1f),
-                        text = if (saveState is UiState.Loading) "저장 중..." else "저장 완료",
-                        onClick = {
-                            // 이름 비어있으면 기본 날짜 이름으로 저장
-                            onSave(portfolioName.ifBlank { defaultName })
-                        },
-                        enabled = saveState !is UiState.Loading
+                        text = if (isLoading) "처리 중..." else confirmButtonText,
+                        onClick = { onConfirm(name) },
+                        enabled = !isLoading
                     )
                 }
 
-                // 저장 실패 시 에러 메시지
-                if (saveState is UiState.Error) {
+                // 에러 메시지
+                errorMessage?.let {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = saveState.message,
+                        text = it,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFFE53935)
                     )

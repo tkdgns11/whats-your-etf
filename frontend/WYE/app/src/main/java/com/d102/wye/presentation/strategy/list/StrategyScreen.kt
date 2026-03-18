@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.strategy.list.components.CompareButton
@@ -48,6 +49,7 @@ fun StrategyScreen(
     viewModel: StrategyViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val showEditDialog by viewModel.showEditDialog.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -62,12 +64,31 @@ fun StrategyScreen(
         }
     }
 
+    // 수정 다이얼로그
+    showEditDialog?.let { strategy ->
+        WyePortfolioDialog(
+            title = "포트폴리오 이름 수정",
+            description = "포트폴리오를 식별할 수 있는 이름을 입력해주세요.",
+            initialName = strategy.title,
+            placeholder = strategy.title,
+            confirmButtonText = "수정 완료",
+            onDismiss = { viewModel.onEditDialogDismiss() },
+            onConfirm = { newName ->
+                if (newName.isNotBlank()) {
+                    viewModel.onUpdateStrategy(strategy.id.toLong(), newName)
+                }
+            }
+        )
+    }
+
     StrategyScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onStrategyClick = onStrategyClick,
         onCompareClick = onCompareClick,
-        onCreateFirstStrategyClick = onCreateFirstStrategyClick
+        onCreateFirstStrategyClick = onCreateFirstStrategyClick,
+        onEditClick = { viewModel.onEditClick(it) },
+        onDeleteClick = { viewModel.onDeleteStrategy(it) }
     )
 }
 
@@ -78,7 +99,9 @@ private fun StrategyScreenContent(
     snackbarHostState: SnackbarHostState,
     onStrategyClick: (strategyId: Long) -> Unit,
     onCompareClick: () -> Unit,
-    onCreateFirstStrategyClick: () -> Unit
+    onCreateFirstStrategyClick: () -> Unit,
+    onEditClick: (StrategyCardUiModel) -> Unit,
+    onDeleteClick: (String) -> Unit
 ) {
     val listData = (uiState as? UiState.Success)?.data
     val isCompletelyEmpty = listData?.realAsset == null && listData?.strategies.isNullOrEmpty()
@@ -86,9 +109,7 @@ private fun StrategyScreenContent(
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            WyeTopBar(title = "나의 전략")
-        },
+        topBar = { WyeTopBar(title = "나의 전략") },
         containerColor = Color.White,
         floatingActionButton = {
             if (uiState is UiState.Success && !isCompletelyEmpty) {
@@ -111,44 +132,37 @@ private fun StrategyScreenContent(
 
                 is UiState.Success -> {
                     if (isCompletelyEmpty) {
-                        // 1. 아예 처음 온 유저
-                        StrategyEmptyView(
-                            onCreateClick = onCreateFirstStrategyClick
-                        )
+                        StrategyEmptyView(onCreateClick = onCreateFirstStrategyClick)
                     } else {
-                        // 2. 자산이나 전략이 있는 유저
                         StrategyListView(
                             data = uiState.data,
-                            onItemClick = onStrategyClick
+                            onItemClick = onStrategyClick,
+                            onEditClick = onEditClick,
+                            onDeleteClick = onDeleteClick
                         )
                     }
                 }
 
-                is UiState.Error -> {
-                    // 에러 뷰 처리
-                }
-
+                is UiState.Error -> Unit
                 UiState.Idle -> Unit
             }
         }
     }
 }
 
-
-// ─────────────────────────────────────────
-// 2. 리스트 화면
-// ─────────────────────────────────────────
 @Composable
 private fun StrategyListView(
     data: StrategyListData,
-    onItemClick: (Long) -> Unit
+    onItemClick: (Long) -> Unit,
+    onEditClick: (StrategyCardUiModel) -> Unit,
+    onDeleteClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 60.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // --- 1. 내 실제 자산 섹션 ---
+        // 내 실제 자산 섹션
         item {
             Column {
                 Text(
@@ -157,20 +171,19 @@ private fun StrategyListView(
                     color = TextSecondary
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-
                 if (data.realAsset == null) {
                     EmptyRealAssetCard()
                 } else {
-                    // 실제 자산 카드 렌더링
                     StrategyCard(
                         strategy = data.realAsset,
                         onItemClick = onItemClick
+                        // 실제 자산은 수정/삭제 없음
                     )
                 }
             }
         }
 
-        // --- 2. 저장된 실험 전략 섹션 ---
+        // 저장된 실험 전략 섹션
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Row(
@@ -197,7 +210,9 @@ private fun StrategyListView(
             items(data.strategies) { strategy ->
                 StrategyCard(
                     strategy = strategy,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
+                    onEditClick = onEditClick,    // ← 추가
+                    onDeleteClick = onDeleteClick  // ← 추가
                 )
             }
         }

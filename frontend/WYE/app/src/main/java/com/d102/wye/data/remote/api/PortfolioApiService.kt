@@ -1,6 +1,7 @@
 package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
+import com.d102.wye.data.remote.dto.request.UpdatePortfolioRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.PortfolioDetail
 import com.d102.wye.data.remote.dto.response.PortfolioListItemDto
@@ -8,6 +9,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface PortfolioApiService {
@@ -24,6 +26,11 @@ interface PortfolioApiService {
     suspend fun getPortfolioDetail(
         @Path("portfolioId") portfolioId: Long
     ): BaseResponse<PortfolioDetail>
+
+    @PUT("portfolios")
+    suspend fun updatePortfolio(
+        @Body request: UpdatePortfolioRequest
+    ): BaseResponse<Unit>
 
     @DELETE("portfolios/{portfolioId}")
     suspend fun deletePortfolio(

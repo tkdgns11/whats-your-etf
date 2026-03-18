@@ -14,4 +14,6 @@ interface PortfolioRepository {
     suspend fun getPortfolioDetail(portfolioId: Long): BaseResult<PortfolioDetail>
 
     suspend fun deletePortfolio(portfolioId: Long): BaseResult<Unit>
+
+    suspend fun updatePortfolio(portfolioId: Long, name: String): BaseResult<Unit>
 }
