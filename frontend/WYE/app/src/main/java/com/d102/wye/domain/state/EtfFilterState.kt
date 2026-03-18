@@ -7,8 +7,8 @@ data class EtfFilterState(
     // 검색 범위: null = 전체 / "etf" = ETF 종목명 / "stock" = 주식명
     val searchScope: String? = null,
 
-    // 위험 분류 (1:안정형 2:안정추구형 3:위험중립형 4:적극투자형 5:공격투자형)
-    val riskLevels: Set<Int> = emptySet(),
+    // 위험 분류
+    val riskType: String? = null,  // "CONSERVATIVE" / "STABLE" / "MODERATE" / "ACTIVE" / "AGGRESSIVE"
 
     // 기초자산 (탐색 화면 상단 드롭다운)
     val assetClass: String? = null,

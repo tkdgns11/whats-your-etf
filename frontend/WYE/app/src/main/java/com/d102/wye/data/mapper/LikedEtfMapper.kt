@@ -1,38 +1,22 @@
 package com.d102.wye.data.mapper
 
 import com.d102.wye.data.local.entity.LikedEtfEntity
-import com.d102.wye.domain.model.Etf
+import com.d102.wye.domain.model.EtfLikeData
 
-fun LikedEtfEntity.toDomain(): Etf = Etf(
+fun LikedEtfEntity.toDomain() = EtfLikeData(
     ticker = ticker,
     name = name,
     currentPrice = currentPrice,
     changeRate = changeRate,
     changeAmount = changeAmount,
-    volume = volume,
-    riskLevel = riskLevel,
-    investmentStrategy = investmentStrategy,
-    assetClass = assetClass,
-    theme = "",
-    dividendRate = dividendYield,
-    dividendCycle = "",
-    hasDerivative = false,
-    per = 0.0,
-    pbr = 0.0,
-    roe = 0.0,
-    expenseRatio = 0.0,
-    netAsset = 0L,
+    riskType = riskType,
 )
 
-fun Etf.toLikedEntity(): LikedEtfEntity = LikedEtfEntity(
+fun EtfLikeData.toLikedEntity() = LikedEtfEntity(
     ticker = ticker,
     name = name,
     currentPrice = currentPrice,
     changeRate = changeRate,
     changeAmount = changeAmount,
-    volume = volume,
-    riskLevel = riskLevel,
-    investmentStrategy = investmentStrategy,
-    assetClass = assetClass,
-    dividendYield = dividendRate,
+    riskType = riskType,
 )

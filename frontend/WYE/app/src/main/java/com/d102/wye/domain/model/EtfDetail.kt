@@ -1,48 +1,36 @@
 package com.d102.wye.domain.model
 
+// GET /api/v1/etfs/{ticker} 단건 조회 API 응답
 data class EtfDetail(
     val ticker: String,
     val name: String,
-    val englishName: String,
-    val riskLevel: Int,
     val currentPrice: Long,
-    val iNav: Long,                         // 기준가(iNAV)
-    val changeAmount: Long,
-    val changeRate: Double,
-    val iNavChangeAmount: Long,
-    val iNavChangeRate: Double,
-    val returnRate1M: Double,               // 수익률(1개월)
+    val dailyFluctuation: Long,
+    val dailyFluctuationRatio: Double,
     val volume: Long,
-    val sectors: List<EtfSector>,           // 클러스터 섹터 목록
-    val influentialStocks: List<InfluentialStock>, // 영향 많은 종목
-    val manager: String,                    // 운용사
-    val volatility: String,                 // 변동성
-    val expenseRatio: Double,               // 총보수
-    val netAsset: Long,                     // 순자산
-    val listedDate: String,                 // 상장일
+    val company: String,
+    val riskGrade: Int,
+    val riskType: String,
+    val expenseRatio: Double,
+    val per: Double,
+    val pbr: Double,
+    val roe: Double,
+    val aum: Long,
+    val listingDate: String,
+    val inav: Long,
+    val inavChangeAmount: Long,
+    val inavChangeRate: Double,
 )
 
-data class EtfSector(
-    val name: String,           // 반도체, 금융, 자동차 등
-    val percentage: Double,     // 28.4
-    val stocks: List<SectorStock>,
-    val aiAnalysis: String,     // AI 분석 결과
+// GET /api/v1/etfs/{ticker}/price-history 응답 항목
+data class EtfPriceData(
+    val date: String,
+    val stockPrice: Long,
+    val dailyReturn: Double,
+    val nav: Long,
 )
 
-data class SectorStock(
-    val name: String,
-    val percentage: Double,
-    val ticker: String = "",    // 종목 상세 진입용 (없으면 빈 문자열)
-)
-
-data class InfluentialStock(
-    val ticker: String,
-    val name: String,
-    val weight: Double,         // 비중 (24.50%)
-    val currentPrice: Long,
-    val changeRate: Double,
-)
-
+// 차트 렌더링용 (price-history → ViewModel에서 변환, kospi/sp500은 별도 API 연결 예정)
 data class EtfReturnChart(
     val navData: List<ChartPoint>,
     val priceData: List<ChartPoint>,
@@ -55,6 +43,16 @@ data class ChartPoint(
     val value: Double,
 )
 
+// 영향을 많이 끼치는 종목 (GET /api/v1/etfs/{ticker}/clusters → influentialStocks)
+data class InfluentialStock(
+    val ticker: String,
+    val name: String,
+    val weight: Double,
+    val currentPrice: Long,
+    val changeRate: Double,
+)
+
+// 기간별 수익률 (price-history → ViewModel에서 계산, index는 별도 API 연결 예정)
 data class EtfPeriodReturn(
     val nav1M: Double,   val nav3M: Double,   val nav6M: Double,
     val index1M: Double, val index3M: Double, val index6M: Double,

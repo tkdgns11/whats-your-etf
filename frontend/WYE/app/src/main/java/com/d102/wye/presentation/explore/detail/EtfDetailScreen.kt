@@ -21,15 +21,14 @@ fun EtfDetailScreen(
     onStockClick: (String) -> Unit = {},
     viewModel: EtfDetailViewModel = hiltViewModel(),
 ) {
-    val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+    val detailState  by viewModel.detailState.collectAsStateWithLifecycle()
+    val clusterState by viewModel.clusterState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("클러스터", "ETF 상세보기")
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            WyeTopBar(title = "ETF 상세", onBackClick = onBack)
-        },
+        topBar = { WyeTopBar(title = "ETF 상세", onBackClick = onBack) },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
             WyeTabs(
@@ -39,25 +38,29 @@ fun EtfDetailScreen(
                 containerColor = Background,
             )
 
-            when (val state = detailState) {
-                is UiState.Loading -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator() }
-
-                is UiState.Success -> {
-                    when (selectedTab) {
-                        0 -> ClusterTab(detail = state.data, viewModel = viewModel, onStockClick = onStockClick)
-                        1 -> EtfDetailInfoTab(detail = state.data, viewModel = viewModel)
+            when (selectedTab) {
+                0 -> {
+                    val detail      = (detailState  as? UiState.Success)?.data
+                    val clusterData = (clusterState as? UiState.Success)?.data
+                    when {
+                        detail != null && clusterData != null ->
+                            ClusterTab(detail = detail, clusterData = clusterData, viewModel = viewModel, onStockClick = onStockClick)
+                        detailState is UiState.Error || clusterState is UiState.Error ->
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("클러스터 데이터를 불러올 수 없습니다.")
+                            }
+                        else ->
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
                     }
                 }
-
-                is UiState.Error -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) { Text(state.message) }
-
-                UiState.Idle -> Unit
+                1 -> when (val state = detailState) {
+                    is UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    is UiState.Success -> EtfDetailInfoTab(detail = state.data, viewModel = viewModel)
+                    is UiState.Error   -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.message) }
+                    UiState.Idle -> Unit
+                }
             }
         }
     }

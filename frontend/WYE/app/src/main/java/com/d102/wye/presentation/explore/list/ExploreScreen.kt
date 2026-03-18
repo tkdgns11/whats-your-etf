@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,12 +22,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.EtfListItem
+import com.d102.wye.presentation.designsystem.WyeEmptyState
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.explore.FilterDialog
 import com.d102.wye.presentation.explore.list.components.MultiSelectionBottomBar
@@ -34,13 +39,11 @@ import com.d102.wye.presentation.explore.list.components.SortRow
 import com.d102.wye.presentation.explore.list.components.activeFilterCount
 import com.d102.wye.presentation.model.UiState
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun ExploreScreen(
     title: String = "탐색",
     isSelectionMode: Boolean = false,
-    initialSelectedTickers: List<String> = emptyList(),
     onEtfClick: (ticker: String, riskLevel: Int) -> Unit,
     onBackClick: (() -> Unit)? = null,
     onSelectionComplete: ((List<String>) -> Unit)? = null,
@@ -48,16 +51,22 @@ fun ExploreScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val filterState by viewModel.filterState.collectAsStateWithLifecycle()
+    val sortedBy by viewModel.sortedBy.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilterDialog by remember { mutableStateOf(false) }
-
     val selectedTickers by viewModel.selectedTickers.collectAsStateWithLifecycle()
-
     val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
-    LaunchedEffect(initialSelectedTickers) {
-        if (initialSelectedTickers.isNotEmpty()) {
-            viewModel.initializeSelection(initialSelectedTickers)
+    // 스크롤 끝 감지 → 다음 페이지 로드
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val total = listState.layoutInfo.totalItemsCount
+            lastVisible >= total - 3
+        }.collect { nearEnd ->
+            if (nearEnd) viewModel.loadMore()
         }
     }
 
@@ -86,7 +95,6 @@ fun ExploreScreen(
                 title = title,
                 onBackClick = if (isSelectionMode) onBackClick else null
             )
-
         },
         bottomBar = {
             if (isSelectionMode) {
@@ -100,11 +108,10 @@ fun ExploreScreen(
                 )
             }
         }
-    ) { innerPadding ->
+    ) { _ ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+                .fillMaxSize(),
         ) {
             SearchRow(
                 query = filterState.query,
@@ -125,6 +132,8 @@ fun ExploreScreen(
                     .padding(bottom = 4.dp),
             )
             SortRow(
+                selectedSort = sortedBy,
+                onSortChanged = viewModel::onSortChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),
@@ -136,17 +145,25 @@ fun ExploreScreen(
                     contentAlignment = Alignment.Center,
                 ) { CircularProgressIndicator() }
 
-                is UiState.Success -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                is UiState.Success -> if (state.data.filteredList.isEmpty()) {
+                    WyeEmptyState(
+                        message = "검색 결과가 없어요",
+                        description = "다른 키워드나 필터를 사용해보세요",
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
                     items(state.data.filteredList, key = { it.ticker }) { etf ->
                         val isSelected = selectedTickers.contains(etf.ticker)
-
                         EtfListItem(
                             name = etf.name,
                             ticker = etf.ticker,
                             currentPrice = etf.currentPrice,
                             changeRate = etf.changeRate,
                             changeAmount = etf.changeAmount,
-                            riskLevel = etf.riskLevel,
+                            riskType = etf.riskType,
                             isLiked = etf.isLiked,
                             onLikeToggled = { viewModel.onLikeToggled(etf.ticker) },
                             isSelectionMode = isSelectionMode,
@@ -160,15 +177,32 @@ fun ExploreScreen(
                                     viewModel.toggleSelection(etf.ticker)
                                 }
                             },
-                            onClick = { onEtfClick(etf.ticker, etf.riskLevel) },
+                            onClick = { onEtfClick(etf.ticker, 0) },
                         )
+                    }
+
+                    if (isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) { CircularProgressIndicator() }
+                        }
                     }
                 }
 
-                is UiState.Error -> Unit
+                is UiState.Error -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Button(onClick = { viewModel.loadEtfList() }) {
+                        Text("다시 시도")
+                    }
+                }
                 UiState.Idle -> Unit
             }
         }
     }
 }
-

@@ -10,32 +10,45 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.d102.wye.presentation.theme.BackGroundLightGreen
+import com.d102.wye.presentation.theme.EtfRise
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceWhite
+import com.d102.wye.presentation.theme.TextPrimary
+import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun MyPageProfileHeader(
     nickname: String,
     profileImage: String?,
-    onProfileImageEditClick: () -> Unit
+    onProfileImageChangeClick: () -> Unit,
+    onProfileImageDeleteClick: () -> Unit
 ) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(16.dp)
     ) {
         Box(
             contentAlignment = Alignment.BottomEnd,
-            modifier = Modifier.clickable(onClick = onProfileImageEditClick)
         ) {
             Box(
                 modifier = Modifier
@@ -54,7 +67,8 @@ fun MyPageProfileHeader(
                     AsyncImage(
                         model = profileImage,
                         contentDescription = "프로필 이미지",
-                        modifier = Modifier.matchParentSize()
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
             }
@@ -69,7 +83,44 @@ fun MyPageProfileHeader(
                     imageVector = Icons.Default.PhotoCamera,
                     contentDescription = null,
                     tint = SurfaceWhite,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable { isMenuExpanded = true }
+                )
+            }
+
+            DropdownMenu(
+                expanded = isMenuExpanded,
+                onDismissRequest = { isMenuExpanded = false },
+                offset = DpOffset(x = 90.dp, y = (-12).dp),
+                containerColor = SurfaceWhite
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "이미지 변경",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary
+                        )
+                    },
+                    onClick = {
+                        isMenuExpanded = false
+                        onProfileImageChangeClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "이미지 삭제",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (profileImage.isNullOrBlank()) TextSecondary else EtfRise
+                        )
+                    },
+                    enabled = !profileImage.isNullOrBlank(),
+                    onClick = {
+                        isMenuExpanded = false
+                        onProfileImageDeleteClick()
+                    }
                 )
             }
         }

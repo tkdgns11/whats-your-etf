@@ -6,6 +6,12 @@ import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetRequest
+import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
+import com.d102.wye.data.remote.dto.request.SignupRequest
+import com.d102.wye.data.remote.dto.request.SignupResendRequest
+import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.TokenPair
 import com.d102.wye.domain.repository.AuthRepository
@@ -22,6 +28,133 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
     // 로그인
     // ─────────────────────────────────────────
+
+    override suspend fun checkEmailAvailability(email: String): BaseResult<Boolean> {
+        return when (
+            val result = safeApiCall {
+                authApiService.checkEmailAvailability(email = email)
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(result.data.available)
+            is BaseResult.Error -> result
+        }
+    }
+
+    override suspend fun checkEmailExists(email: String): BaseResult<Boolean> {
+        return when (
+            val result = safeApiCall {
+                authApiService.checkEmailAvailability(email = email)
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(result.data.exists)
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 비밀번호 재설정 이메일 발송 요청을 보낸다. */
+    override suspend fun requestPasswordReset(email: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.requestPasswordReset(PasswordResetRequest(email = email))
+        }
+    }
+
+    /** 비밀번호 재설정 인증 코드를 검증하고 유효 여부를 반환한다. */
+    override suspend fun verifyPasswordResetCode(email: String, token: String): BaseResult<Boolean> {
+        return when (
+            val result = safeApiCall {
+                authApiService.verifyPasswordResetCode(
+                    PasswordResetVerifyRequest(
+                        email = email,
+                        token = token
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(result.data.valid)
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 검증된 인증 코드로 새 비밀번호를 재설정한다. */
+    override suspend fun resetPassword(
+        email: String,
+        token: String,
+        newPassword: String,
+        newPasswordConfirm: String
+    ): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.resetPassword(
+                PasswordResetConfirmRequest(
+                    email = email,
+                    token = token,
+                    newPassword = newPassword,
+                    newPasswordConfirm = newPasswordConfirm
+                )
+            )
+        }
+    }
+
+    /** 회원가입 요청을 보내고 성공 여부만 반환한다. */
+    override suspend fun signup(
+        email: String,
+        password: String,
+        passwordConfirm: String,
+        nickname: String
+    ): BaseResult<Unit> {
+        return when (
+            val result = safeApiCall {
+                authApiService.signup(
+                    SignupRequest(
+                        email = email,
+                        password = password,
+                        passwordConfirm = passwordConfirm,
+                        nickname = nickname
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> BaseResult.Success(Unit)
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 인증 코드를 검증하고 회원가입 완료에 필요한 토큰만 반환한다. */
+    override suspend fun verifySignup(email: String, token: String): BaseResult<TokenPair> {
+        return when (
+            val result = safeApiCall {
+                authApiService.verifySignup(
+                    SignupVerifyRequest(
+                        email = email,
+                        token = token
+                    )
+                )
+            }
+        ) {
+            is BaseResult.Success -> {
+                val tokenPair = result.data.toDomain()
+                BaseResult.Success(tokenPair)
+            }
+            is BaseResult.Error -> result
+        }
+    }
+
+    /** 같은 이메일로 회원가입 인증 메일을 다시 발송한다. */
+    override suspend fun resendSignupCode(email: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.resendSignupCode(SignupResendRequest(email = email))
+        }
+    }
+
+    override suspend fun saveAuthTokens(tokenPair: TokenPair) {
+        authTokenDataStore.saveTokens(
+            accessToken = tokenPair.accessToken,
+            refreshToken = tokenPair.refreshToken
+        )
+    }
+
+    override suspend fun clearLocalAuthState() {
+        authTokenDataStore.clearTokens()
+    }
 
     override suspend fun login(email: String, password: String): BaseResult<TokenPair> {
         return when (val result = safeApiCall { 
@@ -61,7 +194,7 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun logout(): BaseResult<Unit> {
-        return safeApiCall(
+        return safeApiCallWithoutData(
             // 서버 로그아웃 성공/실패 무관하게 로컬 토큰 삭제
             onSuccess = { authTokenDataStore.clearTokens() }
         ) {
@@ -79,7 +212,14 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun registerFcmToken(token: String): BaseResult<Unit> {
-        return safeApiCall { authApiService.registerFcmToken(FcmTokenRequest(token)) }
+        return safeApiCallWithoutData {
+            authApiService.registerFcmToken(
+                FcmTokenRequest(
+                    token = token,
+                    deviceType = "ANDROID"
+                )
+            )
+        }
     }
 
     // ─────────────────────────────────────────
@@ -89,4 +229,10 @@ class AuthRepositoryImpl @Inject constructor(
     override val isLoggedIn: Flow<Boolean> = authTokenDataStore.isLoggedIn
 
     override val accessToken: Flow<String?> = authTokenDataStore.accessToken
+
+    override val sessionExpired: Flow<Boolean> = authTokenDataStore.sessionExpired
+
+    override suspend fun consumeSessionExpired() {
+        authTokenDataStore.consumeSessionExpired()
+    }
 }

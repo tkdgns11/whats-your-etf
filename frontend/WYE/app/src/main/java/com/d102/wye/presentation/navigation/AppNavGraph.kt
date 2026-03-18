@@ -73,11 +73,7 @@ fun AppNavGraph(
         composable(Route.Join.route) {
             JoinScreen(
                 onBackClick = { navController.popBackStack() },
-                onStartClick = {
-                    navController.navigate(Route.Home.route) {
-                        popUpTo(Route.Login.route) { inclusive = true }
-                    }
-                }
+                onStartClick = {}
             )
         }
 
@@ -87,7 +83,7 @@ fun AppNavGraph(
                 onCloseClick = { navController.popBackStack() },
                 onLoginClick = {
                     navController.navigate(Route.Login.route) {
-                        popUpTo(Route.PasswordReset.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
@@ -306,7 +302,6 @@ fun AppNavGraph(
             ExploreScreen(
                 title = "종목 추가",
                 isSelectionMode = true,
-                initialSelectedTickers = currentTickers,
                 onBackClick = { navController.popBackStack() },
                 onEtfClick = { ticker, riskLevel ->
                     navController.navigate(Route.EtfDetail(ticker, riskLevel).route)

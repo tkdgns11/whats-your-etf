@@ -6,34 +6,35 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.d102.wye.domain.model.EtfSector
-import com.d102.wye.domain.model.SectorStock
+import com.d102.wye.domain.model.EtfCluster
+import com.d102.wye.domain.model.EtfClusterStock
 import com.d102.wye.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SectorBottomSheet(
-    sector: EtfSector,
+    cluster: EtfCluster,
     onDismiss: () -> Unit,
     onStockClick: (String) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Background) {
-        SectorBottomSheetContent(sector = sector, onStockClick = onStockClick)
+        SectorBottomSheetContent(cluster = cluster, onStockClick = onStockClick)
     }
 }
 
 @Composable
 fun SectorBottomSheetContent(
-    sector: EtfSector,
+    cluster: EtfCluster,
     onStockClick: (String) -> Unit = {},
 ) {
     Column(
@@ -44,22 +45,22 @@ fun SectorBottomSheetContent(
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("${sector.name} 산업", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+        Text("${cluster.name} 산업", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
         HorizontalDivider(color = Divider)
         Text("주요 구성 종목", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
-        sector.stocks.forEach { stock ->
+        cluster.stocks.forEach { stock ->
             StockProgressItem(
                 stock = stock,
                 onClick = if (stock.ticker.isNotBlank()) { { onStockClick(stock.ticker) } } else null,
             )
         }
-        if (sector.aiAnalysis.isNotBlank()) AiAnalysisBox(sector.aiAnalysis)
+        if (!cluster.aiAnalysis.isNullOrBlank()) AiAnalysisBox(cluster.aiAnalysis)
         Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun StockProgressItem(stock: SectorStock, onClick: (() -> Unit)? = null) {
+private fun StockProgressItem(stock: EtfClusterStock, onClick: (() -> Unit)? = null) {
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
@@ -95,25 +96,15 @@ private fun AiAnalysisBox(analysis: String) {
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceVariant).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("?", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
-        Column {
-            Text("AI 분석 결과: ", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
+        Icon(
+            imageVector = Icons.Filled.AutoAwesome,
+            contentDescription = "AI 분석",
+            tint = PrimaryGreen,
+            modifier = Modifier.size(18.dp).padding(top = 1.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("AI 분석 결과", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
             Text(analysis, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, lineHeight = 20.sp), color = TextSecondary)
         }
     }
-}
-
-@Preview(showBackground = true, widthDp = 400)
-@Composable
-private fun SectorBottomSheetPreview() {
-    SectorBottomSheetContent(
-        sector = EtfSector(
-            name = "반도체", percentage = 28.4,
-            stocks = listOf(
-                SectorStock("삼성전자", 25.0, "005930"), SectorStock("SK하이닉스", 15.2, "000660"),
-                SectorStock("LG에너지솔루션", 8.4), SectorStock("삼성바이오로직스", 5.8), SectorStock("현대차", 4.2),
-            ),
-            aiAnalysis = "반도체 섹터의 높은 기여도로 인해 IT 업황 회복 시 강한 반등이 예상됩니다.",
-        )
-    )
 }

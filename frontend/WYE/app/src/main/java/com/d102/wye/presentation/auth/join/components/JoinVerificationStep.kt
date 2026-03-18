@@ -14,6 +14,7 @@ import com.d102.wye.presentation.designsystem.WyeVerificationCodeTextField
 fun ColumnScope.JoinVerificationStep(
     verificationCode: String,
     helperMessage: String?,
+    errorMessage: String?,
     canProceed: Boolean,
     onVerificationCodeChanged: (String) -> Unit,
     onResendCodeClick: () -> Unit,
@@ -28,12 +29,13 @@ fun ColumnScope.JoinVerificationStep(
     )
     Spacer(modifier = Modifier.height(16.dp))
     JoinVerificationSection(
+        errorText = errorMessage,
         helperText = helperMessage,
         onResendClick = onResendCodeClick
     )
     Spacer(modifier = Modifier.weight(1f))
     WyePrimaryButton(
-        text = "다음",
+        text = "가입 완료",
         onClick = onNextClick,
         enabled = canProceed
     )

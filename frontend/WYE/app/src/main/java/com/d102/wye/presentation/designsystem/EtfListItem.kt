@@ -46,7 +46,7 @@ fun EtfListItem(
     currentPrice: Long,
     changeRate: Double,
     changeAmount: Long,
-    riskLevel: Int,
+    riskType: String,
 
     // 상태 파라미터
     isLiked: Boolean,
@@ -70,8 +70,8 @@ fun EtfListItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             WyeCircleIcon(
-                tag = ticker,
-                count = 2,
+                tag = name,
+                count = 1,
                 size = 44.dp,
                 backgroundColor = SurfaceVariant,
                 contentColor = TextSecondary,
@@ -79,7 +79,7 @@ fun EtfListItem(
             )
             Spacer(Modifier.width(12.dp))
 
-            EtfInfoCard(name, currentPrice, riskLevel, Modifier.weight(1f))
+            EtfInfoCard(name, currentPrice, riskType, Modifier.weight(1f))
 
             EtfPriceChange(changeRate, changeAmount)
             Spacer(Modifier.width(12.dp))
@@ -129,4 +129,13 @@ fun riskToBadge(level: Int): Triple<Color, Color, String> = when (level) {
     3 -> Triple(BadgeNeutral, BadgeNeutralFont, "위험중립형")
     4 -> Triple(BadgeActive, BadgeActiveFont, "적극투자형")
     else -> Triple(BadgeAggressive, BadgeAggressiveFont, "공격투자형")
+}
+
+fun riskToBadge(type: String): Triple<Color, Color, String> = when (type) {
+    "안정형"    -> Triple(BadgeConservative, BadgeConservativeFont, type)
+    "안정추구형" -> Triple(BadgeConservativeGrowth, BadgeConservativeGrowthFont, type)
+    "위험중립형" -> Triple(BadgeNeutral, BadgeNeutralFont, type)
+    "적극투자형" -> Triple(BadgeActive, BadgeActiveFont, type)
+    "공격투자형" -> Triple(BadgeAggressive, BadgeAggressiveFont, type)
+    else        -> Triple(BadgeAggressive, BadgeAggressiveFont, type)
 }
