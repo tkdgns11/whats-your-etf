@@ -45,20 +45,22 @@ fun InvestmentSetupSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
             InvestmentInputField(
-                label = "투자 금액(원)",
+                label = "투자 금액",
                 value = formState.investmentAmount,
                 onValueChange = onAmountChanged,
                 placeholder = "금액 입력",
+                isCurrencyField = true,
+                suffix = "만원",
                 modifier = Modifier.weight(1f)
             )
 
             InvestmentInputField(
-                label = "투자 기간(월)",
+                label = "투자 기간",
                 value = formState.investmentPeriod,
                 onValueChange = onPeriodChanged,
                 placeholder = "최대 36개월",
+                suffix = "개월",
                 modifier = Modifier.weight(1f)
             )
         }

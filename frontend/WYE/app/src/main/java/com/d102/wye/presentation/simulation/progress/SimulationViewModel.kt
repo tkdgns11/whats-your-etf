@@ -289,7 +289,7 @@ class SimulationViewModel @Inject constructor(
 
             val form = _formState.value
             val totalWeight = form.portfolioItems.sumOf { it.weight }
-            val amount = form.investmentAmount.toLongOrNull() ?: 0L
+            val amount = (form.investmentAmount.toLongOrNull() ?: 0L) * 10_000L  // ← × 10000
             val periodMonths = form.investmentPeriod.toIntOrNull() ?: 0
 
             if (form.portfolioItems.isEmpty() || amount <= 0L || periodMonths <= 0) {

@@ -21,40 +21,45 @@ fun InvestmentGuideText(
     amountStr: String,
     periodStr: String
 ) {
-    // 입력된 문자열을 안전하게 숫자로 변환
-    val amount = amountStr.replace(",", "").toLongOrNull() ?: 0L
+    // 만원 단위로 입력받아서 × 10,000
+    val amountManwon = amountStr.replace(",", "").toLongOrNull() ?: 0L
+    val amount = amountManwon * 10_000L
     val period = periodStr.replace(Regex("[^0-9]"), "").toIntOrNull() ?: 0
 
-    // 둘 중 하나라도 입력되지 않았다면 안내 멘트 숨기기
-    if (amount == 0L || period == 0) {
-        return
-    }
+    if (amountManwon == 0L || period == 0) return
 
     val formatter = DecimalFormat("#,###")
-    val formattedAmount = formatter.format(amount)
     val formattedPeriod = formatter.format(period)
+
+    // 만원 단위 포맷 함수
+    fun formatWon(won: Long): String {
+        val eok = won / 100_000_000L
+        val man = (won % 100_000_000L) / 10_000L
+        val remainder = won % 10_000L
+        return when {
+            eok > 0 && man > 0 -> "${formatter.format(eok)}억 ${formatter.format(man)}만원"
+            eok > 0             -> "${formatter.format(eok)}억원"
+            man > 0             -> "${formatter.format(man)}만원"
+            else                -> "${formatter.format(remainder)}원"
+        }
+    }
 
     val highlightStyle = SpanStyle(color = PrimaryGreen, fontWeight = FontWeight.SemiBold)
     val defaultColor = TextTertiary
 
-    // 투자 유형에 따른 텍스트 포맷팅
     val annotatedText = buildAnnotatedString {
         if (type == InvestmentType.REGULAR_SAVING) {
-            // [적립형] 매월 00원씩 00개월 동안 총 00원을 투자하게 됩니다.
-            val totalAmount = formatter.format(amount * period)
-
+            val totalAmount = formatWon(amount * period)
             append("매월 ")
-            withStyle(highlightStyle) { append("${formattedAmount}원") }
+            withStyle(highlightStyle) { append(formatWon(amount)) }
             append("씩 ")
             withStyle(highlightStyle) { append("${formattedPeriod}개월") }
             append(" 동안 총 ")
-            withStyle(highlightStyle) { append("${totalAmount}원") }
+            withStyle(highlightStyle) { append(totalAmount) }
             append("을 투자하게 됩니다.")
-
         } else {
-            // [거치형] 초기 00원을 00개월 동안 투자하게 됩니다.
             append("초기 ")
-            withStyle(highlightStyle) { append("${formattedAmount}원") }
+            withStyle(highlightStyle) { append(formatWon(amount)) }
             append("을 ")
             withStyle(highlightStyle) { append("${formattedPeriod}개월") }
             append(" 동안 투자하게 됩니다.")
