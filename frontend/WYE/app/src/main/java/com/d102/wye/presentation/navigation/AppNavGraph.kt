@@ -347,7 +347,8 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             StrategyDetailScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) }
             )
         }
         composable(

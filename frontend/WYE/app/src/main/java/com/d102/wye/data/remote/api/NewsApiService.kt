@@ -3,6 +3,7 @@ package com.d102.wye.data.remote.api
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.NewsDetailResponse
 import com.d102.wye.data.remote.dto.response.NewsListResponse
+import com.d102.wye.data.remote.dto.response.PortfolioNewsResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -25,4 +26,10 @@ interface NewsApiService {
     suspend fun getNewsDetail(
         @Path("newsId") newsId: Long
     ): Response<BaseResponse<NewsDetailResponse>>
+
+    /** 포트폴리오 관련 뉴스를 조회한다. */
+    @GET("news/portfolio/{portfolioId}")
+    suspend fun getPortfolioNews(
+        @Path("portfolioId") portfolioId: Long
+    ): Response<BaseResponse<PortfolioNewsResponse>>
 }

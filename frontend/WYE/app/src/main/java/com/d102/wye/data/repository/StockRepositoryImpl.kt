@@ -1,6 +1,9 @@
 package com.d102.wye.data.repository
 
+import com.d102.wye.data.mapper.toDomain
+import com.d102.wye.data.remote.api.StockApiService
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.common.map
 import com.d102.wye.domain.model.RelatedStock
 import com.d102.wye.domain.model.Stock
 import com.d102.wye.domain.model.StockEtf
@@ -9,10 +12,24 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class StockRepositoryImpl @Inject constructor() : StockRepository {
+class StockRepositoryImpl @Inject constructor(
+    private val stockApiService: StockApiService,
+) : BaseRepository(), StockRepository {
 
     override suspend fun getStock(ticker: String): BaseResult<Stock> {
         return BaseResult.Success(mockStock(ticker))
+    }
+
+    override suspend fun getRelatedStocks(ticker: String): BaseResult<List<RelatedStock>> {
+        return safeApiCall {
+            stockApiService.getRelatedStocks(ticker)
+        }.map { list -> list.map { it.toDomain() } }
+    }
+
+    override suspend fun getTags(ticker: String): BaseResult<List<String>> {
+        return safeApiCall {
+            stockApiService.getTags(ticker)
+        }
     }
 }
 
@@ -34,11 +51,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("455880", "SOL 반도체소부장",  "신한자산운용",     12.3,  15_340L, 2.10,   220_000_000_000L),
             StockEtf("411420", "ACE 테크TOP10",     "한국투자신탁운용",  9.5,  12_180L, 1.95,   185_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("005930", "삼성전자",  "동종 업계 (반도체)",      74_200, 2.8),
-            RelatedStock("042700", "한미반도체", "서플라이 체인 (장비)",    98_300, 1.4),
-            RelatedStock("ASML",   "ASML",      "서플라이 체인 (노광기)", 860_000, -0.6),
-        ),
+        relatedStocks = emptyList(),
     )
     "005930" -> Stock(
         ticker = "005930",
@@ -55,10 +68,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("266370", "TIGER 반도체",  "미래에셋자산운용", 15.2, 28_760L, 2.87,   680_000_000_000L),
             StockEtf("091160", "KODEX 반도체",  "삼성자산운용",   12.4,  28_650L, 3.12,   412_500_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("000660", "SK하이닉스", "동종 업계 (반도체)",     162_100, -1.2),
-            RelatedStock("042700", "한미반도체", "서플라이 체인 (장비)",    98_300,  1.4),
-        ),
+        relatedStocks = emptyList(),
     )
     "035420" -> Stock(
         ticker = "035420",
@@ -74,10 +84,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",       "삼성자산운용",     3.2, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("411420", "ACE 테크TOP10",    "한국투자신탁운용", 8.5, 12_180L, 1.95,   185_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("035720", "카카오",   "동종 업계 (플랫폼)",  35_450, -1.1),
-            RelatedStock("259960", "크래프톤", "동종 업계 (게임)",   210_000,  0.8),
-        ),
+        relatedStocks = emptyList(),
     )
     "035720" -> Stock(
         ticker = "035720",
@@ -93,10 +100,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",    "삼성자산운용",    2.1, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("411420", "ACE 테크TOP10", "한국투자신탁운용", 6.8, 12_180L, 1.95,   185_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("035420", "NAVER",  "동종 업계 (플랫폼)", 198_500,  0.5),
-            RelatedStock("122870", "와이지엔터", "파트너 (엔터)",  42_350, -0.7),
-        ),
+        relatedStocks = emptyList(),
     )
     "005380" -> Stock(
         ticker = "005380",
@@ -112,10 +116,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",   "삼성자산운용",    2.9, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("091180", "KODEX 자동차", "삼성자산운용",   18.2, 14_300L, 0.85,   98_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("000270", "기아",     "동종 업계 (자동차)",  98_300,  0.4),
-            RelatedStock("012330", "현대모비스", "서플라이 체인",     250_500, -0.2),
-        ),
+        relatedStocks = emptyList(),
     )
     "000270" -> Stock(
         ticker = "000270",
@@ -131,10 +132,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",   "삼성자산운용",    2.4, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("091180", "KODEX 자동차", "삼성자산운용",   15.5, 14_300L, 0.85,   98_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("005380", "현대차",    "동종 업계 (자동차)", 215_000, -0.3),
-            RelatedStock("012330", "현대모비스", "서플라이 체인",    250_500, -0.2),
-        ),
+        relatedStocks = emptyList(),
     )
     "105560" -> Stock(
         ticker = "105560",
@@ -150,10 +148,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",  "삼성자산운용",    2.2, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("140710", "KODEX 은행",  "삼성자산운용",   22.5, 7_800L,  1.15,  142_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("055550", "신한지주",   "동종 업계 (금융)",  48_750,  0.3),
-            RelatedStock("086790", "하나금융지주", "동종 업계 (금융)", 65_200, -0.5),
-        ),
+        relatedStocks = emptyList(),
     )
     "055550" -> Stock(
         ticker = "055550",
@@ -169,10 +164,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200", "삼성자산운용",    1.8, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("140710", "KODEX 은행", "삼성자산운용",   18.4,  7_800L, 1.15,  142_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("105560", "KB금융",     "동종 업계 (금융)",  82_400,  0.7),
-            RelatedStock("086790", "하나금융지주", "동종 업계 (금융)", 65_200, -0.5),
-        ),
+        relatedStocks = emptyList(),
     )
     "373220" -> Stock(
         ticker = "373220",
@@ -188,10 +180,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",    "삼성자산운용",    3.8, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("305720", "KODEX 2차전지", "삼성자산운용",   15.2, 12_650L, 1.45,   380_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("051910", "LG화학",   "모회사 (배터리)",  320_000, -0.5),
-            RelatedStock("000660", "SK하이닉스", "동종 업계",      162_100, -1.2),
-        ),
+        relatedStocks = emptyList(),
     )
     "207940" -> Stock(
         ticker = "207940",
@@ -207,10 +196,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",     "삼성자산운용",    2.1, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("227550", "TIGER 헬스케어", "미래에셋자산운용", 12.4,  9_840L, 0.95,  115_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("068270", "셀트리온", "동종 업계 (바이오)", 158_000,  1.1),
-            RelatedStock("128940", "한미약품",  "동종 업계 (제약)",  310_000, -0.3),
-        ),
+        relatedStocks = emptyList(),
     )
     "012330" -> Stock(
         ticker = "012330",
@@ -226,10 +212,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",   "삼성자산운용",    1.6, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("091180", "KODEX 자동차", "삼성자산운용",   12.8, 14_300L, 0.85,  98_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("005380", "현대차", "고객사 (완성차)", 215_000, -0.3),
-            RelatedStock("000270", "기아",   "고객사 (완성차)",  98_300,  0.4),
-        ),
+        relatedStocks = emptyList(),
     )
     "086790" -> Stock(
         ticker = "086790",
@@ -245,10 +228,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200", "삼성자산운용",    1.5, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("140710", "KODEX 은행", "삼성자산운용",   16.8,  7_800L, 1.15,  142_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("105560", "KB금융",   "동종 업계 (금융)", 82_400,  0.7),
-            RelatedStock("055550", "신한지주",  "동종 업계 (금융)", 48_750,  0.3),
-        ),
+        relatedStocks = emptyList(),
     )
     "051910" -> Stock(
         ticker = "051910",
@@ -264,10 +244,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200",  "삼성자산운용",    1.4, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("117460", "KODEX 화학",  "삼성자산운용",   22.5,  5_230L, 0.55,  45_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("373220", "LG에너지솔루션", "자회사 (배터리)", 342_000, -0.9),
-            RelatedStock("011170", "롯데케미칼",     "동종 업계 (화학)",  68_400, -1.3),
-        ),
+        relatedStocks = emptyList(),
     )
     "011170" -> Stock(
         ticker = "011170",
@@ -283,10 +260,7 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("069500", "KODEX 200", "삼성자산운용",    0.8, 35_420L, 1.61, 2_451_200_000_000L),
             StockEtf("117460", "KODEX 화학", "삼성자산운용",   14.2,  5_230L, 0.55,  45_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("051910", "LG화학", "동종 업계 (화학)", 320_000, -0.5),
-            RelatedStock("010950", "S-Oil",  "동종 업계 (정유)",  68_000,  0.2),
-        ),
+        relatedStocks = emptyList(),
     )
     else -> Stock(
         ticker = ticker,
@@ -306,10 +280,6 @@ private fun mockStock(ticker: String) = when (ticker) {
             StockEtf("411420", "ACE 테크TOP10",     "한국투자신탁운용",  9.5,  12_180L, 1.95,   185_000_000_000L),
             StockEtf("293180", "HANARO 코스피",     "NH-Amundi",         8.2,  11_880L, 1.20,   750_000_000_000L),
         ),
-        relatedStocks = listOf(
-            RelatedStock("000660", "SK하이닉스",  "동종 업계 (반도체)",      162_100, -1.2),
-            RelatedStock("042700", "한미반도체",  "서플라이 체인 (장비)",     98_300,  1.4),
-            RelatedStock("ASML",   "ASML",        "서플라이 체인 (노광기)",  860_000, -0.6),
-        ),
+        relatedStocks = emptyList(),
     )
 }
