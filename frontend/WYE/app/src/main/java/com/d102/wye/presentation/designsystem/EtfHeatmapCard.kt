@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,7 +60,7 @@ fun EtfHeatmapCard(
         // ETF 이름 (상단 왼쪽)
         Text(
             text = etfName,
-            color = TextOnColored,
+            color = Color.Black,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
@@ -70,7 +71,7 @@ fun EtfHeatmapCard(
         // 등락률 (하단 왼쪽)
         Text(
             text = rateText,
-            color = TextOnColored,
+            color = Color.Black,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.BottomStart),

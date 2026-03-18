@@ -25,6 +25,10 @@ class EtfRepositoryImpl @Inject constructor(
     private val likedEtfDao: LikedEtfDao,
 ) : BaseRepository(), EtfRepository {
 
+    override suspend fun getTopVolumeEtfs() =
+        safeApiCall { etfApiService.getTopVolumeEtfs() }
+            .map { items -> items.map { item -> item.toDomain() } }
+
     override suspend fun getEtfList(request: EtfListRequest, page: Int): BaseResult<EtfPage> =
         safeApiCall { etfApiService.getEtfList(request, page) }
             .map { EtfPage(items = it.content.map { item -> item.toDomain() }, isLast = it.last) }
