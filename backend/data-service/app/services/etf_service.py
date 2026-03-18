@@ -18,24 +18,6 @@ import traceback
 
 _krx_api_semaphore = asyncio.Semaphore(5)
 
-async def process_all_etf_events_background(infos: list[dict]):
-    from app.services.etf_service import EtfService
-    
-    async def _process_one(ticker: str, etf_id: int):
-        async with AsyncSessionLocal() as db:
-            try:
-                service = EtfService(db)
-                # 1. 가격 이력 저장 (테스트를 위해 잠시 주석 처리)
-                # await service.save_new_etf_price_histories(ticker, etf_id)
-                # 2. PDF 분석하여 해외 주식 등 포함시 비활성화 & 국내 주식 DB에 저장
-                await service.check_and_update_etf_active_status(ticker, etf_id)
-            except Exception as e:
-                logger.error(f"Error processing ETF events for {ticker}: {e}")
-                logger.error(traceback.format_exc())
-
-    tasks = [_process_one(meta["ticker"], meta["id"]) for meta in infos]
-    await asyncio.gather(*tasks)
-
 class EtfService:
     def __init__(self, db: AsyncSession):
         self.etf_repository = EtfRepository(db)
@@ -54,57 +36,91 @@ class EtfService:
             if listed_etf.ticker in etf_tickers_in_db:
                 continue
             etfs.append(listed_etf)
+            
         infos = await self.etf_repository.save_initial_etf_infos(etfs)
+        logger.info(f"{len(infos)}개의 신규 ETF가 기본 정보 수집 완료되었습니다.")
 
-        if background_tasks:
-            background_tasks.add_task(process_all_etf_events_background, infos)
-        else:
-            await process_all_etf_events_background(infos)
+    async def update_etfs_active_status(self):
+        unchecked_etfs = await self.etf_repository.get_unchecked_etfs()
+        if not unchecked_etfs:
+            logger.info("상태 검사가 필요한 신규 ETF가 없습니다.")
+            return
 
-    async def save_new_etf_price_histories(self, ticker: str, etf_id: int):
-        async with _krx_api_semaphore:  # 동시성 제어
-            await asyncio.sleep(0.2) # pykrx API 서버 호출 제한(CD006/CD003 등) 방지
-            price_histories = await self.pykrx_client.get_price_history(ticker)
-
-            if not price_histories:
-                print(f"price_histories not found {ticker}")
-                return
-
-            # 데이터 가공: 각 row에 etf_id 주입
-            for history in price_histories:
-                history['etf_id'] = etf_id
-
-            # Repository를 통한 Bulk Insert
-            logging.info(f"[{ticker}] DB에 가격 이력 데이터 bulk insert 진행 중... ({len(price_histories)}건)")
-            await self.etf_price_repository.save_bulk(price_histories)
-            logging.info(f"[{ticker}] DB에 가격 이력 데이터 {len(price_histories)}건 적재 완료.")
-
-    async def check_and_update_etf_active_status(self, ticker: str, etf_id: int):
-        async with _krx_api_semaphore:
-            await asyncio.sleep(0.2) # pykrx API 서버 호출 제한 방지
-            pdf_tickers = await self.pykrx_client.get_etf_pdf_tickers(ticker)
-            if not pdf_tickers:
-                return
+        for etf in unchecked_etfs:
+            ticker = etf["ticker"]
+            etf_id = etf["id"]
             
-            # 주식의 ticker는 주로 6자리 숫자입니다 (예: 005930)
-            # 6자리 숫자가 아닌 경우 해외 주식이나 기타 상품으로 간주하여 비활성화
-            # User requirement: "pdf 안에 살펴 보면서 해외 주식이 포함된 etf는 isactive =false가 되도록 해주시면됩니다"
-            has_foreign_stock = False
-            domestic_stocks = []
-            for pdf_ticker in pdf_tickers:
-                if not (pdf_ticker.isdigit() and len(pdf_ticker) == 6):
-                    has_foreign_stock = True
-                else:
-                    domestic_stocks.append(pdf_ticker)
-            
-            if domestic_stocks:
-                logging.info(f"[{ticker}] 국내 상장 주식 {len(domestic_stocks)}건 DB insert 및 회사정보 수집 중...")
-                await self.process_domestic_stocks(domestic_stocks)
-                logging.info(f"[{ticker}] 국내 상장 주식 {len(domestic_stocks)}건 저장 완료.")
+            async with _krx_api_semaphore:
+                await asyncio.sleep(0.2)
+                pdf_tickers = await self.pykrx_client.get_etf_pdf_tickers(ticker)
+                
+                if not pdf_tickers:
+                    logger.warning(f"[{ticker}] PDF 구성종목을 조회하지 못했습니다.")
+                    continue
+                
+                has_foreign_stock = False
+                for pdf_ticker in pdf_tickers:
+                    if not (pdf_ticker.isdigit() and len(pdf_ticker) == 6):
+                        has_foreign_stock = True
+                        break
+                
+                is_krx_only = not has_foreign_stock
+                logger.info(f"[{ticker}] 국내 전용 여부 판별 완료 (is_krx_only={is_krx_only})")
+                await self.etf_repository.update_krx_status(etf_id, is_krx_only)
 
-            if has_foreign_stock:
-                logger.info(f"ETF {ticker} contains foreign or non-standard stock. Deactivating.")
-                await self.etf_repository.update_etf_active_status(etf_id, False)
+    async def sync_etf_prices(self):
+        from datetime import date, datetime, timedelta
+        active_etfs = await self.etf_repository.get_active_etfs()
+        if not active_etfs:
+            logger.info("가격 이력을 수집할 활성 ETF가 없습니다.")
+            return
+
+        now = datetime.now()
+        # 오후 4시(16:00) 이전이면 어제 데이터를 최신 기준으로 설정
+        target_end_date = now.date() if now.hour >= 16 else now.date() - timedelta(days=1)
+        
+        for etf in active_etfs:
+            ticker = etf["ticker"]
+            etf_id = etf["id"]
+            
+            latest_date = await self.etf_price_repository.get_latest_price_date(etf_id)
+            if latest_date is None:
+                start_date = "20230302"
+            else:
+                if latest_date >= target_end_date:
+                    logger.info(f"[{ticker}] 이미 최신 날짜({latest_date})의 가격 이력이 존재합니다.")
+                    continue
+                next_date = latest_date + timedelta(days=1)
+                if next_date > target_end_date:
+                    continue  # 이미 최신
+                start_date = next_date.strftime("%Y%m%d")
+                
+            async with _krx_api_semaphore:
+                await asyncio.sleep(0.2)
+                price_histories = await self.pykrx_client.get_price_history(
+                    ticker, 
+                    start_date=start_date,
+                    end_date=target_end_date.strftime("%Y%m%d")
+                )
+
+                if not price_histories:
+                    continue
+
+                for history in price_histories:
+                    history['etf_id'] = etf_id
+                    history['created_at'] = now
+
+                logging.info(f"[{ticker}] DB 가격 이력 {len(price_histories)}건 적재 완료.")
+                await self.etf_price_repository.save_bulk(price_histories)
+
+    async def update_empty_company_infos(self):
+        tickers = await self.stock_repository.get_stocks_with_empty_company_info()
+        if not tickers:
+            logger.info("회사 정보 동기화가 필요한 국내 주식이 없습니다.")
+            return
+            
+        logger.info(f"회사 정보가 누락된 주식 {len(tickers)}건 수집 시작...")
+        await self.process_domestic_stocks(tickers)
 
     async def process_domestic_stocks(self, tickers: list[str]):
         from app.scrapers.data_portal_client import DataPortalClient

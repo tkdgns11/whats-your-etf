@@ -24,6 +24,8 @@ class ETF(Base):
     is_leveraged = Column(Boolean, default=False)
     is_inverse = Column(Boolean, default=False)
     is_hedged = Column(Boolean)
+    is_derivatives = Column(Boolean, default=False)
+    is_krx_only = Column(Boolean, default=None)
 
     # 비용/규모
     expense_ratio = Column(DECIMAL(6, 4))

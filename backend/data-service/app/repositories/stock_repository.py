@@ -48,3 +48,8 @@ class StockRepository:
                 stock.market_type = market_type
             await self.db.flush()
         return stock
+
+    async def get_stocks_with_empty_company_info(self) -> list[str]:
+        stmt = select(Stock.ticker).join(CompanyInfo, Stock.company_id == CompanyInfo.id).where(CompanyInfo.ceo_name.is_(None))
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())

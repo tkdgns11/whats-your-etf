@@ -39,12 +39,13 @@ class PykrxClient:
 
         return etfs
 
-    async def get_price_history(self, ticker: str, start_date: str = "20230302") -> List[Dict[str, Any]]:
+    async def get_price_history(self, ticker: str, start_date: str = "20230302", end_date: str = None) -> List[Dict[str, Any]]:
         if self.krx_session_manager.login():
             """
             pykrx로부터 데이터를 가져와 스키마 구조에 맞는 List[Dict]로 변환합니다.
             """
-            end_date = datetime.date.today().strftime("%Y%m%d")
+            if not end_date:
+                end_date = datetime.date.today().strftime("%Y%m%d")
             logging.info(f"[{ticker}] pykrx에서 가격 이력 호출 중... ({start_date} ~ {end_date})")
 
             # pykrx의 ETF OHLCV API는 NAV와 등락률을 포함합니다.
@@ -75,6 +76,38 @@ class PykrxClient:
                 })
             
             logging.info(f"[{ticker}] pykrx에서 가격 이력 데이터 {len(history_data)}건 조회 성공.")
+            return history_data
+        else:
+            logging.error("로그인 실패")
+            return []
+
+    async def get_index_price_history(self, ticker: str, start_date: str = "20230302", end_date: str = None) -> List[Dict[str, Any]]:
+        if self.krx_session_manager.login():
+            if not end_date:
+                end_date = datetime.date.today().strftime("%Y%m%d")
+            logging.info(f"[Index {ticker}] pykrx에서 지수 가격 이력 호출 중... ({start_date} ~ {end_date})")
+
+            try:
+                df = await to_thread.run_sync(
+                    stock.get_index_ohlcv_by_date, start_date, end_date, ticker
+                )
+            except Exception as e:
+                logging.error(f"[Index {ticker}] pykrx 지수 가격 이력 호출 중 예외 발생: {e}")
+                return []
+
+            if df is None or df.empty:
+                logging.info(f"[Index {ticker}] pykrx에서 불러온 지수 가격 데이터가 없습니다.")
+                return []
+
+            df = df.reset_index()
+            history_data = []
+            for _, row in df.iterrows():
+                history_data.append({
+                    "trading_date": row.get('날짜', row.name).date() if hasattr(row.get('날짜', row.name), 'date') else row.get('날짜', row.name),
+                    "close": float(row.get('종가', 0)),
+                })
+            
+            logging.info(f"[Index {ticker}] pykrx에서 지수 가격 이력 데이터 {len(history_data)}건 조회 성공.")
             return history_data
         else:
             logging.error("로그인 실패")

@@ -138,7 +138,7 @@ async def krx_disclosure_job():
 
 
 async def etf_sync_job():
-    """ETF 티커 동기화 + 구성 주식/회사 정보 저장 (매일 05:00 KST)"""
+    """ETF 티커 동기화 (기본 정보 저장) (매일 05:00 KST)"""
     logger.info("=== ETF 동기화 시작 ===")
     from app.services.etf_service import EtfService
     from app.database import AsyncSessionLocal
@@ -150,14 +150,102 @@ async def etf_sync_job():
         except Exception as e:
             logger.error(f"ETF 동기화 실패: {e}")
 
+async def etf_active_status_job():
+    """ETF 상태 검사 (PDF) 및 활성화 (매일 05:30 KST)"""
+    logger.info("=== ETF 상태 검사 및 활성화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.update_etfs_active_status()
+            logger.info("=== ETF 상태 검사 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 상태 검사 실패: {e}")
+
+async def company_info_sync_job():
+    """회사 정보 누락 주식 동기화 (매일 06:00 KST)"""
+    logger.info("=== 회사 정보 누락 주식 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.update_empty_company_infos()
+            logger.info("=== 회사 정보 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"회사 정보 동기화 실패: {e}")
+
+async def etf_price_sync_job():
+    """ETF 가격 이력 동기화 (매일 00:00 KST)"""
+    logger.info("=== ETF 가격 이력 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_prices()
+            logger.info("=== ETF 가격 이력 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 가격 이력 동기화 실패: {e}")
+
+async def kospi_index_sync_job():
+    """KOSPI 벤치마크 지수 동기화 (매일 00:30 KST)"""
+    logger.info("=== KOSPI 지수 동기화 시작 ===")
+    from app.services.benchmark_service import BenchmarkService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = BenchmarkService(db)
+            await service.sync_kospi_index()
+            logger.info("=== KOSPI 지수 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"KOSPI 지수 동기화 실패: {e}")
+
 def start_scheduler():
     """스케줄러 시작"""
-    # ETF 티커 동기화 + 주식/회사 정보 저장 (매일 05:00 KST)
+    # ETF 티커 동기화 (기본 정보) (매일 05:00 KST)
     scheduler.add_job(
         etf_sync_job,
         trigger=CronTrigger(hour=5, minute=0, timezone='Asia/Seoul'),
         id="etf_sync_job",
         name="ETF Daily Sync",
+        replace_existing=True
+    )
+    
+    # ETF 활성 상태 (PDF 검사) 업데이트 (매일 05:30 KST)
+    scheduler.add_job(
+        etf_active_status_job,
+        trigger=CronTrigger(hour=5, minute=30, timezone='Asia/Seoul'),
+        id="etf_active_status_job",
+        name="ETF Active Status Check",
+        replace_existing=True
+    )
+    
+    # 회사 정보(ceo_name 등) 업데이트 (매일 06:00 KST)
+    scheduler.add_job(
+        company_info_sync_job,
+        trigger=CronTrigger(hour=6, minute=0, timezone='Asia/Seoul'),
+        id="company_info_sync_job",
+        name="Company Info Sync",
+        replace_existing=True
+    )
+
+    # ETF 가격 이력 최신화 (매일 00:00 KST)
+    scheduler.add_job(
+        etf_price_sync_job,
+        trigger=CronTrigger(hour=0, minute=0, timezone='Asia/Seoul'),
+        id="etf_price_sync_job",
+        name="ETF Price History Sync",
+        replace_existing=True
+    )
+    
+    # KOSPI 벤치마크 지수 최신화 (매일 00:30 KST)
+    scheduler.add_job(
+        kospi_index_sync_job,
+        trigger=CronTrigger(hour=0, minute=30, timezone='Asia/Seoul'),
+        id="kospi_index_sync_job",
+        name="KOSPI Index Sync",
         replace_existing=True
     )
 
