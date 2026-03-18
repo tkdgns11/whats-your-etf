@@ -132,6 +132,36 @@ class SectorClusterResponse(BaseModel):
 
 # ==================== API Endpoints ====================
 
+@app.get("/init")
+async def test_etf_pipeline():
+    logger.info("=== 수동 ETF 파이프라인 테스트 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    import traceback
+    
+    async with AsyncSessionLocal() as async_db:
+        try:
+            service = EtfService(async_db)
+            
+            logger.info("[Test 1/4] 티커 및 기본 정보 수집 시작")
+            await service.sync_etf_tickers()
+            
+            logger.info("[Test 2/4] PDF 검사 및 활성화 시작")
+            await service.update_etfs_active_status()
+            
+            logger.info("[Test 3/4] 누락된 회사 정보 수집 시작")
+            await service.update_empty_company_infos()
+            
+            logger.info("[Test 4/4] 가격 이력 동기화 시작")
+            await service.sync_etf_prices()
+            
+            logger.info("=== 수동 ETF 파이프라인 테스트 완료 ===")
+            return {"status": "success", "message": "ETF 파이프라인 수동 테스트 완료"}
+        except Exception as e:
+            logger.error(f"테스트 중 오류 발생: {e}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/")
 async def root():
     return {
