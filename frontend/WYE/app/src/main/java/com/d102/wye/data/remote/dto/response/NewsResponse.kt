@@ -51,6 +51,22 @@ data class NewsDetailResponse(
     val relatedEtfs: List<RelatedEtfResponse>
 )
 
+data class PortfolioNewsResponse(
+    @SerializedName("portfolioId") val portfolioId: Long,
+    @SerializedName("portfolioName") val portfolioName: String,
+    @SerializedName("news") val news: List<PortfolioNewsItemResponse>,
+    @SerializedName("updatedAt") val updatedAt: String,
+)
+
+data class PortfolioNewsItemResponse(
+    @SerializedName("id") val id: Long,
+    @SerializedName("title") val title: String,
+    @SerializedName("summary") val summary: String,
+    @SerializedName("source") val source: String,
+    @SerializedName("thumbnailUrl") val thumbnailUrl: String?,
+    @SerializedName("publishedAt") val publishedAt: String,
+)
+
 data class RelatedEtfResponse(
     @SerializedName("etfId")
     val etfId: Long,

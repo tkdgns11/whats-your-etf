@@ -8,6 +8,7 @@ import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.domain.usecase.portfolio.CalculatePortfolioChartUseCase
+import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,8 @@ class StrategyDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val portfolioRepository: PortfolioRepository,
     private val simulationRepository: SimulationRepository,
-    private val calculatePortfolioChart: CalculatePortfolioChartUseCase
+    private val calculatePortfolioChart: CalculatePortfolioChartUseCase,
+    private val newsRepository: NewsRepository,
 ) : ViewModel() {
 
     private val portfolioId: Long = checkNotNull(savedStateHandle["strategyId"])
@@ -73,6 +75,11 @@ class StrategyDetailViewModel @Inject constructor(
 
             val returnSign = { v: Double -> if (v >= 0) "+" else "" }
 
+            val relatedNews = when (val result = newsRepository.getPortfolioNews(portfolioId)) {
+                is BaseResult.Success -> result.data.map { NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl) }
+                is BaseResult.Error -> emptyList()
+            }
+
             _detailState.value = UiState.Success(
                 StrategyDetailData(
                     id = detail.portfolioId,
@@ -104,7 +111,7 @@ class StrategyDetailViewModel @Inject constructor(
                         points = chartResult.pastPoints
                     ),
                     timelines = emptyList(),   // TODO: 타임라인 API 연결
-                    relatedNews = emptyList()  // TODO: 뉴스 API 연결
+                    relatedNews = relatedNews,
                 )
             )
         }
@@ -141,9 +148,11 @@ data class TimelineItem(
 )
 
 data class NewsItem(
+    val id: Long,
     val title: String,
     val summary: String,
-    val source: String
+    val source: String,
+    val thumbnailUrl: String?,
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
