@@ -22,7 +22,7 @@ scheduler = AsyncIOScheduler()
 async def scrape_stock_news_job():
     """ETF 구성종목 뉴스 크롤링 (매일 03:00 KST)
 
-    뉴스 크롤링만 수행. AI 분석은 별도 스케줄러에서 실행.
+    뉴스 크롤링 후 AI 분석 자동 실행.
     """
     logger.info("=== 종목뉴스 크롤링 시작 ===")
 
@@ -86,6 +86,11 @@ async def scrape_stock_news_job():
             f"  매핑추가: {total_stats['mapped']}건"
         )
 
+        # 크롤링 완료 후 AI 분석 즉시 실행
+        if total_stats['new'] > 0:
+            logger.info("=== 크롤링 완료 후 AI 분석 시작 ===")
+            await news_ai_analysis_job()
+
     except Exception as e:
         logger.error(f"종목뉴스 크롤링 실패: {e}")
     finally:
@@ -93,7 +98,7 @@ async def scrape_stock_news_job():
 
 
 async def news_ai_analysis_job():
-    """뉴스 AI 분석 (매일 07:00, 12:00, 17:00 KST)
+    """뉴스 AI 분석 (매 3시간마다 실행)
 
     미분석 뉴스를 AI로 분석 (요약, 키워드, ETF 추천)
     크롤링(03:00)과 분리하여 독립적으로 실행
@@ -259,9 +264,9 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # AI 뉴스 분석 (매일 07:00, 12:00, 17:00 KST)
-    # 크롤링(03:00)과 분리하여 독립적으로 실행
-    for hour in [7, 12, 17]:
+    # AI 뉴스 분석 (매 3시간마다: 00:00, 04:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 KST)
+    # 크롤링 완료 후 즉시 실행 + 04:00 백업 + 이후 매 3시간
+    for hour in [0, 6, 9, 12, 15, 18, 21]:
         scheduler.add_job(
             news_ai_analysis_job,
             trigger=CronTrigger(hour=hour, minute=0, timezone='Asia/Seoul'),
@@ -269,6 +274,14 @@ def start_scheduler():
             name=f"News AI Analysis ({hour}:00)",
             replace_existing=True
         )
+    # 크롤링(03:00) 완료 후 백업 실행 (04:00)
+    scheduler.add_job(
+        news_ai_analysis_job,
+        trigger=CronTrigger(hour=4, minute=0, timezone='Asia/Seoul'),
+        id="news_ai_analysis_4",
+        name="News AI Analysis (04:00)",
+        replace_existing=True
+    )
 
     # KRX KIND 공시 체크 - 비활성화 (크롤러 문제 해결 후 활성화)
     # scheduler.add_job(
@@ -284,5 +297,5 @@ def start_scheduler():
         f"스케줄러 시작:\n"
         f"  - ETF 구성종목 뉴스: 매일 03:00 KST\n"
         f"  - ETF 동기화: 매일 05:00 KST\n"
-        f"  - AI 뉴스 분석: 매일 07:00, 12:00, 17:00 KST"
+        f"  - AI 뉴스 분석: 크롤링 직후 + 매 3시간 (00:00, 04:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 KST)"
     )
