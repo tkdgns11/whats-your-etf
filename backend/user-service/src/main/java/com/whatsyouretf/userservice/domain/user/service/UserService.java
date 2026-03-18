@@ -53,15 +53,15 @@ public interface UserService {
     /**
      * 관심 ETF 추가
      */
-    void addFavoriteEtf(Long userId, Long etfId);
+    void addFavoriteEtf(Long userId, String ticker);
 
     /**
      * 관심 ETF 삭제
      */
-    void removeFavoriteEtf(Long userId, Long etfId);
+    void removeFavoriteEtf(Long userId, String ticker);
 
     /**
      * 관심 ETF 여부 확인
      */
-    boolean isFavoriteEtf(Long userId, Long etfId);
+    boolean isFavoriteEtf(Long userId, String ticker);
 }

@@ -20,11 +20,8 @@ import java.time.LocalDateTime;
 @Builder
 public class FavoriteEtfResponse {
 
-    /** ETF ID */
-    private Long etfId;
-
-    /** 종목코드 */
-    private String stockCode;
+    /** ETF 종목코드 */
+    private String ticker;
 
     /** ETF 명칭 */
     private String name;
@@ -50,8 +47,7 @@ public class FavoriteEtfResponse {
     public static FavoriteEtfResponse from(UserFavoriteEtf favorite) {
         Etf etf = favorite.getEtf();
         return FavoriteEtfResponse.builder()
-                .etfId(etf.getId())
-                .stockCode(etf.getStockCode())
+                .ticker(etf.getStockCode())
                 .name(etf.getName())
                 .assetManager(etf.getAssetManager())
                 .favoritedAt(favorite.getCreatedAt())
@@ -64,8 +60,7 @@ public class FavoriteEtfResponse {
     public static FavoriteEtfResponse from(UserFavoriteEtf favorite, EtfPrice latestPrice) {
         Etf etf = favorite.getEtf();
         return FavoriteEtfResponse.builder()
-                .etfId(etf.getId())
-                .stockCode(etf.getStockCode())
+                .ticker(etf.getStockCode())
                 .name(etf.getName())
                 .assetManager(etf.getAssetManager())
                 .currentPrice(latestPrice != null ? latestPrice.getClose() : null)

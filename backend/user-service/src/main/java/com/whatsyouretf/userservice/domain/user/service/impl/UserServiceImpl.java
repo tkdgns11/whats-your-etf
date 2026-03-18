@@ -229,17 +229,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void addFavoriteEtf(Long userId, Long etfId) {
+    public void addFavoriteEtf(Long userId, String ticker) {
         // 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // ETF 존재 확인
-        Etf etf = etfRepository.findById(etfId)
+        Etf etf = etfRepository.findByStockCode(ticker)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ETF_NOT_FOUND));
 
         // 이미 관심 등록 여부 확인
-        if (userFavoriteEtfRepository.existsByUserIdAndEtfId(userId, etfId)) {
+        if (userFavoriteEtfRepository.existsByUserIdAndTicker(userId, ticker)) {
             throw new BusinessException(ErrorCode.ALREADY_FAVORITE);
         }
 
@@ -247,24 +247,24 @@ public class UserServiceImpl implements UserService {
         UserFavoriteEtf favorite = UserFavoriteEtf.create(user, etf);
         userFavoriteEtfRepository.save(favorite);
 
-        log.info("관심 ETF 추가: userId={}, etfId={}", userId, etfId);
+        log.info("관심 ETF 추가: userId={}, ticker={}", userId, ticker);
     }
 
     @Override
     @Transactional
-    public void removeFavoriteEtf(Long userId, Long etfId) {
+    public void removeFavoriteEtf(Long userId, String ticker) {
         // 관심 ETF 조회
-        UserFavoriteEtf favorite = userFavoriteEtfRepository.findByUserIdAndEtfId(userId, etfId)
+        UserFavoriteEtf favorite = userFavoriteEtfRepository.findByUserIdAndTicker(userId, ticker)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FAVORITE_NOT_FOUND));
 
         // 삭제
         userFavoriteEtfRepository.delete(favorite);
 
-        log.info("관심 ETF 삭제: userId={}, etfId={}", userId, etfId);
+        log.info("관심 ETF 삭제: userId={}, ticker={}", userId, ticker);
     }
 
     @Override
-    public boolean isFavoriteEtf(Long userId, Long etfId) {
-        return userFavoriteEtfRepository.existsByUserIdAndEtfId(userId, etfId);
+    public boolean isFavoriteEtf(Long userId, String ticker) {
+        return userFavoriteEtfRepository.existsByUserIdAndTicker(userId, ticker);
     }
 }
