@@ -69,13 +69,15 @@ class EtfService:
                 await self.etf_repository.update_krx_status(etf_id, is_krx_only)
 
     async def sync_etf_prices(self):
-        from datetime import date, timedelta
+        from datetime import date, datetime, timedelta
         active_etfs = await self.etf_repository.get_active_etfs()
         if not active_etfs:
             logger.info("가격 이력을 수집할 활성 ETF가 없습니다.")
             return
 
-        today = date.today()
+        now = datetime.now()
+        # 오후 4시(16:00) 이전이면 어제 데이터를 최신 기준으로 설정
+        target_end_date = now.date() if now.hour >= 16 else now.date() - timedelta(days=1)
         
         for etf in active_etfs:
             ticker = etf["ticker"]
@@ -85,20 +87,28 @@ class EtfService:
             if latest_date is None:
                 start_date = "20230302"
             else:
+                if latest_date >= target_end_date:
+                    logger.info(f"[{ticker}] 이미 최신 날짜({latest_date})의 가격 이력이 존재합니다.")
+                    continue
                 next_date = latest_date + timedelta(days=1)
-                if next_date > today:
+                if next_date > target_end_date:
                     continue  # 이미 최신
                 start_date = next_date.strftime("%Y%m%d")
                 
             async with _krx_api_semaphore:
                 await asyncio.sleep(0.2)
-                price_histories = await self.pykrx_client.get_price_history(ticker, start_date=start_date)
+                price_histories = await self.pykrx_client.get_price_history(
+                    ticker, 
+                    start_date=start_date,
+                    end_date=target_end_date.strftime("%Y%m%d")
+                )
 
                 if not price_histories:
                     continue
 
                 for history in price_histories:
                     history['etf_id'] = etf_id
+                    history['created_at'] = now
 
                 logging.info(f"[{ticker}] DB 가격 이력 {len(price_histories)}건 적재 완료.")
                 await self.etf_price_repository.save_bulk(price_histories)

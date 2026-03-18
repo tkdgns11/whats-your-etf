@@ -189,6 +189,19 @@ async def etf_price_sync_job():
         except Exception as e:
             logger.error(f"ETF 가격 이력 동기화 실패: {e}")
 
+async def kospi_index_sync_job():
+    """KOSPI 벤치마크 지수 동기화 (매일 00:30 KST)"""
+    logger.info("=== KOSPI 지수 동기화 시작 ===")
+    from app.services.benchmark_service import BenchmarkService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = BenchmarkService(db)
+            await service.sync_kospi_index()
+            logger.info("=== KOSPI 지수 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"KOSPI 지수 동기화 실패: {e}")
+
 def start_scheduler():
     """스케줄러 시작"""
     # ETF 티커 동기화 (기본 정보) (매일 05:00 KST)
@@ -224,6 +237,15 @@ def start_scheduler():
         trigger=CronTrigger(hour=0, minute=0, timezone='Asia/Seoul'),
         id="etf_price_sync_job",
         name="ETF Price History Sync",
+        replace_existing=True
+    )
+    
+    # KOSPI 벤치마크 지수 최신화 (매일 00:30 KST)
+    scheduler.add_job(
+        kospi_index_sync_job,
+        trigger=CronTrigger(hour=0, minute=30, timezone='Asia/Seoul'),
+        id="kospi_index_sync_job",
+        name="KOSPI Index Sync",
         replace_existing=True
     )
 

@@ -9,3 +9,4 @@ from app.models.stock import Stock
 from app.models.company import CompanyInfo, IndustryClassification
 from app.models.stock import Stock
 from app.models.alert import AlertType, AlertMessageTemplate, UserAlert, UserNotificationSetting
+from app.models.benchmark import BenchmarkIndexPrice
