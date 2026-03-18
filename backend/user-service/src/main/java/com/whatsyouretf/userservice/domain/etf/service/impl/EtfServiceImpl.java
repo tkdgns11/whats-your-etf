@@ -204,27 +204,54 @@ public class EtfServiceImpl implements EtfService {
     }
 
     /**
-     * 영향력 종목 조회 (비중 상위 N개)
+     * 영향력 종목 조회 (비중 × 현재가 × |등락률| 기준 상위 N개)
      */
     private List<EtfInfluentialStockResponse> getInfluentialStocks(Long etfId) {
-        return stockCompositionRepository.findTopByEtfId(etfId, MAX_INFLUENTIAL_STOCKS).stream()
+        return stockCompositionRepository.findLatestByEtfId(etfId).stream()
                 .map(comp -> {
                     var stock = comp.getStock();
                     var company = stock.getCompany();
                     StockInfo stockInfo = stockCache.get(stock.getTicker());
 
-                    return EtfInfluentialStockResponse.builder()
-                            .ticker(stock.getTicker())
-                            .name(company != null ? company.getCompanyName() : null)
-                            .weight(comp.getWeightPct())
-                            .currentPrice(stockInfo != null && stockInfo.currentPrice() != null
-                                    ? stockInfo.currentPrice().longValue() : null)
-                            .changeRate(stockInfo != null && stockInfo.dailyFluctuation() != null
-                                    ? stockInfo.dailyFluctuation() : BigDecimal.ZERO)
-                            .build();
+                    BigDecimal changeRate = (stockInfo != null && stockInfo.dailyFluctuation() != null)
+                            ? stockInfo.dailyFluctuation() : BigDecimal.ZERO;
+                    BigDecimal currentPrice = (stockInfo != null && stockInfo.currentPrice() != null)
+                            ? stockInfo.currentPrice() : BigDecimal.ZERO;
+
+                    // 영향력 = 비중 × 현재가 × |등락률|
+                    BigDecimal influence = comp.getWeightPct()
+                            .multiply(currentPrice)
+                            .multiply(changeRate.abs());
+
+                    return new InfluentialStockTemp(
+                            stock.getTicker(),
+                            company != null ? company.getCompanyName() : null,
+                            comp.getWeightPct(),
+                            currentPrice.longValue() > 0 ? currentPrice.longValue() : null,
+                            changeRate,
+                            influence
+                    );
                 })
+                .sorted((a, b) -> b.influence().compareTo(a.influence()))
+                .limit(MAX_INFLUENTIAL_STOCKS)
+                .map(temp -> EtfInfluentialStockResponse.builder()
+                        .ticker(temp.ticker())
+                        .name(temp.name())
+                        .weight(temp.weight())
+                        .currentPrice(temp.currentPrice())
+                        .changeRate(temp.changeRate())
+                        .build())
                 .toList();
     }
+
+    private record InfluentialStockTemp(
+            String ticker,
+            String name,
+            BigDecimal weight,
+            Long currentPrice,
+            BigDecimal changeRate,
+            BigDecimal influence
+    ) {}
 
     @Override
     public Page<EtfPrice> getEtfHistory(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
