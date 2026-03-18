@@ -130,13 +130,19 @@ public class EtfServiceImpl implements EtfService {
                 (a, b) -> a // 중복 시 첫번째 사용
             ));
 
-        // 섹터별 종목 조회하여 응답 생성
+        Map<String, List<EtfSectorStockResponse>> stocksByCode = isThemeEtf
+            ? loadAllStocksBySectorCode(ticker)
+            : loadAllStocksByGroupCode(ticker);
+
+        // 섹터별 응답 생성
         return clusters.stream()
             .map(cluster -> {
-                // 해당 섹터 종목들 조회 (테마형: sector_code로, 시장형: group_code로)
-                List<EtfSectorStockResponse> stocks = isThemeEtf
-                    ? getSectorStocksBySectorCode(ticker, cluster.getIndustryCode())
-                    : getSectorStocksByGroupCode(ticker, cluster.getGroupCode());
+                // 그룹화된 데이터에서 해당 섹터 종목 조회
+                String code = isThemeEtf ? cluster.getIndustryCode() : cluster.getGroupCode();
+                List<EtfSectorStockResponse> stocks = stocksByCode.getOrDefault(code, List.of())
+                    .stream()
+                    .limit(MAX_SECTOR_STOCKS)
+                    .toList();
 
                 // 섹터명 결정: 테마형은 subSector, 시장형은 groupName
                 String sectorName = isThemeEtf
@@ -151,6 +157,44 @@ public class EtfServiceImpl implements EtfService {
                     .build();
             })
             .toList();
+    }
+
+    /**
+     * 테마형 ETF: 모든 종목을 한 번에 조회 후 sectorCode별 그룹화
+     */
+    private Map<String, List<EtfSectorStockResponse>> loadAllStocksBySectorCode(String ticker) {
+        return clusterMappingRepository.findAllByEtfTicker(ticker).stream()
+            .collect(Collectors.groupingBy(
+                m -> m.getSector().getCode(),
+                Collectors.mapping(this::toSectorStockResponse, Collectors.toList())
+            ));
+    }
+
+    /**
+     * 시장형 ETF: 모든 종목을 한 번에 조회 후 groupCode별 그룹화
+     */
+    private Map<String, List<EtfSectorStockResponse>> loadAllStocksByGroupCode(String ticker) {
+        return clusterMappingRepository.findAllByEtfTicker(ticker).stream()
+            .filter(m -> m.getSector().getGroupCode() != null)
+            .collect(Collectors.groupingBy(
+                m -> m.getSector().getGroupCode(),
+                Collectors.mapping(this::toSectorStockResponse, Collectors.toList())
+            ));
+    }
+
+    /**
+     * EtfStockClusterMapping -> EtfSectorStockResponse 변환
+     */
+    private EtfSectorStockResponse toSectorStockResponse(EtfStockClusterMapping mapping) {
+        var comp = mapping.getComposition();
+        var stock = comp.getStock();
+        var company = stock.getCompany();
+
+        return EtfSectorStockResponse.builder()
+            .ticker(stock.getTicker())
+            .name(company != null ? company.getCompanyName() : null)
+            .percentage(comp.getWeightPct())
+            .build();
     }
 
     /**

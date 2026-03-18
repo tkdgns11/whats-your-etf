@@ -27,11 +27,13 @@ public interface EtfPriceRepository extends JpaRepository<EtfPrice, Long> {
     /**
      * 여러 ETF의 최신 시세 조회
      */
-    @Query(value = """
-        SELECT DISTINCT ON (etf_id) *
-        FROM etf_prices
-        WHERE etf_id IN (:etfIds)
-        ORDER BY etf_id, trade_date DESC
-        """, nativeQuery = true)
+    @Query("""
+        SELECT ep FROM EtfPrice ep
+        JOIN FETCH ep.etf
+        WHERE ep.etf.id IN :etfIds
+          AND ep.tradeDate = (
+              SELECT MAX(ep2.tradeDate) FROM EtfPrice ep2 WHERE ep2.etf = ep.etf
+          )
+        """)
     List<EtfPrice> findLatestByEtfIds(@Param("etfIds") List<Long> etfIds);
 }

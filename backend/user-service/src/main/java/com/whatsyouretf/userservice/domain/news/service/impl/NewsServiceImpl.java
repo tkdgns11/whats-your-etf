@@ -10,7 +10,6 @@ import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
-import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository.PortfolioNewsProjection;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
@@ -111,7 +110,6 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         // ETF ID 목록
         List<Long> etfIds = etfs.stream().map(Etf::getId).toList();
 
-        // 최신 시세 조회 (한번에 조회하여 N+1 문제 방지)
         Map<Long, EtfPrice> priceMap = etfPriceRepository.findLatestByEtfIds(etfIds).stream()
                 .collect(Collectors.toMap(
                         price -> price.getEtf().getId(),
@@ -211,10 +209,10 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
-        // 관련성 높은 뉴스 ID 조회 (전일 종가 × ETF 수량 × 종목비중 기준)
-        List<PortfolioNewsProjection> projections = newsArticleRepository.findPortfolioNewsByRelevance(portfolioId, MAX_PORTFOLIO_NEWS);
+        // 관련성 높은 뉴스 조회
+        List<NewsArticle> articles = newsArticleRepository.findPortfolioNewsWithFullData(portfolioId, MAX_PORTFOLIO_NEWS);
 
-        if (projections.isEmpty()) {
+        if (articles.isEmpty()) {
             return PortfolioNewsResponse.builder()
                     .portfolioId(portfolio.getId())
                     .portfolioName(portfolio.getName())
@@ -222,16 +220,6 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                     .updatedAt(LocalDateTime.now())
                     .build();
         }
-
-        // 뉴스 ID 목록 추출
-        List<Long> newsIds = projections.stream()
-                .map(PortfolioNewsProjection::getNewsId)
-                .toList();
-
-        // 뉴스 조회 및 최신순 정렬
-        List<NewsArticle> articles = newsArticleRepository.findAllById(newsIds).stream()
-                .sorted(Comparator.comparing(NewsArticle::getPublishedAt).reversed())
-                .toList();
 
         // DTO 변환
         List<PortfolioNewsResponse.PortfolioNewsItem> newsItems = articles.stream()

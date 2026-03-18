@@ -20,7 +20,7 @@ public interface CompanyInfoRepository extends JpaRepository<CompanyInfo, Long> 
     /**
      * 산업분류 코드로 회사 목록 조회
      */
-    List<CompanyInfo> findByIndustryCode(String industryCode);
+    List<CompanyInfo> findByIndustry_Code(String industryCode);
 
     /**
      * 활성화된 회사만 조회

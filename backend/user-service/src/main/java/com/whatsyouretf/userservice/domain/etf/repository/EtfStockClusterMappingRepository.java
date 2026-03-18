@@ -23,8 +23,9 @@ public interface EtfStockClusterMappingRepository extends JpaRepository<EtfStock
         JOIN FETCH m.composition c
         JOIN FETCH c.stock s
         JOIN FETCH s.company
+        JOIN FETCH m.sector
         WHERE m.etf.stockCode = :ticker
-          AND m.sectorCode = :sectorCode
+          AND m.sector.code = :sectorCode
         ORDER BY c.weightPct DESC
         """)
     List<EtfStockClusterMapping> findByEtfTickerAndSectorCode(
@@ -34,20 +35,34 @@ public interface EtfStockClusterMappingRepository extends JpaRepository<EtfStock
 
     /**
      * ETF의 특정 그룹코드 종목들 조회
-     * - 시장형 ETF용: industry_classification JOIN하여 group_code로 필터
+     * - 시장형 ETF용: group_code로 필터
      */
     @Query("""
         SELECT m FROM EtfStockClusterMapping m
         JOIN FETCH m.composition c
         JOIN FETCH c.stock s
         JOIN FETCH s.company
-        JOIN IndustryClassification ic ON m.sectorCode = ic.code
+        JOIN FETCH m.sector
         WHERE m.etf.stockCode = :ticker
-          AND ic.groupCode = :groupCode
+          AND m.sector.groupCode = :groupCode
         ORDER BY c.weightPct DESC
         """)
     List<EtfStockClusterMapping> findByEtfTickerAndGroupCode(
             @Param("ticker") String ticker,
             @Param("groupCode") String groupCode
     );
+
+    /**
+     * ETF의 모든 클러스터 매핑 조회 (sector FK 포함)
+     */
+    @Query("""
+        SELECT m FROM EtfStockClusterMapping m
+        JOIN FETCH m.composition c
+        JOIN FETCH c.stock s
+        JOIN FETCH s.company
+        JOIN FETCH m.sector
+        WHERE m.etf.stockCode = :ticker
+        ORDER BY c.weightPct DESC
+        """)
+    List<EtfStockClusterMapping> findAllByEtfTicker(@Param("ticker") String ticker);
 }

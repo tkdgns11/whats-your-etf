@@ -111,4 +111,36 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
         Long getNewsId();
         java.math.BigDecimal getRelevanceScore();
     }
+
+    /**
+     * 포트폴리오 관련 뉴스 전체 조회 (투자금액 × 종목비중 × 최신성으로 점수 계산)
+     * - 중복 조회 방지: 한 번에 전체 뉴스 엔티티 반환
+     * - 점수 높은 순으로 상위 N개 반환 후 발행일 역순 정렬
+     */
+    @Query(value = """
+            WITH latest_prices AS (
+                SELECT DISTINCT ON (etf_id) etf_id, close
+                FROM etf_prices
+                ORDER BY etf_id, trade_date DESC
+            ),
+            scored_news AS (
+                SELECT n.id,
+                       MAX(pe.etf_count * lp.close * ec.weight_pct * (1.0 / (1 + EXTRACT(EPOCH FROM (NOW() - n.published_at)) / 86400 * 0.3))) as relevance_score
+                FROM news_article n
+                JOIN news_stock_mapping nsm ON nsm.news_id = n.id
+                JOIN stock s ON s.company_id = nsm.company_id
+                JOIN etf_stock_composition ec ON ec.stock_id = s.id
+                JOIN portfolio_etf pe ON pe.etf_id = ec.etf_id
+                JOIN latest_prices lp ON lp.etf_id = pe.etf_id
+                WHERE pe.portfolio_id = :portfolioId AND n.is_active = true AND n.content_summary IS NOT NULL
+                GROUP BY n.id
+                ORDER BY relevance_score DESC
+                LIMIT :limit
+            )
+            SELECT n.*
+            FROM news_article n
+            JOIN scored_news sn ON sn.id = n.id
+            ORDER BY n.published_at DESC
+            """, nativeQuery = true)
+    List<NewsArticle> findPortfolioNewsWithFullData(@Param("portfolioId") Long portfolioId, @Param("limit") int limit);
 }

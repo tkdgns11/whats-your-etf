@@ -58,7 +58,7 @@ public class AiFeedbackServiceImpl implements AiFeedbackService {
         AiPrompt prompt = promptRepository.findByNameAndIsActiveTrue("portfolio_feedback")
                 .orElse(null);
 
-        // 피드백 엔티티 생성
+        // 피드백 엔티티 생성 및 저장
         PortfolioAiFeedback feedback = PortfolioAiFeedback.builder()
                 .user(user)
                 .prompt(prompt)
@@ -66,11 +66,11 @@ public class AiFeedbackServiceImpl implements AiFeedbackService {
 
         feedbackRepository.save(feedback);
 
-        // LLM 호출하여 분석 수행
+        // LLM 호출하여 분석 수행 (별도 트랜잭션에서 엔티티 업데이트)
         String promptTemplate = prompt != null ? prompt.getPromptTemplate() : null;
         llmService.analyzePortfolio(feedback.getId(), promptTemplate, request.getPortfolio());
 
-        // 분석 결과 조회
+        // LLM 서비스가 별도로 업데이트하므로 재조회 필요
         PortfolioAiFeedback result = feedbackRepository.findById(feedback.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 
