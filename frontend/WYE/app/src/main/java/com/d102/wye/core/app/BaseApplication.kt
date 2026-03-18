@@ -41,11 +41,10 @@ class BaseApplication : Application() {
         initializeKakaoSdk()
     }
 
-    /** 카카오 SDK를 초기화한다. 실제 키가 없으면 TODO 상태로 둔다. */
+    /** 카카오 SDK를 초기화한다. */
     private fun initializeKakaoSdk() {
         if (BuildConfig.KAKAO_NATIVE_APP_KEY.startsWith("TODO_")) {
             Timber.w("Kakao native app key is not configured yet.")
-            // TODO: 실제 네이티브 앱 키를 BuildConfig.KAKAO_NATIVE_APP_KEY에 연결
             return
         }
 

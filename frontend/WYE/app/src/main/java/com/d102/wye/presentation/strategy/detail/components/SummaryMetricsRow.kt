@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.d102.wye.presentation.theme.PrimaryGreen
+import androidx.compose.ui.unit.sp
+import com.d102.wye.presentation.theme.EtfFall
+import com.d102.wye.presentation.theme.EtfRise
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
@@ -38,11 +40,14 @@ fun SummaryMetricsRow(metrics: List<Pair<String, String>>) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (value.contains("+")) PrimaryGreen else TextPrimary
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                        color = when {
+                            value.startsWith("+") -> EtfRise
+                            value.startsWith("-") -> EtfFall
+                            else -> TextPrimary
+                        }
                     )
                 }
-                // 지표 사이의 얇은 구분선
                 if (index < metrics.size - 1) {
                     Box(
                         modifier = Modifier

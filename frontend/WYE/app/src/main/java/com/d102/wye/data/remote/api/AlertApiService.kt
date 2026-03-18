@@ -14,27 +14,22 @@ import retrofit2.http.Query
 
 interface AlertApiService {
 
-    // GET /api/alerts?category=all
     @GET("alerts")
     suspend fun getAlerts(
         @Query("category") category: String = "all",
     ): Response<BaseResponse<AlertListResponse>>
 
-    // GET /api/alerts/unread/count
     @GET("alerts/unread/count")
     suspend fun getUnreadCount(): Response<BaseResponse<UnreadCountResponse>>
 
-    // PUT /api/alerts/{alertId}/read
     @PUT("alerts/{alertId}/read")
     suspend fun markAsRead(
         @Path("alertId") alertId: Long,
     ): Response<BaseResponse<Unit>>
 
-    // GET /api/alerts/settings
     @GET("alerts/settings")
     suspend fun getSettings(): Response<BaseResponse<AlertSettingsResponse>>
 
-    // PUT /api/alerts/settings
     @PUT("alerts/settings")
     suspend fun updateSettings(
         @Body request: AlertSettingsRequest,
