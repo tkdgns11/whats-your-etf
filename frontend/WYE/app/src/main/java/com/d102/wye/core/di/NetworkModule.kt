@@ -10,6 +10,7 @@ import com.d102.wye.data.remote.api.NewsApiService
 import com.d102.wye.data.remote.api.PortfolioApiService
 import com.d102.wye.data.remote.api.SimulationApiService
 import com.d102.wye.data.remote.api.UserApiService
+import com.d102.wye.data.remote.api.StockApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -116,4 +117,9 @@ object NetworkModule {
     @Singleton
     fun provideUserApiService(retrofit: Retrofit): UserApiService =
         retrofit.create(UserApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideStockApiService(retrofit: Retrofit): StockApiService =
+        retrofit.create(StockApiService::class.java)
 }
