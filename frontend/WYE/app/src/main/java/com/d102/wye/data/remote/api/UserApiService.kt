@@ -11,6 +11,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Part
 import retrofit2.http.Query
 import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
@@ -26,6 +27,12 @@ interface UserApiService {
     suspend fun getFavoriteEtfs(
         @Query("sort") sort: String = "RECENT"
     ): Response<BaseResponse<FavoriteEtfListResponse>>
+
+    /** 특정 ETF가 관심 ETF에 등록되어 있는지 확인한다. */
+    @GET("users/me/favorites/etfs/{etfId}/check")
+    suspend fun checkFavoriteEtf(
+        @Path("etfId") etfId: Long
+    ): Response<BaseResponse<Boolean>>
 
     /** 변경할 필드만 전달해 내 프로필을 수정한다. */
     @PATCH("users/me")

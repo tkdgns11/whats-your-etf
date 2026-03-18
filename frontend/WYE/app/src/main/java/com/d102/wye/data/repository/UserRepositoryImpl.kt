@@ -42,6 +42,12 @@ class UserRepositoryImpl @Inject constructor(
         }.map { it.toDomain() }
     }
 
+    override suspend fun checkFavoriteEtf(etfId: Long): BaseResult<Boolean> {
+        return safeApiCall {
+            userApiService.checkFavoriteEtf(etfId = etfId)
+        }
+    }
+
     /** PATCH users/me로 닉네임/프로필 이미지를 수정한 뒤 최신 프로필을 반환한다. */
     override suspend fun updateMyProfile(
         nickname: String?,

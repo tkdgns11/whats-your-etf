@@ -13,6 +13,9 @@ interface UserRepository {
     /** 현재 로그인한 사용자의 관심 ETF 목록을 조회한다. */
     suspend fun getFavoriteEtfs(sort: FavoriteEtfSort = FavoriteEtfSort.RECENT): BaseResult<FavoriteEtfList>
 
+    /** 특정 ETF가 관심 ETF에 등록되어 있는지 확인한다. */
+    suspend fun checkFavoriteEtf(etfId: Long): BaseResult<Boolean>
+
     /** 변경된 필드만 포함해 내 프로필을 수정한다. */
     suspend fun updateMyProfile(
         nickname: String? = null,

@@ -182,6 +182,7 @@ private fun EtfFilterState.toRequest(sortedBy: String? = null) = EtfListRequest(
 
 // ─── Domain → UiModel 변환 ───────────────────────────────────────
 private fun Etf.toUiModel(likedTickers: Set<String>) = EtfListItemUiModel(
+    etfId = etfId,
     ticker = ticker,
     name = name,
     currentPrice = currentPrice,
@@ -208,6 +209,7 @@ data class ExploreData(
 )
 
 data class EtfListItemUiModel(
+    val etfId: Long,
     val ticker: String,
     val name: String,
     val currentPrice: Long,
