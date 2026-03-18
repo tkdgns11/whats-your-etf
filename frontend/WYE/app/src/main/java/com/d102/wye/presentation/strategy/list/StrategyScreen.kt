@@ -50,6 +50,10 @@ fun StrategyScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadStrategies()
+    }
+
     LaunchedEffect(uiState) {
         if (uiState is UiState.Error) {
             snackbarHostState.showSnackbar(

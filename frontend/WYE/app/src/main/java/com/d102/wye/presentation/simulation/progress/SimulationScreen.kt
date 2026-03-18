@@ -43,6 +43,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 fun SimulationScreen(
     onBackClick: () -> Unit,
     onAddEtfClick: (currentTickers: List<String>) -> Unit,
+    onSaveClick: () -> Unit,
     viewModel: SimulationViewModel = hiltViewModel()
 ) {
     val formState by viewModel.formState.collectAsStateWithLifecycle()
@@ -81,7 +82,10 @@ fun SimulationScreen(
         PortfolioSaveDialog(
             saveState = savePortfolioState,
             onDismiss = { viewModel.onSaveDialogDismiss() },
-            onSave = { viewModel.savePortfolio(it) }
+            onSave = {
+                viewModel.savePortfolio(it)
+                onSaveClick()
+            }
         )
     }
 

@@ -21,10 +21,6 @@ class StrategyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<StrategyListData>>(UiState.Idle)
     val uiState: StateFlow<UiState<StrategyListData>> = _uiState.asStateFlow()
 
-    init {
-        loadStrategies()
-    }
-
     fun loadStrategies() {
         viewModelScope.launch {
             _uiState.update { UiState.Loading }
