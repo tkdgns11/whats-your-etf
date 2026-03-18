@@ -13,7 +13,7 @@ import java.util.Map;
 public class EtfCacheImpl implements EtfCache {
     private final Map<String, EtfCurrentInfo> cache = Map.ofEntries(
 
-            Map.entry("069500", EtfCurrentInfo.update("069500", "KODEX 200", BigDecimal.valueOf(82000L), BigDecimal.valueOf(82000L), 17369770L, BigDecimal.valueOf(83993L))),
+            Map.entry("069500", EtfCurrentInfo.update("069500", "KODEX 200", BigDecimal.valueOf(83000L), BigDecimal.valueOf(82000L), 17369770L, BigDecimal.valueOf(83993L))),
             Map.entry("102780", EtfCurrentInfo.update("102780", "KODEX 삼성그룹", BigDecimal.valueOf(18410L), BigDecimal.valueOf(17000L), 963401L, BigDecimal.valueOf(18364L))),
             Map.entry("091160", EtfCurrentInfo.update("091160", "KODEX 반도체", BigDecimal.valueOf(98400L), BigDecimal.valueOf(99300L), 4766324L, BigDecimal.valueOf(98939L))),
 

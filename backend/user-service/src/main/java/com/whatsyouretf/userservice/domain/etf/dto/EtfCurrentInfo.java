@@ -28,7 +28,7 @@ public record EtfCurrentInfo(
                         previousPrice,
                         volume,
                         nav,
-                        currentPrice.subtract(previousPrice).divide(previousPrice, RoundingMode.DOWN),
+                        currentPrice.subtract(previousPrice).multiply(BigDecimal.valueOf(100L)).divide(previousPrice, 2, RoundingMode.DOWN),
                         currentPrice.subtract(previousPrice)
                 );
         }
