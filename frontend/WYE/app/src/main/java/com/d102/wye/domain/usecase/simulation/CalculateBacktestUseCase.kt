@@ -45,7 +45,7 @@ class CalculateBacktestUseCase @Inject constructor() {
                 history.content.associate { it.date to it.stockPrice.toDouble() }
             }
 
-        return when (investmentType) {
+        val result = when (investmentType) {
             InvestmentType.REGULAR_SAVING -> calcInstallment(
                 portfolios, commonDates, priceMap, investmentAmount, periodMonths
             )
@@ -53,6 +53,9 @@ class CalculateBacktestUseCase @Inject constructor() {
                 portfolios, commonDates, priceMap, investmentAmount
             )
         }
+
+        // 공통 다운샘플링 (최대 120개)
+        return result.copy(points = downsample(result.points, 120))
     }
 
     /**
@@ -172,4 +175,12 @@ class CalculateBacktestUseCase @Inject constructor() {
             totalInvestment = initialAmount
         )
     }
+}
+
+private fun downsample(points: List<BacktestPoint>, maxCount: Int): List<BacktestPoint> {
+    if (points.size <= maxCount) return points
+    val step = points.size.toFloat() / maxCount
+    return (0 until maxCount).map { i ->
+        points[(i * step).toInt().coerceAtMost(points.size - 1)]
+    } + listOf(points.last())
 }
