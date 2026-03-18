@@ -1,5 +1,7 @@
 package com.whatsyouretf.userservice.domain.etf.service.impl;
 
+import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
+import com.whatsyouretf.userservice.domain.company.service.StockCache;
 import com.whatsyouretf.userservice.domain.etf.dto.*;
 import com.whatsyouretf.userservice.domain.etf.entity.*;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepository;
@@ -39,6 +41,7 @@ public class EtfServiceImpl implements EtfService {
     private final EtfSectorAiHistoryRepository sectorAiHistoryRepository;
     private final EtfStockCompositionRepository stockCompositionRepository;
     private final EtfStockClusterMappingRepository clusterMappingRepository;
+    private final StockCache stockCache;
 
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
@@ -208,13 +211,16 @@ public class EtfServiceImpl implements EtfService {
                 .map(comp -> {
                     var stock = comp.getStock();
                     var company = stock.getCompany();
+                    StockInfo stockInfo = stockCache.get(stock.getTicker());
 
                     return EtfInfluentialStockResponse.builder()
                             .ticker(stock.getTicker())
                             .name(company != null ? company.getCompanyName() : null)
                             .weight(comp.getWeightPct())
-                            .currentPrice(stock.getClose() != null ? stock.getClose().longValue() : null)
-                            .changeRate(BigDecimal.ZERO) // 종목 등락률은 별도 조회 필요
+                            .currentPrice(stockInfo != null && stockInfo.currentPrice() != null
+                                    ? stockInfo.currentPrice().longValue() : null)
+                            .changeRate(stockInfo != null && stockInfo.dailyFluctuation() != null
+                                    ? stockInfo.dailyFluctuation() : BigDecimal.ZERO)
                             .build();
                 })
                 .toList();

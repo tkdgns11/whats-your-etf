@@ -60,6 +60,24 @@ public class MockStockCacheImpl implements StockCache {
             new BigDecimal("-1.10"),
             "자동차 제조 및 친환경 모빌리티 사업을 영위하며 전기차, 수소차 등 미래 자동차 산업을 선도하는 기업입니다."
         ));
+
+        stockMap.put("402340", new StockInfo(
+            "402340",
+            "SK스퀘어",
+            new BigDecimal("10000000000000"),
+            new BigDecimal("85000"),
+            new BigDecimal("0.95"),
+            "SK그룹의 ICT 투자 지주회사로 반도체, AI, 바이오 등 미래 성장 사업에 투자하고 있습니다."
+        ));
+
+        stockMap.put("012450", new StockInfo(
+            "012450",
+            "한화에어로스페이스",
+            new BigDecimal("15000000000000"),
+            new BigDecimal("350000"),
+            new BigDecimal("2.30"),
+            "항공우주 및 방산 분야의 핵심 기업으로 항공기 엔진, 우주 발사체, 방산 장비 등을 생산합니다."
+        ));
     }
 
     public StockInfo get(String ticker) {
