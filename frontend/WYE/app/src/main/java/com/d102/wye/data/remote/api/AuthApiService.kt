@@ -10,31 +10,29 @@ import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.EmailCheckResponse
 import com.d102.wye.data.remote.dto.response.PasswordResetVerifyResponse
 import com.d102.wye.data.remote.dto.response.SignupResponse
 import com.d102.wye.data.remote.dto.response.TokenResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 /**
  * 인증 관련 Retrofit API 인터페이스
- *
- * 위치: data/remote/api/
- * 역할: 서버와의 HTTP 통신 명세 선언
- *       실제 구현은 Retrofit이 런타임에 생성
- *
- * 엔드포인트 경로는 서버 API 확정 후 수정
- * Response<BaseResponse<T>> 구조:
- *   - Response<>          : HTTP 레벨 (상태코드, 헤더)
- *   - BaseResponse<T>     : 서버 공통 응답 래퍼 (data, message, code)
- *   - T                   : 실제 데이터 타입
  */
 interface AuthApiService {
 
+    /** 회원가입 전 이메일 중복 여부를 확인한다. */
+    @GET("auth/check/email")
+    suspend fun checkEmailAvailability(
+        @Query("email") email: String
+    ): Response<BaseResponse<EmailCheckResponse>>
+
     /**
      * 이메일 로그인
-     * POST /api/v1/auth/login
      */
     @POST("auth/login")
     suspend fun login(
@@ -79,7 +77,6 @@ interface AuthApiService {
 
     /**
      * 카카오 로그인
-     * POST /api/v1/auth/oauth/kakao
      */
     @POST("auth/oauth/kakao")
     suspend fun loginWithKakao(
@@ -89,7 +86,6 @@ interface AuthApiService {
 
     /**
      * 로그아웃
-     * POST /auth/logout
      * 서버에서 Refresh Token 무효화
      */
     @POST("auth/logout")
@@ -97,7 +93,6 @@ interface AuthApiService {
 
     /**
      * FCM 토큰 등록
-     * POST /auth/fcm/token
      * 로그인 후 또는 토큰 갱신 시 서버에 저장
      */
     @POST("auth/fcm/token")

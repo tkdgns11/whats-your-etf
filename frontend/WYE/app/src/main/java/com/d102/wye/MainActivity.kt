@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -17,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d102.wye.core.app.Constants
 import com.d102.wye.domain.repository.AuthRepository
 import com.d102.wye.presentation.LaunchSplashScreen
 import com.d102.wye.presentation.navigation.AppEntryViewModel
@@ -69,6 +71,7 @@ class MainActivity : ComponentActivity() {
             WYETheme {
                 val appEntryViewModel: AppEntryViewModel = hiltViewModel()
                 val isLoggedIn by appEntryViewModel.isLoggedIn.collectAsStateWithLifecycle()
+                val sessionExpired by authRepository.sessionExpired.collectAsStateWithLifecycle(initialValue = false)
                 var isSplashFinished by rememberSaveable { mutableStateOf(false) }
                 val shouldShowSplash = !isSplashFinished || isLoggedIn == null
 
@@ -80,6 +83,17 @@ class MainActivity : ComponentActivity() {
                                 authRepository.registerFcmToken(token)
                             }
                         }
+                    }
+                }
+
+                LaunchedEffect(isLoggedIn, sessionExpired) {
+                    if (isLoggedIn == false && sessionExpired) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            Constants.ERROR_SESSION_EXPIRED,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        authRepository.consumeSessionExpired()
                     }
                 }
 

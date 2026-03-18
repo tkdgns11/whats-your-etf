@@ -22,12 +22,12 @@ import com.d102.wye.presentation.explore.list.ExploreScreen
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
+import com.d102.wye.presentation.home.alerts.AlertsScreen
 import com.d102.wye.presentation.home.news.NewsDetailScreen
 import com.d102.wye.presentation.home.news.NewsListScreen
-import com.d102.wye.presentation.home.alerts.AlertsScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
-import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
 import com.d102.wye.presentation.mypage.alerts.AlertSettingsScreen
+import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
 import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
 import com.d102.wye.presentation.simulation.entry.SimulationEntryScreen
@@ -280,6 +280,10 @@ fun AppNavGraph(
                         ?.set("current_tickers", currentTickers.toTypedArray())
                     navController.navigate(Route.SimulationAddStock.route)
                 },
+                onSaveClick = {
+                    navController.navigate(Route.Strategy.route)
+                    navController.popBackStack()
+                },
                 viewModel = viewModel
             )
         }
@@ -321,7 +325,13 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onNewsClick = { newsId -> navController.navigate(Route.NewsDetail(newsId).route) },
-                onPortfolioClick = { portfolioId -> navController.navigate(Route.StrategyDetail(portfolioId).route) },
+                onPortfolioClick = { portfolioId ->
+                    navController.navigate(
+                        Route.StrategyDetail(
+                            portfolioId
+                        ).route
+                    )
+                },
             )
         }
 

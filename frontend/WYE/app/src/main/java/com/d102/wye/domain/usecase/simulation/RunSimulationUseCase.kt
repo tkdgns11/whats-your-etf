@@ -38,7 +38,7 @@ class RunSimulationUseCase @Inject constructor(
             priceHistories = params.priceHistories,
             investmentAmount = params.investmentAmount,
             investmentType = params.investmentType,
-            periodMonths = params.periodMonths  // ← 전달
+            periodMonths = params.periodMonths
         )
 
         return BaseResult.Success(
