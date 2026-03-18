@@ -83,7 +83,7 @@ public class PortfolioController {
         }
 
 
-        @Operation(summary = "포트폴리오 수정", description = "사용자가 커스텀한 포트폴리오를 수정합니다")
+        @Operation(summary = "포트폴리오 삭제", description = "사용자가 커스텀한 포트폴리오를 삭제합니다")
         @DeleteMapping("/{portfolioId}")
         public ResponseEntity<ApiResponse<Void>> deletePortfolio(@PathVariable Long portfolioId) {
                 portfolioService.deletePortfolio(portfolioId);
