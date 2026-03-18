@@ -13,7 +13,7 @@ import java.util.Map;
 public class EtfCacheImpl implements EtfCache {
     private final Map<String, EtfCurrentInfo> cache = Map.ofEntries(
 
-            Map.entry("069500", EtfCurrentInfo.update("069500", "KODEX 200", BigDecimal.valueOf(83825L), BigDecimal.valueOf(82000L), 17369770L, BigDecimal.valueOf(83993L))),
+            Map.entry("069500", EtfCurrentInfo.update("069500", "KODEX 200", BigDecimal.valueOf(82000L), BigDecimal.valueOf(82000L), 17369770L, BigDecimal.valueOf(83993L))),
             Map.entry("102780", EtfCurrentInfo.update("102780", "KODEX 삼성그룹", BigDecimal.valueOf(18410L), BigDecimal.valueOf(17000L), 963401L, BigDecimal.valueOf(18364L))),
             Map.entry("091160", EtfCurrentInfo.update("091160", "KODEX 반도체", BigDecimal.valueOf(98400L), BigDecimal.valueOf(99300L), 4766324L, BigDecimal.valueOf(98939L))),
 
@@ -30,7 +30,7 @@ public class EtfCacheImpl implements EtfCache {
             Map.entry("305540", EtfCurrentInfo.update("305540", "TIGER 2차전지테마", BigDecimal.valueOf(42000L), BigDecimal.valueOf(43000L), 1150000L, BigDecimal.valueOf(42150L))),
             Map.entry("371460", EtfCurrentInfo.update("371460", "KODEX 2차전지산업", BigDecimal.valueOf(8500L), BigDecimal.valueOf(8400L), 3200000L, BigDecimal.valueOf(8520L))),
             Map.entry("069600", EtfCurrentInfo.update("069600", "KODEX 200TR", BigDecimal.valueOf(35000L), BigDecimal.valueOf(34800L), 120000L, BigDecimal.valueOf(35050L))),
-            Map.entry("229200", EtfCurrentInfo.update("229200", "KODEX 코스닥150", BigDecimal.valueOf(15000L), BigDecimal.valueOf(14900L), 2300000L, BigDecimal.valueOf(15050L))),
+            Map.entry("229200", EtfCurrentInfo.update("229200", "KODEX 코스닥150", BigDecimal.valueOf(15000L), BigDecimal.valueOf(15000L), 2300000L, BigDecimal.valueOf(15050L))),
             Map.entry("233740", EtfCurrentInfo.update("233740", "KODEX 코스닥150레버리지", BigDecimal.valueOf(9000L), BigDecimal.valueOf(8800L), 4500000L, BigDecimal.valueOf(9020L))),
             Map.entry("251340", EtfCurrentInfo.update("251340", "KODEX 코스닥150선물인버스", BigDecimal.valueOf(4500L), BigDecimal.valueOf(4600L), 3800000L, BigDecimal.valueOf(4510L))),
             Map.entry("102110", EtfCurrentInfo.update("102110", "TIGER 200", BigDecimal.valueOf(36000L), BigDecimal.valueOf(35500L), 850000L, BigDecimal.valueOf(36100L))),
