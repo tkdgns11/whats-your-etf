@@ -140,22 +140,11 @@ private fun ClusterBubbleChart(
     val displayClusters = if (showAll) sorted else mainClusters
     val viewKey         = if (showAll) "all" else "main"
 
-    // 전체 뷰일 때 은하계처럼 조금 축소
-    val zoomFactor by animateFloatAsState(
-        targetValue   = if (showAll) 0.72f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness    = Spring.StiffnessLow,
-        ),
-        label = "zoomFactor",
-    )
-
     BubbleChartLayout(
         key = viewKey,
         centerLabel = name,
         centerColor = PrimaryGreen,
         isAllView = showAll,
-        zoomFactor = zoomFactor,
         clusters = displayClusters,
         hasOthersSlot = !showAll && hasOthers,
         othersClusters = otherClusters,
@@ -172,7 +161,6 @@ private fun BubbleChartLayout(
     centerLabel: String,
     centerColor: Color,
     isAllView: Boolean,
-    zoomFactor: Float,
     clusters: List<EtfCluster>,
     hasOthersSlot: Boolean,
     othersClusters: List<EtfCluster>,
@@ -234,23 +222,23 @@ private fun BubbleChartLayout(
         label = "orbitFraction",
     )
     val centerFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.38f else 0.46f,
+        targetValue   = if (isAllView) 0.26f else 0.46f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "centerFraction",
     )
     val maxBubbleFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.20f else 0.32f,
+        targetValue   = if (isAllView) 0.22f else 0.32f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "maxBubbleFraction",
     )
     val minBubbleFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.12f else 0.20f,
+        targetValue   = if (isAllView) 0.15f else 0.20f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "minBubbleFraction",
     )
 
     BoxWithConstraints(
-        modifier = modifier.scale(zoomFactor),
+        modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
         val availableSize = minOf(maxWidth, maxHeight)
@@ -258,6 +246,60 @@ private fun BubbleChartLayout(
         val centerBubble  = availableSize * centerFraction
         val minBubbleSize = availableSize * minBubbleFraction
         val maxBubbleSize = availableSize * maxBubbleFraction
+
+        // all-view: 황금각 방향 × 안→밖 반경 스캔 + 다방향 각도 폴백으로 뭉침 방지
+        val allViewPositions: List<Pair<Float, Float>> = remember(clusters, maxWidth, maxHeight) {
+            val wHalf   = maxWidth.value / 2f
+            val hHalf   = maxHeight.value / 2f
+            val availSz = minOf(wHalf, hHalf) * 2f
+            val maxPctL = clusters.maxOfOrNull { it.percentage } ?: 1.0
+            val minPctL = clusters.minOfOrNull { it.percentage } ?: 0.0
+            val maxBR   = availSz * 0.22f / 2f
+            val minBR   = availSz * 0.15f / 2f
+            val centerR = availSz * 0.26f / 2f
+            val gap     = 12f
+            val goldenAngle = 137.508
+
+            val placed = mutableListOf(Triple(0f, 0f, centerR))
+
+            clusters.mapIndexed { idx, cluster ->
+                val norm = if (maxPctL > minPctL)
+                    ((cluster.percentage - minPctL) / (maxPctL - minPctL)).toFloat() else 0.5f
+                val bR = minBR + (maxBR - minBR) * norm
+
+                // 황금각 기준 + 좌우 최대 ±160° 까지 20° 단위로 17방향 시도
+                val baseAngleDeg = idx * goldenAngle + 45.0
+                val angleOffsets = (-8..8).map { it * 20.0 }
+
+                var bestCx = 0f; var bestCy = 0f
+
+                outer@ for (ao in angleOffsets) {
+                    val angle = Math.toRadians(baseAngleDeg + ao)
+                    val cosA  = abs(cos(angle)).toFloat().coerceAtLeast(0.001f)
+                    val sinA  = abs(sin(angle)).toFloat().coerceAtLeast(0.001f)
+
+                    // 직사각형 내 최대 도달 반경
+                    val maxSafeR = minOf((wHalf - bR) / cosA, (hHalf - bR) / sinA)
+                    // 중심 버블 바깥에서 시작 (뭉침 방지: idx 의존 없이 항상 minR부터)
+                    val minR = (centerR + bR + gap).coerceAtMost(maxSafeR)
+
+                    var r = minR
+                    while (r <= maxSafeR) {
+                        val tcx = r * cos(angle).toFloat()
+                        val tcy = r * sin(angle).toFloat()
+                        val ok = placed.none { (px, py, pr) ->
+                            val dx = tcx - px; val dy = tcy - py
+                            dx * dx + dy * dy < (bR + pr + gap) * (bR + pr + gap)
+                        }
+                        if (ok) { bestCx = tcx; bestCy = tcy; break@outer }
+                        r += 3f
+                    }
+                }
+
+                placed.add(Triple(bestCx, bestCy, bR))
+                Pair(bestCx, bestCy)
+            }
+        }
 
         // 별 필드 + 궤도 링 + 펄스
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -366,7 +408,6 @@ private fun BubbleChartLayout(
         }
 
         // 섹터 버블
-        val goldenAngle = 137.508
         clusters.forEachIndexed { idx, cluster ->
             val normalized = if (maxPct > minPct)
                 ((cluster.percentage - minPct) / (maxPct - minPct)).toFloat() else 0.5f
@@ -375,12 +416,9 @@ private fun BubbleChartLayout(
             val x: Dp
             val y: Dp
             if (isAllView) {
-                // 황금각 + 가변 반경: 비중 큰 것(앞 인덱스)은 가까이, 작은 것은 멀리
-                val angle = Math.toRadians(idx * goldenAngle)
-                val rFraction = 0.22f + (idx.toFloat() / clusters.size.coerceAtLeast(1)) * 0.55f
-                val r = availableSize * rFraction
-                x = (r.value * cos(angle)).dp
-                y = (r.value * sin(angle)).dp
+                val pos = allViewPositions.getOrNull(idx)
+                x = (pos?.first ?: 0f).dp
+                y = (pos?.second ?: 0f).dp
             } else {
                 val rad = Math.toRadians(idx * angleStep - 90.0)
                 x = (orbitRadius.value * cos(rad)).dp

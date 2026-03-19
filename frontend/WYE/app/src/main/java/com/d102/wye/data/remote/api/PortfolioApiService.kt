@@ -4,7 +4,9 @@ import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
 import com.d102.wye.data.remote.dto.request.UpdatePortfolioRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.PortfolioDetail
+import com.d102.wye.data.remote.dto.response.PortfolioIssueDto
 import com.d102.wye.data.remote.dto.response.PortfolioListItemDto
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -17,23 +19,28 @@ interface PortfolioApiService {
     @POST("portfolios")
     suspend fun savePortfolio(
         @Body request: SavePortfolioRequest
-    ): BaseResponse<Unit>
+    ): Response<BaseResponse<Unit>>
 
     @GET("portfolios")
-    suspend fun getPortfolioList(): BaseResponse<List<PortfolioListItemDto>>
+    suspend fun getPortfolioList(): Response<BaseResponse<List<PortfolioListItemDto>>>
 
     @GET("portfolios/{portfolioId}")
     suspend fun getPortfolioDetail(
         @Path("portfolioId") portfolioId: Long
-    ): BaseResponse<PortfolioDetail>
+    ): Response<BaseResponse<PortfolioDetail>>
 
     @PUT("portfolios")
     suspend fun updatePortfolio(
         @Body request: UpdatePortfolioRequest
-    ): BaseResponse<Unit>
+    ): Response<BaseResponse<Unit>>
 
     @DELETE("portfolios/{portfolioId}")
     suspend fun deletePortfolio(
         @Path("portfolioId") portfolioId: Long
-    ): BaseResponse<Unit>
+    ): Response<BaseResponse<Unit>>
+
+    @GET("portfolios/{portfolioId}/issues")
+    suspend fun getPortfolioIssues(
+        @Path("portfolioId") portfolioId: Long
+    ): Response<BaseResponse<List<PortfolioIssueDto>>>
 }

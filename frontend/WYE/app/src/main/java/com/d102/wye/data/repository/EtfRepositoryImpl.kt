@@ -60,6 +60,7 @@ class EtfRepositoryImpl @Inject constructor(
     override suspend fun getEtfPriceHistory(ticker: String, startDate: String, endDate: String, size: Int): BaseResult<List<EtfPriceData>> =
         safeApiCall { etfApiService.getEtfPriceHistory(ticker, startDate, endDate, validDateRange = false, size = size) }
             .map { it.toDomain() }
+
 }
 
 private fun EtfFilter.toRequest() = EtfListRequest(

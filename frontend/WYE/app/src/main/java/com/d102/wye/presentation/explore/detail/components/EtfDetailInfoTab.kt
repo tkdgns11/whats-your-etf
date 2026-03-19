@@ -177,7 +177,7 @@ private fun PriceCard(
     subColor: Color = TextSecondary,
 ) {
     Card(
-        modifier = modifier.height(100.dp),
+        modifier = modifier.height(110.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -187,10 +187,10 @@ private fun PriceCard(
             modifier = Modifier.fillMaxSize().padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+            Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(value, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
-                Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = subColor)
+                Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
+                Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = subColor)
             }
         }
     }

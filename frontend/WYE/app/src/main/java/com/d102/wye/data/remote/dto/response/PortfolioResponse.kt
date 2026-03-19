@@ -14,3 +14,10 @@ data class PortfolioEtfDto(
     @SerializedName("ticker") val ticker: String,
     @SerializedName("name")   val name: String
 )
+
+// GET /api/v1/portfolios/{portfolioId}/issues
+data class PortfolioIssueDto(
+    @SerializedName("localDate")    val localDate: String,
+    @SerializedName("title")        val title: String,
+    @SerializedName("description")  val description: String
+)
