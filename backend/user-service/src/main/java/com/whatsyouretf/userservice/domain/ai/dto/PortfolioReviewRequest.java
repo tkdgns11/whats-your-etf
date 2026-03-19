@@ -34,9 +34,9 @@ public class PortfolioReviewRequest {
         @Max(value = 10000000000L, message = "최대 투자금액은 100억원입니다.")
         private long totalAmount;
 
-        /** 투자 유형: LUMP_SUM (관망형) / DCA (적립형) */
+        /** 투자 유형: LUMP_SUM (일시불) / REGULAR_SAVING (적립식) */
         @NotBlank(message = "투자 유형은 필수입니다.")
-        @Pattern(regexp = "^(LUMP_SUM|DCA)$", message = "투자 유형은 LUMP_SUM 또는 DCA여야 합니다.")
+        @Pattern(regexp = "^(LUMP_SUM|REGULAR_SAVING)$", message = "투자 유형은 LUMP_SUM 또는 REGULAR_SAVING이어야 합니다.")
         private String investmentType;
 
         /** ETF 목록 (최소 1개, 최대 20개) */
