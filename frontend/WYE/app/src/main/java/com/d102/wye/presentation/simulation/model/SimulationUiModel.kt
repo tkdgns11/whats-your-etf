@@ -3,6 +3,7 @@ package com.d102.wye.presentation.simulation.model
 import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.domain.model.SimulationResult
 import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.presentation.simulation.progress.SectorWeightUiModel
 
 /**
  * 시뮬레이션 화면 전용 UI 모델
@@ -26,10 +27,14 @@ data class SimulationUiModel(
     // 차트 데이터
     val backtestPoints: List<BacktestPoint>,
     val investmentType: InvestmentType,
-    val isPositiveReturn: Boolean
+    val isPositiveReturn: Boolean,
+    val sectorWeights: List<SectorWeightUiModel> = emptyList()
 )
 
-fun SimulationResult.toUiModel(investmentType: InvestmentType): SimulationUiModel {
+fun SimulationResult.toUiModel(
+    investmentType: InvestmentType,
+    sectorWeights: List<SectorWeightUiModel> = emptyList()
+): SimulationUiModel {
     val isPositive = totalReturn >= 0.0
     val returnSign = if (isPositive) "+" else ""
     val netProfitValue = estimatedFinalValue - totalInvestment
@@ -46,7 +51,8 @@ fun SimulationResult.toUiModel(investmentType: InvestmentType): SimulationUiMode
         expectedMonthlyDividend = expectedMonthlyDividend.formatAmount(),
         backtestPoints = backtestPoints,
         investmentType = investmentType,
-        isPositiveReturn = isPositive
+        isPositiveReturn = isPositive,
+        sectorWeights = sectorWeights
     )
 }
 
@@ -58,8 +64,8 @@ private fun Long.formatAmount(): String {
 
     return when {
         eok > 0 && man > 0 -> "${eok}억 ${"%,d".format(man)}만원"
-        eok > 0             -> "${eok}억원"
-        man > 0             -> "${"%,d".format(man)}만원"
-        else                -> "${"%,d".format(won)}원"
+        eok > 0 -> "${eok}억원"
+        man > 0 -> "${"%,d".format(man)}만원"
+        else -> "${"%,d".format(won)}원"
     }
 }

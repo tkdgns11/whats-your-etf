@@ -31,7 +31,7 @@ import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
-import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
+import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.result.AiReviewDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection

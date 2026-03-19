@@ -1,5 +1,6 @@
 package com.d102.wye.presentation.simulation.progress
 
+import com.d102.wye.domain.model.EtfCluster
 import com.d102.wye.domain.model.Portfolio
 
 /**
@@ -12,7 +13,8 @@ data class PortfolioItem(
     val per: Double = 0.0,
     val pbr: Double = 0.0,
     val roe: Double = 0.0,
-    val currentPrice: Long = 0L
+    val currentPrice: Long = 0L,
+    val sectors: List<EtfCluster> = emptyList()
 )
 
 /** presentation → domain 변환 */

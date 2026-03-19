@@ -96,6 +96,7 @@ class SimulationViewModel @Inject constructor(
                             simulationRepository.savePriceHistories(result.data)
                             Timber.d("[DB] 가격 이력 저장 완료 | tickers=${result.data.keys}")
                         }
+
                         is BaseResult.Error -> {
                             Timber.e("[API] 가격 이력 조회 실패 | message=${result.error.message}")
                             _simulationState.update { UiState.Error(result.error.message) }
@@ -110,9 +111,10 @@ class SimulationViewModel @Inject constructor(
                 val etfDetails = newTickers.associate { ticker ->
                     ticker to when (val result = etfRepository.getEtfDetail(ticker)) {
                         is BaseResult.Success -> {
-                            Timber.d("[API] ETF 상세 조회 성공 | ticker=$ticker | name=${result.data.name} | per=${result.data.per}")
+                            Timber.d("[API] ETF 상세 조회 성공 | ticker=$ticker | name=${result.data.name}")
                             result.data
                         }
+
                         is BaseResult.Error -> {
                             Timber.e("[API] ETF 상세 조회 실패 | ticker=$ticker | ${result.error.message}")
                             null
@@ -120,7 +122,22 @@ class SimulationViewModel @Inject constructor(
                     }
                 }
 
-                // 3. formState 업데이트
+                // 3. ETF 클러스터 조회 (섹터 비중)
+                val etfClusters = newTickers.associate { ticker ->
+                    ticker to when (val result = etfRepository.getEtfCluster(ticker)) {
+                        is BaseResult.Success -> {
+                            Timber.d("[API] ETF 클러스터 조회 성공 | ticker=$ticker | sectors=${result.data.sectors.map { it.name }}")
+                            result.data.sectors
+                        }
+
+                        is BaseResult.Error -> {
+                            Timber.e("[API] ETF 클러스터 조회 실패 | ticker=$ticker | ${result.error.message}")
+                            emptyList()
+                        }
+                    }
+                }
+
+                // 4. formState 업데이트
                 _formState.update { current ->
                     val items = current.portfolioItems.toMutableList()
                     tickers.forEach { ticker ->
@@ -134,7 +151,8 @@ class SimulationViewModel @Inject constructor(
                                     per = detail?.per ?: 0.0,
                                     pbr = detail?.pbr ?: 0.0,
                                     roe = detail?.roe ?: 0.0,
-                                    currentPrice = detail?.currentPrice ?: 0L
+                                    currentPrice = detail?.currentPrice ?: 0L,
+                                    sectors = etfClusters[ticker] ?: emptyList()
                                 )
                             )
                         }
@@ -184,6 +202,33 @@ class SimulationViewModel @Inject constructor(
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // 섹터 가중평균 계산
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun calcWeightedSectors(items: List<PortfolioItem>): List<SectorWeightUiModel> {
+        val sectorMap = mutableMapOf<String, Double>()
+
+        items.forEach { item ->
+            val weight = item.weight / 100.0
+            item.sectors.forEach { sector ->
+                sectorMap[sector.name] =
+                    (sectorMap[sector.name] ?: 0.0) + sector.percentage * weight
+            }
+        }
+
+        if (sectorMap.isEmpty()) return emptyList()
+
+        // 상위 3개 + 나머지 "기타"로 합산
+        val sorted = sectorMap.entries.sortedByDescending { it.value }
+        val top3 =
+            sorted.take(3).map { SectorWeightUiModel(name = it.key, ratio = it.value.toFloat()) }
+        val othersRatio = sorted.drop(3).sumOf { it.value }.toFloat()
+
+        return if (othersRatio > 0.5f) top3 + SectorWeightUiModel(name = "기타", ratio = othersRatio)
+        else top3
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // UI 이벤트
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -191,6 +236,7 @@ class SimulationViewModel @Inject constructor(
         when {
             form.investmentAmount.isBlank() || form.investmentPeriod.isBlank() ->
                 "투자 금액과 기간을 입력하면\n수익률 그래프가 나타납니다."
+
             else -> "ETF를 추가하고 자산의 미래를 확인해보세요"
         }
     }.stateIn(
@@ -255,6 +301,7 @@ class SimulationViewModel @Inject constructor(
                     Timber.d("[AI] AI 진단 완료")
                     _aiReviewState.update { UiState.Success(result.data) }
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("[AI] AI 진단 실패 | ${result.error.message}")
                     _aiReviewState.update { UiState.Error(result.error.message) }
@@ -289,8 +336,6 @@ class SimulationViewModel @Inject constructor(
         viewModelScope.launch {
             _savePortfolioState.update { UiState.Loading }
 
-            // counts = (investAmount × weight / 100) / currentPrice
-            // TODO: currentPrice 0이면 0주로 저장됨, 탐색 API 연동으로 해결됨
             val etfs = form.portfolioItems.map { item ->
                 val counts = if (item.currentPrice > 0) {
                     ((amount * item.weight / 100) / item.currentPrice).toInt()
@@ -312,6 +357,7 @@ class SimulationViewModel @Inject constructor(
                     _savePortfolioState.update { UiState.Success(Unit) }
                     _showSaveDialog.value = false
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("[Save] 포트폴리오 저장 실패 | ${result.error.message}")
                     _savePortfolioState.update { UiState.Error(result.error.message) }
@@ -335,13 +381,13 @@ class SimulationViewModel @Inject constructor(
             val periodMonths = form.investmentPeriod.toIntOrNull() ?: 0
 
             if (form.portfolioItems.isEmpty() || amount <= 0L || periodMonths <= 0) {
-                Timber.d("[Calc] 입력 미완성 → Idle | portfolios=${form.portfolioItems.size}개 | amount=$amount | period=$periodMonths")
+                Timber.d("[Calc] 입력 미완성 → Idle")
                 _simulationState.update { UiState.Idle }
                 return@launch
             }
 
             if (totalWeight != 100) {
-                Timber.d("[Calc] 비중 합계 미달 → Loading 유지 | totalWeight=$totalWeight%")
+                Timber.d("[Calc] 비중 합계 미달 → Loading | totalWeight=$totalWeight%")
                 _simulationState.update { UiState.Loading }
                 return@launch
             }
@@ -351,8 +397,7 @@ class SimulationViewModel @Inject constructor(
 
             val tickers = form.portfolioItems.map { it.ticker }
             val cachedHistories = simulationRepository.getCachedPriceHistories(tickers)
-            val pointCounts = cachedHistories.mapValues { it.value.content.size }
-            Timber.d("[DB] 캐시 조회 완료 | 데이터 건수=$pointCounts")
+            Timber.d("[DB] 캐시 조회 완료 | 데이터 건수=${cachedHistories.mapValues { it.value.content.size }}")
 
             val fundamentalsMap = form.portfolioItems.associate { item ->
                 item.ticker to EtfFundamentals(
@@ -360,9 +405,12 @@ class SimulationViewModel @Inject constructor(
                     per = item.per,
                     pbr = item.pbr,
                     roe = item.roe,
-                    annualDividendYield = 0.0  // TODO: 배당 API 연동 후 채우기
+                    annualDividendYield = 0.0
                 )
             }
+
+            // 섹터 가중평균
+            val sectorWeights = calcWeightedSectors(form.portfolioItems)
 
             when (val result = runSimulation(
                 RunSimulationUseCase.Params(
@@ -375,13 +423,14 @@ class SimulationViewModel @Inject constructor(
                 )
             )) {
                 is BaseResult.Success -> {
-                    Timber.d("[Calc] 계산 성공 | estimatedFinalValue=${result.data.estimatedFinalValue} | totalReturn=${result.data.totalReturn}% | totalInvestment=${result.data.totalInvestment}")
+                    Timber.d("[Calc] 계산 성공 | estimatedFinalValue=${result.data.estimatedFinalValue} | totalReturn=${result.data.totalReturn}%")
                     _simulationState.update {
-                        UiState.Success(result.data.toUiModel(form.investmentType))
+                        UiState.Success(result.data.toUiModel(form.investmentType, sectorWeights))
                     }
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("[Calc] 계산 실패 | message=${result.error.message}")
+                    Timber.e("[Calc] 계산 실패 | ${result.error.message}")
                     _simulationState.update { UiState.Error(result.error.message) }
                 }
             }
@@ -396,4 +445,9 @@ data class SimulationFormState(
     val investmentAmount: String = "",
     val investmentPeriod: String = "",
     val portfolioItems: List<PortfolioItem> = emptyList()
+)
+
+data class SectorWeightUiModel(
+    val name: String,
+    val ratio: Float
 )

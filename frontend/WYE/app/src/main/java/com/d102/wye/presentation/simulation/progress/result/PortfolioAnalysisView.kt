@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.analysis
+package com.d102.wye.presentation.simulation.progress.result
 
 import DonutChart
 import SectorWeight
@@ -23,10 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +35,10 @@ import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.BackGroundLightGreen3
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.SectorColor1
+import com.d102.wye.presentation.theme.SectorColor2
+import com.d102.wye.presentation.theme.SectorColor3
+import com.d102.wye.presentation.theme.SectorColor4
 import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
@@ -75,8 +77,21 @@ fun PortfolioAnalysisView(
         }
 
         // ── PER / PBR / ROE 카드 ──────────────────────────────────────────────
-        // TODO: 백엔드 per/pbr/roe 필드 추가 후 "-" 제거
         val uiModel = (simulationState as? UiState.Success)?.data
+
+        val sectorColors = listOf(SectorColor1, SectorColor2, SectorColor3, SectorColor4)
+
+        val sectorData = uiModel?.sectorWeights?.mapIndexed { index, s ->
+            SectorWeight(
+                name = s.name,
+                ratio = s.ratio,
+                color = sectorColors.getOrElse(index) { SectorColor4 }
+            )
+        } ?: emptyList()
+
+        val isEmpty = sectorData.isEmpty()
+
+
         val cardItems = listOf(
             "PER" to (uiModel?.per ?: "-"),
             "PBR" to (uiModel?.pbr ?: "-"),
@@ -115,16 +130,6 @@ fun PortfolioAnalysisView(
         }
 
         // ── 섹터 비중 도넛 차트 ───────────────────────────────────────────────
-        val sectorData = remember {
-            listOf(
-                SectorWeight("IT", 45f, Color(0xFF4B6B4E)),
-                SectorWeight("금융", 25f, Color(0xFF7E977A)),
-                SectorWeight("에너지", 15f, Color(0xFFA6BC9F)),
-                SectorWeight("기타", 15f, Color(0xFFD1D5DB))
-            )
-        }
-        val isEmpty = sectorData.isEmpty()
-
         WyeCard(
             modifier = Modifier.fillMaxWidth(),
             innerPadding = PaddingValues(20.dp),
