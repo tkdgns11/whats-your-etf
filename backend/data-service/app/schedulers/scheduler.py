@@ -20,9 +20,10 @@ scheduler = AsyncIOScheduler()
 
 
 async def scrape_stock_news_job():
-    """ETF 구성종목 뉴스 크롤링 (매일 03:00 KST)
+    """ETF 구성종목 뉴스 크롤링 (03:00, 12:00 KST - 하루 2회)
 
     뉴스 크롤링 후 AI 분석 자동 실행.
+    종목당 최대 3개 뉴스 수집 (429 에러 방지)
     """
     logger.info("=== 종목뉴스 크롤링 시작 ===")
 
@@ -69,7 +70,7 @@ async def scrape_stock_news_job():
                 try:
                     stats = await scraper.scrape_stock_news(
                         stock_code=stock.ticker,
-                        max_articles=5
+                        max_articles=3  # 429 에러 방지 (네이버 rate limit)
                     )
                     total_stats["total"] += stats["total"]
                     total_stats["new"] += stats["new"]
@@ -254,15 +255,16 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # ETF 구성종목 뉴스 크롤링 (매일 03:00 KST)
+    # ETF 구성종목 뉴스 크롤링 (03:00, 12:00 KST - 하루 2회)
     # - 상위 100개 ETF + 사용자 관심 ETF + 포트폴리오 ETF 구성종목
-    scheduler.add_job(
-        scrape_stock_news_job,
-        trigger=CronTrigger(hour=3, minute=0, timezone='Asia/Seoul'),
-        id="stock_news_scraping",
-        name="ETF Stock News Scraping",
-        replace_existing=True
-    )
+    for hour in [3, 12]:
+        scheduler.add_job(
+            scrape_stock_news_job,
+            trigger=CronTrigger(hour=hour, minute=0, timezone='Asia/Seoul'),
+            id=f"stock_news_scraping_{hour}",
+            name=f"ETF Stock News Scraping ({hour}:00)",
+            replace_existing=True
+        )
 
     # AI 뉴스 분석 (매 3시간마다: 00:00, 04:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 KST)
     # 크롤링 완료 후 즉시 실행 + 04:00 백업 + 이후 매 3시간
@@ -274,14 +276,15 @@ def start_scheduler():
             name=f"News AI Analysis ({hour}:00)",
             replace_existing=True
         )
-    # 크롤링(03:00) 완료 후 백업 실행 (04:00)
-    scheduler.add_job(
-        news_ai_analysis_job,
-        trigger=CronTrigger(hour=4, minute=0, timezone='Asia/Seoul'),
-        id="news_ai_analysis_4",
-        name="News AI Analysis (04:00)",
-        replace_existing=True
-    )
+    # 크롤링(03:00, 12:00) 완료 후 백업 실행 (04:00, 13:00)
+    for hour in [4, 13]:
+        scheduler.add_job(
+            news_ai_analysis_job,
+            trigger=CronTrigger(hour=hour, minute=0, timezone='Asia/Seoul'),
+            id=f"news_ai_analysis_{hour}",
+            name=f"News AI Analysis ({hour}:00)",
+            replace_existing=True
+        )
 
     # KRX KIND 공시 체크 - 비활성화 (크롤러 문제 해결 후 활성화)
     # scheduler.add_job(
@@ -295,7 +298,7 @@ def start_scheduler():
     scheduler.start()
     logger.info(
         f"스케줄러 시작:\n"
-        f"  - ETF 구성종목 뉴스: 매일 03:00 KST\n"
+        f"  - ETF 구성종목 뉴스: 03:00, 12:00 KST (하루 2회)\n"
         f"  - ETF 동기화: 매일 05:00 KST\n"
-        f"  - AI 뉴스 분석: 크롤링 직후 + 매 3시간 (00:00, 04:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 KST)"
+        f"  - AI 뉴스 분석: 크롤링 직후 + 백업(04:00, 13:00) + 매 3시간"
     )
