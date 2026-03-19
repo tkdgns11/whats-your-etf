@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.*
 import com.d102.wye.domain.repository.EtfRepository
+import com.d102.wye.domain.repository.IndexRepository
+import timber.log.Timber
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EtfDetailViewModel @Inject constructor(
     private val etfRepository: EtfRepository,
+    private val indexRepository: IndexRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -116,25 +119,55 @@ class EtfDetailViewModel @Inject constructor(
             val calDays   = ((endMs - startMs) / 86_400_000).toInt().coerceAtLeast(1)
             val size      = (calDays * 1.5 + 20).toInt().coerceIn(10, 5000)
 
-            when (val result = etfRepository.getEtfPriceHistory(ticker, startDate, endDate, size)) {
-                is BaseResult.Success -> {
-                    val points = result.data
-                    if (points.isEmpty()) {
-                        _chartState.update { UiState.Error("해당 기간의 데이터가 없습니다.") }
-                        return@launch
-                    }
-                    val baseNav   = points.first().nav.takeIf { it > 0 } ?: 1.0
-                    val basePrice = points.first().stockPrice.toDouble().takeIf { it > 0 } ?: 1.0
-                    _chartState.update {
-                        UiState.Success(EtfReturnChart(
-                            navData   = points.map { ChartPoint(it.date, (it.nav - baseNav) / baseNav * 100.0) },
-                            priceData = points.map { ChartPoint(it.date, (it.stockPrice.toDouble() - basePrice) / basePrice * 100.0) },
-                            kospiData = emptyList(),
-                            sp500Data = emptyList(),
-                        ))
-                    }
-                }
-                is BaseResult.Error -> _chartState.update { UiState.Error(result.error.message) }
+            // ETF 가격 이력 (NAV + 종가)
+            val etfResult = etfRepository.getEtfPriceHistory(ticker, startDate, endDate, size)
+            if (etfResult is BaseResult.Error) {
+                _chartState.update { UiState.Error(etfResult.error.message) }
+                return@launch
+            }
+            val points = (etfResult as BaseResult.Success).data
+            if (points.isEmpty()) {
+                _chartState.update { UiState.Error("해당 기간의 데이터가 없습니다.") }
+                return@launch
+            }
+            val baseNav   = points.first().nav.takeIf { it > 0 } ?: 1.0
+            val basePrice = points.first().stockPrice.toDouble().takeIf { it > 0 } ?: 1.0
+
+            // 체크된 지수 순차 요청
+            val kospiData = if (_showKospi.value) {
+                fetchIndexChartPoints("KOSPI", startDate, endDate)
+            } else emptyList()
+
+            val nasdaqData = if (_showSp500.value) {
+                fetchIndexChartPoints("NASDAQ", startDate, endDate)
+            } else emptyList()
+
+            _chartState.update {
+                UiState.Success(EtfReturnChart(
+                    navData   = points.map { ChartPoint(it.date, (it.nav - baseNav) / baseNav * 100.0) },
+                    priceData = points.map { ChartPoint(it.date, (it.stockPrice.toDouble() - basePrice) / basePrice * 100.0) },
+                    kospiData = kospiData,
+                    sp500Data = nasdaqData,
+                ))
+            }
+        }
+    }
+
+    private suspend fun fetchIndexChartPoints(
+        marketType: String,
+        startDate:  String,
+        endDate:    String,
+    ): List<ChartPoint> {
+        return when (val result = indexRepository.getIndex(marketType, startDate, endDate)) {
+            is BaseResult.Success -> {
+                val pts = result.data
+                Timber.d("$marketType 데이터: ${pts.size}개, 첫날=${pts.firstOrNull()?.date}, 마지막=${pts.lastOrNull()?.date}")
+                val base = pts.firstOrNull()?.close?.takeIf { it > 0 } ?: return emptyList()
+                pts.map { ChartPoint(it.date, (it.close - base) / base * 100.0) }
+            }
+            is BaseResult.Error -> {
+                Timber.e("$marketType 인덱스 로드 실패: ${result.error.message}")
+                emptyList()
             }
         }
     }

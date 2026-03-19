@@ -52,6 +52,13 @@ data class InfluentialStock(
     val changeRate: Double,
 )
 
+// 지수 데이터 포인트 (GET /api/v1/index)
+data class IndexPoint(
+    val date:       String,  // tradingDate
+    val close:      Double,
+    val marketType: String,
+)
+
 // 기간별 수익률 (price-history → ViewModel에서 계산, index는 별도 API 연결 예정)
 data class EtfPeriodReturn(
     val asOfDate: String,
