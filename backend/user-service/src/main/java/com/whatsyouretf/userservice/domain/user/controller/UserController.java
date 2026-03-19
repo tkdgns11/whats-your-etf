@@ -3,6 +3,7 @@ package com.whatsyouretf.userservice.domain.user.controller;
 import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.user.dto.*;
+import com.whatsyouretf.userservice.domain.user.service.impl.MyDataEtfCount;
 import com.whatsyouretf.userservice.domain.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 사용자 관련 API 컨트롤러
@@ -212,6 +215,21 @@ public class UserController {
     ) {
         boolean isFavorite = userService.isFavoriteEtf(userDetails.getUserId(), ticker);
         return ResponseEntity.ok(ApiResponse.success(isFavorite));
+    }
+
+
+    /**
+     * 관심 ETF 여부 확인
+     *
+     * @param userDetails 인증된 사용자 정보
+     * @return true = 관심 등록됨
+     */
+    @Operation(summary = "마이데이터", description = "호출 시점에 보유 중인 마이데이터의 etf 포트폴리오를 조회합니다.")
+    @GetMapping("/me/my-data")
+    public ResponseEntity<ApiResponse<List<MyDataEtfCount>>> checkFavoriteEtf(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getMyData(userDetails.getUserId())));
     }
 
 }

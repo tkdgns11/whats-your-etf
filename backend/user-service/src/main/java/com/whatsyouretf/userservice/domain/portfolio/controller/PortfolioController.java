@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioInfo;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioDetail;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioFacade;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioIssues;
 import com.whatsyouretf.userservice.domain.portfolio.service.PortfolioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -91,5 +92,13 @@ public class PortfolioController {
                 return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(ApiResponse.success("포트폴리오를 삭제하였습니다"));
+        }
+
+        @Operation(summary = "포트폴리오 이슈 조회", description = "포트폴리오의 주요 이슈 목록을 조회합니다/")
+        @GetMapping("/{portfolioId}/issues")
+        public ResponseEntity<ApiResponse<List<PortfolioIssues>>> getPortfolioIssues(@PathVariable Long portfolioId) {
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(ApiResponse.success(portfolioService.getPortfolioIssues(portfolioId)));
         }
 }

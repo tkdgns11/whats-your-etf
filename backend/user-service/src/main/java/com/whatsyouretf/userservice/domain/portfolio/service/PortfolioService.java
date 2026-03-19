@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioType;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfInfo;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioIssues;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,4 +25,6 @@ public interface PortfolioService {
         void updatePortfolio(Long portfolioId, String name);
 
         void deletePortfolio(Long portfolioId);
+
+        List<PortfolioIssues> getPortfolioIssues(Long portfolioId);
 }

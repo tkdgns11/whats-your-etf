@@ -5,6 +5,7 @@ import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioType;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfInfo;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioIssues;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +52,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         @Override
         public void deletePortfolio(Long portfolioId) {
                 portfolioStore.deletePortfolio(portfolioId);
+        }
+
+        @Override
+        public List<PortfolioIssues> getPortfolioIssues(Long portfolioId) {
+                return portfolioReader.getPortfolioIssues(portfolioId);
         }
 
         @Override

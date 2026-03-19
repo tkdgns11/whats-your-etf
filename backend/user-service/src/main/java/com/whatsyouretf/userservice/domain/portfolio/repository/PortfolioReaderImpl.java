@@ -17,6 +17,8 @@ import java.util.Map;
 public class PortfolioReaderImpl implements PortfolioReader {
         private final PortfolioRepository portfolioRepository;
         private final PortfolioQuerydslRepository portfolioQuerydslRepository;
+        private final PortfolioIssueRepository portfolioIssueRepository;
+
         @Override
         public List<Portfolio> getUsersPortfolios(Long userId) {
                 return portfolioRepository.findByUserOrderByCreatedAtDesc(User.of(userId));
@@ -35,5 +37,10 @@ public class PortfolioReaderImpl implements PortfolioReader {
         @Override
         public Portfolio getPortfolio(Long portfolioId) {
                 return portfolioRepository.findById(portfolioId).orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
+        }
+
+        @Override
+        public List<PortfolioIssues> getPortfolioIssues(Long portfolioId) {
+                return portfolioIssueRepository.getIssuesByPortfolioId(portfolioId);
         }
 }
