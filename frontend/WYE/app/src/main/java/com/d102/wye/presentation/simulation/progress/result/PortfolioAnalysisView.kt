@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,6 +40,7 @@ import com.d102.wye.presentation.theme.SectorColor1
 import com.d102.wye.presentation.theme.SectorColor2
 import com.d102.wye.presentation.theme.SectorColor3
 import com.d102.wye.presentation.theme.SectorColor4
+import com.d102.wye.presentation.theme.SectorColor5
 import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
@@ -78,9 +80,10 @@ fun PortfolioAnalysisView(
 
         // ── PER / PBR / ROE 카드 ──────────────────────────────────────────────
         val uiModel = (simulationState as? UiState.Success)?.data
-
-        val sectorColors = listOf(SectorColor1, SectorColor2, SectorColor3, SectorColor4)
-
+        val sectorColors = listOf(
+            SectorColor1, SectorColor2, SectorColor3,
+            SectorColor4, SectorColor5
+        )
         val sectorData = uiModel?.sectorWeights?.mapIndexed { index, s ->
             SectorWeight(
                 name = s.name,
@@ -139,7 +142,7 @@ fun PortfolioAnalysisView(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "섹터 비중",
@@ -149,7 +152,7 @@ fun PortfolioAnalysisView(
                 )
 
                 DonutChart(items = sectorData)
-
+                Spacer(modifier = Modifier.height(4.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -157,18 +160,25 @@ fun PortfolioAnalysisView(
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isEmpty) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                12.dp,
+                                Alignment.CenterHorizontally
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             sectorData.forEach { sector ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Box(
                                         modifier = Modifier
                                             .size(8.dp)
                                             .background(sector.color, CircleShape)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "${sector.name} ${sector.ratio.toInt()}%",
                                         style = MaterialTheme.typography.bodySmall,

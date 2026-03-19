@@ -220,12 +220,10 @@ class SimulationViewModel @Inject constructor(
 
         // 상위 3개 + 나머지 "기타"로 합산
         val sorted = sectorMap.entries.sortedByDescending { it.value }
-        val top3 =
-            sorted.take(3).map { SectorWeightUiModel(name = it.key, ratio = it.value.toFloat()) }
-        val othersRatio = sorted.drop(3).sumOf { it.value }.toFloat()
-
-        return if (othersRatio > 0.5f) top3 + SectorWeightUiModel(name = "기타", ratio = othersRatio)
-        else top3
+        val top5 = sorted.take(4).map { SectorWeightUiModel(name = it.key, ratio = it.value.toFloat()) }
+        val othersRatio = sorted.drop(5).sumOf { it.value }.toFloat()
+        return if (othersRatio > 0.5f) top5 + SectorWeightUiModel(name = "기타", ratio = othersRatio)
+        else top5
     }
 
     // ─────────────────────────────────────────────────────────────────────────
