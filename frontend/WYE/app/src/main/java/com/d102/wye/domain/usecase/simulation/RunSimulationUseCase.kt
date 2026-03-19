@@ -2,18 +2,16 @@ package com.d102.wye.domain.usecase.simulation
 
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.EtfFundamentals
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.Portfolio
 import com.d102.wye.domain.model.SimulationResult
-import com.d102.wye.domain.model.WeightedFundamentals
 import com.d102.wye.domain.state.InvestmentType
 import javax.inject.Inject
 
 class RunSimulationUseCase @Inject constructor(
     private val calculateBacktest: CalculateBacktestUseCase,
-    // TODO: 백엔드 per/pbr/roe/dividendYield 필드 추가 후 아래 UseCase 연결
-    // private val calculateWeightedFundamentals: CalculateWeightedFundamentalsUseCase,
-    // private val calculateExpectedDividend: CalculateExpectedDividendUseCase
+    private val calculateWeightedFundamentals: CalculateWeightedFundamentalsUseCase
 ) {
 
     data class Params(
@@ -22,6 +20,7 @@ class RunSimulationUseCase @Inject constructor(
         val investmentType: InvestmentType,
         val periodMonths: Int,
         val priceHistories: Map<String, EtfPriceHistory>,
+        val fundamentalsMap: Map<String, EtfFundamentals> = emptyMap(),
         val startDate: String? = null,
         val endDate: String? = null
     )
@@ -41,11 +40,17 @@ class RunSimulationUseCase @Inject constructor(
             periodMonths = params.periodMonths
         )
 
+        // per/pbr/roe 가중평균 계산
+        val fundamentals = calculateWeightedFundamentals(
+            portfolios = params.portfolios,
+            fundamentalsMap = params.fundamentalsMap
+        )
+
         return BaseResult.Success(
             SimulationResult(
                 backtestPoints = backtestResult.points,
-                fundamentals = WeightedFundamentals(per = 0.0, pbr = 0.0, roe = 0.0),
-                expectedAnnualDividend = 0L,
+                fundamentals = fundamentals,
+                expectedAnnualDividend = 0L,   // TODO: 배당 API 연동 후 채우기
                 expectedMonthlyDividend = 0L,
                 estimatedFinalValue = backtestResult.estimatedFinalValue,
                 totalReturn = backtestResult.totalReturn,

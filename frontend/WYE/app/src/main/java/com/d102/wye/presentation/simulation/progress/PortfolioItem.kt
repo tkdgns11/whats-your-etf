@@ -4,13 +4,15 @@ import com.d102.wye.domain.model.Portfolio
 
 /**
  * 시뮬레이션 화면 전용 UI 모델
- *
- * - UI 상태(슬라이더 값, 이름 표시 등) 관리 용도
  */
 data class PortfolioItem(
     val ticker: String,
     val name: String,
-    val weight: Int  // 0~100
+    val weight: Int,
+    val per: Double = 0.0,
+    val pbr: Double = 0.0,
+    val roe: Double = 0.0,
+    val currentPrice: Long = 0L
 )
 
 /** presentation → domain 변환 */
