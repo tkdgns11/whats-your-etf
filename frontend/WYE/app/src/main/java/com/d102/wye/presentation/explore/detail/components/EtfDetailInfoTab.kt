@@ -215,8 +215,6 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
                 HorizontalDivider(color = Divider)
                 RiskRow(detail)
                 HorizontalDivider(color = Divider)
-                InfoRow("변동성", "----")
-                HorizontalDivider(color = Divider)
                 InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%", valueColor = PrimaryGreen)
                 HorizontalDivider(color = Divider)
                 InfoRow("순자산", aumText)
@@ -384,10 +382,10 @@ private fun ReturnChartSection(
 
         // 라인 체크박스
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChartCheckbox("NAV",     showNav,   onToggleNav,   PrimaryGreen)
-            ChartCheckbox("종가",    showPrice, onTogglePrice, EtfFall)
-            ChartCheckbox("KOSPI",   showKospi, onToggleKospi, Color.Gray)
-            ChartCheckbox("S&P 500", showSp500, onToggleSp500, Color.LightGray)
+            ChartCheckbox("NAV",     showNav,   onToggleNav,   ChartColorNav)
+            ChartCheckbox("종가",    showPrice, onTogglePrice, ChartColorPrice)
+            ChartCheckbox("KOSPI",   showKospi, onToggleKospi, ChartColorKospi)
+            ChartCheckbox("나스닥", showSp500, onToggleSp500, ChartColorNasdaq)
         }
 
         // 차트
@@ -512,10 +510,10 @@ private fun LineChart(
     modifier: Modifier = Modifier,
 ) {
     val lines = buildList {
-        if (showNav   && data.navData.isNotEmpty())   add(data.navData   to PrimaryGreen)
-        if (showPrice && data.priceData.isNotEmpty()) add(data.priceData to EtfFall)
-        if (showKospi && data.kospiData.isNotEmpty()) add(data.kospiData to Color.Gray)
-        if (showSp500 && data.sp500Data.isNotEmpty()) add(data.sp500Data to Color.LightGray)
+        if (showNav   && data.navData.isNotEmpty())   add(data.navData   to ChartColorNav)
+        if (showPrice && data.priceData.isNotEmpty()) add(data.priceData to ChartColorPrice)
+        if (showKospi && data.kospiData.isNotEmpty()) add(data.kospiData to ChartColorKospi)
+        if (showSp500 && data.sp500Data.isNotEmpty()) add(data.sp500Data to ChartColorNasdaq)
     }
     if (lines.isEmpty()) return
 

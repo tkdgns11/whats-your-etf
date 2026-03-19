@@ -62,6 +62,12 @@ val NavInactive       = IconInactive
 // ── 구분선 (하위 호환) ────────────────────────────────────────
 val SurfaceDivider    = Divider
 
+// ── 수익률 차트 라인 ──────────────────────────────
+val ChartColorNav    = Color(0xFF4ADE80)   // 연초록  — NAV
+val ChartColorPrice  = Color(0xFF60A5FA)   // 하늘파랑 — 종가
+val ChartColorKospi  = Color(0xFFF472B6)   // 로즈핑크 — KOSPI
+val ChartColorNasdaq = Color(0xFF2DD4BF)   // 민트청록 — 나스닥
+
 // ── 기타 ────────────────────────────────────────
 val TipBackground = Color(0xFFECFDF5)
 val TipBorder = Color(0xFFD1FAE5)

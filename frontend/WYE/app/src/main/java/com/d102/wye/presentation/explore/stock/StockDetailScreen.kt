@@ -57,7 +57,7 @@ fun StockDetailScreen(
 
             is UiState.Success -> StockDetailContent(
                 stock = state.data,
-                tags = (tagsState as? UiState.Success)?.data ?: state.data.tags,
+                tags = (tagsState as? UiState.Success)?.data ?: emptyList(),
                 relatedStocks = (relatedStocksState as? UiState.Success)?.data ?: emptyList(),
                 onEtfListClick = { onEtfListClick(state.data.ticker) },
                 onEtfClick = onEtfClick,
@@ -68,7 +68,24 @@ fun StockDetailScreen(
             is UiState.Error -> Box(
                 Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
-            ) { Text(state.message, color = TextSecondary) }
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        "데이터를 불러올 수 없습니다",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                    )
+                    Button(
+                        onClick = { viewModel.loadStock() },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                    ) {
+                        Text("다시 시도")
+                    }
+                }
+            }
 
             UiState.Idle -> Unit
         }
@@ -146,7 +163,7 @@ private fun StockDetailContent(
 
         stock.containedEtfs.take(3).forEach { etf ->
             EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(28.dp))
         }
 
         // 전체보기 버튼
@@ -175,7 +192,6 @@ private fun StockDetailContent(
             HorizontalDivider(color = Divider)
         }
 
-        Spacer(Modifier.height(40.dp))
     }
 }
 
