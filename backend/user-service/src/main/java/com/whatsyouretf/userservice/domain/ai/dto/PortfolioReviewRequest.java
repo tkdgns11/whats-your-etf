@@ -18,9 +18,6 @@ import java.util.List;
 @Builder
 public class PortfolioReviewRequest {
 
-    /** 저장된 포트폴리오 스냅샷 ID (선택) */
-    private Long portfolioSnapshotId;
-
     /** 포트폴리오 구성 정보 */
     @NotNull(message = "포트폴리오 정보는 필수입니다.")
     @Valid
