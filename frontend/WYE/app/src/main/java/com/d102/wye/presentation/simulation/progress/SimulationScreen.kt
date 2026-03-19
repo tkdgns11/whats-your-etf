@@ -33,7 +33,7 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
-import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
+import com.d102.wye.presentation.simulation.progress.result.AiReviewDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
@@ -51,7 +51,7 @@ fun SimulationScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val showAiDialog by viewModel.showAiDialog.collectAsStateWithLifecycle()
-    val aiDiagnosisState by viewModel.aiDiagnosisState.collectAsStateWithLifecycle()
+    val aiReviewState by viewModel.aiReviewState.collectAsStateWithLifecycle()
     val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
     val savePortfolioState by viewModel.savePortfolioState.collectAsStateWithLifecycle()
 
@@ -68,8 +68,8 @@ fun SimulationScreen(
     }
 
     if (showAiDialog) {
-        AiDiagnosisDialog(
-            uiState = aiDiagnosisState,
+        AiReviewDialog(
+            uiState = aiReviewState,
             onDismiss = { viewModel.onAiDialogDismiss() }
         )
     }
@@ -109,7 +109,7 @@ fun SimulationScreen(
         onAddEtfClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
         onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
         onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
-        onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
+        onAiDiagnosisClick = { viewModel.onAiReviewClick() },
         onDictionaryClick = { showDictionaryDialog = true },
         onSaveClick = { viewModel.onSaveIconClick() },
         idleGuideMessage = idleGuideMessage

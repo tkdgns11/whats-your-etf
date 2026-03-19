@@ -14,7 +14,7 @@ import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.analysis.PortfolioAnalysisView
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
-import com.d102.wye.presentation.simulation.progress.components.AiDiagnosisButton
+import com.d102.wye.presentation.simulation.progress.components.AiReviewButton
 
 @Composable
 fun SimulationResultSection(
@@ -60,7 +60,7 @@ fun SimulationResultSection(
             }
         }
 
-        AiDiagnosisButton(
+        AiReviewButton(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp),

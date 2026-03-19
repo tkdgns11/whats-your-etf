@@ -3,7 +3,7 @@ package com.d102.wye.presentation.simulation.progress
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
-import com.d102.wye.domain.model.AiDiagnosisResult
+import com.d102.wye.domain.model.AiReviewResult
 import com.d102.wye.domain.model.EtfCountItem
 import com.d102.wye.domain.model.SavePortfolioParams
 import com.d102.wye.domain.repository.PortfolioRepository
@@ -44,8 +44,8 @@ class SimulationViewModel @Inject constructor(
     private val _showAiDialog = MutableStateFlow(false)
     val showAiDialog: StateFlow<Boolean> = _showAiDialog.asStateFlow()
 
-    private val _aiDiagnosisState = MutableStateFlow<UiState<AiDiagnosisResult>>(UiState.Idle)
-    val aiDiagnosisState: StateFlow<UiState<AiDiagnosisResult>> = _aiDiagnosisState.asStateFlow()
+    private val _aiReviewState = MutableStateFlow<UiState<AiReviewResult>>(UiState.Idle)
+    val aiReviewState: StateFlow<UiState<AiReviewResult>> = _aiReviewState.asStateFlow()
 
     private val _showSaveDialog = MutableStateFlow(false)
     val showSaveDialog: StateFlow<Boolean> = _showSaveDialog.asStateFlow()
@@ -188,36 +188,42 @@ class SimulationViewModel @Inject constructor(
     // AI 진단
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun onAiDiagnosisClick() {
+    fun onAiReviewClick() {
         _showAiDialog.value = true
-        fetchAiDiagnosis()
+        fetchAiReview()
     }
 
     fun onAiDialogDismiss() {
         _showAiDialog.value = false
     }
 
-    private fun fetchAiDiagnosis() {
-        if (_aiDiagnosisState.value is UiState.Loading ||
-            _aiDiagnosisState.value is UiState.Success
+    private fun fetchAiReview() {
+        if (_aiReviewState.value is UiState.Loading ||
+            _aiReviewState.value is UiState.Success
         ) return
+
+        val form = _formState.value
+        val amount = (form.investmentAmount.toLongOrNull() ?: 0L) * 10_000L
 
         viewModelScope.launch {
             Timber.d("[AI] AI 진단 요청 시작")
-            _aiDiagnosisState.update { UiState.Loading }
-            delay(1500) // TODO: 실제 AI 진단 API 호출
-            _aiDiagnosisState.update {
-                UiState.Success(
-                    AiDiagnosisResult(
-                        mainTitle = "공격적인 수익 추구!",
-                        subTitle = "기술주 중심의 로켓 포트폴리오 🚀",
-                        tags = listOf("기술주집중", "고변동성", "성장중심"),
-                        feedback = "현재 포트폴리오는 특정 섹터에 집중되어 있어 변동성이 매우 큽니다. " +
-                                "장기적인 안정을 위해 배당형 ETF로의 분산투자를 고려해보세요."
-                    )
-                )
+            _aiReviewState.update { UiState.Loading }
+
+            when (val result = simulationRepository.getAiPortfolioReview(
+                totalAmount = amount,
+                investmentType = form.investmentType,
+                portfolios = form.portfolioItems.toDomain()
+            )) {
+                is BaseResult.Success -> {
+                    Timber.d("[AI] AI 진단 완료")
+                    _aiReviewState.update { UiState.Success(result.data) }
+                }
+
+                is BaseResult.Error -> {
+                    Timber.e("[AI] AI 진단 실패 | ${result.error.message}")
+                    _aiReviewState.update { UiState.Error(result.error.message) }
+                }
             }
-            Timber.d("[AI] AI 진단 완료")
         }
     }
 
@@ -269,6 +275,7 @@ class SimulationViewModel @Inject constructor(
                     _savePortfolioState.update { UiState.Success(Unit) }
                     _showSaveDialog.value = false
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("[Save] 포트폴리오 저장 실패 | ${result.error.message}")
                     _savePortfolioState.update { UiState.Error(result.error.message) }
