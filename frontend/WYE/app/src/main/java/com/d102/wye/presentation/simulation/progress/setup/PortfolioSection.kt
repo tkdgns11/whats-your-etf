@@ -200,7 +200,7 @@ private fun PortfolioSliderItemRow(
     WyeCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
-        innerPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 4.dp),
+        innerPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp),
         border = BorderStroke(1.dp, SurfaceVariant),
         containerColor = Color.White,
         elevation = 0.dp
@@ -215,7 +215,7 @@ private fun PortfolioSliderItemRow(
                 WyeCircleIcon(
                     tag = item.name,
                     count = 2,
-                    size = 40.dp,
+                    size = 36.dp,
                     backgroundColor = SurfaceVariant,
                     contentColor = TextSecondary
                 )
@@ -229,7 +229,7 @@ private fun PortfolioSliderItemRow(
                     Text(
                         text = item.name,
                         color = TextPrimary,
-                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp),
+                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
                         maxLines = 1,
                     )
                     Text(
@@ -307,7 +307,7 @@ private fun PortfolioSliderItemRow(
                 thumb = {
                     Box(
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(12.dp)
                             .background(color = PrimaryGreen, shape = CircleShape)
                     )
                 },
@@ -319,7 +319,7 @@ private fun PortfolioSliderItemRow(
                         ),
                         sliderState = sliderState,
                         thumbTrackGapSize = 0.dp,
-                        modifier = Modifier.height(8.dp)
+                        modifier = Modifier.height(6.dp)
                     )
                 }
             )
