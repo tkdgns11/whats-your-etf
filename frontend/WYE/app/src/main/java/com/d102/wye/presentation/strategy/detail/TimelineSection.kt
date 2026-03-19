@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.strategy.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,8 +37,14 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
+private const val PREVIEW_COUNT = 2
+
 @Composable
 fun TimelineSection(timelines: List<TimelineItem>) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayed = if (expanded) timelines else timelines.take(PREVIEW_COUNT)
+    val hasMore = timelines.size > PREVIEW_COUNT
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -43,7 +58,7 @@ fun TimelineSection(timelines: List<TimelineItem>) {
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        timelines.forEachIndexed { index, item ->
+        displayed.forEachIndexed { index, item ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 // 왼쪽 타임라인 선과 점
                 Column(
@@ -87,6 +102,29 @@ fun TimelineSection(timelines: List<TimelineItem>) {
                         color = TextSecondary,
                     )
                 }
+            }
+        }
+
+        if (hasMore) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (expanded) "접기" else "타임라인 더보기",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = TextSecondary,
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(22.dp),
+                )
             }
         }
     }

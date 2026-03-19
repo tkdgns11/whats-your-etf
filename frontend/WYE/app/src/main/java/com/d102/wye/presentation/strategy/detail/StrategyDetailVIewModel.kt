@@ -4,11 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.domain.usecase.portfolio.CalculatePortfolioChartUseCase
-import com.d102.wye.domain.repository.NewsRepository
+import kotlinx.coroutines.async
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,7 +76,22 @@ class StrategyDetailViewModel @Inject constructor(
 
             val returnSign = { v: Double -> if (v >= 0) "+" else "" }
 
-            val relatedNews = when (val result = newsRepository.getPortfolioNews(portfolioId)) {
+            // 4. 타임라인 + 뉴스 병렬 조회
+            val issuesDeferred = async { portfolioRepository.getPortfolioIssues(portfolioId) }
+            val newsDeferred   = async { newsRepository.getPortfolioNews(portfolioId) }
+
+            val timelines = when (val result = issuesDeferred.await()) {
+                is BaseResult.Success -> result.data.map { issue ->
+                    TimelineItem(
+                        date    = issue.localDate,
+                        title   = issue.title,
+                        content = issue.description,
+                    )
+                }
+                is BaseResult.Error -> emptyList()
+            }
+
+            val relatedNews = when (val result = newsDeferred.await()) {
                 is BaseResult.Success -> result.data.map { NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl) }
                 is BaseResult.Error -> emptyList()
             }
@@ -110,7 +126,7 @@ class StrategyDetailViewModel @Inject constructor(
                         dateRange = "$startDate - ${detail.createdAt} (저장일)",
                         points = chartResult.pastPoints
                     ),
-                    timelines = emptyList(),   // TODO: 타임라인 API 연결
+                    timelines = timelines,
                     relatedNews = relatedNews,
                 )
             )
