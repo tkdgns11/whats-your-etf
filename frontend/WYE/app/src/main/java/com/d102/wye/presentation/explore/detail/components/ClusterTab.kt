@@ -13,6 +13,7 @@ import androidx.compose.animation.core.tween
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -62,6 +63,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.random.Random
 
 @Composable
 fun ClusterTab(
@@ -88,7 +90,7 @@ fun ClusterTab(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            Column(modifier = Modifier.height(screenH - 100.dp)) {
+            Column(modifier = Modifier.height(screenH - 130.dp)) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -132,26 +134,34 @@ private fun ClusterBubbleChart(
     val otherClusters = remember(sorted) { sorted.drop(5) }
     val hasOthers     = otherClusters.isNotEmpty()
 
-    // null = 메인 뷰, true = 기타 뷰
-    var showOthers by remember { mutableStateOf(false) }
+    // false = 메인 뷰(상위 5개+기타), true = 전체 확장 뷰
+    var showAll by remember { mutableStateOf(false) }
 
-    val displayClusters = if (showOthers) otherClusters else mainClusters
-    val centerLabel     = if (showOthers) "기타" else name
+    val displayClusters = if (showAll) sorted else mainClusters
+    val viewKey         = if (showAll) "all" else "main"
 
-    // 뷰 전환 시 애니메이션 재실행을 위한 key
-    val viewKey = if (showOthers) "others" else "main"
+    // 전체 뷰일 때 은하계처럼 조금 축소
+    val zoomFactor by animateFloatAsState(
+        targetValue   = if (showAll) 0.72f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness    = Spring.StiffnessLow,
+        ),
+        label = "zoomFactor",
+    )
 
     BubbleChartLayout(
         key = viewKey,
-        centerLabel = centerLabel,
-        centerColor = if (showOthers) Color(0xFF94A3B8) else PrimaryGreen,
-        isOthersView = showOthers,
+        centerLabel = name,
+        centerColor = PrimaryGreen,
+        isAllView = showAll,
+        zoomFactor = zoomFactor,
         clusters = displayClusters,
-        hasOthersSlot = !showOthers && hasOthers,
+        hasOthersSlot = !showAll && hasOthers,
         othersClusters = otherClusters,
         onClusterClick = onClusterClick,
-        onCenterClick = { if (showOthers) showOthers = false },
-        onOthersClick = { showOthers = true },
+        onCenterClick = { if (showAll) showAll = false },
+        onOthersClick = { showAll = true },
         modifier = modifier,
     )
 }
@@ -161,7 +171,8 @@ private fun BubbleChartLayout(
     key: String,
     centerLabel: String,
     centerColor: Color,
-    isOthersView: Boolean,
+    isAllView: Boolean,
+    zoomFactor: Float,
     clusters: List<EtfCluster>,
     hasOthersSlot: Boolean,
     othersClusters: List<EtfCluster>,
@@ -199,17 +210,89 @@ private fun BubbleChartLayout(
     val totalSlots  = clusters.size + if (hasOthersSlot) 1 else 0
     val angleStep   = 360.0 / totalSlots.coerceAtLeast(1)
 
-    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
-        val availableSize = minOf(maxWidth, maxHeight)
-        val orbitRadius   = availableSize * 0.40f
-        val centerBubble  = availableSize * 0.46f
-        val minBubbleSize = if (isOthersView) availableSize * 0.15f else availableSize * 0.20f
-        val maxBubbleSize = if (isOthersView) availableSize * 0.21f else availableSize * 0.32f
+    // 별 위치 고정 (recomposition 마다 바뀌지 않게)
+    val stars = remember {
+        val rng = Random(seed = 42)
+        List(60) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } // x, y, size
+    }
 
-        // 펄스 링
+    // 궤도 자전 애니메이션
+    val orbitRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue  = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(28000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "orbitRotation",
+    )
+
+    // 전체 뷰일 때 궤도 반경 확장 → 버블이 바깥으로 퍼짐
+    val orbitFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.60f else 0.40f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "orbitFraction",
+    )
+    val centerFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.38f else 0.46f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "centerFraction",
+    )
+    val maxBubbleFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.20f else 0.32f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "maxBubbleFraction",
+    )
+    val minBubbleFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.12f else 0.20f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "minBubbleFraction",
+    )
+
+    BoxWithConstraints(
+        modifier = modifier.scale(zoomFactor),
+        contentAlignment = Alignment.Center,
+    ) {
+        val availableSize = minOf(maxWidth, maxHeight)
+        val orbitRadius   = availableSize * orbitFraction
+        val centerBubble  = availableSize * centerFraction
+        val minBubbleSize = availableSize * minBubbleFraction
+        val maxBubbleSize = availableSize * maxBubbleFraction
+
+        // 별 필드 + 궤도 링 + 펄스
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
+
+            // 별 필드
+            stars.forEach { (sx, sy, ss) ->
+                drawCircle(
+                    color  = Color.White.copy(alpha = 0.25f + ss * 0.35f),
+                    radius = 1.2f + ss * 2f,
+                    center = Offset(sx * size.width, sy * size.height),
+                )
+            }
+
+            // 궤도 링 (버블들이 도는 경로)
+            val orbitR = orbitRadius.toPx()
+            drawCircle(
+                color  = centerColor.copy(alpha = 0.12f),
+                radius = orbitR,
+                center = Offset(cx, cy),
+                style  = Stroke(width = 1.5f),
+            )
+            // 궤도 위 움직이는 광점
+            val dotAngle = Math.toRadians(orbitRotation.toDouble())
+            drawCircle(
+                color  = centerColor.copy(alpha = 0.55f),
+                radius = 4f,
+                center = Offset(
+                    cx + orbitR * cos(dotAngle).toFloat(),
+                    cy + orbitR * sin(dotAngle).toFloat(),
+                ),
+            )
+
+            // 펄스 링
             val maxRingR = centerBubble.toPx() * 0.67f
             for (i in 0..2) {
                 val progress = (pulseProgress + i / 3f) % 1f
@@ -233,16 +316,16 @@ private fun BubbleChartLayout(
                 .shadow(elevation = 12.dp, shape = CircleShape, clip = false)
                 .clip(CircleShape)
                 .background(centerColor)
-                .then(if (isOthersView) Modifier.clickable { onCenterClick() } else Modifier),
+                .then(if (isAllView) Modifier.clickable { onCenterClick() } else Modifier),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp),
                 modifier = Modifier.padding(horizontal = 12.dp),
             ) {
-                if (isOthersView) {
+                if (isAllView) {
                     Text(
-                        text = "← 돌아가기",
+                        text = "← 접기",
                         fontSize = 9.sp,
                         color = Color.White.copy(alpha = 0.75f),
                         textAlign = TextAlign.Center,
@@ -260,14 +343,49 @@ private fun BubbleChartLayout(
             }
         }
 
+        // 중심 → 버블 연결선 (인력선) — 메인 뷰에서만 표시
+        if (!isAllView) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val orbitR = orbitRadius.toPx()
+                val totalCount = clusters.size + if (hasOthersSlot) 1 else 0
+                val step = 360.0 / totalCount.coerceAtLeast(1)
+                repeat(totalCount) { idx ->
+                    val rad = Math.toRadians(idx * step - 90.0)
+                    val tx  = cx + orbitR * cos(rad).toFloat()
+                    val ty  = cy + orbitR * sin(rad).toFloat()
+                    drawLine(
+                        color       = centerColor.copy(alpha = 0.18f),
+                        start       = Offset(cx, cy),
+                        end         = Offset(tx, ty),
+                        strokeWidth = 1f,
+                    )
+                }
+            }
+        }
+
         // 섹터 버블
+        val goldenAngle = 137.508
         clusters.forEachIndexed { idx, cluster ->
-            val rad = Math.toRadians(idx * angleStep - 90.0)
-            val x = (orbitRadius.value * cos(rad)).dp
-            val y = (orbitRadius.value * sin(rad)).dp
             val normalized = if (maxPct > minPct)
                 ((cluster.percentage - minPct) / (maxPct - minPct)).toFloat() else 0.5f
             val bubbleSize = minBubbleSize + (maxBubbleSize - minBubbleSize) * normalized
+
+            val x: Dp
+            val y: Dp
+            if (isAllView) {
+                // 황금각 + 가변 반경: 비중 큰 것(앞 인덱스)은 가까이, 작은 것은 멀리
+                val angle = Math.toRadians(idx * goldenAngle)
+                val rFraction = 0.22f + (idx.toFloat() / clusters.size.coerceAtLeast(1)) * 0.55f
+                val r = availableSize * rFraction
+                x = (r.value * cos(angle)).dp
+                y = (r.value * sin(angle)).dp
+            } else {
+                val rad = Math.toRadians(idx * angleStep - 90.0)
+                x = (orbitRadius.value * cos(rad)).dp
+                y = (orbitRadius.value * sin(rad)).dp
+            }
 
             ClusterBubble(
                 cluster    = cluster,
@@ -279,7 +397,7 @@ private fun BubbleChartLayout(
             )
         }
 
-        // 기타 버블
+        // 기타 버블 (메인 뷰에서만)
         if (hasOthersSlot) {
             val rad = Math.toRadians(clusters.size * angleStep - 90.0)
             val x   = (orbitRadius.value * cos(rad)).dp
@@ -525,7 +643,12 @@ private fun InfluentialStockItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceVariant)
+            .background(SurfaceWhite)
+            .border(
+                width = 0.5.dp,
+                color = Divider, // 원하는 색
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable { onStockClick(stock.ticker) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -540,12 +663,12 @@ private fun InfluentialStockItem(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(BackGroundLightGreen),
+                    .background(SurfaceVariant),
             ) {
                 Text(
                     stock.name.take(1),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = PrimaryGreen,
+                    color = TextSecondary,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
