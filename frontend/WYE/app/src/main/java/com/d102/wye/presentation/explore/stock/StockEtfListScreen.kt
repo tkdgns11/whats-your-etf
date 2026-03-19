@@ -94,9 +94,7 @@ fun StockEtfListScreen(
                     // ETF 목록
                     items(stock.containedEtfs) { etf ->
                         EtfListCard(etf = etf, onClick = { onEtfClick(etf.ticker) })
-                        Spacer(Modifier.height(1.dp))
                         HorizontalDivider(color = Divider)
-                        Spacer(Modifier.height(1.dp))
                     }
                 }
             }
@@ -117,7 +115,7 @@ private fun EtfListCard(etf: StockEtf, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         // 이름 행

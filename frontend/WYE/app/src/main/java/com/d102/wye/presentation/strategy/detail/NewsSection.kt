@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.strategy.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,20 +12,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
-fun NewsSection(news: List<NewsItem>) {
+fun NewsSection(news: List<NewsItem>, onNewsClick: (Long) -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -43,6 +46,7 @@ fun NewsSection(news: List<NewsItem>) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { onNewsClick(item.id) }
                     .padding(top = 20.dp),
                 verticalAlignment = Alignment.Top
             ) {
@@ -67,14 +71,15 @@ fun NewsSection(news: List<NewsItem>) {
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 // 뉴스 썸네일
-                Surface(
+                AsyncImage(
+                    model = item.thumbnailUrl,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .weight(0.2f)
-                        .size(72.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = SurfaceVariant
-                ) {
-                }
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceVariant),
+                )
             }
         }
     }

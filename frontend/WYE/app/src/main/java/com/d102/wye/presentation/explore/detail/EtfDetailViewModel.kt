@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.*
 import com.d102.wye.domain.repository.EtfRepository
+import com.d102.wye.domain.repository.IndexRepository
+import timber.log.Timber
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EtfDetailViewModel @Inject constructor(
     private val etfRepository: EtfRepository,
+    private val indexRepository: IndexRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -82,12 +85,21 @@ class EtfDetailViewModel @Inject constructor(
 
     fun onPeriodSelected(period: String) {
         _selectedPeriod.update { period }
-        val duration = when (period) {
+        val today = System.currentTimeMillis()
+        val durationDays = when (period) {
             "1W" -> 7; "1M" -> 30; "3M" -> 90; "1Y" -> 365; "3Y" -> 3 * 365; else -> null
         }
-        _periodDurationDays.update { duration }
-        _startDateMs.update { null }
-        _endDateMs.update { null }
+        _periodDurationDays.update { durationDays }
+        // 오늘 기준 → 과거로 기간 설정
+        _endDateMs.update { today }
+        _startDateMs.update {
+            if (durationDays != null) {
+                today - durationDays.toLong() * 86_400_000L
+            } else {
+                // ALL: 상장일부터 오늘까지
+                (_detailState.value as? UiState.Success)?.data?.listingDate?.let { dateStringToMs(it) }
+            }
+        }
     }
 
     fun onDateRangeSelected(start: Long, end: Long) {
@@ -97,31 +109,65 @@ class EtfDetailViewModel @Inject constructor(
         _periodDurationDays.update { null }
     }
 
-    fun loadChart(period: String = _selectedPeriod.value) {
+    fun loadChart() {
         viewModelScope.launch {
             _chartState.update { UiState.Loading }
-            val today = todayString()
-            val (startDate, size) = if (period.isNotBlank()) {
-                Pair(periodStartDate(period), periodSize(period))
-            } else {
-                val s = _startDateMs.value?.let { msToDateString(it) } ?: return@launch
-                val days = ((_endDateMs.value ?: System.currentTimeMillis()) - (_startDateMs.value ?: 0L)) / 86_400_000
-                Pair(s, (days + 5).toInt().coerceAtLeast(10))
+            val startMs   = _startDateMs.value ?: return@launch
+            val endMs     = _endDateMs.value   ?: System.currentTimeMillis()
+            val startDate = msToDateString(startMs)
+            val endDate   = msToDateString(endMs)
+            val calDays   = ((endMs - startMs) / 86_400_000).toInt().coerceAtLeast(1)
+            val size      = (calDays * 1.5 + 20).toInt().coerceIn(10, 5000)
+
+            // ETF 가격 이력 (NAV + 종가)
+            val etfResult = etfRepository.getEtfPriceHistory(ticker, startDate, endDate, size)
+            if (etfResult is BaseResult.Error) {
+                _chartState.update { UiState.Error(etfResult.error.message) }
+                return@launch
             }
-            val endDate = _endDateMs.value?.let { msToDateString(it) } ?: today
-            when (val result = etfRepository.getEtfPriceHistory(ticker, startDate, endDate, size)) {
-                is BaseResult.Success -> {
-                    val points = result.data
-                    _chartState.update {
-                        UiState.Success(EtfReturnChart(
-                            navData   = points.map { ChartPoint(it.date, it.nav.toDouble()) },
-                            priceData = points.map { ChartPoint(it.date, it.stockPrice.toDouble()) },
-                            kospiData = emptyList(),
-                            sp500Data = emptyList(),
-                        ))
-                    }
-                }
-                is BaseResult.Error -> _chartState.update { UiState.Error(result.error.message) }
+            val points = (etfResult as BaseResult.Success).data
+            if (points.isEmpty()) {
+                _chartState.update { UiState.Error("해당 기간의 데이터가 없습니다.") }
+                return@launch
+            }
+            val baseNav   = points.first().nav.takeIf { it > 0 } ?: 1.0
+            val basePrice = points.first().stockPrice.toDouble().takeIf { it > 0 } ?: 1.0
+
+            // 체크된 지수 순차 요청
+            val kospiData = if (_showKospi.value) {
+                fetchIndexChartPoints("KOSPI", startDate, endDate)
+            } else emptyList()
+
+            val nasdaqData = if (_showSp500.value) {
+                fetchIndexChartPoints("NASDAQ", startDate, endDate)
+            } else emptyList()
+
+            _chartState.update {
+                UiState.Success(EtfReturnChart(
+                    navData   = points.map { ChartPoint(it.date, (it.nav - baseNav) / baseNav * 100.0) },
+                    priceData = points.map { ChartPoint(it.date, (it.stockPrice.toDouble() - basePrice) / basePrice * 100.0) },
+                    kospiData = kospiData,
+                    sp500Data = nasdaqData,
+                ))
+            }
+        }
+    }
+
+    private suspend fun fetchIndexChartPoints(
+        marketType: String,
+        startDate:  String,
+        endDate:    String,
+    ): List<ChartPoint> {
+        return when (val result = indexRepository.getIndex(marketType, startDate, endDate)) {
+            is BaseResult.Success -> {
+                val pts = result.data
+                Timber.d("$marketType 데이터: ${pts.size}개, 첫날=${pts.firstOrNull()?.date}, 마지막=${pts.lastOrNull()?.date}")
+                val base = pts.firstOrNull()?.close?.takeIf { it > 0 } ?: return emptyList()
+                pts.map { ChartPoint(it.date, (it.close - base) / base * 100.0) }
+            }
+            is BaseResult.Error -> {
+                Timber.e("$marketType 인덱스 로드 실패: ${result.error.message}")
+                emptyList()
             }
         }
     }
@@ -141,6 +187,7 @@ class EtfDetailViewModel @Inject constructor(
                     if (points.isEmpty()) return@launch
                     _periodReturn.update {
                         UiState.Success(EtfPeriodReturn(
+                            asOfDate = points.last().date,
                             nav1M   = calcReturn(points, 30,  isNav = true),
                             nav3M   = calcReturn(points, 90,  isNav = true),
                             nav6M   = calcReturn(points, 180, isNav = true),
@@ -159,6 +206,14 @@ class EtfDetailViewModel @Inject constructor(
     private fun todayString(): String {
         val c = java.util.Calendar.getInstance()
         return "%04d-%02d-%02d".format(c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH))
+    }
+
+    private fun dateStringToMs(date: String): Long {
+        val parts = date.split("-")
+        return java.util.Calendar.getInstance().apply {
+            set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
     }
 
     private fun msToDateString(ms: Long): String {
@@ -194,12 +249,11 @@ class EtfDetailViewModel @Inject constructor(
 
     private fun calcReturn(points: List<EtfPriceData>, daysAgo: Int, isNav: Boolean): Double {
         if (points.size < 2) return 0.0
-        val c = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -daysAgo) }
-        val targetDate = "%04d-%02d-%02d".format(c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH) + 1, c.get(java.util.Calendar.DAY_OF_MONTH))
-        val past = points.minByOrNull { kotlin.math.abs(it.date.compareTo(targetDate)) } ?: return 0.0
+        val targetMs = System.currentTimeMillis() - daysAgo.toLong() * 86_400_000L
+        val past = points.minByOrNull { kotlin.math.abs(dateStringToMs(it.date) - targetMs) } ?: return 0.0
         val last = points.last()
-        val pastVal = if (isNav) past.nav.toDouble() else past.stockPrice.toDouble()
-        val lastVal  = if (isNav) last.nav.toDouble() else last.stockPrice.toDouble()
+        val pastVal = if (isNav) past.nav else past.stockPrice.toDouble()
+        val lastVal  = if (isNav) last.nav else last.stockPrice.toDouble()
         if (pastVal == 0.0) return 0.0
         return (lastVal - pastVal) / pastVal * 100.0
     }

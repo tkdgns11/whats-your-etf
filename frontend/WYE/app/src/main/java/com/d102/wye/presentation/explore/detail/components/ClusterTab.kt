@@ -10,8 +10,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.WaterDrop
@@ -56,12 +59,11 @@ import com.d102.wye.domain.model.InfluentialStock
 import com.d102.wye.presentation.designsystem.CategoryBadge
 import com.d102.wye.presentation.explore.detail.EtfDetailViewModel
 import com.d102.wye.presentation.theme.*
-import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.random.Random
 
 @Composable
 fun ClusterTab(
@@ -88,7 +90,7 @@ fun ClusterTab(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            Column(modifier = Modifier.height(screenH - 100.dp)) {
+            Column(modifier = Modifier.height(screenH - 130.dp)) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -111,11 +113,484 @@ fun ClusterTab(
                 }
             }
 
-            // 영향을 많이 끼치는 종목
             InfluentialStocksSection(stocks = clusterData.influentialStocks, onStockClick = onStockClick)
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 버블 클러스터 차트
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ClusterBubbleChart(
+    name: String,
+    clusters: List<EtfCluster>,
+    onClusterClick: (EtfCluster) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val sorted        = remember(clusters) { clusters.sortedByDescending { it.percentage } }
+    val mainClusters  = remember(sorted) { sorted.take(5) }
+    val otherClusters = remember(sorted) { sorted.drop(5) }
+    val hasOthers     = otherClusters.isNotEmpty()
+
+    // false = 메인 뷰(상위 5개+기타), true = 전체 확장 뷰
+    var showAll by remember { mutableStateOf(false) }
+
+    val displayClusters = if (showAll) sorted else mainClusters
+    val viewKey         = if (showAll) "all" else "main"
+
+    // 전체 뷰일 때 은하계처럼 조금 축소
+    val zoomFactor by animateFloatAsState(
+        targetValue   = if (showAll) 0.72f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness    = Spring.StiffnessLow,
+        ),
+        label = "zoomFactor",
+    )
+
+    BubbleChartLayout(
+        key = viewKey,
+        centerLabel = name,
+        centerColor = PrimaryGreen,
+        isAllView = showAll,
+        zoomFactor = zoomFactor,
+        clusters = displayClusters,
+        hasOthersSlot = !showAll && hasOthers,
+        othersClusters = otherClusters,
+        onClusterClick = onClusterClick,
+        onCenterClick = { if (showAll) showAll = false },
+        onOthersClick = { showAll = true },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun BubbleChartLayout(
+    key: String,
+    centerLabel: String,
+    centerColor: Color,
+    isAllView: Boolean,
+    zoomFactor: Float,
+    clusters: List<EtfCluster>,
+    hasOthersSlot: Boolean,
+    othersClusters: List<EtfCluster>,
+    onClusterClick: (EtfCluster) -> Unit,
+    onCenterClick: () -> Unit,
+    onOthersClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var visible by remember(key) { mutableStateOf(false) }
+    LaunchedEffect(key) { visible = true }
+
+    val centerScale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "centerBubble",
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "pulseProgress",
+    )
+
+    val maxPct = clusters.maxOfOrNull { it.percentage } ?: 1.0
+    val minPct = clusters.minOfOrNull { it.percentage } ?: 0.0
+
+    val totalSlots  = clusters.size + if (hasOthersSlot) 1 else 0
+    val angleStep   = 360.0 / totalSlots.coerceAtLeast(1)
+
+    // 별 위치 고정 (recomposition 마다 바뀌지 않게)
+    val stars = remember {
+        val rng = Random(seed = 42)
+        List(60) { Triple(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()) } // x, y, size
+    }
+
+    // 궤도 자전 애니메이션
+    val orbitRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue  = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(28000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "orbitRotation",
+    )
+
+    // 전체 뷰일 때 궤도 반경 확장 → 버블이 바깥으로 퍼짐
+    val orbitFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.60f else 0.40f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "orbitFraction",
+    )
+    val centerFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.38f else 0.46f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "centerFraction",
+    )
+    val maxBubbleFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.20f else 0.32f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "maxBubbleFraction",
+    )
+    val minBubbleFraction by animateFloatAsState(
+        targetValue   = if (isAllView) 0.12f else 0.20f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "minBubbleFraction",
+    )
+
+    BoxWithConstraints(
+        modifier = modifier.scale(zoomFactor),
+        contentAlignment = Alignment.Center,
+    ) {
+        val availableSize = minOf(maxWidth, maxHeight)
+        val orbitRadius   = availableSize * orbitFraction
+        val centerBubble  = availableSize * centerFraction
+        val minBubbleSize = availableSize * minBubbleFraction
+        val maxBubbleSize = availableSize * maxBubbleFraction
+
+        // 별 필드 + 궤도 링 + 펄스
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+
+            // 별 필드
+            stars.forEach { (sx, sy, ss) ->
+                drawCircle(
+                    color  = Color.White.copy(alpha = 0.25f + ss * 0.35f),
+                    radius = 1.2f + ss * 2f,
+                    center = Offset(sx * size.width, sy * size.height),
+                )
+            }
+
+            // 궤도 링 (버블들이 도는 경로)
+            val orbitR = orbitRadius.toPx()
+            drawCircle(
+                color  = centerColor.copy(alpha = 0.12f),
+                radius = orbitR,
+                center = Offset(cx, cy),
+                style  = Stroke(width = 1.5f),
+            )
+            // 궤도 위 움직이는 광점
+            val dotAngle = Math.toRadians(orbitRotation.toDouble())
+            drawCircle(
+                color  = centerColor.copy(alpha = 0.55f),
+                radius = 4f,
+                center = Offset(
+                    cx + orbitR * cos(dotAngle).toFloat(),
+                    cy + orbitR * sin(dotAngle).toFloat(),
+                ),
+            )
+
+            // 펄스 링
+            val maxRingR = centerBubble.toPx() * 0.67f
+            for (i in 0..2) {
+                val progress = (pulseProgress + i / 3f) % 1f
+                drawCircle(
+                    color  = centerColor,
+                    radius = maxRingR * progress,
+                    center = Offset(cx, cy),
+                    alpha  = (1f - progress) * 0.45f,
+                    style  = Stroke(width = 2.5f),
+                )
+            }
+        }
+
+        // 중심 버블
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .zIndex(10f)
+                .size(centerBubble)
+                .scale(centerScale)
+                .shadow(elevation = 12.dp, shape = CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(centerColor)
+                .then(if (isAllView) Modifier.clickable { onCenterClick() } else Modifier),
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.padding(horizontal = 12.dp),
+            ) {
+                if (isAllView) {
+                    Text(
+                        text = "← 접기",
+                        fontSize = 9.sp,
+                        color = Color.White.copy(alpha = 0.75f),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                val fontSize = (centerBubble.value * 0.13f).coerceIn(12f, 18f).sp
+                Text(
+                    text = centerLabel.replace(" ", "\n"),
+                    color = Color.White,
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = fontSize * 1.4f,
+                )
+            }
+        }
+
+        // 중심 → 버블 연결선 (인력선) — 메인 뷰에서만 표시
+        if (!isAllView) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val orbitR = orbitRadius.toPx()
+                val totalCount = clusters.size + if (hasOthersSlot) 1 else 0
+                val step = 360.0 / totalCount.coerceAtLeast(1)
+                repeat(totalCount) { idx ->
+                    val rad = Math.toRadians(idx * step - 90.0)
+                    val tx  = cx + orbitR * cos(rad).toFloat()
+                    val ty  = cy + orbitR * sin(rad).toFloat()
+                    drawLine(
+                        color       = centerColor.copy(alpha = 0.18f),
+                        start       = Offset(cx, cy),
+                        end         = Offset(tx, ty),
+                        strokeWidth = 1f,
+                    )
+                }
+            }
+        }
+
+        // 섹터 버블
+        val goldenAngle = 137.508
+        clusters.forEachIndexed { idx, cluster ->
+            val normalized = if (maxPct > minPct)
+                ((cluster.percentage - minPct) / (maxPct - minPct)).toFloat() else 0.5f
+            val bubbleSize = minBubbleSize + (maxBubbleSize - minBubbleSize) * normalized
+
+            val x: Dp
+            val y: Dp
+            if (isAllView) {
+                // 황금각 + 가변 반경: 비중 큰 것(앞 인덱스)은 가까이, 작은 것은 멀리
+                val angle = Math.toRadians(idx * goldenAngle)
+                val rFraction = 0.22f + (idx.toFloat() / clusters.size.coerceAtLeast(1)) * 0.55f
+                val r = availableSize * rFraction
+                x = (r.value * cos(angle)).dp
+                y = (r.value * sin(angle)).dp
+            } else {
+                val rad = Math.toRadians(idx * angleStep - 90.0)
+                x = (orbitRadius.value * cos(rad)).dp
+                y = (orbitRadius.value * sin(rad)).dp
+            }
+
+            ClusterBubble(
+                cluster    = cluster,
+                index      = idx,
+                visible    = visible,
+                bubbleSize = bubbleSize,
+                onClick    = { onClusterClick(cluster) },
+                modifier   = Modifier.offset(x = x, y = y),
+            )
+        }
+
+        // 기타 버블 (메인 뷰에서만)
+        if (hasOthersSlot) {
+            val rad = Math.toRadians(clusters.size * angleStep - 90.0)
+            val x   = (orbitRadius.value * cos(rad)).dp
+            val y   = (orbitRadius.value * sin(rad)).dp
+            OthersBubble(
+                index      = clusters.size,
+                visible    = visible,
+                count      = othersClusters.size,
+                percentage = othersClusters.sumOf { it.percentage },
+                bubbleSize = minBubbleSize + (maxBubbleSize - minBubbleSize) * 0.5f,
+                onClick    = onOthersClick,
+                modifier   = Modifier.offset(x = x, y = y),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ClusterBubble(
+    cluster: EtfCluster,
+    index: Int,
+    visible: Boolean,
+    bubbleSize: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var triggered by remember { mutableStateOf(false) }
+    LaunchedEffect(visible) {
+        if (visible) {
+            delay(index * 60L)
+            triggered = true
+        }
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (triggered) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "clusterBubble$index",
+    )
+
+    val floatTransition = rememberInfiniteTransition(label = "float$index")
+    val floatY by floatTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800 + index * 200),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(index * 300),
+        ),
+        label = "floatY$index",
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .offset(y = floatY.dp)
+            .scale(scale),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
+            modifier = Modifier
+                .size(bubbleSize)
+                .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable(onClick = onClick),
+        ) {
+            val iconSize    = bubbleSize * 0.26f
+            val nameFontSz  = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
+            val pctFontSz   = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
+            val contentW    = bubbleSize * 0.84f
+            Icon(
+                imageVector = sectorIcon(cluster.name),
+                contentDescription = cluster.name,
+                tint = PrimaryGreen,
+                modifier = Modifier.size(iconSize),
+            )
+            Text(
+                text = cluster.name,
+                fontSize = nameFontSz,
+                lineHeight = nameFontSz * 1.1f,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier.width(contentW),
+            )
+            Text(
+                text = "${"%.1f".format(cluster.percentage)}%",
+                fontSize = pctFontSz,
+                lineHeight = pctFontSz,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(contentW),
+            )
+        }
+    }
+}
+
+@Composable
+private fun OthersBubble(
+    index: Int,
+    visible: Boolean,
+    count: Int,
+    percentage: Double,
+    bubbleSize: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var triggered by remember { mutableStateOf(false) }
+    LaunchedEffect(visible) {
+        if (visible) {
+            delay(index * 60L)
+            triggered = true
+        }
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (triggered) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "othersBubble",
+    )
+
+    val floatTransition = rememberInfiniteTransition(label = "floatOthers")
+    val floatY by floatTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800 + index * 200),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(index * 300),
+        ),
+        label = "floatYOthers",
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .offset(y = floatY.dp)
+            .scale(scale),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
+            modifier = Modifier
+                .size(bubbleSize)
+                .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(Color.White)
+                .clickable(onClick = onClick),
+        ) {
+            val iconSize   = bubbleSize * 0.26f
+            val nameFontSz = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
+            val pctFontSz  = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
+            val contentW   = bubbleSize * 0.84f
+            Icon(
+                imageVector = Icons.Filled.MoreHoriz,
+                contentDescription = "기타",
+                tint = PrimaryGreen,
+                modifier = Modifier.size(iconSize),
+            )
+            Text(
+                text = "기타 ${count}개",
+                fontSize = nameFontSz,
+                lineHeight = nameFontSz * 1.1f,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier.width(contentW),
+            )
+            Text(
+                text = "${"%.1f".format(percentage)}%",
+                fontSize = pctFontSz,
+                lineHeight = pctFontSz,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(contentW),
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 영향력 있는 종목
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun InfluentialStocksSection(
@@ -168,13 +643,17 @@ private fun InfluentialStockItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceVariant)
+            .background(SurfaceWhite)
+            .border(
+                width = 0.5.dp,
+                color = Divider, // 원하는 색
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable { onStockClick(stock.ticker) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 왼쪽: 아바타 + 종목명/티커
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -184,20 +663,19 @@ private fun InfluentialStockItem(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(BackGroundLightGreen),
+                    .background(SurfaceVariant),
             ) {
                 Text(
                     stock.name.take(1),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = PrimaryGreen,
+                    color = TextSecondary,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(stock.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = TextPrimary)
+                Text(stock.name,   style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = TextPrimary)
                 Text(stock.ticker, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
         }
-        // 오른쪽: 비중 / 현재가 / 등락률
         Column(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -221,6 +699,10 @@ private fun InfluentialStockItem(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 공통 서브 컴포넌트
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 private fun EtfHeader(detail: EtfDetail, englishName: String) {
     val (badgeBg, badgeFg, badgeLabel) = riskToBadge(detail.riskGrade)
@@ -237,222 +719,13 @@ private fun EtfHeader(detail: EtfDetail, englishName: String) {
 }
 
 @Composable
-private fun ClusterBubbleChart(
-    name: String,
-    clusters: List<EtfCluster>,
-    onClusterClick: (EtfCluster) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { visible = true }
-
-    val centerScale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium,
-        ),
-        label = "centerBubble",
-    )
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pulseProgress",
-    )
-
-    // 비중 내림차순 정렬, 상대 반경 계산 (center = 1.0)
-    val sorted = remember(clusters) { clusters.sortedByDescending { it.percentage } }
-    val maxPct = sorted.maxOfOrNull { it.percentage } ?: 1.0
-    val minPct = sorted.minOfOrNull { it.percentage } ?: 0.0
-
-    val sectorRelRadii = remember(sorted) {
-        sorted.map { cluster ->
-            val pct = if (maxPct > minPct)
-                ((cluster.percentage - minPct) / (maxPct - minPct)).toFloat() else 0.5f
-            0.62f + 0.13f * pct   // 0.62 ~ 0.75 (relative to center r=1.0)
-        }
-    }
-
-    // Circle Packing — remember로 한 번만 계산 (gap = 버블간 여백)
-    val packed = remember(sectorRelRadii) { circlePackAround(1.0f, sectorRelRadii, gap = 0.32f) }
-
-    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
-        val extentX = packed.maxOf { abs(it.x) + it.r }.coerceAtLeast(0.1f)
-        val extentY = packed.maxOf { abs(it.y) + it.r }.coerceAtLeast(0.1f)
-
-        // 중앙 버블: 화면 너비의 26%로 고정 (섹터 수와 무관)
-        val centerSizeDp = (maxWidth * 0.26f).coerceIn(80.dp, 115.dp)
-        // 섹터 버블 스케일: 중앙 r=1.0 → centerSizeDp/2 가 되도록 고정
-        val scale = centerSizeDp.value / 2f
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            val cr = centerSizeDp.toPx() / 2f
-            for (i in 0..2) {
-                val progress = (pulseProgress + i / 3f) % 1f
-                drawCircle(
-                    color  = PrimaryGreen,
-                    radius = cr * 1.5f * progress,
-                    center = Offset(cx, cy),
-                    alpha  = (1f - progress) * 0.25f,
-                    style  = Stroke(width = 1.6f),
-                )
-            }
-        }
-
-        // 중앙 버블 (고정, packed[0] = center)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .zIndex(10f)
-                .size(centerSizeDp)
-                .scale(centerScale)
-                .shadow(elevation = 14.dp, shape = CircleShape, clip = false)
-                .clip(CircleShape)
-                .background(PrimaryGreen),
-        ) {
-            val fontSize = (centerSizeDp.value * 0.14f).coerceIn(12f, 18f).sp
-            Text(
-                text = name.replace(" ", "\n"),
-                color = Color.White,
-                fontSize = fontSize,
-                fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center,
-                lineHeight = fontSize * 1.35f,
-                modifier = Modifier.padding(horizontal = 10.dp),
-            )
-        }
-
-        // 섹터 버블 — packed[0]이 center이므로 [idx+1]
-        sorted.forEachIndexed { idx, cluster ->
-            val c = packed.getOrNull(idx + 1) ?: return@forEachIndexed
-            ClusterBubble(
-                cluster    = cluster,
-                index      = idx,
-                visible    = visible,
-                bubbleSize = (c.r * 2f * scale).dp,
-                onClick    = { onClusterClick(cluster) },
-                modifier   = Modifier.offset(
-                    x = (c.x * scale).dp,
-                    y = (c.y * scale).dp,
-                ),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ClusterBubble(
-    cluster: EtfCluster,
-    index: Int,
-    visible: Boolean,
-    bubbleSize: Dp,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var triggered by remember { mutableStateOf(false) }
-    LaunchedEffect(visible) {
-        if (visible) {
-            delay(index * 60L)
-            triggered = true
-        }
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (triggered) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "clusterBubble$index",
-    )
-
-    val floatTransition = rememberInfiniteTransition(label = "float$index")
-    val floatY by floatTransition.animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800 + index * 200),
-            repeatMode = RepeatMode.Reverse,
-            initialStartOffset = StartOffset(index * 300),
-        ),
-        label = "floatY$index",
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .offset(y = floatY.dp)
-            .scale(scale),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically),
-            modifier = Modifier
-                .size(bubbleSize)
-                .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
-                .clip(CircleShape)
-                .background(Color.White)
-                .clickable(onClick = onClick),
-        ) {
-            val contentWidth = bubbleSize * 0.84f
-            val iconSize = bubbleSize * 0.26f
-            val nameFontSize = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
-            val pctFontSize = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
-
-            Icon(
-                imageVector = sectorIcon(cluster.name),
-                contentDescription = cluster.name,
-                tint = PrimaryGreen,
-                modifier = Modifier.size(iconSize),
-            )
-            Text(
-                text = cluster.name,
-                fontSize = nameFontSize,
-                lineHeight = nameFontSize * 1.1f,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier.width(contentWidth),
-            )
-            Text(
-                text = "${"%.1f".format(cluster.percentage)}%",
-                fontSize = pctFontSize,
-                lineHeight = pctFontSize,
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(contentWidth),
-            )
-        }
-    }
-}
-
-@Composable
 private fun PriceVolumeRow(detail: EtfDetail) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        InfoCard(
-            label = "현재 가격",
-            value = "%,d원".format(detail.currentPrice),
-            valueColor = PrimaryGreen,
-            modifier = Modifier.weight(1f),
-        )
-        InfoCard(
-            label = "거래량",
-            value = formatVolume(detail.volume),
-            valueColor = PrimaryGreen,
-            modifier = Modifier.weight(1f),
-        )
+        InfoCard(label = "현재 가격", value = "%,d원".format(detail.currentPrice), valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
+        InfoCard(label = "거래량",   value = formatVolume(detail.volume),          valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
     }
 }
 
@@ -476,19 +749,19 @@ private fun InfoCard(
 }
 
 private fun sectorIcon(name: String): ImageVector = when {
-    name.contains("반도체") -> Icons.Filled.Memory
-    name.contains("금융") || name.contains("은행") || name.contains("보험") -> Icons.Filled.AccountBalance
+    name.contains("반도체")                                                                           -> Icons.Filled.Memory
+    name.contains("금융") || name.contains("은행") || name.contains("보험")                          -> Icons.Filled.AccountBalance
     name.contains("헬스케어") || name.contains("바이오") || name.contains("의료") || name.contains("제약") -> Icons.Filled.LocalHospital
-    name.contains("에너지") || name.contains("정유") || name.contains("신재생") -> Icons.Filled.Bolt
+    name.contains("에너지") || name.contains("정유") || name.contains("신재생")                       -> Icons.Filled.Bolt
     name.contains("IT") || name.contains("소프트웨어") || name.contains("인터넷") || name.contains("플랫폼") || name.contains("기술") || name.contains("테크") -> Icons.Filled.Computer
     name.contains("소비재") || name.contains("유통") || name.contains("식품") || name.contains("화장품") -> Icons.Filled.ShoppingCart
     name.contains("산업재") || name.contains("기계") || name.contains("조선") || name.contains("방산") || name.contains("건설") -> Icons.Filled.Factory
-    name.contains("통신") || name.contains("미디어") || name.contains("방송") -> Icons.Filled.CellTower
+    name.contains("통신") || name.contains("미디어") || name.contains("방송")                        -> Icons.Filled.CellTower
     name.contains("유틸리티") || name.contains("전력") || name.contains("가스") || name.contains("수도") -> Icons.Filled.WaterDrop
-    name.contains("부동산") || name.contains("리츠") -> Icons.Filled.Home
-    name.contains("자동차") || name.contains("전기차") || name.contains("모빌리티") -> Icons.Filled.DirectionsCar
-    name.contains("화학") || name.contains("소재") || name.contains("철강") -> Icons.Filled.Science
-    else -> Icons.Filled.Category
+    name.contains("부동산") || name.contains("리츠")                                                  -> Icons.Filled.Home
+    name.contains("자동차") || name.contains("전기차") || name.contains("모빌리티")                   -> Icons.Filled.DirectionsCar
+    name.contains("화학") || name.contains("소재") || name.contains("철강")                          -> Icons.Filled.Science
+    else                                                                                              -> Icons.Filled.Category
 }
 
 private fun riskToBadge(grade: Int) = when (grade) {
@@ -505,65 +778,3 @@ private fun formatVolume(volume: Long): String = when {
     else                  -> "%,d".format(volume)
 }
 
-// ── Circle Packing ─────────────────────────────────────────────────────────────
-
-private data class PackCircle(val x: Float, val y: Float, val r: Float)
-
-/**
- * Greedy circle packing — 중앙(0,0)에 centerR 크기 원을 고정하고
- * sectorRadii 목록의 원들을 겹치지 않게 가능한 중앙 가까이 배치.
- * 반환값: [center, sector0, sector1, ...] 순서
- */
-private fun circlePackAround(centerR: Float, sectorRadii: List<Float>, gap: Float = 0f): List<PackCircle> {
-    val placed = mutableListOf(PackCircle(0f, 0f, centerR))
-
-    for (r in sectorRadii) {
-        var best: PackCircle? = null
-        var bestDist = Float.MAX_VALUE
-
-        for (i in placed.indices) {
-            for (j in i + 1 until placed.size) {
-                for (c in packTangentPositions(placed[i], placed[j], r, gap)) {
-                    if (placed.all { p -> packDist(c.x, c.y, p) >= p.r + r + gap - 1e-3f }) {
-                        val d = sqrt(c.x * c.x + c.y * c.y)
-                        if (d < bestDist) { bestDist = d; best = c }
-                    }
-                }
-            }
-        }
-
-        if (best == null) {
-            for (p in placed.sortedBy { sqrt(it.x * it.x + it.y * it.y) }) {
-                for (k in 0 until 72) {
-                    val a  = k * 2.0 * PI / 72
-                    val cx = p.x + (p.r + r + gap) * cos(a).toFloat()
-                    val cy = p.y + (p.r + r + gap) * sin(a).toFloat()
-                    if (placed.all { q -> packDist(cx, cy, q) >= q.r + r + gap - 1e-3f }) {
-                        val d = sqrt(cx * cx + cy * cy)
-                        if (d < bestDist) { bestDist = d; best = PackCircle(cx, cy, r) }
-                    }
-                }
-            }
-        }
-
-        placed.add(best ?: PackCircle(placed[0].r + r + gap, 0f, r))
-    }
-    return placed
-}
-
-private fun packTangentPositions(a: PackCircle, b: PackCircle, r: Float, gap: Float = 0f): List<PackCircle> {
-    val d1 = a.r + r + gap;  val d2 = b.r + r + gap
-    val dx = b.x - a.x; val dy = b.y - a.y
-    val d  = sqrt(dx * dx + dy * dy)
-    if (d > d1 + d2 + 1e-3f || d < abs(d1 - d2) - 1e-3f) return emptyList()
-    val aa = (d1 * d1 - d2 * d2 + d * d) / (2f * d)
-    val h  = sqrt((d1 * d1 - aa * aa).coerceAtLeast(0f))
-    val mx = a.x + aa * dx / d;  val my = a.y + aa * dy / d
-    return listOf(
-        PackCircle(mx + h * dy / d, my - h * dx / d, r),
-        PackCircle(mx - h * dy / d, my + h * dx / d, r),
-    )
-}
-
-private fun packDist(x: Float, y: Float, b: PackCircle) =
-    sqrt((x - b.x) * (x - b.x) + (y - b.y) * (y - b.y))

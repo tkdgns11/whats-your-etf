@@ -1,5 +1,12 @@
 package com.d102.wye.presentation.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,22 +151,48 @@ private fun HomeScreenContent(
                 }
 
                 is UiState.Success -> {
-                    when (selectedTabIndex) {
-                        0 -> HomeTop10Tab(
-                            top10Etfs = uiState.data.top10Etfs,
-                            newsList = uiState.data.newsList,
-                            onEtfClick = onEtfClick,
-                            onNewsClick = onNewsClick,
-                            onNewsMoreClick = onNewsMoreClick
-                        )
+                    AnimatedContent(
+                        targetState = selectedTabIndex,
+                        transitionSpec = {
+                            if (targetState > initialState) {
+                                slideInHorizontally(
+                                    animationSpec = tween(320),
+                                    initialOffsetX = { fullWidth -> fullWidth / 3 }
+                                ) + fadeIn(animationSpec = tween(320)) togetherWith
+                                    slideOutHorizontally(
+                                        animationSpec = tween(320),
+                                        targetOffsetX = { fullWidth -> -fullWidth / 4 }
+                                    ) + fadeOut(animationSpec = tween(220))
+                            } else {
+                                slideInHorizontally(
+                                    animationSpec = tween(320),
+                                    initialOffsetX = { fullWidth -> -fullWidth / 3 }
+                                ) + fadeIn(animationSpec = tween(320)) togetherWith
+                                    slideOutHorizontally(
+                                        animationSpec = tween(320),
+                                        targetOffsetX = { fullWidth -> fullWidth / 4 }
+                                    ) + fadeOut(animationSpec = tween(220))
+                            }
+                        },
+                        label = "HomeTabContent"
+                    ) { tabIndex ->
+                        when (tabIndex) {
+                            0 -> HomeTop10Tab(
+                                top10Etfs = uiState.data.top10Etfs,
+                                newsList = uiState.data.newsList,
+                                onEtfClick = onEtfClick,
+                                onNewsClick = onNewsClick,
+                                onNewsMoreClick = onNewsMoreClick
+                            )
 
-                        1 -> HomePortfolioTab(
-                            portfolio = uiState.data.portfolio,
-                            newsList = uiState.data.newsList,
-                            onNewsClick = onNewsClick,
-                            onNewsMoreClick = onNewsMoreClick,
-                            onPortfolioMoreClick = onPortfolioMoreClick
-                        )
+                            else -> HomePortfolioTab(
+                                portfolios = uiState.data.portfolios,
+                                newsList = uiState.data.newsList,
+                                onNewsClick = onNewsClick,
+                                onNewsMoreClick = onNewsMoreClick,
+                                onPortfolioMoreClick = onPortfolioMoreClick
+                            )
+                        }
                     }
                 }
 

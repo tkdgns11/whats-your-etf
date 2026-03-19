@@ -10,6 +10,7 @@ import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
 import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfDetail
+import com.d102.wye.domain.model.EtfFilter
 import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.model.EtfPage
 import com.d102.wye.domain.model.EtfPriceData
@@ -29,8 +30,8 @@ class EtfRepositoryImpl @Inject constructor(
         safeApiCall { etfApiService.getTopVolumeEtfs() }
             .map { items -> items.map { item -> item.toDomain() } }
 
-    override suspend fun getEtfList(request: EtfListRequest, page: Int): BaseResult<EtfPage> =
-        safeApiCall { etfApiService.getEtfList(request, page) }
+    override suspend fun getEtfList(filter: EtfFilter, page: Int): BaseResult<EtfPage> =
+        safeApiCall { etfApiService.getEtfList(filter.toRequest(), page) }
             .map { EtfPage(items = it.content.map { item -> item.toDomain() }, isLast = it.last) }
 
     override fun getLikedEtfList(): Flow<List<EtfLikeData>> =
@@ -57,6 +58,26 @@ class EtfRepositoryImpl @Inject constructor(
         safeApiCall { etfApiService.getEtfCluster(ticker) }.map { it.toDomain() }
 
     override suspend fun getEtfPriceHistory(ticker: String, startDate: String, endDate: String, size: Int): BaseResult<List<EtfPriceData>> =
-        safeApiCall { etfApiService.getEtfPriceHistory(ticker, startDate, endDate, size = size) }
+        safeApiCall { etfApiService.getEtfPriceHistory(ticker, startDate, endDate, validDateRange = false, size = size) }
             .map { it.toDomain() }
 }
+
+private fun EtfFilter.toRequest() = EtfListRequest(
+    riskType = riskType,
+    strategy = strategy,
+    sector = sector,
+    dividendYield = dividendYield,
+    dividendFrequency = dividendFrequency,
+    isDerivatives = isDerivatives,
+    isLeverage = isLeverage,
+    isInverse = isInverse,
+    perLow = perLow,
+    perHigh = perHigh,
+    pbrLow = pbrLow,
+    pbrHigh = pbrHigh,
+    roeLow = roeLow,
+    roeHigh = roeHigh,
+    commission = commission,
+    aum = aum,
+    sortedBy = sortedBy,
+)

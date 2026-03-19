@@ -215,8 +215,6 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
                 HorizontalDivider(color = Divider)
                 RiskRow(detail)
                 HorizontalDivider(color = Divider)
-                InfoRow("변동성", "----")
-                HorizontalDivider(color = Divider)
                 InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%", valueColor = PrimaryGreen)
                 HorizontalDivider(color = Divider)
                 InfoRow("순자산", aumText)
@@ -384,10 +382,10 @@ private fun ReturnChartSection(
 
         // 라인 체크박스
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChartCheckbox("NAV",     showNav,   onToggleNav,   PrimaryGreen)
-            ChartCheckbox("종가",    showPrice, onTogglePrice, EtfFall)
-            ChartCheckbox("KOSPI",   showKospi, onToggleKospi, Color.Gray)
-            ChartCheckbox("S&P 500", showSp500, onToggleSp500, Color.LightGray)
+            ChartCheckbox("NAV",     showNav,   onToggleNav,   ChartColorNav)
+            ChartCheckbox("종가",    showPrice, onTogglePrice, ChartColorPrice)
+            ChartCheckbox("KOSPI",   showKospi, onToggleKospi, ChartColorKospi)
+            ChartCheckbox("나스닥", showSp500, onToggleSp500, ChartColorNasdaq)
         }
 
         // 차트
@@ -512,10 +510,10 @@ private fun LineChart(
     modifier: Modifier = Modifier,
 ) {
     val lines = buildList {
-        if (showNav   && data.navData.isNotEmpty())   add(data.navData   to PrimaryGreen)
-        if (showPrice && data.priceData.isNotEmpty()) add(data.priceData to EtfFall)
-        if (showKospi && data.kospiData.isNotEmpty()) add(data.kospiData to Color.Gray)
-        if (showSp500 && data.sp500Data.isNotEmpty()) add(data.sp500Data to Color.LightGray)
+        if (showNav   && data.navData.isNotEmpty())   add(data.navData   to ChartColorNav)
+        if (showPrice && data.priceData.isNotEmpty()) add(data.priceData to ChartColorPrice)
+        if (showKospi && data.kospiData.isNotEmpty()) add(data.kospiData to ChartColorKospi)
+        if (showSp500 && data.sp500Data.isNotEmpty()) add(data.sp500Data to ChartColorNasdaq)
     }
     if (lines.isEmpty()) return
 
@@ -526,9 +524,10 @@ private fun LineChart(
             .padding(start = 8.dp, end = 8.dp, top = 20.dp, bottom = 8.dp),
     ) {
         val allValues = lines.flatMap { (pts, _) -> pts.map { it.value } }
+        if (allValues.isEmpty()) return@Canvas
         val minV  = allValues.min()
         val maxV  = allValues.max()
-        val range = (maxV - minV).takeIf { it > 0 } ?: 1.0
+        val range = (maxV - minV).takeIf { it > 0.0001 }  // null = flat(모든 값 동일)
 
         // 수평 그리드 라인 4개
         repeat(5) { i ->
@@ -545,7 +544,9 @@ private fun LineChart(
             if (points.size < 2) return@forEach
 
             fun xOf(i: Int)    = size.width  * i / (points.size - 1).toFloat()
-            fun yOf(v: Double) = size.height * (1.0 - (v - minV) / range).toFloat()
+            // flat line → 중앙(50%) 표시, 정상 → 범위 기준 위치
+            fun yOf(v: Double) = if (range == null) size.height * 0.5f
+                                 else size.height * (1.0 - (v - minV) / range).toFloat()
 
             val linePath = Path()
             val fillPath = Path()
@@ -599,7 +600,7 @@ private fun PeriodReturnTable(data: EtfPeriodReturn) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("기간별 수익률", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-            Text("26.03.04기준", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+            Text("${data.asOfDate.replace("-", ".")}기준", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
 
         Column(
@@ -615,75 +616,6 @@ private fun PeriodReturnTable(data: EtfPeriodReturn) {
             TableRow("종가 (%)", data.price1M, data.price3M, data.price6M)
         }
 
-        PeriodReturnBarChart(data = data)
-    }
-}
-
-@Composable
-private fun PeriodReturnBarChart(data: EtfPeriodReturn) {
-    val navColor   = PrimaryGreen
-    val priceColor = EtfFall
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(bottom = 8.dp),
-    ) {
-        listOf("NAV" to navColor, "종가" to priceColor).forEach { (label, color) ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(color))
-                Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(SurfaceVariant)
-            .padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        val periods = listOf(
-            listOf(data.nav1M, data.price1M),
-            listOf(data.nav3M, data.price3M),
-            listOf(data.nav6M, data.price6M),
-        )
-        val colors = listOf(navColor, priceColor)
-        val maxAbs = periods.flatten().maxOfOrNull { kotlin.math.abs(it) }?.takeIf { it > 0 } ?: 1.0
-
-        Canvas(modifier = Modifier.fillMaxWidth().height(130.dp)) {
-            val zeroY  = size.height / 2f
-            drawLine(color = Color(0xFFCCCCCC), start = Offset(0f, zeroY), end = Offset(size.width, zeroY), strokeWidth = 1.5f)
-
-            val groupW  = size.width / 3f
-            val barW    = groupW * 0.25f
-            val spacing = barW * 0.5f
-
-            periods.forEachIndexed { gi, group ->
-                val cx     = groupW * gi + groupW / 2f
-                val startX = cx - (2 * barW + spacing) / 2f
-                group.forEachIndexed { bi, value ->
-                    val barH = (kotlin.math.abs(value) / maxAbs * zeroY).toFloat().coerceAtLeast(2f)
-                    val x    = startX + bi * (barW + spacing)
-                    val top  = if (value >= 0) zeroY - barH else zeroY
-                    drawRect(color = colors[bi], topLeft = Offset(x, top), size = Size(barW, barH))
-                }
-            }
-        }
-
-        // 기간 라벨
-        Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("1개월", "3개월", "6개월").forEach { label ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
     }
 }
 
@@ -879,8 +811,9 @@ private fun RangeCalendarBottomSheet(
                     endMs = localEndMs,
                     onDayClick = { clickedMs ->
                         if (periodDurationDays != null) {
-                            localStartMs = clickedMs
-                            localEndMs   = clickedMs + periodDurationDays.toLong() * 86_400_000
+                            // 클릭한 날짜를 종료일로, 시작일은 과거로 계산
+                            localEndMs   = clickedMs
+                            localStartMs = clickedMs - periodDurationDays.toLong() * 86_400_000
                         } else {
                             if (localStartMs == null || localEndMs != null) {
                                 localStartMs = clickedMs; localEndMs = null

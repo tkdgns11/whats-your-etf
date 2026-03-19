@@ -27,7 +27,7 @@ data class EtfPriceData(
     val date: String,
     val stockPrice: Long,
     val dailyReturn: Double,
-    val nav: Long,
+    val nav: Double,
 )
 
 // 차트 렌더링용 (price-history → ViewModel에서 변환, kospi/sp500은 별도 API 연결 예정)
@@ -52,8 +52,16 @@ data class InfluentialStock(
     val changeRate: Double,
 )
 
+// 지수 데이터 포인트 (GET /api/v1/index)
+data class IndexPoint(
+    val date:       String,  // tradingDate
+    val close:      Double,
+    val marketType: String,
+)
+
 // 기간별 수익률 (price-history → ViewModel에서 계산, index는 별도 API 연결 예정)
 data class EtfPeriodReturn(
+    val asOfDate: String,
     val nav1M: Double,   val nav3M: Double,   val nav6M: Double,
     val index1M: Double, val index3M: Double, val index6M: Double,
     val price1M: Double, val price3M: Double, val price6M: Double,

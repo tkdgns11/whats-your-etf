@@ -11,6 +11,8 @@ import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
+import com.d102.wye.domain.model.FavoriteEtfList
+import com.d102.wye.domain.model.FavoriteEtfSort
 import com.d102.wye.domain.model.UserProfile
 import com.d102.wye.domain.repository.UserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +22,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
@@ -27,11 +32,44 @@ class UserRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : BaseRepository(), UserRepository {
 
+    private val _favoriteEtfChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    override val favoriteEtfChanged: Flow<Unit> = _favoriteEtfChanged.asSharedFlow()
+
     /** 마이페이지에서 사용할 내 프로필 정보를 서버에서 조회한다. */
     override suspend fun getMyProfile(): BaseResult<UserProfile> {
         return safeApiCall {
             userApiService.getMyProfile()
         }.map { it.toDomain() }
+    }
+
+    override suspend fun getFavoriteEtfs(sort: FavoriteEtfSort): BaseResult<FavoriteEtfList> {
+        return safeApiCall {
+            userApiService.getFavoriteEtfs(sort = sort.queryValue)
+        }.map { it.toDomain() }
+    }
+
+    override suspend fun checkFavoriteEtf(ticker: String): BaseResult<Boolean> {
+        return safeApiCall {
+            userApiService.checkFavoriteEtf(ticker = ticker)
+        }
+    }
+
+    override suspend fun addFavoriteEtf(ticker: String): BaseResult<Unit> {
+        Timber.d("[FavoriteEtf] add request | ticker=$ticker")
+        return safeApiCallWithoutData(
+            onSuccess = { _favoriteEtfChanged.tryEmit(Unit) }
+        ) {
+            userApiService.addFavoriteEtf(ticker = ticker)
+        }
+    }
+
+    override suspend fun deleteFavoriteEtf(ticker: String): BaseResult<Unit> {
+        Timber.d("[FavoriteEtf] delete request | ticker=$ticker")
+        return safeApiCallWithoutData(
+            onSuccess = { _favoriteEtfChanged.tryEmit(Unit) }
+        ) {
+            userApiService.deleteFavoriteEtf(ticker = ticker)
+        }
     }
 
     /** PATCH users/me로 닉네임/프로필 이미지를 수정한 뒤 최신 프로필을 반환한다. */

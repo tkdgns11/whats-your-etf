@@ -40,6 +40,8 @@ fun StockDetailScreen(
     viewModel: StockDetailViewModel = hiltViewModel(),
 ) {
     val stockState by viewModel.stockState.collectAsStateWithLifecycle()
+    val relatedStocksState by viewModel.relatedStocksState.collectAsStateWithLifecycle()
+    val tagsState by viewModel.tagsState.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -55,6 +57,8 @@ fun StockDetailScreen(
 
             is UiState.Success -> StockDetailContent(
                 stock = state.data,
+                tags = (tagsState as? UiState.Success)?.data ?: emptyList(),
+                relatedStocks = (relatedStocksState as? UiState.Success)?.data ?: emptyList(),
                 onEtfListClick = { onEtfListClick(state.data.ticker) },
                 onEtfClick = onEtfClick,
                 onRelatedStockClick = onRelatedStockClick,
@@ -64,7 +68,24 @@ fun StockDetailScreen(
             is UiState.Error -> Box(
                 Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
-            ) { Text(state.message, color = TextSecondary) }
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        "데이터를 불러올 수 없습니다",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                    )
+                    Button(
+                        onClick = { viewModel.loadStock() },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                    ) {
+                        Text("다시 시도")
+                    }
+                }
+            }
 
             UiState.Idle -> Unit
         }
@@ -74,6 +95,8 @@ fun StockDetailScreen(
 @Composable
 private fun StockDetailContent(
     stock: Stock,
+    tags: List<String>,
+    relatedStocks: List<RelatedStock>,
     onEtfListClick: () -> Unit,
     onEtfClick: (String) -> Unit,
     onRelatedStockClick: (String) -> Unit,
@@ -97,7 +120,7 @@ private fun StockDetailContent(
 
         // ── 태그 칩 ───────────────────────────────────────────────
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            stock.tags.forEach { tag -> TagChip(tag) }
+            tags.forEach { tag -> TagChip(tag) }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -140,7 +163,7 @@ private fun StockDetailContent(
 
         stock.containedEtfs.take(3).forEach { etf ->
             EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(28.dp))
         }
 
         // 전체보기 버튼
@@ -164,12 +187,11 @@ private fun StockDetailContent(
         SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
         Spacer(Modifier.height(16.dp))
 
-        stock.relatedStocks.forEach { related ->
+        relatedStocks.forEach { related ->
             RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
             HorizontalDivider(color = Divider)
         }
 
-        Spacer(Modifier.height(40.dp))
     }
 }
 

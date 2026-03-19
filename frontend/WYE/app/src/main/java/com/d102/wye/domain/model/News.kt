@@ -25,6 +25,15 @@ data class NewsDetail(
     val relatedEtfs: List<RelatedEtf>
 )
 
+data class PortfolioNewsItem(
+    val id: Long,
+    val title: String,
+    val summary: String,
+    val source: String,
+    val thumbnailUrl: String?,
+    val publishedAt: String,
+)
+
 data class RelatedEtf(
     val etfId: Long,
     val ticker: String,

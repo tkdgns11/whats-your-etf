@@ -7,6 +7,7 @@ data class EtfPage(
 
 // POST /api/v1/etfs 리스트 API 응답 항목
 data class Etf(
+    val etfId: Long,
     val ticker: String,
     val name: String,
     val currentPrice: Long,
