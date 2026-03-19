@@ -1,6 +1,8 @@
 package com.d102.wye.data.remote.api
 
+import com.d102.wye.data.remote.dto.request.AiReviewRequest
 import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
+import com.d102.wye.data.remote.dto.response.AiReviewResponse
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.EtfDividendHistoryResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryResponse
@@ -33,5 +35,11 @@ interface SimulationApiService {
         @Query("startDate") startDate: String? = null,
         @Query("endDate") endDate: String? = null
     ): BaseResponse<EtfDividendHistoryResponse>
+
+    @POST("ai/portfolio/review")
+    suspend fun getAiPortfolioReview(
+        @Body request: AiReviewRequest
+    ): BaseResponse<AiReviewResponse>
+
 
 }
