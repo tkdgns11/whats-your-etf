@@ -24,7 +24,6 @@ class CalculateBacktestUseCase @Inject constructor() {
         investmentType: InvestmentType,
         periodMonths: Int
     ): Result {
-        // 전체 공통 날짜 교집합
         val allCommonDates: List<String> = priceHistories.values
             .map { it.content.map { p -> p.date }.toSet() }
             .reduceOrNull { acc, set -> acc.intersect(set) }
@@ -33,13 +32,11 @@ class CalculateBacktestUseCase @Inject constructor() {
 
         if (allCommonDates.isEmpty()) return Result(emptyList(), 0L, 0.0, 0L)
 
-        // periodMonths 기간만큼 필터링
         val startDate = LocalDate.now().minusMonths(periodMonths.toLong()).toString()
         val commonDates = allCommonDates.filter { it >= startDate }
 
         if (commonDates.isEmpty()) return Result(emptyList(), 0L, 0.0, 0L)
 
-        // 날짜 → 주가 빠른 조회용 맵
         val priceMap: Map<String, Map<String, Double>> =
             priceHistories.mapValues { (_, history) ->
                 history.content.associate { it.date to it.stockPrice.toDouble() }
@@ -54,19 +51,14 @@ class CalculateBacktestUseCase @Inject constructor() {
             )
         }
 
-        // 공통 다운샘플링 (최대 120개)
         return result.copy(points = downsample(result.points, 120))
     }
 
     /**
-     * 적립형 계산
-     *
-     * 매월:
-     * 1. ETF별 해당 월 평균 주가 계산
-     * 2. 각 ETF에 (monthlyAmount × weight) 만큼 투자 → 평균 단가로 수량 매입
-     * 3. 월말 평가금액 = Σ(누적 수량_i × 월말 주가_i)
-     *
-     * y축: 월말 평가금액 (원)
+     * 적립형
+     * y축 = 수익률 (%)
+     *   매월 평균 단가로 수량 매입
+     *   월말 수익률 = (월말 평가금액 - 누적 납입금) / 누적 납입금 × 100
      */
     private fun calcInstallment(
         portfolios: List<Portfolio>,
@@ -75,49 +67,52 @@ class CalculateBacktestUseCase @Inject constructor() {
         monthlyAmount: Long,
         periodMonths: Int
     ): Result {
-        // ETF별 누적 보유 수량
         val accumulatedShares = mutableMapOf<String, Double>()
         portfolios.forEach { accumulatedShares[it.ticker] = 0.0 }
 
-        // 월별로 날짜 그룹핑
         val datesByMonth: Map<String, List<String>> = dates.groupBy { it.take(7) }
-
         val points = mutableListOf<BacktestPoint>()
+        var monthCount = 0
 
         datesByMonth.entries.sortedBy { it.key }.forEach { (_, monthDates) ->
+            monthCount++
+
             portfolios.forEach { portfolio ->
                 val ticker = portfolio.ticker
                 val weight = portfolio.weightPercent / 100.0
                 val monthlyInvestPerEtf = monthlyAmount * weight
 
-                // 해당 월 ETF 평균 주가
                 val monthlyPrices = monthDates.mapNotNull { priceMap[ticker]?.get(it) }
                 if (monthlyPrices.isEmpty()) return@forEach
 
                 val avgPrice = monthlyPrices.average()
                 if (avgPrice <= 0) return@forEach
 
-                // 평균 단가로 수량 매입
                 accumulatedShares[ticker] = (accumulatedShares[ticker] ?: 0.0) + (monthlyInvestPerEtf / avgPrice)
             }
 
-            // 월말 평가금액 = Σ(누적 수량_i × 월말 주가_i)
             val lastDate = monthDates.last()
             val monthEndValue = portfolios.sumOf { portfolio ->
-                val ticker = portfolio.ticker
-                val shares = accumulatedShares[ticker] ?: 0.0
-                val lastPrice = priceMap[ticker]?.get(lastDate) ?: 0.0
+                val shares = accumulatedShares[portfolio.ticker] ?: 0.0
+                val lastPrice = priceMap[portfolio.ticker]?.get(lastDate) ?: 0.0
                 shares * lastPrice
             }
 
-            points.add(BacktestPoint(date = lastDate, value = monthEndValue))
+            // y축 = 수익률 (%)
+            val cumulativeInvest = monthlyAmount * monthCount
+            val returnRate = if (cumulativeInvest > 0)
+                (monthEndValue - cumulativeInvest) / cumulativeInvest * 100.0
+            else 0.0
+
+            points.add(BacktestPoint(date = lastDate, value = returnRate))
         }
 
         val totalInvestment = monthlyAmount * periodMonths
-        val estimatedFinalValue = points.lastOrNull()?.value?.roundToLong() ?: 0L
-        val totalReturn = if (totalInvestment > 0)
-            ((estimatedFinalValue - totalInvestment).toDouble() / totalInvestment) * 100.0
-        else 0.0
+        val estimatedFinalValue = points.lastOrNull()?.let {
+            // 최종 평가금액 복원 (totalReturn으로 역산)
+            (totalInvestment * (1.0 + it.value / 100.0)).roundToLong()
+        } ?: 0L
+        val totalReturn = points.lastOrNull()?.value ?: 0.0
 
         return Result(
             points = points,
@@ -128,10 +123,9 @@ class CalculateBacktestUseCase @Inject constructor() {
     }
 
     /**
-     * 거치형 계산
-     *
-     * 최초 일괄 투자 → 일별 평가금액 추적
-     * y축: 일별 평가금액 (원)
+     * 거치형
+     * y축 = 수익률 (%)
+     *   초기 투자 후 일별 수익률 = (일별 평가금액 - 초기 투자금) / 초기 투자금 × 100
      */
     private fun calcLumpSum(
         portfolios: List<Portfolio>,
@@ -139,7 +133,6 @@ class CalculateBacktestUseCase @Inject constructor() {
         priceMap: Map<String, Map<String, Double>>,
         initialAmount: Long
     ): Result {
-        // 최초 ETF별 매입 수량 (첫날 주가 기준)
         val firstDate = dates.first()
         val shares = mutableMapOf<String, Double>()
 
@@ -148,30 +141,29 @@ class CalculateBacktestUseCase @Inject constructor() {
             val weight = portfolio.weightPercent / 100.0
             val investPerEtf = initialAmount * weight
             val firstPrice = priceMap[ticker]?.get(firstDate) ?: return@forEach
-            if (firstPrice > 0) {
-                shares[ticker] = investPerEtf / firstPrice
-            }
+            if (firstPrice > 0) shares[ticker] = investPerEtf / firstPrice
         }
 
         val points = dates.map { date ->
             val portfolioValue = portfolios.sumOf { portfolio ->
-                val ticker = portfolio.ticker
-                val s = shares[ticker] ?: 0.0
-                val price = priceMap[ticker]?.get(date) ?: 0.0
+                val s = shares[portfolio.ticker] ?: 0.0
+                val price = priceMap[portfolio.ticker]?.get(date) ?: 0.0
                 s * price
             }
-            BacktestPoint(date = date, value = portfolioValue)
+            // y축 = 수익률 (%)
+            val returnRate = if (initialAmount > 0)
+                (portfolioValue - initialAmount) / initialAmount * 100.0
+            else 0.0
+            BacktestPoint(date = date, value = returnRate)
         }
 
-        val finalValue = points.lastOrNull()?.value?.roundToLong() ?: 0L
-        val totalReturn = if (initialAmount > 0)
-            ((finalValue - initialAmount).toDouble() / initialAmount) * 100.0
-        else 0.0
+        val finalReturn = points.lastOrNull()?.value ?: 0.0
+        val estimatedFinalValue = (initialAmount * (1.0 + finalReturn / 100.0)).roundToLong()
 
         return Result(
             points = points,
-            estimatedFinalValue = finalValue,
-            totalReturn = totalReturn,
+            estimatedFinalValue = estimatedFinalValue,
+            totalReturn = finalReturn,
             totalInvestment = initialAmount
         )
     }
