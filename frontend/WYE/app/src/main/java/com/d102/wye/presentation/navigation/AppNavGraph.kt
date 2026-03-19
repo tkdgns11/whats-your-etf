@@ -100,7 +100,8 @@ fun AppNavGraph(
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
                 onBookmarkClick = { navController.navigate(Route.LikedEtfList.route) },
                 onAlertClick = { navController.navigate(Route.AlertList.route) },
-                onNewsMoreClick = { navController.navigate(Route.NewsList.route) }
+                onNewsMoreClick = { navController.navigate(Route.NewsList.route) },
+                onPortfolioMoreClick = { navController.navigate(Route.Strategy.route) }
 
             )
         }
