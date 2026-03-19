@@ -16,6 +16,7 @@ import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
 import com.whatsyouretf.userservice.domain.user.repository.UserFavoriteEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserHoldingEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
+import com.whatsyouretf.userservice.domain.user.service.MyDataApi;
 import com.whatsyouretf.userservice.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final PortfolioRepository portfolioRepository;
     private final UserAlertRepository userAlertRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final MyDataApi myDataApi;
 
     @Override
     public UserResponse getUserById(Long userId) {
@@ -266,5 +268,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isFavoriteEtf(Long userId, String ticker) {
         return userFavoriteEtfRepository.existsByUserIdAndTicker(userId, ticker);
+    }
+
+    @Override
+    public List<MyDataEtfCount> getMyData(Long userId) {
+        return myDataApi.getMyData(userId);
     }
 }

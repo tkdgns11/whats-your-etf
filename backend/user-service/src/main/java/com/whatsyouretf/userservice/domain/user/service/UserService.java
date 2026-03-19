@@ -2,7 +2,10 @@ package com.whatsyouretf.userservice.domain.user.service;
 
 import com.whatsyouretf.userservice.domain.user.dto.*;
 
+import com.whatsyouretf.userservice.domain.user.service.impl.MyDataEtfCount;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface UserService {
 
@@ -64,4 +67,6 @@ public interface UserService {
      * 관심 ETF 여부 확인
      */
     boolean isFavoriteEtf(Long userId, String ticker);
+
+    List<MyDataEtfCount> getMyData(Long userId);
 }
