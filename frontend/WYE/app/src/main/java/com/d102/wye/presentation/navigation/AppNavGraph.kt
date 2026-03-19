@@ -292,7 +292,7 @@ fun AppNavGraph(
                 },
                 onSaveClick = {
                     navController.navigate(Route.Strategy.route)
-                    navController.popBackStack()
+//                    navController.popBackStack()
                 },
                 viewModel = viewModel
             )

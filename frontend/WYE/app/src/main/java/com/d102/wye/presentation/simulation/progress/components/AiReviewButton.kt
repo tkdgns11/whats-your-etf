@@ -33,7 +33,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import kotlinx.coroutines.delay
 
 @Composable
-fun AiDiagnosisButton(
+fun AiReviewButton(
     modifier: Modifier = Modifier,
     isEmpty: Boolean,
     onClick: () -> Unit
@@ -47,10 +47,7 @@ fun AiDiagnosisButton(
     }
 
     Surface(
-        onClick = {
-//            if (!isEmpty) onClick()  // 데이터 없으면 클릭 막기
-            onClick()
-        },
+        onClick = { if (!isEmpty) onClick() },
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         color = Color.White,

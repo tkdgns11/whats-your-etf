@@ -27,15 +27,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.d102.wye.R
-import com.d102.wye.domain.model.AiDiagnosisResult
+import com.d102.wye.domain.model.AiReviewResult
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.*
 
 @Composable
-fun AiDiagnosisDialog(
-    uiState: UiState<AiDiagnosisResult>,
+fun AiReviewDialog(
+    uiState: UiState<AiReviewResult>,
     onDismiss: () -> Unit
 ) {
 
@@ -84,7 +84,7 @@ fun AiDiagnosisDialog(
                     }
 
                     is UiState.Success -> {
-                        AiDiagnosisSuccessContent(data = uiState.data)
+                        AiReviewSuccessContent(data = uiState.data)
                     }
 
                     is UiState.Error -> {
@@ -118,9 +118,9 @@ fun AiDiagnosisDialog(
     }
 }
 
-// 성공했을 때의 내용물 (디자인 시안 부분)
+
 @Composable
-private fun AiDiagnosisSuccessContent(data: AiDiagnosisResult) {
+private fun AiReviewSuccessContent(data: AiReviewResult) {
     Column(modifier = Modifier.fillMaxWidth()) {
 
         // 1. 요약 박스

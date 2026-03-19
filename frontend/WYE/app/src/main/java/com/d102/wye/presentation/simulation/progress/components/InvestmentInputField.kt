@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.theme.Divider
 import com.d102.wye.presentation.theme.IconInactive
+import com.d102.wye.presentation.theme.PrimaryGreen
+import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
@@ -31,7 +34,9 @@ fun InvestmentInputField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
-    keyboardType: KeyboardType = KeyboardType.Number
+    keyboardType: KeyboardType = KeyboardType.Number,
+    isCurrencyField: Boolean = false,
+    suffix: String? = null  // "만원", "개월" 등
 ) {
     Column(modifier = modifier) {
         Text(
@@ -42,10 +47,20 @@ fun InvestmentInputField(
 
         Spacer(modifier = Modifier.height(6.dp))
 
+        // 표시용 값 (컴마 포맷 - currency일 때만)
+        val displayValue = if (isCurrencyField) {
+            value.replace(",", "").toLongOrNull()
+                ?.let { "%,d".format(it) }
+                ?: value
+        } else value
+
         BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = MaterialTheme.typography.bodySmall,
+            value = displayValue,
+            onValueChange = { input ->
+                val clean = input.replace(",", "").filter { it.isDigit() }
+                onValueChange(clean)
+            },
+            textStyle = MaterialTheme.typography.bodySmall.copy(color = TextPrimary),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             cursorBrush = SolidColor(Color.Black),
             decorationBox = { innerTextField ->
@@ -65,7 +80,18 @@ fun InvestmentInputField(
                             color = IconInactive
                         )
                     }
-                    innerTextField()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            innerTextField()
+                        }
+                        if (suffix != null && value.isNotEmpty()) {
+                            Text(
+                                text = suffix,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PrimaryGreen
+                            )
+                        }
+                    }
                 }
             }
         )

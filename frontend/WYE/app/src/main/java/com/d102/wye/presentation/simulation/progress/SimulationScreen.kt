@@ -5,14 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,14 +36,16 @@ import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
-import com.d102.wye.presentation.simulation.analysis.InvestmentDictionaryDialog
+import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
-import com.d102.wye.presentation.simulation.progress.result.AiDiagnosisDialog
+import com.d102.wye.presentation.simulation.progress.result.AiReviewDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
+import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.PrimaryGreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimulationScreen(
     onBackClick: () -> Unit,
@@ -51,13 +58,18 @@ fun SimulationScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val showAiDialog by viewModel.showAiDialog.collectAsStateWithLifecycle()
-    val aiDiagnosisState by viewModel.aiDiagnosisState.collectAsStateWithLifecycle()
+    val aiReviewState by viewModel.aiReviewState.collectAsStateWithLifecycle()
     val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
     val savePortfolioState by viewModel.savePortfolioState.collectAsStateWithLifecycle()
-
     val idleGuideMessage by viewModel.idleGuideMessage.collectAsStateWithLifecycle()
 
     var showDictionaryDialog by remember { mutableStateOf(false) }
+
+    // 화면 높이의 45%를 peekHeight로
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val peekHeight = screenHeight * 0.35f
+
+    val scaffoldState = rememberBottomSheetScaffoldState()
 
     LaunchedEffect(simulationState) {
         if (simulationState is UiState.Error) {
@@ -68,8 +80,8 @@ fun SimulationScreen(
     }
 
     if (showAiDialog) {
-        AiDiagnosisDialog(
-            uiState = aiDiagnosisState,
+        AiReviewDialog(
+            uiState = aiReviewState,
             onDismiss = { viewModel.onAiDialogDismiss() }
         )
     }
@@ -96,115 +108,75 @@ fun SimulationScreen(
         )
     }
 
-    SimulationScreenContent(
-        formState = formState,
-        simulationState = simulationState,
-        snackbarHostState = snackbarHostState,
-        onBackClick = onBackClick,
-        onTabSelected = { viewModel.onTabSelected(it) },
-        onOverlayToggled = { viewModel.onOverlayToggled(it) },
-        onInvestmentTypeSelected = { viewModel.onInvestmentTypeSelected(it) },
-        onAmountChanged = { viewModel.onAmountChanged(it) },
-        onPeriodChanged = { viewModel.onPeriodChanged(it) },
-        onAddEtfClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
-        onPortfolioItemRemoved = { viewModel.onPortfolioItemRemoved(it) },
-        onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
-        onAiDiagnosisClick = { viewModel.onAiDiagnosisClick() },
-        onDictionaryClick = { showDictionaryDialog = true },
-        onSaveClick = { viewModel.onSaveIconClick() },
-        idleGuideMessage = idleGuideMessage
-    )
-}
-
-@Composable
-private fun SimulationScreenContent(
-    formState: SimulationFormState,
-    simulationState: UiState<SimulationUiModel>,
-    snackbarHostState: SnackbarHostState,
-    onBackClick: () -> Unit,
-    onTabSelected: (Int) -> Unit,
-    onOverlayToggled: (Boolean) -> Unit,
-    onInvestmentTypeSelected: (InvestmentType) -> Unit,
-    onAmountChanged: (String) -> Unit,
-    onPeriodChanged: (String) -> Unit,
-    onAddEtfClick: () -> Unit,
-    onPortfolioItemRemoved: (String) -> Unit,
-    onWeightChange: (String, Int) -> Unit,
-    onAiDiagnosisClick: () -> Unit,
-    onDictionaryClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    idleGuideMessage: String
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        WyeTopBar(
-            title = "투자 시뮬레이션",
-            onBackClick = onBackClick,
-            actions = {
-                Text(
-                    text = "저장",
-                    textAlign = TextAlign.Center,
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier
-                        .padding(end = 16.dp)
-                        .background(PrimaryGreen, RoundedCornerShape(12.dp))
-                        .clickable { onSaveClick() }
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = peekHeight,
+        sheetContainerColor = BackGroundLightGreen2,
+        sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        containerColor = BackGroundLightGreen2,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+        sheetContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                InvestmentSetupSection(
+                    formState = formState,
+                    onInvestmentTypeSelected = { viewModel.onInvestmentTypeSelected(it) },
+                    onAmountChanged = { viewModel.onAmountChanged(it) },
+                    onPeriodChanged = { viewModel.onPeriodChanged(it) }
+                )
+                PortfolioSection(
+                    formState = formState,
+                    onAddClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
+                    onRemoveClick = { viewModel.onPortfolioItemRemoved(it) },
+                    onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) }
                 )
             }
-        )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            WyeTopBar(
+                title = "투자 시뮬레이션",
+                onBackClick = onBackClick,
+                actions = {
+                    Text(
+                        text = "저장",
+                        textAlign = TextAlign.Center,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .background(PrimaryGreen, RoundedCornerShape(12.dp))
+                            .clickable { viewModel.onSaveIconClick() }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            )
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                WyeTabs(
-                    titles = listOf("수익률 추이", "포트폴리오 분석"),
-                    selectedIndex = formState.selectedTabIndex,
-                    onTabSelected = onTabSelected
-                )
+            WyeTabs(
+                titles = listOf("수익률 추이", "포트폴리오 분석"),
+                selectedIndex = formState.selectedTabIndex,
+                onTabSelected = { viewModel.onTabSelected(it) }
+            )
 
-                // 결과 섹션 (차트 + 지표)
+            Box(modifier = Modifier.fillMaxSize()) {
                 SimulationResultSection(
                     formState = formState,
                     simulationState = simulationState,
-                    onOverlayToggled = onOverlayToggled,
-                    onAiDiagnosisClick = onAiDiagnosisClick,
-                    onDictionaryClick = onDictionaryClick,
+                    onOverlayToggled = { viewModel.onOverlayToggled(it) },
+                    onAiDiagnosisClick = { viewModel.onAiReviewClick() },
+                    onDictionaryClick = { showDictionaryDialog = true },
                     idleGuideMessage = idleGuideMessage
                 )
-
-                // 설정 섹션
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color.White)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // 투자 설정
-                    InvestmentSetupSection(
-                        formState = formState,
-                        onInvestmentTypeSelected = onInvestmentTypeSelected,
-                        onAmountChanged = onAmountChanged,
-                        onPeriodChanged = onPeriodChanged
-                    )
-
-                    // 포트폴리오 구성
-                    PortfolioSection(
-                        formState = formState,
-                        onAddClick = onAddEtfClick,
-                        onRemoveClick = onPortfolioItemRemoved,
-                        onWeightChange = onWeightChange
-                    )
-                }
             }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 }

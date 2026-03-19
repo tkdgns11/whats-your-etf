@@ -32,7 +32,11 @@ fun InvestmentSetupSection(
     onAmountChanged: (String) -> Unit,
     onPeriodChanged: (String) -> Unit
 ) {
-    Column(modifier = Modifier.background(BackGroundLightGreen2).padding(horizontal = 20.dp, vertical = 24.dp)) {
+    Column(
+        modifier = Modifier
+            .background(BackGroundLightGreen2)
+            .padding(start = 20.dp, end = 20.dp, bottom = 24.dp)
+    ) {
         Text(text = "투자 설정", style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -45,27 +49,29 @@ fun InvestmentSetupSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
             InvestmentInputField(
-                label = "투자 금액(원)",
+                label = "투자 금액",
                 value = formState.investmentAmount,
                 onValueChange = onAmountChanged,
                 placeholder = "금액 입력",
+                isCurrencyField = true,
+                suffix = "만원",
                 modifier = Modifier.weight(1f)
             )
 
             InvestmentInputField(
-                label = "투자 기간(월)",
+                label = "투자 기간",
                 value = formState.investmentPeriod,
                 onValueChange = onPeriodChanged,
                 placeholder = "최대 36개월",
+                suffix = "개월",
                 modifier = Modifier.weight(1f)
             )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (!formState.investmentAmount.isBlank() && !formState.investmentPeriod.isBlank()){
+        if (!formState.investmentAmount.isBlank() && !formState.investmentPeriod.isBlank()) {
             WyeCard(
                 modifier = Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, SurfaceVariant),

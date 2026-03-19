@@ -4,15 +4,21 @@ import com.d102.wye.data.local.dao.EtfPriceHistoryDao
 import com.d102.wye.data.local.entity.EtfPriceHistoryEntity
 import com.d102.wye.data.mapper.toDomain
 import com.d102.wye.data.remote.api.SimulationApiService
+import com.d102.wye.data.remote.dto.request.AiEtfInfo
+import com.d102.wye.data.remote.dto.request.AiPortfolioData
+import com.d102.wye.data.remote.dto.request.AiReviewRequest
 import com.d102.wye.data.remote.dto.request.EtfCount
 import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.AiReviewResult
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.EtfPricePoint
+import com.d102.wye.domain.model.Portfolio
 import com.d102.wye.domain.model.SavePortfolioParams
 import com.d102.wye.domain.repository.SimulationRepository
+import com.d102.wye.domain.state.InvestmentType
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -122,6 +128,40 @@ class SimulationRepositoryImpl @Inject constructor(
         }
     }.getOrElse { e ->
         BaseResult.Error(ApiError(code = -1, message = e.message ?: "배당금 이력 조회 실패"))
+    }
+
+    override suspend fun getAiPortfolioReview(
+        totalAmount: Long,
+        investmentType: InvestmentType,
+        portfolios: List<Portfolio>
+    ): BaseResult<AiReviewResult> = runCatching {
+        val data = simulationApiService.getAiPortfolioReview(
+            AiReviewRequest(
+                portfolio = AiPortfolioData(
+                    totalAmount = totalAmount,
+                    investmentType = investmentType.name,
+                    etfs = portfolios.map { portfolio ->
+                        AiEtfInfo(
+                            ticker = portfolio.ticker,
+                            name = portfolio.name,
+                            weight = portfolio.weightPercent
+                        )
+                    }
+                )
+            )
+        ).data ?: throw IllegalStateException("AI 진단 응답 data가 null")
+
+        BaseResult.Success(
+            AiReviewResult(
+                mainTitle = data.headline,
+                subTitle = data.subHeadline,
+                tags = data.keywords,
+                feedback = data.analysis
+            )
+        )
+    }.getOrElse { e ->
+        Timber.e("[API] AI 진단 실패 | ${e.message}")
+        BaseResult.Error(ApiError(code = -1, message = e.message ?: "AI 진단 실패"))
     }
 
 

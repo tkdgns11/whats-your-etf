@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.analysis
+package com.d102.wye.presentation.simulation.progress.result
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

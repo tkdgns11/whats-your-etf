@@ -1,9 +1,12 @@
 package com.d102.wye.domain.repository
 
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.AiReviewResult
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
+import com.d102.wye.domain.model.Portfolio
 import com.d102.wye.domain.model.SavePortfolioParams
+import com.d102.wye.domain.state.InvestmentType
 
 interface SimulationRepository {
 
@@ -21,6 +24,13 @@ interface SimulationRepository {
         startDate: String? = null,
         endDate: String? = null
     ): BaseResult<Map<String, EtfDividendHistory>>
+
+    suspend fun getAiPortfolioReview(
+        totalAmount: Long,
+        investmentType: InvestmentType,
+        portfolios: List<Portfolio>
+    ): BaseResult<AiReviewResult>
+
 
 
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-package com.d102.wye.presentation.simulation.analysis
+package com.d102.wye.presentation.simulation.progress.result
 
 import DonutChart
 import SectorWeight
@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,10 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +36,11 @@ import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.BackGroundLightGreen3
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.SectorColor1
+import com.d102.wye.presentation.theme.SectorColor2
+import com.d102.wye.presentation.theme.SectorColor3
+import com.d102.wye.presentation.theme.SectorColor4
+import com.d102.wye.presentation.theme.SectorColor5
 import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
@@ -75,8 +79,22 @@ fun PortfolioAnalysisView(
         }
 
         // ── PER / PBR / ROE 카드 ──────────────────────────────────────────────
-        // TODO: 백엔드 per/pbr/roe 필드 추가 후 "-" 제거
         val uiModel = (simulationState as? UiState.Success)?.data
+        val sectorColors = listOf(
+            SectorColor1, SectorColor2, SectorColor3,
+            SectorColor4, SectorColor5
+        )
+        val sectorData = uiModel?.sectorWeights?.mapIndexed { index, s ->
+            SectorWeight(
+                name = s.name,
+                ratio = s.ratio,
+                color = sectorColors.getOrElse(index) { SectorColor4 }
+            )
+        } ?: emptyList()
+
+        val isEmpty = sectorData.isEmpty()
+
+
         val cardItems = listOf(
             "PER" to (uiModel?.per ?: "-"),
             "PBR" to (uiModel?.pbr ?: "-"),
@@ -115,16 +133,6 @@ fun PortfolioAnalysisView(
         }
 
         // ── 섹터 비중 도넛 차트 ───────────────────────────────────────────────
-        val sectorData = remember {
-            listOf(
-                SectorWeight("IT", 45f, Color(0xFF4B6B4E)),
-                SectorWeight("금융", 25f, Color(0xFF7E977A)),
-                SectorWeight("에너지", 15f, Color(0xFFA6BC9F)),
-                SectorWeight("기타", 15f, Color(0xFFD1D5DB))
-            )
-        }
-        val isEmpty = sectorData.isEmpty()
-
         WyeCard(
             modifier = Modifier.fillMaxWidth(),
             innerPadding = PaddingValues(20.dp),
@@ -134,7 +142,7 @@ fun PortfolioAnalysisView(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "섹터 비중",
@@ -144,7 +152,7 @@ fun PortfolioAnalysisView(
                 )
 
                 DonutChart(items = sectorData)
-
+                Spacer(modifier = Modifier.height(4.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -152,18 +160,25 @@ fun PortfolioAnalysisView(
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isEmpty) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                12.dp,
+                                Alignment.CenterHorizontally
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             sectorData.forEach { sector ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     Box(
                                         modifier = Modifier
                                             .size(8.dp)
                                             .background(sector.color, CircleShape)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "${sector.name} ${sector.ratio.toInt()}%",
                                         style = MaterialTheme.typography.bodySmall,
