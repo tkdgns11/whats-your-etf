@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -101,7 +102,15 @@ fun AppNavGraph(
                 onBookmarkClick = { navController.navigate(Route.LikedEtfList.route) },
                 onAlertClick = { navController.navigate(Route.AlertList.route) },
                 onNewsMoreClick = { navController.navigate(Route.NewsList.route) },
-                onPortfolioMoreClick = { navController.navigate(Route.Strategy.route) }
+                onPortfolioMoreClick = {
+                    navController.navigate(Route.Strategy.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
 
             )
         }

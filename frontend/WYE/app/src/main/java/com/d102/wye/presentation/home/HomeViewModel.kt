@@ -3,16 +3,25 @@ package com.d102.wye.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
+import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.domain.model.News
+import com.d102.wye.domain.model.PortfolioDetail
+import com.d102.wye.domain.model.PortfolioListItem
 import com.d102.wye.domain.model.TopVolumeEtf
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.NewsRepository
+import com.d102.wye.domain.repository.PortfolioRepository
+import com.d102.wye.domain.repository.SimulationRepository
+import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.domain.usecase.portfolio.CalculatePortfolioChartUseCase
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +34,9 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
     private val etfRepository: EtfRepository,
-    // TODO: private val portfolioRepository: PortfolioRepository
+    private val portfolioRepository: PortfolioRepository,
+    private val simulationRepository: SimulationRepository,
+    private val calculatePortfolioChartUseCase: CalculatePortfolioChartUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Idle)
@@ -42,6 +53,7 @@ class HomeViewModel @Inject constructor(
             coroutineScope {
                 val newsDeferred = async { newsRepository.getNewsList() }
                 val topVolumeDeferred = async { etfRepository.getTopVolumeEtfs() }
+                val portfoliosDeferred = async { loadHomePortfolios() }
 
                 when (val newsResult = newsDeferred.await()) {
                     is BaseResult.Error -> _uiState.update { UiState.Error(newsResult.error.message) }
@@ -50,8 +62,9 @@ class HomeViewModel @Inject constructor(
                             is BaseResult.Success -> {
                                 _uiState.update {
                                     UiState.Success(
-                                        mockHomeData().copy(
+                                        HomeData(
                                             top10Etfs = topVolumeResult.data.map { it.toHomeTop10UiModel() },
+                                            portfolios = portfoliosDeferred.await(),
                                             newsList = newsResult.data
                                                 .take(HOME_NEWS_LIMIT)
                                                 .map { it.toHomeNewsUiModel() }
@@ -99,36 +112,45 @@ class HomeViewModel @Inject constructor(
         }.getOrDefault(this)
     }
 
-    private fun mockHomeData(): HomeData = HomeData(
-        top10Etfs = emptyList(),
-        portfolio = PortfolioSummaryUiModel(
-            name = "내 포트폴리오 1",
-            totalAmount = "123,456,789 원",
-            profitRateText = "+11.4%",
-            profitAmountText = "(14,074,074원)"
-        ),
-        newsList = listOf(
-            HomeNewsUiModel(
-                id = 1001L,
-                category = "위험형 ETF",
-                title = "나스닥 100 3배 레버리지, 변동성 확대에도 투자자 매수세 집중",
-                timeAgo = "2시간 전",
-                source = "파이낸셜 뉴스"
-            ),
-            HomeNewsUiModel(
-                id = 1002L,
-                category = "위험형 ETF",
-                title = "반도체 섹터 ETF, 인공지능 수요 폭증에 수익률 고공행진",
-                timeAgo = "5시간 전",
-                source = "경제타임즈"
-            )
+    private suspend fun loadHomePortfolios(): List<PortfolioSummaryUiModel> = coroutineScope {
+        val portfolioList = when (val result = portfolioRepository.getPortfolioList()) {
+            is BaseResult.Success -> result.data
+            is BaseResult.Error -> return@coroutineScope emptyList()
+        }
+
+        portfolioList.map { portfolio ->
+            async { buildPortfolioSummary(portfolio) }
+        }.awaitAll().filterNotNull()
+    }
+
+    private suspend fun buildPortfolioSummary(portfolio: PortfolioListItem): PortfolioSummaryUiModel? {
+        val detail = when (val result = portfolioRepository.getPortfolioDetail(portfolio.portfolioId)) {
+            is BaseResult.Success -> result.data
+            is BaseResult.Error -> return null
+        }
+
+        val priceHistories = when (val result = simulationRepository.getEtfPriceHistories(
+            tickers = detail.counts.map { it.ticker },
+            startDate = detail.createdAt.minusOneYear(),
+            endDate = LocalDate.now().toString()
+        )) {
+            is BaseResult.Success -> result.data
+            is BaseResult.Error -> return null
+        }
+
+        val chartResult = calculatePortfolioChartUseCase(
+            counts = detail.counts,
+            priceHistories = priceHistories,
+            createdAt = detail.createdAt
         )
-    )
+
+        return detail.toHomePortfolioSummary(chartResult)
+    }
 }
 
 data class HomeData(
     val top10Etfs: List<Top10EtfUiModel>,
-    val portfolio: PortfolioSummaryUiModel?,
+    val portfolios: List<PortfolioSummaryUiModel>,
     val newsList: List<HomeNewsUiModel>
 )
 
@@ -139,10 +161,15 @@ data class Top10EtfUiModel(
 )
 
 data class PortfolioSummaryUiModel(
+    val id: Long,
     val name: String,
     val totalAmount: String,
     val profitRateText: String,
-    val profitAmountText: String
+    val profitAmountText: String,
+    val chartPoints: List<BacktestPoint>,
+    val pastPointCount: Int,
+    val investmentType: InvestmentType,
+    val isPositive: Boolean,
 )
 
 data class HomeNewsUiModel(
@@ -155,3 +182,47 @@ data class HomeNewsUiModel(
 )
 
 private const val HOME_NEWS_LIMIT = 2
+
+private fun PortfolioDetail.toHomePortfolioSummary(
+    chartResult: CalculatePortfolioChartUseCase.Result
+) = PortfolioSummaryUiModel(
+    id = portfolioId,
+    name = portfolioName,
+    totalAmount = chartResult.estimatedFinalValue.formatAmount(),
+    profitRateText = chartResult.recentReturn.toSignedPercentText(),
+    profitAmountText = (chartResult.estimatedFinalValue - investAmount).toSignedAmountText(),
+    chartPoints = (chartResult.pastPoints + chartResult.recentPoints)
+        .distinctBy { it.date }
+        .sortedBy { it.date },
+    pastPointCount = chartResult.pastPoints.size,
+    investmentType = portfolioType,
+    isPositive = chartResult.recentReturn >= 0
+)
+
+private fun String.minusOneYear(): String {
+    val parts = split("-")
+    if (parts.size != 3) return this
+    val year = parts[0].toIntOrNull() ?: return this
+    return "${year - 1}-${parts[1]}-${parts[2]}"
+}
+
+private fun Double.toSignedPercentText(): String {
+    val sign = if (this >= 0) "+" else ""
+    return "$sign${"%.2f".format(this)}%"
+}
+
+private fun Long.toSignedAmountText(): String {
+    val sign = if (this >= 0) "+" else "-"
+    return "(${sign}${kotlin.math.abs(this).formatAmount()})"
+}
+
+private fun Long.formatAmount(): String {
+    val eok = this / 100_000_000L
+    val man = (this % 100_000_000L) / 10_000L
+    return when {
+        eok > 0 && man > 0 -> "${eok}억 ${"%,d".format(man)}만원"
+        eok > 0 -> "${eok}억원"
+        man > 0 -> "${"%,d".format(man)}만원"
+        else -> "${"%,d".format(this % 10_000L)}원"
+    }
+}
