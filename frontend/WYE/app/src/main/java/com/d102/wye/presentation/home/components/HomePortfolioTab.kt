@@ -16,7 +16,7 @@ import com.d102.wye.presentation.home.PortfolioSummaryUiModel
 
 @Composable
 fun HomePortfolioTab(
-    portfolio: PortfolioSummaryUiModel?,
+    portfolios: List<PortfolioSummaryUiModel>,
     newsList: List<HomeNewsUiModel>,
     onNewsClick: (newsId: Long) -> Unit,
     onNewsMoreClick: () -> Unit,
@@ -39,7 +39,7 @@ fun HomePortfolioTab(
         item {
             HomePortfolioSummaryCard(
                 modifier = Modifier.height(primaryCardHeight),
-                portfolio = portfolio
+                portfolios = portfolios
             )
         }
 
