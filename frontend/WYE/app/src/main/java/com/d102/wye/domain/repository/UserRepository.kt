@@ -3,6 +3,7 @@ package com.d102.wye.domain.repository
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.FavoriteEtfList
 import com.d102.wye.domain.model.FavoriteEtfSort
+import com.d102.wye.domain.model.MyDataHolding
 import com.d102.wye.domain.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 
@@ -37,4 +38,13 @@ interface UserRepository {
 
     /** 프로필 이미지를 삭제하고 최신 프로필을 반환한다. */
     suspend fun deleteProfileImage(): BaseResult<UserProfile>
+
+    /** 마이데이터 동의 여부를 확인한다. */
+    suspend fun getMyDataAccepted(): BaseResult<Boolean>
+
+    /** 마이데이터 연동에 동의한다. */
+    suspend fun acceptMyData(): BaseResult<Unit>
+
+    /** 현재 시점의 마이데이터 보유 ETF 목록을 조회한다. */
+    suspend fun getMyDataHoldings(): BaseResult<List<MyDataHolding>>
 }

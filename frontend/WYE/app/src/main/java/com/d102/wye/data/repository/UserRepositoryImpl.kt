@@ -13,6 +13,7 @@ import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
 import com.d102.wye.domain.model.FavoriteEtfList
 import com.d102.wye.domain.model.FavoriteEtfSort
+import com.d102.wye.domain.model.MyDataHolding
 import com.d102.wye.domain.model.UserProfile
 import com.d102.wye.domain.repository.UserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -133,6 +134,26 @@ class UserRepositoryImpl @Inject constructor(
         return when (deleteResult) {
             is BaseResult.Success -> getMyProfile()
             is BaseResult.Error -> deleteResult
+        }
+    }
+
+    override suspend fun getMyDataAccepted(): BaseResult<Boolean> {
+        return safeApiCall {
+            userApiService.getMyDataAccepted()
+        }
+    }
+
+    override suspend fun acceptMyData(): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            userApiService.acceptMyData()
+        }
+    }
+
+    override suspend fun getMyDataHoldings(): BaseResult<List<MyDataHolding>> {
+        return safeApiCall {
+            userApiService.getMyDataHoldings()
+        }.map { response ->
+            response.map { it.toDomain() }
         }
     }
 

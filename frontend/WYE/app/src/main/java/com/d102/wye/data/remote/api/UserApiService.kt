@@ -2,6 +2,7 @@ package com.d102.wye.data.remote.api
 
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.FavoriteEtfListResponse
+import com.d102.wye.data.remote.dto.response.MyDataHoldingResponse
 import com.d102.wye.data.remote.dto.response.UserProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -62,4 +63,13 @@ interface UserApiService {
     /** 서버에 저장된 프로필 이미지를 삭제한다. */
     @DELETE("users/me/profile-image")
     suspend fun deleteProfileImage(): Response<BaseResponse<Unit>>
+
+    @GET("users/me/my-data/accepted")
+    suspend fun getMyDataAccepted(): Response<BaseResponse<Boolean>>
+
+    @GET("users/me/my-data")
+    suspend fun getMyDataHoldings(): Response<BaseResponse<List<MyDataHoldingResponse>>>
+
+    @POST("users/me/my-data")
+    suspend fun acceptMyData(): Response<BaseResponse<Unit>>
 }
