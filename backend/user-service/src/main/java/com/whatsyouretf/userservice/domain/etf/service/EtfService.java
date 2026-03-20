@@ -45,4 +45,6 @@ public interface EtfService {
     List<EtfStockComposition> getEtfsIncludingStock(String ticker);
 
     List<EtfCurrentInfo> getTopTenList();
+
+    List<EtfDividendsData> getEtfDividends(String ticker);
 }
