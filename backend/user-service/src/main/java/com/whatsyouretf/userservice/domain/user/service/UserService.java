@@ -69,4 +69,8 @@ public interface UserService {
     boolean isFavoriteEtf(Long userId, String ticker);
 
     List<MyDataEtfCount> getMyData(Long userId);
+
+    Boolean checkUserAcceptedMyData(Long userId);
+
+    void acceptMyData(Long userId);
 }

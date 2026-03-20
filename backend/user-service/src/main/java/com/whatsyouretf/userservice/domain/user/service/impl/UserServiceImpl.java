@@ -272,6 +272,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<MyDataEtfCount> getMyData(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.checkMyDataAccepted();
         return myDataApi.getMyData(userId);
+    }
+
+    @Override
+    public Boolean checkUserAcceptedMyData(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)).getIsMyDataAccepted();
+    }
+
+    @Override
+    @Transactional
+    public void acceptMyData(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.acceptMyData();
     }
 }

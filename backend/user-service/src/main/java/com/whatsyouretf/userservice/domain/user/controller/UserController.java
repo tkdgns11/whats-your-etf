@@ -224,12 +224,28 @@ public class UserController {
      * @param userDetails 인증된 사용자 정보
      * @return true = 관심 등록됨
      */
-    @Operation(summary = "마이데이터", description = "호출 시점에 보유 중인 마이데이터의 etf 포트폴리오를 조회합니다.")
+    @Operation(summary = "마이데이터 정보 조회", description = "호출 시점에 보유 중인 마이데이터의 etf 포트폴리오를 조회합니다.")
     @GetMapping("/me/my-data")
-    public ResponseEntity<ApiResponse<List<MyDataEtfCount>>> checkFavoriteEtf(
+    public ResponseEntity<ApiResponse<List<MyDataEtfCount>>> getEtfPortfolio(
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.getMyData(userDetails.getUserId())));
     }
 
+    @Operation(summary = "마이데이터 동의 여부 확인", description = "마이데이터 동의 여부를 확인합니다")
+    @GetMapping("/me/my-data/accepted")
+    public ResponseEntity<ApiResponse<Boolean>> checkMyDataAccepted(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.checkUserAcceptedMyData(userDetails.getUserId())));
+    }
+
+    @Operation(summary = "마이데이터 동의", description = "마이데이터 수집을 동의합니다")
+    @PostMapping("/me/my-data")
+    public ResponseEntity<ApiResponse<Void>> acceptMyData(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        userService.acceptMyData(userDetails.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }
