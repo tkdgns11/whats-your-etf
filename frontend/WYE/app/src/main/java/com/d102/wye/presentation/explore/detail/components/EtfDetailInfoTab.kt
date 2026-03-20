@@ -33,7 +33,10 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -321,14 +324,7 @@ private fun ReturnChartSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // 헤더
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("수익률 그래프", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-            Text("5분전 업데이트", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
-        }
+        Text("수익률 그래프", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
 
         // 기간 프리셋
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -509,51 +505,95 @@ private fun LineChart(
     showSp500: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val textMeasurer = rememberTextMeasurer()
     val lines = buildList {
         if (showNav   && data.navData.isNotEmpty())   add(data.navData   to ChartColorNav)
         if (showPrice && data.priceData.isNotEmpty()) add(data.priceData to ChartColorPrice)
         if (showKospi && data.kospiData.isNotEmpty()) add(data.kospiData to ChartColorKospi)
         if (showSp500 && data.sp500Data.isNotEmpty()) add(data.sp500Data to ChartColorNasdaq)
     }
-    if (lines.isEmpty()) return
-
     Canvas(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Background)
-            .padding(start = 8.dp, end = 8.dp, top = 20.dp, bottom = 8.dp),
+            .background(Background),
     ) {
         val allValues = lines.flatMap { (pts, _) -> pts.map { it.value } }
-        if (allValues.isEmpty()) return@Canvas
+        if (allValues.isEmpty()) {
+            val measured = textMeasurer.measure(
+                "항목을 선택해주세요",
+                style = TextStyle(fontSize = 13.sp, color = TextSecondary),
+            )
+            drawText(
+                measured,
+                topLeft = Offset(
+                    (size.width - measured.size.width) / 2f,
+                    (size.height - measured.size.height) / 2f,
+                ),
+            )
+            return@Canvas
+        }
         val minV  = allValues.min()
         val maxV  = allValues.max()
-        val range = (maxV - minV).takeIf { it > 0.0001 }  // null = flat(모든 값 동일)
+        val range = (maxV - minV).takeIf { it > 0.0001 }
 
-        // 수평 그리드 라인 4개
+        val leftPad   = 44.dp.toPx()
+        val rightPad  = 8.dp.toPx()
+        val topPad    = 12.dp.toPx()
+        val bottomPad = 20.dp.toPx()
+        val chartL = leftPad
+        val chartR = size.width - rightPad
+        val chartT = topPad
+        val chartB = size.height - bottomPad
+        val chartW = chartR - chartL
+        val chartH = chartB - chartT
+
+        val labelStyle = TextStyle(fontSize = 9.sp, color = TextSecondary)
+
+        // 수평 그리드 라인 + Y축 레이블
         repeat(5) { i ->
-            val y = size.height * i / 4f
+            val y = chartT + chartH * i / 4f
             drawLine(
                 color = Color(0xFFE2E8E4),
-                start = Offset(0f, y),
-                end   = Offset(size.width, y),
+                start = Offset(chartL, y),
+                end   = Offset(chartR, y),
                 strokeWidth = 0.8f,
             )
+            if (range != null) {
+                val v    = maxV - (maxV - minV) * i / 4.0
+                val sign = if (v >= 0) "+" else ""
+                val label    = "$sign${"%.1f".format(v)}%"
+                val measured = textMeasurer.measure(label, style = labelStyle)
+                drawText(measured, topLeft = Offset(0f, y - measured.size.height / 2f))
+            }
         }
 
+        // X축 레이블 (시작 / 중간 / 끝)
+        val refPoints = lines.firstOrNull()?.first ?: emptyList()
+        if (refPoints.size >= 2) {
+            listOf(0, refPoints.size / 2, refPoints.size - 1).forEach { idx ->
+                val x     = chartL + chartW * idx / (refPoints.size - 1).toFloat()
+                val date  = refPoints[idx].date.take(10)
+                val label = if (date.length >= 10) date.substring(5).replace("-", ".") else date
+                val measured = textMeasurer.measure(label, style = labelStyle)
+                val labelX = (x - measured.size.width / 2f).coerceIn(chartL, chartR - measured.size.width)
+                drawText(measured, topLeft = Offset(labelX, chartB + 3.dp.toPx()))
+            }
+        }
+
+        // 차트 라인
         lines.forEach { (points, color) ->
             if (points.size < 2) return@forEach
 
-            fun xOf(i: Int)    = size.width  * i / (points.size - 1).toFloat()
-            // flat line → 중앙(50%) 표시, 정상 → 범위 기준 위치
-            fun yOf(v: Double) = if (range == null) size.height * 0.5f
-                                 else size.height * (1.0 - (v - minV) / range).toFloat()
+            fun xOf(i: Int)    = chartL + chartW * i / (points.size - 1).toFloat()
+            fun yOf(v: Double) = if (range == null) chartT + chartH * 0.5f
+                                 else (chartT + chartH * (1.0 - (v - minV) / range)).toFloat()
 
             val linePath = Path()
             val fillPath = Path()
 
             val x0 = xOf(0); val y0 = yOf(points[0].value)
             linePath.moveTo(x0, y0)
-            fillPath.moveTo(x0, size.height)
+            fillPath.moveTo(x0, chartB)
             fillPath.lineTo(x0, y0)
 
             for (i in 1 until points.size) {
@@ -564,18 +604,15 @@ private fun LineChart(
                 fillPath.cubicTo(cpX, py, cpX, cy, cx, cy)
             }
 
-            // 그라디언트 채우기
-            fillPath.lineTo(xOf(points.size - 1), size.height)
+            fillPath.lineTo(xOf(points.size - 1), chartB)
             fillPath.close()
             drawPath(
                 fillPath,
                 brush = Brush.verticalGradient(
                     colors = listOf(color.copy(alpha = 0.22f), Color.Transparent),
-                    startY = 0f, endY = size.height,
+                    startY = chartT, endY = chartB,
                 ),
             )
-
-            // 선
             drawPath(
                 linePath,
                 color = color,

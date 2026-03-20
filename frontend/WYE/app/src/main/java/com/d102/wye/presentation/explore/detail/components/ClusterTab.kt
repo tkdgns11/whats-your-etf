@@ -508,8 +508,8 @@ private fun ClusterBubble(
                 .clickable(onClick = onClick),
         ) {
             val iconSize    = bubbleSize * 0.26f
-            val nameFontSz  = (bubbleSize.value * 0.155f).coerceIn(10f, 14f).sp
-            val pctFontSz   = (bubbleSize.value * 0.125f).coerceIn(9f, 12f).sp
+            val nameFontSz  = (bubbleSize.value * 0.15f).sp
+            val pctFontSz   = (bubbleSize.value * 0.15f).sp
             val contentW    = bubbleSize * 0.84f
             Icon(
                 imageVector = sectorIcon(cluster.name),
