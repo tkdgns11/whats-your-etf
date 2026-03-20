@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.FavoriteEtfSort
 import com.d102.wye.domain.repository.AuthRepository
+import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.UserRepository
 import com.d102.wye.domain.usecase.user.ValidateNicknameUseCase
 import com.d102.wye.presentation.model.UiState
@@ -24,7 +25,7 @@ class MyPageViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val validateNicknameUseCase: ValidateNicknameUseCase,
-    // private val etfRepository: EtfRepository
+    private val etfRepository: EtfRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<MyPageData>>(UiState.Idle)
@@ -43,6 +44,7 @@ class MyPageViewModel @Inject constructor(
             _uiState.update { UiState.Loading }
             val profileResult = userRepository.getMyProfile()
             val favoriteResult = userRepository.getFavoriteEtfs(FavoriteEtfSort.RECENT)
+            val acceptedResult = userRepository.getMyDataAccepted()
 
             when (profileResult) {
                 is BaseResult.Error -> _uiState.update { UiState.Error(profileResult.error.message) }
@@ -50,6 +52,24 @@ class MyPageViewModel @Inject constructor(
                     val likedEtfCount = when (favoriteResult) {
                         is BaseResult.Success -> favoriteResult.data.totalCount
                         is BaseResult.Error -> 0
+                    }
+                    val myDataState = when (acceptedResult) {
+                        is BaseResult.Success -> {
+                            if (!acceptedResult.data) {
+                                MyDataUiState.NotConnected
+                            } else {
+                                when (val holdingsResult = userRepository.getMyDataHoldings()) {
+                                    is BaseResult.Success -> if (holdingsResult.data.isEmpty()) MyDataUiState.Empty else MyDataUiState.Ready
+                                    is BaseResult.Error -> MyDataUiState.Empty
+                                }
+                            }
+                        }
+                        is BaseResult.Error -> MyDataUiState.NotConnected
+                    }
+                    val holdingEtfs = if (myDataState == MyDataUiState.Ready) {
+                        buildMyDataHoldingCards()
+                    } else {
+                        emptyList()
                     }
 
                     _uiState.update {
@@ -59,7 +79,8 @@ class MyPageViewModel @Inject constructor(
                                 nicknameDraft = profileResult.data.nickname,
                                 profileImage = profileResult.data.profileImage,
                                 likedEtfCount = likedEtfCount,
-                                holdingEtfs = emptyList()
+                                myDataState = myDataState,
+                                holdingEtfs = holdingEtfs
                             )
                         )
                     }
@@ -151,6 +172,48 @@ class MyPageViewModel @Inject constructor(
         }
     }
 
+    fun showMyDataConsentDialog() {
+        updateSuccessState { data ->
+            data.copy(
+                isMyDataConsentDialogVisible = true,
+                isMyDataConsentChecked = false,
+            )
+        }
+    }
+
+    fun dismissMyDataConsentDialog() {
+        updateSuccessState { data ->
+            data.copy(
+                isMyDataConsentDialogVisible = false,
+                isMyDataConsentChecked = false,
+            )
+        }
+    }
+
+    fun setMyDataConsentChecked(checked: Boolean) {
+        updateSuccessState { data ->
+            data.copy(isMyDataConsentChecked = checked)
+        }
+    }
+
+    fun submitMyDataConsent() {
+        val current = (_uiState.value as? UiState.Success)?.data ?: return
+        if (!current.isMyDataConsentChecked) return
+
+        viewModelScope.launch {
+            when (val result = userRepository.acceptMyData()) {
+                is BaseResult.Success -> {
+                    dismissMyDataConsentDialog()
+                    loadMyPageData()
+                    _event.emit(MyPageEvent.ShowMessage("마이데이터 연동이 완료되었습니다."))
+                }
+                is BaseResult.Error -> {
+                    _event.emit(MyPageEvent.ShowMessage(result.error.message))
+                }
+            }
+        }
+    }
+
     /** 닉네임 저장을 처리하고 추후 서버 동기화 지점을 TODO로 남긴다. */
     fun saveNickname() {
         val currentState = _uiState.value as? UiState.Success ?: return
@@ -233,24 +296,82 @@ class MyPageViewModel @Inject constructor(
         nickname.isEmpty() -> null
         else -> validateNicknameUseCase(nickname)
     }
+
+    private suspend fun buildMyDataHoldingCards(): List<MyPageHoldingEtfUiModel> {
+        return when (val holdingsResult = userRepository.getMyDataHoldings()) {
+            is BaseResult.Success -> {
+                holdingsResult.data.map { holding ->
+                    when (val etfResult = etfRepository.getEtfDetail(holding.ticker)) {
+                        is BaseResult.Success -> {
+                            val changeRate = etfResult.data.dailyFluctuationRatio
+                            MyPageHoldingEtfUiModel(
+                                ticker = holding.ticker,
+                                name = etfResult.data.name,
+                                currentPriceText = "%,d원".format(etfResult.data.currentPrice),
+                                changeRateText = formatSignedPercent(changeRate),
+                                changeDetailText = formatSignedAmount(etfResult.data.dailyFluctuation),
+                                quantityText = "${holding.counts}주 보유",
+                                isPositive = changeRate >= 0.0,
+                            )
+                        }
+                        is BaseResult.Error -> {
+                            MyPageHoldingEtfUiModel(
+                                ticker = holding.ticker,
+                                name = holding.ticker,
+                                currentPriceText = "-",
+                                changeRateText = "-",
+                                changeDetailText = "-",
+                                quantityText = "${holding.counts}주 보유",
+                                isPositive = true,
+                            )
+                        }
+                    }
+                }
+            }
+            is BaseResult.Error -> emptyList()
+        }
+    }
+
+    private fun formatSignedPercent(rate: Double): String {
+        val prefix = if (rate > 0) "+" else ""
+        return "$prefix${"%.2f".format(rate)}%"
+    }
+
+    private fun formatSignedAmount(amount: Long): String {
+        val prefix = if (amount > 0) "+" else ""
+        return "${prefix}%,d원".format(amount)
+    }
 }
 
 data class MyPageHoldingEtfUiModel(
     val ticker: String,
     val name: String,
-    val changeRateText: String
+    val currentPriceText: String = "",
+    val changeRateText: String,
+    val changeDetailText: String = "",
+    val quantityText: String = "",
+    val isPositive: Boolean = true,
 )
+
+enum class MyDataUiState {
+    NotConnected,
+    Empty,
+    Ready,
+}
 
 data class MyPageData(
     val nickname: String,
     val nicknameDraft: String,
     val profileImage: String?,
     val likedEtfCount: Int,
+    val myDataState: MyDataUiState,
     val holdingEtfs: List<MyPageHoldingEtfUiModel>,
     val isNicknameDialogVisible: Boolean = false,
     val isNicknameSaving: Boolean = false,
     val nicknameValidationMessage: String? = null,
-    val isProfileImageSaving: Boolean = false
+    val isProfileImageSaving: Boolean = false,
+    val isMyDataConsentDialogVisible: Boolean = false,
+    val isMyDataConsentChecked: Boolean = false,
 )
 
 sealed interface MyPageEvent {

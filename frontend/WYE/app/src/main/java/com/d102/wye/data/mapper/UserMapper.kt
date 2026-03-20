@@ -2,10 +2,12 @@ package com.d102.wye.data.mapper
 
 import com.d102.wye.data.remote.dto.response.FavoriteEtfListResponse
 import com.d102.wye.data.remote.dto.response.FavoriteEtfResponse
+import com.d102.wye.data.remote.dto.response.MyDataHoldingResponse
 import com.d102.wye.data.remote.dto.response.SocialAccountResponse
 import com.d102.wye.data.remote.dto.response.UserProfileResponse
 import com.d102.wye.domain.model.FavoriteEtf
 import com.d102.wye.domain.model.FavoriteEtfList
+import com.d102.wye.domain.model.MyDataHolding
 import com.d102.wye.domain.model.SocialAccount
 import com.d102.wye.domain.model.UserProfile
 
@@ -42,4 +44,9 @@ fun FavoriteEtfResponse.toDomain() = FavoriteEtf(
     currentPrice = currentPrice.toLong(),
     changeRate = changeRate,
     favoritedAt = favoritedAt
+)
+
+fun MyDataHoldingResponse.toDomain() = MyDataHolding(
+    ticker = ticker,
+    counts = counts,
 )

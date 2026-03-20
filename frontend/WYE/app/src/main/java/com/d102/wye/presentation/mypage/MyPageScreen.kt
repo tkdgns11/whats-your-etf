@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyeTopBar
+import com.d102.wye.presentation.mypage.components.MyDataConsentDialog
 import com.d102.wye.presentation.mypage.components.myPageAccountSection
 import com.d102.wye.presentation.mypage.components.myPageEtfSection
 import com.d102.wye.presentation.mypage.components.MyPageProfileHeader
@@ -87,6 +88,10 @@ fun MyPageScreen(
         onNicknameEditDismiss = { viewModel.dismissNicknameEditDialog() },
         onNicknameSave = { viewModel.saveNickname() },
         onProfileImageDelete = { viewModel.deleteProfileImage() },
+        onMyDataConnectClick = { viewModel.showMyDataConsentDialog() },
+        onMyDataConsentCheckedChange = { viewModel.setMyDataConsentChecked(it) },
+        onMyDataConsentDismiss = { viewModel.dismissMyDataConsentDialog() },
+        onMyDataConsentSubmit = { viewModel.submitMyDataConsent() },
         onProfileImageChange = {
             photoPickerLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -113,6 +118,10 @@ private fun MyPageScreenContent(
     onNicknameEditDismiss: () -> Unit,
     onNicknameSave: () -> Unit,
     onProfileImageDelete: () -> Unit,
+    onMyDataConnectClick: () -> Unit,
+    onMyDataConsentCheckedChange: (Boolean) -> Unit,
+    onMyDataConsentDismiss: () -> Unit,
+    onMyDataConsentSubmit: () -> Unit,
     onProfileImageChange: () -> Unit
 ) {
     Box(
@@ -147,7 +156,8 @@ private fun MyPageScreenContent(
                             data = uiState.data,
                             onHoldingEtfMoreClick = onHoldingEtfMoreClick,
                             onHoldingEtfClick = onLikedEtfClick,
-                            onLikedEtfListClick = onLikedEtfListClick
+                            onLikedEtfListClick = onLikedEtfListClick,
+                            onMyDataConnectClick = onMyDataConnectClick,
                         )
 
                         myPageAccountSection(
@@ -176,6 +186,15 @@ private fun MyPageScreenContent(
                             onNicknameChange = onNicknameDraftChange,
                             onDismiss = onNicknameEditDismiss,
                             onSave = onNicknameSave
+                        )
+                    }
+
+                    if (uiState.data.isMyDataConsentDialogVisible) {
+                        MyDataConsentDialog(
+                            isChecked = uiState.data.isMyDataConsentChecked,
+                            onCheckedChange = onMyDataConsentCheckedChange,
+                            onDismiss = onMyDataConsentDismiss,
+                            onConfirm = onMyDataConsentSubmit,
                         )
                     }
                 }
