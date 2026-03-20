@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSectio
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
 import com.d102.wye.presentation.theme.PrimaryGreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +72,8 @@ fun SimulationScreen(
     val peekHeight = screenHeight * 0.33f
 
     val scaffoldState = rememberBottomSheetScaffoldState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(simulationState) {
         if (simulationState is UiState.Error) {
@@ -133,7 +137,12 @@ fun SimulationScreen(
                     formState = formState,
                     onAddClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
                     onRemoveClick = { viewModel.onPortfolioItemRemoved(it) },
-                    onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) }
+                    onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
+                    onConfirmClick = {
+                        coroutineScope.launch {
+                            scaffoldState.bottomSheetState.partialExpand()
+                        }
+                    }
                 )
             }
         }

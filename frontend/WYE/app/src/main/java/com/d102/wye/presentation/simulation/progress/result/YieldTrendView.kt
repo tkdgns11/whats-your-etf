@@ -91,7 +91,7 @@ fun YieldTrendView(
 
         val cardItems = listOf(
             Triple(
-                "예상 수익금",
+                "예상 총 자산",
                 uiModel?.estimatedFinalAsset ?: "-",
                 uiModel?.netProfit ?: "-"
             ) to (uiModel?.let {
