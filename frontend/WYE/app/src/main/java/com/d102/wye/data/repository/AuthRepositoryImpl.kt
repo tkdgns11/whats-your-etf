@@ -6,6 +6,7 @@ import com.d102.wye.data.remote.api.AuthApiService
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.LogoutRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
@@ -14,8 +15,10 @@ import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.TokenPair
+import kotlinx.coroutines.flow.first
 import com.d102.wye.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -194,14 +197,32 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun logout(): BaseResult<Unit> {
+        val currentFcmToken = authTokenDataStore.fcmToken.first()
+        Timber.d(
+            "[Logout] request | hasFcmToken=%s | fcmToken=%s",
+            !currentFcmToken.isNullOrBlank(),
+            currentFcmToken
+        )
         return safeApiCallWithoutData(
             // 서버 로그아웃 성공/실패 무관하게 로컬 토큰 삭제
-            onSuccess = { authTokenDataStore.clearTokens() }
+            onSuccess = {
+                Timber.d("[Logout] success | clearing local auth state")
+                authTokenDataStore.clearTokens()
+            }
         ) {
-            authApiService.logout()
+            authApiService.logout(
+                LogoutRequest(
+                    fcmToken = currentFcmToken
+                )
+            )
         }.also {
             // 서버 오류여도 로컬은 무조건 삭제
             if (it is BaseResult.Error) {
+                Timber.e(
+                    "[Logout] failed | code=%s | message=%s",
+                    it.error.code,
+                    it.error.message
+                )
                 authTokenDataStore.clearTokens()
             }
         }
@@ -212,13 +233,26 @@ class AuthRepositoryImpl @Inject constructor(
     // ─────────────────────────────────────────
 
     override suspend fun registerFcmToken(token: String): BaseResult<Unit> {
-        return safeApiCallWithoutData {
+        return safeApiCallWithoutData(
+            onSuccess = {
+                Timber.d("[FCM] register success | token=%s", token)
+                authTokenDataStore.saveFcmToken(token)
+            }
+        ) {
             authApiService.registerFcmToken(
                 FcmTokenRequest(
                     token = token,
                     deviceType = "ANDROID"
                 )
             )
+        }.also {
+            if (it is BaseResult.Error) {
+                Timber.e(
+                    "[FCM] register failed | code=%s | message=%s",
+                    it.error.code,
+                    it.error.message
+                )
+            }
         }
     }
 
