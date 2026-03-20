@@ -73,8 +73,8 @@ fun PortfolioSection(
 
     val badgeColor = when {
         totalWeight == 100 -> PrimaryGreen
-        totalWeight > 100 -> BadgeNeutralFont
-        else -> IconInactive
+        totalWeight > 100  -> BadgeNeutralFont
+        else               -> IconInactive
     }
 
     Column(
@@ -82,7 +82,6 @@ fun PortfolioSection(
             .background(BackGroundLightGreen2)
             .padding(horizontal = 20.dp)
     ) {
-        // ── 상단 헤더
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -111,12 +110,17 @@ fun PortfolioSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── 리스트
         if (formState.portfolioItems.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 formState.portfolioItems.forEach { item ->
+                    val otherWeights = formState.portfolioItems
+                        .filter { it.ticker != item.ticker }
+                        .sumOf { it.weight }
+                    val maxWeight = (100 - otherWeights).coerceIn(0, 100)
+
                     PortfolioSliderItemRow(
                         item = item,
+                        maxWeight = maxWeight,
                         onWeightChange = { newWeight -> onWeightChange(item.ticker, newWeight) },
                         onRemove = { onRemoveClick(item.ticker) }
                     )
@@ -125,7 +129,6 @@ fun PortfolioSection(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // ── ETF 추가 버튼
         if (formState.portfolioItems.isEmpty()) {
             DashedContainer(
                 modifier = Modifier.clickable { onAddClick() },
@@ -179,13 +182,13 @@ fun PortfolioSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         WyePrimaryButton(
-            text = "닫기",
+            text = if (isComplete) "시뮬레이션 확인" else "비율을 100%로 맞춰주세요",
             modifier = Modifier.fillMaxWidth(),
-            onClick = { onConfirmClick() }
-
+            enabled = isComplete,
+            onClick = { if (isComplete) onConfirmClick() }
         )
 
-//        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
@@ -193,6 +196,7 @@ fun PortfolioSection(
 @Composable
 private fun PortfolioSliderItemRow(
     item: PortfolioItem,
+    maxWeight: Int,
     onWeightChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
@@ -253,15 +257,14 @@ private fun PortfolioSliderItemRow(
                     onValueChange = { newValue ->
                         val filteredText = newValue.text.filter { it.isDigit() }
                         if (filteredText.isNotEmpty()) {
-                            val newWeight = filteredText.toInt().coerceIn(0, 100)
+                            val newWeight = filteredText.toInt().coerceIn(0, maxWeight)
                             weightTextFieldValue = newValue.copy(
                                 text = newWeight.toString(),
                                 selection = TextRange(newWeight.toString().length)
                             )
                             onWeightChange(newWeight)
                         } else {
-                            weightTextFieldValue =
-                                newValue.copy(text = "", selection = TextRange(0))
+                            weightTextFieldValue = newValue.copy(text = "", selection = TextRange(0))
                             onWeightChange(0)
                         }
                     },
@@ -297,7 +300,7 @@ private fun PortfolioSliderItemRow(
             Slider(
                 value = item.weight.toFloat(),
                 onValueChange = { newValue ->
-                    val newIntValue = newValue.toInt()
+                    val newIntValue = newValue.toInt().coerceAtMost(maxWeight)
                     weightTextFieldValue = TextFieldValue(
                         text = newIntValue.toString(),
                         selection = TextRange(newIntValue.toString().length)

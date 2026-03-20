@@ -24,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,14 +31,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTabs
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
-import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
-import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.result.AiReviewDialog
+import com.d102.wye.presentation.simulation.progress.result.InvestmentDictionaryDialog
 import com.d102.wye.presentation.simulation.progress.result.SimulationResultSection
 import com.d102.wye.presentation.simulation.progress.setup.InvestmentSetupSection
 import com.d102.wye.presentation.simulation.progress.setup.PortfolioSection
@@ -137,7 +134,12 @@ fun SimulationScreen(
                     formState = formState,
                     onAddClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
                     onRemoveClick = { viewModel.onPortfolioItemRemoved(it) },
-                    onWeightChange = { ticker, weight -> viewModel.updateItemWeight(ticker, weight) },
+                    onWeightChange = { ticker, weight ->
+                        viewModel.updateItemWeight(
+                            ticker,
+                            weight
+                        )
+                    },
                     onConfirmClick = {
                         coroutineScope.launch {
                             scaffoldState.bottomSheetState.partialExpand()
