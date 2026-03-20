@@ -54,7 +54,7 @@ fun PortfolioAnalysisView(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -106,7 +106,7 @@ fun PortfolioAnalysisView(
                 ResultCard(
                     modifier = Modifier
                         .weight(1f)
-                        .height(80.dp),
+                        .height(84.dp),
                     borderColor = SurfaceVariant,
                     backgroundColor = BackGroundLightGreen3
                 ) {

@@ -150,7 +150,7 @@ fun YieldTrendView(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // ── 차트 영역 ────────────────────────────────────────────────────────
         when (simulationState) {

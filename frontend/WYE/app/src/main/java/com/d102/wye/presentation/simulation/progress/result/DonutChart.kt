@@ -32,7 +32,7 @@ import com.d102.wye.presentation.theme.TextPrimary
 fun DonutChart(
     items: List<SectorWeight>,
     modifier: Modifier = Modifier,
-    chartSize: Dp = 110.dp,
+    chartSize: Dp = 120.dp,
     strokeWidth: Dp = 16.dp
 ) {
     val total = items.sumOf { it.ratio.toDouble() }.toFloat()

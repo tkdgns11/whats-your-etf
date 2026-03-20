@@ -67,7 +67,7 @@ fun SimulationScreen(
 
     // 화면 높이의 45%를 peekHeight로
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-    val peekHeight = screenHeight * 0.35f
+    val peekHeight = screenHeight * 0.33f
 
     val scaffoldState = rememberBottomSheetScaffoldState()
 
