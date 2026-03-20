@@ -139,13 +139,24 @@ public class AlertServiceImpl implements AlertService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 기존 토큰 조회 (같은 기기 유형)
-        FcmToken existingToken = fcmTokenRepository.findByUserIdAndDeviceType(userId, request.getDeviceType())
-                .orElse(null);
+        // 해당 토큰 조회
+        FcmToken existingToken = fcmTokenRepository.findByToken(request.getToken()).orElse(null);
 
         if (existingToken != null) {
-            // 기존 토큰 업데이트
-            existingToken.updateToken(request.getToken());
+            if (existingToken.getUser().getId().equals(userId)) {
+                // 같은 사용자: 활성화 및 갱신
+                existingToken.updateToken(request.getToken());
+            } else {
+                // 다른 사용자: 삭제 후 새로 등록 (기기 교체)
+                fcmTokenRepository.delete(existingToken);
+                fcmTokenRepository.flush();
+                FcmToken newToken = FcmToken.builder()
+                        .user(user)
+                        .token(request.getToken())
+                        .deviceType(request.getDeviceType())
+                        .build();
+                fcmTokenRepository.save(newToken);
+            }
         } else {
             // 새 토큰 등록
             FcmToken newToken = FcmToken.builder()
