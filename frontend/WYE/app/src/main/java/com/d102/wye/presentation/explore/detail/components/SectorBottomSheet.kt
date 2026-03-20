@@ -76,7 +76,7 @@ private fun StockProgressItem(stock: EtfClusterStock, onClick: (() -> Unit)? = n
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(SurfaceVariant),
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(BackGroundLightGreen),
                 ) {
                     Text(stock.name.take(1), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = PrimaryGreen)
                 }
@@ -84,7 +84,7 @@ private fun StockProgressItem(stock: EtfClusterStock, onClick: (() -> Unit)? = n
             }
             Text("${"%.1f".format(stock.percentage)}%", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary)
         }
-        Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(SurfaceVariant)) {
+        Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(BackGroundLightGreen)) {
             Box(modifier = Modifier.fillMaxWidth((stock.percentage / 100.0).toFloat().coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(PrimaryGreen))
         }
     }
@@ -93,7 +93,7 @@ private fun StockProgressItem(stock: EtfClusterStock, onClick: (() -> Unit)? = n
 @Composable
 private fun AiAnalysisBox(analysis: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceVariant).padding(14.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BackGroundLightGreen).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(

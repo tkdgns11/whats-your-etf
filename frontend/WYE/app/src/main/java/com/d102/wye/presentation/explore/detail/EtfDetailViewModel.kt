@@ -112,7 +112,13 @@ class EtfDetailViewModel @Inject constructor(
     fun loadChart() {
         viewModelScope.launch {
             _chartState.update { UiState.Loading }
-            val startMs   = _startDateMs.value ?: return@launch
+            val startMs = _startDateMs.value ?: run {
+                if (_selectedPeriod.value == "ALL") {
+                    val listingDate = (_detailState.value as? UiState.Success)?.data?.listingDate
+                    if (listingDate != null) dateStringToMs(listingDate)
+                    else System.currentTimeMillis() - 20L * 365 * 86_400_000L
+                } else return@launch
+            }
             val endMs     = _endDateMs.value   ?: System.currentTimeMillis()
             val startDate = msToDateString(startMs)
             val endDate   = msToDateString(endMs)
