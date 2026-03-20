@@ -58,4 +58,16 @@ public interface UserFavoriteEtfRepository extends JpaRepository<UserFavoriteEtf
      * 사용자 ID로 관심 ETF 목록 조회
      */
     List<UserFavoriteEtf> findByUserId(Long userId);
+
+    /**
+     * 특정 ETF를 관심 등록한 사용자 ID 목록 조회
+     */
+    @Query("SELECT uf.user.id FROM UserFavoriteEtf uf WHERE uf.etf.id = :etfId")
+    List<Long> findUserIdsByEtfId(@Param("etfId") Long etfId);
+
+    /**
+     * 특정 ETF를 관심 등록한 사용자 목록 조회 (User 포함)
+     */
+    @Query("SELECT uf FROM UserFavoriteEtf uf JOIN FETCH uf.user WHERE uf.etf.id = :etfId")
+    List<UserFavoriteEtf> findAllByEtfIdWithUser(@Param("etfId") Long etfId);
 }

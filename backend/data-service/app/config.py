@@ -49,6 +49,12 @@ class Settings(BaseSettings):
 
     data_portal_company_service_key: str = ""
 
+    # RabbitMQ
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = "guest"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"
