@@ -31,6 +31,7 @@ class AuthTokenDataStore @Inject constructor(
 
     private val accessTokenKey = stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)
     private val refreshTokenKey = stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)
+    private val fcmTokenKey = stringPreferencesKey(Constants.KEY_FCM_TOKEN)
     private val isLoggedInKey = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
     private val sessionExpiredKey = booleanPreferencesKey(Constants.KEY_SESSION_EXPIRED)
 
@@ -43,6 +44,9 @@ class AuthTokenDataStore @Inject constructor(
 
     /** Refresh Token Flow — TokenRefreshInterceptor에서 runBlocking으로 수집 */
     val refreshToken: Flow<String?> = dataStore.data.map { it[refreshTokenKey] }
+
+    /** 마지막으로 서버에 등록한 FCM 토큰 */
+    val fcmToken: Flow<String?> = dataStore.data.map { it[fcmTokenKey] }
 
     /** 로그인 상태 Flow — MainActivity/AuthViewModel에서 startDestination 분기에 사용 */
     val isLoggedIn: Flow<Boolean> = dataStore.data.map { it[isLoggedInKey] ?: false }
@@ -88,6 +92,12 @@ class AuthTokenDataStore @Inject constructor(
         }
     }
 
+    suspend fun saveFcmToken(token: String) {
+        dataStore.edit { preferences ->
+            preferences[fcmTokenKey] = token
+        }
+    }
+
     /**
      * 로그아웃 / 토큰 만료 시 전체 삭제
      * AuthRepositoryImpl.logout() 또는 TokenRefreshInterceptor 재발급 실패 시 호출
@@ -96,6 +106,7 @@ class AuthTokenDataStore @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(accessTokenKey)
             preferences.remove(refreshTokenKey)
+            preferences.remove(fcmTokenKey)
             preferences[isLoggedInKey] = false
             preferences[sessionExpiredKey] = false
         }
@@ -106,6 +117,7 @@ class AuthTokenDataStore @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(accessTokenKey)
             preferences.remove(refreshTokenKey)
+            preferences.remove(fcmTokenKey)
             preferences[isLoggedInKey] = false
             preferences[sessionExpiredKey] = true
         }

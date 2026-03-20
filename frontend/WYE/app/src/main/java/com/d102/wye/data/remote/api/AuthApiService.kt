@@ -3,6 +3,7 @@ package com.d102.wye.data.remote.api
 import com.d102.wye.data.remote.dto.request.FcmTokenRequest
 import com.d102.wye.data.remote.dto.request.KakaoLoginRequest
 import com.d102.wye.data.remote.dto.request.LoginRequest
+import com.d102.wye.data.remote.dto.request.LogoutRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
@@ -89,7 +90,9 @@ interface AuthApiService {
      * 서버에서 Refresh Token 무효화
      */
     @POST("auth/logout")
-    suspend fun logout(): Response<BaseResponse<Unit>>
+    suspend fun logout(
+        @Body request: LogoutRequest
+    ): Response<BaseResponse<Unit>>
 
     /**
      * FCM 토큰 등록
