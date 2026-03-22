@@ -2,12 +2,13 @@ package com.d102.wye.presentation.simulation.progress.result
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.designsystem.bottomShadow
 import com.d102.wye.presentation.model.UiState
@@ -24,38 +25,20 @@ fun SimulationResultSection(
     onDictionaryClick: () -> Unit,
     idleGuideMessage: String
 ) {
-    Box {
-        SubcomposeLayout(
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
             modifier = Modifier
+                .fillMaxWidth()
+                .height(450.dp)
                 .bottomShadow(offsetY = 4.dp, blurRadius = 6.dp)
                 .background(Color.White)
                 .padding(16.dp)
-        ) { constraints ->
-
-            val yieldHeight = subcompose("yield_measure") {
-                YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
-            }.map { it.measure(constraints) }.maxOfOrNull { it.height } ?: 0
-
-            val analysisHeight = subcompose("analysis_measure") {
-                PortfolioAnalysisView(formState, simulationState, onDictionaryClick)
-            }.map { it.measure(constraints) }.maxOfOrNull { it.height } ?: 0
-
-            val maxHeight = maxOf(yieldHeight, analysisHeight)
-
-            val fixedConstraints = constraints.copy(
-                minHeight = maxHeight,
-                maxHeight = maxHeight
-            )
-
-            val content = subcompose("content") {
-                when (formState.selectedTabIndex) {
-                    0 -> YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
-                    1 -> PortfolioAnalysisView(formState, simulationState, onDictionaryClick)
-                }
-            }.map { it.measure(fixedConstraints) }
-
-            layout(constraints.maxWidth, maxHeight) {
-                content.forEach { it.place(0, 0) }
+        ) {
+            when (formState.selectedTabIndex) {
+                0 -> YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
+                1 -> PortfolioAnalysisView(simulationState, onDictionaryClick)
             }
         }
 

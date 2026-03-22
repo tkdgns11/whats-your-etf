@@ -64,7 +64,6 @@ fun SimulationScreen(
 
     var showDictionaryDialog by remember { mutableStateOf(false) }
 
-    // 화면 높이의 45%를 peekHeight로
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val peekHeight = screenHeight * 0.33f
 

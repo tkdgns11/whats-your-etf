@@ -64,7 +64,7 @@ fun YieldTrendView(
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
                     )
                     Text(
-                        text = "현재 자산과 시뮬레이션 비교",
+                        text = "실제 자산과 시뮬레이션을 비교해보세요",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -150,6 +150,7 @@ fun YieldTrendView(
             }
         }
 
+
         Spacer(modifier = Modifier.height(18.dp))
 
         // ── 차트 영역 ────────────────────────────────────────────────────────
@@ -174,13 +175,12 @@ fun YieldTrendView(
                     ) {
                         if (totalWeight != 100) {
                             Text(
-                                text = "비중 합계: $totalWeight%",
+                                text = "$totalWeight%",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = if (totalWeight > 100) PositiveColor else TextPrimary
                             )
                             Text(
-                                text = if (totalWeight > 100) "비중 합계가 100%를 초과했습니다"
-                                else "비중 합계를 100%로 맞춰주세요",
+                                text = "비중 합계를 100%로 맞춰주세요",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                                 textAlign = TextAlign.Center
