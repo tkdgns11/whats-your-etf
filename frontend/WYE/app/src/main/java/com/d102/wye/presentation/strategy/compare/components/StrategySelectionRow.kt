@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +29,8 @@ import com.d102.wye.presentation.theme.TextPrimary
 @Composable
 fun StrategySelectionRow(
     item: CompareStrategyItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    indicatorColor: Color = Color.Transparent
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (item.isSelected) PrimaryGreen else Border,
@@ -65,13 +67,17 @@ fun StrategySelectionRow(
             text = item.name,
             style = MaterialTheme.typography.bodyMedium,
             color = TextPrimary,
-            modifier = Modifier.weight(1f)
         )
 
-        Text(
-            text = item.returnRate,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (item.returnRate.contains("+")) Color(0xFFE56A6A) else Color(0xFF4B89DC)
-        )
+        if (indicatorColor != Color.Transparent) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(indicatorColor, CircleShape)
+            )
+        }
+
     }
 }
