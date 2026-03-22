@@ -257,3 +257,93 @@ class EtfService:
         # 나머지 flush된 데이터 최종 commit
         await self.stock_repository.db.commit()
         logging.info(f"[완료] 전체 {len(tickers)}개 주식 정보 저장 완료")
+
+    async def sync_etf_metadata(self):
+        """
+        KIS API (FHPST02400000)를 통해 활성 ETF의 상세 메타데이터를 동기화합니다.
+        - AUM(순자산총액), NAV, 운용사, 상장일, 배당주기, 대표섹터 등을 채웁니다.
+        """
+        from app.services.kis_client import KISClient
+        from datetime import datetime
+
+        active_etfs = await self.etf_repository.get_active_etfs()
+        if not active_etfs:
+            logger.info("메타데이터를 동기화할 활성 ETF가 없습니다.")
+            return
+
+        kis_client = KISClient()
+        logger.info(f"총 {len(active_etfs)}개 ETF 상세 메타데이터 수집 시작...")
+
+        # KIS etf_dvdn_cycl 코드 → dividend_freq 문자열 매핑
+        # (069500 기준: etf_dvdn_cycl=3 → QUARTERLY 확인됨)
+        dividend_freq_map = {
+            "1": "MONTHLY",
+            "3": "QUARTERLY",
+            "6": "SEMI_AN",
+            "12": "ANNUAL",
+            "0": "NONE"
+        }
+
+        # 병렬 처리 (semaphore는 KISClient 내부에서 관리)
+        import asyncio
+
+        async def fetch_and_update(etf: dict):
+            ticker = etf["ticker"]
+            etf_id = etf["id"]
+            try:
+                res = await kis_client.get_etf_basic_info(ticker)
+                if not res:
+                    return
+
+                info = {}
+
+                # NAV
+                if res.get("nav"):
+                    try:
+                        info["nav"] = float(res["nav"])
+                    except ValueError:
+                        pass
+
+                # AUM: etf_ntas_ttam 단위 = 억원 → 원으로 변환 (×1억)
+                if res.get("etf_ntas_ttam"):
+                    try:
+                        info["aum"] = int(res["etf_ntas_ttam"]) * 100_000_000
+                    except ValueError:
+                        pass
+
+                # 운용사 (삼성자산운용(ETF) → 삼성자산운용)
+                if res.get("mbcr_name"):
+                    info["asset_manager"] = res["mbcr_name"].replace("(ETF)", "").strip()
+
+                # 상장일
+                if res.get("stck_lstn_date") and res["stck_lstn_date"] != "0":
+                    try:
+                        info["listing_date"] = datetime.strptime(res["stck_lstn_date"], "%Y%m%d").date()
+                    except ValueError:
+                        pass
+
+                # 배당주기
+                cycle = str(res.get("etf_dvdn_cycl", "")).strip()
+                if cycle:
+                    info["dividend_freq"] = dividend_freq_map.get(cycle, "NONE")
+
+                # 대표 섹터 (KOSPI200, KOSDAQ150 등)
+                if res.get("etf_rprs_bstp_kor_isnm"):
+                    info["sector"] = res["etf_rprs_bstp_kor_isnm"]
+
+                # 카테고리 (ETF(실물복제/수익증권) 등)
+                if res.get("bstp_kor_isnm"):
+                    info["category"] = res["bstp_kor_isnm"]
+
+                if info:
+                    await self.etf_repository.update_etf_advanced_info(etf_id, info)
+                    logger.info(f"[{ticker}] 메타데이터 업데이트 완료: {list(info.keys())}")
+
+            except Exception as e:
+                logger.error(f"[{ticker}] 메타데이터 동기화 에러: {e}")
+
+        tasks = [fetch_and_update(etf) for etf in active_etfs]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 메타데이터 동기화 완료: {len(active_etfs)}개 처리 ===")

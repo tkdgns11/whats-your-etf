@@ -6,10 +6,10 @@ from urllib.parse import quote_plus
 class Settings(BaseSettings):
     # Database (개별 환경변수 - Docker 환경용)
     db_host: str = "localhost"
-    db_port: int = 5433
+    db_port: int = 5432
     db_name: str = "whatsyouretf"
     db_user: str = "wye"
-    db_password: str = "wyedbpw!$@#%!"
+    db_password: str = ""
 
     # DATABASE_URL 직접 지정 시 사용 (로컬 개발용)
     database_url: str | None = None
@@ -49,11 +49,21 @@ class Settings(BaseSettings):
 
     data_portal_company_service_key: str = ""
 
+    # KIS API (한국투자증권)
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
+
     # RabbitMQ
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"
     rabbitmq_password: str = "guest"
+    
+    # Redis
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str = ""
+    redis_db: int = 0
 
     model_config = SettingsConfigDict(
         env_file=".env",
