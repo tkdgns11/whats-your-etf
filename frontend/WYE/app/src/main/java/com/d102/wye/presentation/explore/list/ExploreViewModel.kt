@@ -44,6 +44,7 @@ class ExploreViewModel @Inject constructor(
     private var rawEtfList: List<EtfListItemUiModel> = emptyList()
     private var currentPage = 0
     private var isLastPage = false
+    private var isDataInitialized = false
 
     private val _selectedTickers = MutableStateFlow<Set<String>>(emptySet())
     val selectedTickers: StateFlow<Set<String>> = _selectedTickers.asStateFlow()
@@ -70,11 +71,13 @@ class ExploreViewModel @Inject constructor(
             currentPage = 0
             isLastPage = false
             rawEtfList = emptyList()
+            isDataInitialized = false
 
             when (val result = etfRepository.getEtfList(filter.toFilter(_sortedBy.value), page = 0)) {
                 is BaseResult.Success -> {
                     isLastPage = result.data.isLast
                     rawEtfList = syncFavoriteStates(result.data.items.map { it.toUiModel() })
+                    isDataInitialized = true
                     applyFilter()
                 }
                 is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
@@ -193,6 +196,7 @@ class ExploreViewModel @Inject constructor(
         }
 
     private fun applyFilter() {
+        if (!isDataInitialized) return
         val filter = _filterState.value
         val filtered = if (filter.query.isBlank()) {
             rawEtfList
