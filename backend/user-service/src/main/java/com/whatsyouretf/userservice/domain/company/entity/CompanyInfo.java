@@ -4,7 +4,6 @@ import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -46,18 +45,6 @@ public class CompanyInfo {
     @Column(name = "industry_group", length = 50)
     private String industryGroup;
 
-    /** 회사 설명/사업 내용 */
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    /** 상장일 */
-    @Column(name = "listing_date")
-    private LocalDate listingDate;
-
-    /** 결산월 */
-    @Column(name = "fiscal_month")
-    private Integer fiscalMonth;
-
     /** 대표자명 */
     @Column(name = "ceo_name", length = 100)
     private String ceoName;
@@ -70,14 +57,6 @@ public class CompanyInfo {
     @Column(length = 50)
     private String region;
 
-    /** 액면가 */
-    @Column(name = "face_value")
-    private Integer faceValue;
-
-    /** 상장주식수 */
-    @Column(name = "listed_shares")
-    private Long listedShares;
-
     /** 활성 여부 */
     @Column(name = "is_active")
     @Builder.Default
@@ -85,10 +64,6 @@ public class CompanyInfo {
 
     @Column(name = "corporation_number", length = 50)
     private String corporationNumber;
-
-    /** 데이터 출처 */
-    @Column(name = "data_source", length = 50)
-    private String dataSource;
 
     @Column(name = "created_at")
     @Builder.Default

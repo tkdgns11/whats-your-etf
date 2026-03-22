@@ -33,6 +33,9 @@ public class Stock {
     @Column(nullable = false, length = 20, unique = true)
     private String ticker;
 
+    @Column
+    private String description;
+
     /** 종가 */
     @Column(precision = 14, scale = 2)
     private BigDecimal close;

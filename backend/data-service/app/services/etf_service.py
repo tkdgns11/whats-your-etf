@@ -223,7 +223,7 @@ class EtfService:
                         await self.stock_repository.get_or_create_stock(ticker, None, market_type)
                     else:
                         # 2. Company 저장 (외래키 대상)
-                        company = await self.stock_repository.get_or_create_company(corp_name)
+                        company = await self.stock_repository.get_or_create_company(corp_name, corp_number)
 
                         # 3. Stock 저장 (Company 외래키 연결)
                         await self.stock_repository.get_or_create_stock(ticker, company.id, market_type)
