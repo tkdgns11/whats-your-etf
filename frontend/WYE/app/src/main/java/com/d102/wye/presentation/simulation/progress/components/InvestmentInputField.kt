@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.EtfRise
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextPrimary
@@ -36,7 +37,9 @@ fun InvestmentInputField(
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Number,
     isCurrencyField: Boolean = false,
-    suffix: String? = null  // "만원", "개월" 등
+    suffix: String? = null,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
     Column(modifier = modifier) {
         Text(
@@ -47,7 +50,7 @@ fun InvestmentInputField(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 표시용 값 (컴마 포맷 - currency일 때만)
+        // 표시용 값
         val displayValue = if (isCurrencyField) {
             value.replace(",", "").toLongOrNull()
                 ?.let { "%,d".format(it) }
@@ -68,7 +71,7 @@ fun InvestmentInputField(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
-                        .border(1.dp, Divider, RoundedCornerShape(12.dp))
+                        .border(1.dp, if (isError) EtfRise else Divider, RoundedCornerShape(12.dp))
                         .background(Color.White, RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
@@ -88,12 +91,22 @@ fun InvestmentInputField(
                             Text(
                                 text = suffix,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PrimaryGreen
+                                color = if (isError) EtfRise else PrimaryGreen
                             )
                         }
                     }
                 }
             }
         )
+
+        if (isError && !errorMessage.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.labelSmall,
+                color = EtfRise,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
     }
 }
