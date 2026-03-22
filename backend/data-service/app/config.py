@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_name: str = "whatsyouretf"
     db_user: str = "wye"
-    db_password: str = "wye1234"
+    db_password: str = ""
 
     # DATABASE_URL 직접 지정 시 사용 (로컬 개발용)
     database_url: str | None = None

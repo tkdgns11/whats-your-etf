@@ -31,6 +31,12 @@ class BenchmarkService:
             if next_date > target_end_date:
                 logger.info(f"{market_type} 지수는 이미 최신 상태입니다.")
                 return
+            
+            import pandas as pd
+            if len(pd.bdate_range(start=next_date, end=target_end_date)) == 0:
+                logger.info(f"{market_type} 지수 대상 기간({next_date}~{target_end_date}) 내 영업일이 없어 호출을 생략합니다.")
+                return
+
             start_date = next_date.strftime("%Y%m%d")
             
         logger.info(f"{market_type} 지수 종가 스크래핑 시작 (start_date={start_date})")
