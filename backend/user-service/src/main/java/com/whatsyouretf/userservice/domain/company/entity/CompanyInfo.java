@@ -28,10 +28,6 @@ public class CompanyInfo {
     @Column(name = "company_name", length = 100)
     private String companyName;
 
-    /** 시장 구분 (KOSPI, KOSDAQ) */
-    @Column(name = "market_type", length = 20)
-    private String marketType;
-
     /** 산업분류 (세분류: SEMI_HBM 등) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "industry_code")
