@@ -33,13 +33,14 @@ class CompanyInfo(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     company_name = Column(String(100), nullable=False)
     industry_code = Column(String(10), ForeignKey("industry_classification.code", ondelete="SET NULL"))
+    industry_name = Column(String(100))
     industry_group = Column(String(50))  # 투자테마 그룹 (IT_SEMI, BIO 등)
 
     ceo_name = Column(String(100))
     homepage = Column(String(200))
     region = Column(String(50))
-    description = Column(Text)
-    corporation_number = Column(String(20))
+    is_active = Column(Boolean, default=True)
+    corporation_number = Column(String(50))
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())

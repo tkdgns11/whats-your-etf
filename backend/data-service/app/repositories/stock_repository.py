@@ -32,10 +32,15 @@ class StockRepository:
                 company.homepage = info["homepage"]
             if info.get("region"):
                 company.region = info["region"]
-            if info.get("description"):
-                company.description = info["description"]
             if info.get("corporation_number"):
                 company.corporation_number = info["corporation_number"]
+            await self.db.flush()
+            
+    async def update_stock_description(self, ticker: str, description: str):
+        result = await self.db.execute(select(Stock).where(Stock.ticker == ticker))
+        stock = result.scalar_one_or_none()
+        if stock and description:
+            stock.description = description
             await self.db.flush()
 
     async def get_or_create_stock(self, ticker: str, company_id: int, market_type: str = None) -> Stock:

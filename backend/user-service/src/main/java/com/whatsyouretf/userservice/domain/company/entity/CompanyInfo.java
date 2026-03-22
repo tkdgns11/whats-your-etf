@@ -50,7 +50,7 @@ public class CompanyInfo {
     private String homepage;
 
     /** 지역 */
-    @Column(length = 50)
+    @Column(length = 100)
     private String region;
 
     /** 활성 여부 */

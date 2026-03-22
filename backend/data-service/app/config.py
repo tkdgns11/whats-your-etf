@@ -6,10 +6,10 @@ from urllib.parse import quote_plus
 class Settings(BaseSettings):
     # Database (개별 환경변수 - Docker 환경용)
     db_host: str = "localhost"
-    db_port: int = 5432
+    db_port: int = 5433
     db_name: str = "whatsyouretf"
     db_user: str = "wye"
-    db_password: str = ""
+    db_password: str = "wyedbpw!$@#%!"
 
     # DATABASE_URL 직접 지정 시 사용 (로컬 개발용)
     database_url: str | None = None

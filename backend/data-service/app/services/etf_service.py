@@ -237,10 +237,13 @@ class EtfService:
                                     "ceo_name": corp_outline.get("enpRprFnm"),
                                     "homepage": corp_outline.get("enpHmpgUrl"),
                                     "region": corp_outline.get("enpBsadr"),
-                                    "description": corp_outline.get("enpMainBizNm"),
                                     "corporation_number": corp_number
                                 }
                                 await self.stock_repository.update_company_info(company.id, info)
+                                
+                                biz_description = corp_outline.get("enpMainBizNm")
+                                if biz_description:
+                                    await self.stock_repository.update_stock_description(ticker, biz_description)
             except Exception as e:
                 logging.error(f"[{ticker}] 처리 중 오류 발생: {e}")
                 await self.stock_repository.db.rollback()
