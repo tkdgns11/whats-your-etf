@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_fcm_user", columnList = "user_id"),
         @Index(name = "idx_fcm_token", columnList = "token")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uq_fcm_user_device", columnNames = {"user_id", "device_type"})
+        @UniqueConstraint(name = "uq_fcm_token", columnNames = {"token"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

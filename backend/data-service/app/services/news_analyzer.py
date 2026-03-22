@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.models.news import NewsArticle
 from app.models.news_etf import NewsETFInfluence
 from app.services.llm_service import LLMService
+from app.services.event_publisher import event_publisher
 
 logger = logging.getLogger(__name__)
 
@@ -209,10 +210,37 @@ class NewsAnalyzer:
             self.db.commit()
             logger.info(f"뉴스 분석 저장 완료: {article.id} - ETF {len(etf_recs)}개 추천")
 
+            # 4. 이벤트 발행 (ETF 추천이 있는 경우)
+            if etf_recs:
+                await self._publish_news_event(article, analysis, etf_recs)
+
         return {
             "analysis": analysis,
             "etf_recommendations": etf_recs
         }
+
+    async def _publish_news_event(
+        self,
+        article: NewsArticle,
+        analysis: NewsAnalysisResult,
+        etf_recs: List[ETFRecommendation]
+    ):
+        """뉴스 분석 완료 이벤트 발행 (RabbitMQ)"""
+        try:
+            etf_ids = [rec.etf_id for rec in etf_recs]
+            summary = analysis.summary[0] if analysis.summary else ""
+            influence_type = etf_recs[0].influence_type if etf_recs else "NEUTRAL"
+
+            await event_publisher.publish_news_alert(
+                news_id=article.id,
+                news_title=article.title or "",
+                news_summary=summary,
+                etf_ids=etf_ids,
+                influence_type=influence_type
+            )
+        except Exception as e:
+            # 이벤트 발행 실패해도 분석 결과는 유지
+            logger.error(f"뉴스 이벤트 발행 실패: newsId={article.id}, error={e}")
 
 
 async def analyze_news(db: Session, news_id: int) -> Optional[Dict[str, Any]]:

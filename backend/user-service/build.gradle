@@ -48,6 +48,12 @@ dependencies {
     // JWT
     implementation 'com.auth0:java-jwt:4.4.0'
 
+    // Firebase Admin SDK (FCM Push)
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    // RabbitMQ (AMQP)
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
     // Swagger/OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
