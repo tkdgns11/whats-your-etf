@@ -70,11 +70,17 @@ class CalculateBacktestUseCase @Inject constructor() {
         val accumulatedShares = mutableMapOf<String, Double>()
         portfolios.forEach { accumulatedShares[it.ticker] = 0.0 }
 
-        val datesByMonth: Map<String, List<String>> = dates.groupBy { it.take(7) }
+        // 월별 그룹핑 후, 정확히 사용자가 입력한 개월 수(periodMonths)만큼만 뒤에서 자른다
+        val datesByMonth = dates.groupBy { it.take(7) }
+            .entries
+            .sortedBy { it.key }
+            .takeLast(periodMonths)
+
         val points = mutableListOf<BacktestPoint>()
         var monthCount = 0
+        var finalEndValue = 0.0 // 마지막 평가금액을 담을 변수
 
-        datesByMonth.entries.sortedBy { it.key }.forEach { (_, monthDates) ->
+        datesByMonth.forEach { (_, monthDates) ->
             monthCount++
 
             portfolios.forEach { portfolio ->
@@ -98,7 +104,8 @@ class CalculateBacktestUseCase @Inject constructor() {
                 shares * lastPrice
             }
 
-            // y축 = 수익률 (%)
+            finalEndValue = monthEndValue // 매달 평가금액을 갱신 (루프가 끝나면 최종 평가금액이 됨)
+
             val cumulativeInvest = monthlyAmount * monthCount
             val returnRate = if (cumulativeInvest > 0)
                 (monthEndValue - cumulativeInvest) / cumulativeInvest * 100.0
@@ -107,18 +114,15 @@ class CalculateBacktestUseCase @Inject constructor() {
             points.add(BacktestPoint(date = lastDate, value = returnRate))
         }
 
-        val totalInvestment = monthlyAmount * periodMonths
-        val estimatedFinalValue = points.lastOrNull()?.let {
-            // 최종 평가금액 복원 (totalReturn으로 역산)
-            (totalInvestment * (1.0 + it.value / 100.0)).roundToLong()
-        } ?: 0L
+        // 실제로 계산된 누적 투자금과 최종 평가금액을 그대로 사용합니다.
+        val actualTotalInvestment = monthlyAmount * monthCount
         val totalReturn = points.lastOrNull()?.value ?: 0.0
 
         return Result(
             points = points,
-            estimatedFinalValue = estimatedFinalValue,
-            totalReturn = totalReturn,
-            totalInvestment = totalInvestment
+            estimatedFinalValue = finalEndValue.roundToLong(), // 실제 계산된 최종 자산
+            totalReturn = totalReturn, // 실제 수익률
+            totalInvestment = actualTotalInvestment // 실제 투입된 총액
         )
     }
 
