@@ -47,6 +47,8 @@ fun InvestmentSetupSection(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+        val periodInt = formState.investmentPeriod.toIntOrNull() ?: 0
+        val isPeriodError = periodInt > 36
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             InvestmentInputField(
@@ -65,13 +67,15 @@ fun InvestmentSetupSection(
                 onValueChange = onPeriodChanged,
                 placeholder = "최대 36개월",
                 suffix = "개월",
+                isError = isPeriodError,
+                errorMessage = if (isPeriodError) "최대 36개월까지만 가능해요" else null,
                 modifier = Modifier.weight(1f)
             )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (!formState.investmentAmount.isBlank() && !formState.investmentPeriod.isBlank()) {
+        if (!isPeriodError && !formState.investmentAmount.isBlank() && !formState.investmentPeriod.isBlank()) {
             WyeCard(
                 modifier = Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, SurfaceVariant),

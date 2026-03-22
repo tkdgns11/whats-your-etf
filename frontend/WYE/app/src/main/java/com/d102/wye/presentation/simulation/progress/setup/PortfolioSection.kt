@@ -48,6 +48,7 @@ import com.d102.wye.R
 import com.d102.wye.presentation.designsystem.DashedContainer
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.designsystem.WyeCircleIcon
+import com.d102.wye.presentation.designsystem.WyePrimaryButton
 import com.d102.wye.presentation.simulation.progress.PortfolioItem
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.theme.BackGroundLightGreen2
@@ -64,15 +65,16 @@ fun PortfolioSection(
     formState: SimulationFormState,
     onAddClick: () -> Unit,
     onRemoveClick: (String) -> Unit,
-    onWeightChange: (String, Int) -> Unit
+    onWeightChange: (String, Int) -> Unit,
+    onConfirmClick: () -> Unit
 ) {
     val totalWeight = formState.portfolioItems.sumOf { it.weight }
+    val isComplete = totalWeight == 100
 
-    // 합계에 따른 색상 분기
     val badgeColor = when {
         totalWeight == 100 -> PrimaryGreen
-        totalWeight > 100 -> BadgeNeutralFont
-        else -> IconInactive
+        totalWeight > 100  -> BadgeNeutralFont
+        else               -> IconInactive
     }
 
     Column(
@@ -80,7 +82,6 @@ fun PortfolioSection(
             .background(BackGroundLightGreen2)
             .padding(horizontal = 20.dp)
     ) {
-        // ── 상단 헤더 (타이틀 및 합계 뱃지)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -88,7 +89,6 @@ fun PortfolioSection(
         ) {
             Text(text = "포트폴리오 구성", style = MaterialTheme.typography.titleSmall)
 
-            val totalWeight = formState.portfolioItems.sumOf { it.weight }
             Box(
                 modifier = Modifier.background(
                     color = badgeColor,
@@ -110,12 +110,17 @@ fun PortfolioSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── 리스트 렌더링 영역 ──
         if (formState.portfolioItems.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 formState.portfolioItems.forEach { item ->
+                    val otherWeights = formState.portfolioItems
+                        .filter { it.ticker != item.ticker }
+                        .sumOf { it.weight }
+                    val maxWeight = (100 - otherWeights).coerceIn(0, 100)
+
                     PortfolioSliderItemRow(
                         item = item,
+                        maxWeight = maxWeight,
                         onWeightChange = { newWeight -> onWeightChange(item.ticker, newWeight) },
                         onRemove = { onRemoveClick(item.ticker) }
                     )
@@ -174,17 +179,24 @@ fun PortfolioSection(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        WyePrimaryButton(
+            text = if (isComplete) "시뮬레이션 확인" else "비율을 100%로 맞춰주세요",
+            modifier = Modifier.fillMaxWidth(),
+            enabled = isComplete,
+            onClick = { if (isComplete) onConfirmClick() }
+        )
+
         Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
-/**
- * 개별 포트폴리오 아이템 행
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PortfolioSliderItemRow(
     item: PortfolioItem,
+    maxWeight: Int,
     onWeightChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
@@ -206,12 +218,10 @@ private fun PortfolioSliderItemRow(
         elevation = 0.dp
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // ── 1. 상단 정보 행 (로고, 텍스트, 퍼센트, X버튼이 모두 한 줄에 평화롭게 배치됨) ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 좌측 로고
                 WyeCircleIcon(
                     tag = item.name,
                     count = 2,
@@ -242,21 +252,19 @@ private fun PortfolioSliderItemRow(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // ── 우측 퍼센트 및 X 버튼 영역 ──
                 BasicTextField(
                     value = weightTextFieldValue,
                     onValueChange = { newValue ->
                         val filteredText = newValue.text.filter { it.isDigit() }
                         if (filteredText.isNotEmpty()) {
-                            val newWeight = filteredText.toInt().coerceIn(0, 100)
+                            val newWeight = filteredText.toInt().coerceIn(0, maxWeight)
                             weightTextFieldValue = newValue.copy(
                                 text = newWeight.toString(),
                                 selection = TextRange(newWeight.toString().length)
                             )
                             onWeightChange(newWeight)
                         } else {
-                            weightTextFieldValue =
-                                newValue.copy(text = "", selection = TextRange(0))
+                            weightTextFieldValue = newValue.copy(text = "", selection = TextRange(0))
                             onWeightChange(0)
                         }
                     },
@@ -268,7 +276,6 @@ private fun PortfolioSliderItemRow(
                     modifier = Modifier.width(44.dp)
                 )
 
-                // 단위 텍스트 `%`
                 Text(
                     text = "%",
                     color = PrimaryGreen,
@@ -277,7 +284,6 @@ private fun PortfolioSliderItemRow(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // X 버튼 (절대 겹치지 않게 Row 마지막에 배치)
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier.size(24.dp)
@@ -291,11 +297,10 @@ private fun PortfolioSliderItemRow(
                 }
             }
 
-            // ── 2. 하단 슬라이더 ──
             Slider(
                 value = item.weight.toFloat(),
                 onValueChange = { newValue ->
-                    val newIntValue = newValue.toInt()
+                    val newIntValue = newValue.toInt().coerceAtMost(maxWeight)
                     weightTextFieldValue = TextFieldValue(
                         text = newIntValue.toString(),
                         selection = TextRange(newIntValue.toString().length)

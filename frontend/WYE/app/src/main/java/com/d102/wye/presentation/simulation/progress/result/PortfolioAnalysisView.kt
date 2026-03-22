@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
-import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.BackGroundLightGreen3
 import com.d102.wye.presentation.theme.Divider
@@ -48,7 +47,6 @@ import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun PortfolioAnalysisView(
-    formState: SimulationFormState,
     simulationState: UiState<SimulationUiModel>,
     onDictionaryClick: () -> Unit
 ) {

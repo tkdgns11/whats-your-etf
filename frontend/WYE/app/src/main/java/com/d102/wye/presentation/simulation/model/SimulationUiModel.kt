@@ -36,13 +36,13 @@ fun SimulationResult.toUiModel(
     sectorWeights: List<SectorWeightUiModel> = emptyList()
 ): SimulationUiModel {
     val isPositive = totalReturn >= 0.0
-    val returnSign = if (isPositive) "+" else ""
     val netProfitValue = estimatedFinalValue - totalInvestment
 
     return SimulationUiModel(
         estimatedFinalAsset = estimatedFinalValue.formatAmount(),
-        netProfit = "${if (netProfitValue >= 0) "+" else ""}${netProfitValue.formatAmount()}",
-        yieldRate = "$returnSign${String.format("%.2f", totalReturn)}%",
+        netProfit = if (netProfitValue >= 0) "+${netProfitValue.formatAmount()}"
+        else "-${Math.abs(netProfitValue).formatAmount()}",
+        yieldRate = "${if (isPositive) "+" else ""}${String.format("%.2f", totalReturn)}%",
         totalInvestment = totalInvestment.formatAmount(),
         per = "${String.format("%.1f", fundamentals.per)}배",
         pbr = "${String.format("%.1f", fundamentals.pbr)}배",
@@ -57,15 +57,19 @@ fun SimulationResult.toUiModel(
 }
 
 private fun Long.formatAmount(): String {
-    val abs = Math.abs(this)
-    val eok = abs / 100_000_000L
-    val man = (abs % 100_000_000L) / 10_000L
-    val won = abs % 10_000L
+    val absValue = Math.abs(this)
+    val eok = absValue / 100_000_000L
+    val remainder = absValue % 100_000_000L
 
     return when {
-        eok > 0 && man > 0 -> "${eok}억 ${"%,d".format(man)}만원"
-        eok > 0 -> "${eok}억원"
-        man > 0 -> "${"%,d".format(man)}만원"
-        else -> "${"%,d".format(won)}원"
+        eok > 0 -> {
+            // 억 단위가 있을 경우: "1억 2,345,678원"
+            "${eok}억 ${"%,d".format(remainder)}원"
+        }
+
+        else -> {
+            // 억 단위가 없을 경우: "1,234,567원"
+            "%,d원".format(remainder)
+        }
     }
 }
