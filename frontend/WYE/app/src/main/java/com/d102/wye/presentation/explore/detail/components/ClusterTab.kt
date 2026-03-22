@@ -420,9 +420,14 @@ private fun BubbleChartLayout(
                 x = (pos?.first ?: 0f).dp
                 y = (pos?.second ?: 0f).dp
             } else {
-                val rad = Math.toRadians(idx * angleStep - 90.0)
-                x = (orbitRadius.value * cos(rad)).dp
-                y = (orbitRadius.value * sin(rad)).dp
+                // 정육각형에 살짝 불규칙 부여 (각도 ±8°, 반경 ±5% 이내 고정 오프셋)
+                val angleJitter  = listOf(12.0, 4.0, -5.0, -8.0, -7.0, 6.0, -4.0)
+                val radiusJitter = listOf(1.08f, 0.98f, 1.05f, 0.97f, 1.04f, 0.95f, 1.03f)
+                val jAngle  = angleJitter.getOrElse(idx) { 0.0 }
+                val jRadius = radiusJitter.getOrElse(idx) { 1.0f }
+                val rad = Math.toRadians(idx * angleStep - 90.0 + jAngle)
+                x = (orbitRadius.value * jRadius * cos(rad)).dp
+                y = (orbitRadius.value * jRadius * sin(rad)).dp
             }
 
             ClusterBubble(
@@ -437,9 +442,14 @@ private fun BubbleChartLayout(
 
         // 기타 버블 (메인 뷰에서만)
         if (hasOthersSlot) {
-            val rad = Math.toRadians(clusters.size * angleStep - 90.0)
-            val x   = (orbitRadius.value * cos(rad)).dp
-            val y   = (orbitRadius.value * sin(rad)).dp
+            val angleJitter  = listOf(12.0, 4.0, -5.0, -8.0, -7.0, 6.0, -4.0)
+            val radiusJitter = listOf(1.08f, 0.98f, 1.05f, 0.97f, 1.04f, 0.95f, 1.03f)
+            val othersIdx = clusters.size
+            val jAngle  = angleJitter.getOrElse(othersIdx) { 0.0 }
+            val jRadius = radiusJitter.getOrElse(othersIdx) { 1.0f }
+            val rad = Math.toRadians(othersIdx * angleStep - 90.0 + jAngle)
+            val x   = (orbitRadius.value * jRadius * cos(rad)).dp
+            val y   = (orbitRadius.value * jRadius * sin(rad)).dp
             OthersBubble(
                 index      = clusters.size,
                 visible    = visible,
