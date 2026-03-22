@@ -13,5 +13,5 @@ data class PortfolioDetail(
 
 data class PortfolioCount(
     val ticker: String,
-    val counts: Int
+    val counts: Double
 )
