@@ -49,4 +49,8 @@ interface EtfPriceHistoryDao {
      */
     @Query("DELETE FROM etf_price_history WHERE ticker = :ticker")
     suspend fun deleteByTicker(ticker: String)
+
+
+    @Query("SELECT MAX(date) FROM etf_price_history WHERE ticker = :ticker")
+    suspend fun getLastCachedDate(ticker: String): String?
 }

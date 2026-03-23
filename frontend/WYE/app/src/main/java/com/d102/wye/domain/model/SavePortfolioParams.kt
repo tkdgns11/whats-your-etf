@@ -12,6 +12,6 @@ data class SavePortfolioParams(
 
 data class EtfCountItem(
     val ticker: String,
-    val counts: Int  // (investAmount × weight / 100) / currentPrice
+    val counts: Double  // (investAmount × weight / 100) / currentPrice
 )
 

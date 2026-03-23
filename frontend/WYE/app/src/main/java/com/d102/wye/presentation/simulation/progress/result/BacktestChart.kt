@@ -44,8 +44,6 @@ fun BacktestChart(
     modifier: Modifier = Modifier,
     isDashed: Boolean = false
 ) {
-    if (points.size < 2) return
-
     val progress = remember(points) { Animatable(0f) }
     LaunchedEffect(points) {
         progress.snapTo(0f)

@@ -336,8 +336,9 @@ class SimulationViewModel @Inject constructor(
 
             val etfs = form.portfolioItems.map { item ->
                 val counts = if (item.currentPrice > 0) {
-                    ((amount * item.weight / 100) / item.currentPrice).toInt()
-                } else 0
+                    val raw = (amount * item.weight / 100).toDouble() / item.currentPrice
+                    (raw * 10).toLong() / 10.0  // 소수점 1자리
+                } else 0.0
                 EtfCountItem(ticker = item.ticker, counts = counts)
             }
 

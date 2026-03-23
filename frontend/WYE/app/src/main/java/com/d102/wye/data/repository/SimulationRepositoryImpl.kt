@@ -209,4 +209,7 @@ class SimulationRepositoryImpl @Inject constructor(
 
     override suspend fun deleteCachedPriceHistory(ticker: String) =
         priceHistoryDao.deleteByTicker(ticker)
+
+    override suspend fun getLastCachedDate(ticker: String): String? =
+        priceHistoryDao.getLastCachedDate(ticker)
 }
