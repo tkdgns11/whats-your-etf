@@ -29,14 +29,23 @@ class EtfService:
         # 오늘 자 기준 상장된 etf ticker 리스트
         listed_etfs = await self.pykrx_client.get_today_etf_list()
 
+        # KODEX, TIGER만 필터링
+        filtered_etfs = [etf for etf in listed_etfs if etf.etf_manager in ("KODEX", "TIGER")]
+        logger.info(f"KODEX/TIGER 필터링: {len(listed_etfs)}개 → {len(filtered_etfs)}개")
+
         # db 에 있는 etf tickers
         etf_tickers_in_db = set(await self.etf_repository.get_etf_tickers())
         etfs = []
-        for listed_etf in listed_etfs:
+        for listed_etf in filtered_etfs:
             if listed_etf.ticker in etf_tickers_in_db:
+                logger.debug(f"[{listed_etf.ticker}] 이미 DB에 존재함")
                 continue
             etfs.append(listed_etf)
-            
+
+        if not etfs:
+            logger.info("신규 ETF가 없습니다.")
+            return
+
         infos = await self.etf_repository.save_initial_etf_infos(etfs)
         logger.info(f"{len(infos)}개의 신규 ETF가 기본 정보 수집 완료되었습니다.")
 
@@ -369,20 +378,28 @@ class EtfService:
         pykrx get_market_fundamental을 이용해 KOSPI/KOSDAQ 전 종목의
         PER, PBR을 일괄 조회하고 stock 테이블을 업데이트합니다.
         ROE = PBR / PER 으로 계산합니다.
+
+        최신 영업일 기준으로 조회 (장 미개장/휴장일 시 자동으로 이전 영업일 데이터 반환됨)
         """
         import datetime as dt
+        import pandas as pd
+
         today = dt.date.today()
-        # 장 마감 후 실행이므로 오늘 날짜 기준
-        date_str = today.strftime("%Y%m%d")
 
-        logger.info(f"=== 종목 재무지표(PER/PBR/ROE) 동기화 시작 ({date_str}) ===")
-        fundamentals = await self.pykrx_client.get_stocks_fundamental_batch(date_str)
-        if not fundamentals:
-            logger.warning("pykrx에서 조회된 재무지표 데이터가 없습니다.")
-            return
+        # 과거로 소급하며 영업일 데이터 찾기 (최대 5일 전까지 시도)
+        for days_back in range(6):
+            target_date = today - dt.timedelta(days=days_back)
+            date_str = target_date.strftime("%Y%m%d")
 
-        await self.stock_repository.bulk_update_fundamentals(fundamentals)
-        logger.info(f"=== 종목 재무지표 동기화 완료: {len(fundamentals)}개 업데이트 ===")
+            logger.info(f"=== 종목 재무지표(PER/PBR/ROE) 동기화 시작 ({date_str}) ===")
+            fundamentals = await self.pykrx_client.get_stocks_fundamental_batch(date_str)
+
+            if fundamentals:
+                await self.stock_repository.bulk_update_fundamentals(fundamentals)
+                logger.info(f"=== 종목 재무지표 동기화 완료: {len(fundamentals)}개 업데이트 ===")
+                return
+
+        logger.warning("최근 5일간 pykrx에서 조회된 재무지표 데이터가 없습니다.")
 
     async def sync_etf_fundamentals(self):
         """

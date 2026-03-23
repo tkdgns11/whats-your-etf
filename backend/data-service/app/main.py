@@ -545,6 +545,141 @@ async def get_all_sector_clusters(
     return results
 
 
+# ==================== ETF Sync Test Endpoints (remove after validation) ====================
+
+@app.post("/dev/etf/sync/tickers")
+async def dev_sync_etf_tickers():
+    """[TEST] ETF 티커 동기화 — DB에 없는 신규 ETF를 기본 정보와 함께 저장합니다."""
+    logger.info("[DEV] ETF 티커 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_tickers()
+            return {"status": "ok", "job": "sync_etf_tickers"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 티커 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/active-status")
+async def dev_sync_etf_active_status():
+    """[TEST] ETF 활성 상태 검사 — PDF 구성종목 기반으로 is_krx_only 플래그를 업데이트합니다."""
+    logger.info("[DEV] ETF 활성 상태 검사 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.update_etfs_active_status()
+            return {"status": "ok", "job": "update_etfs_active_status"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 활성 상태 검사 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/metadata")
+async def dev_sync_etf_metadata():
+    """[TEST] ETF 메타데이터 동기화 — KIS API로 AUM, NAV, 운용사, 배당주기, expense_ratio, dividend_yield 등을 업데이트합니다."""
+    logger.info("[DEV] ETF 메타데이터 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_metadata()
+            return {"status": "ok", "job": "sync_etf_metadata"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 메타데이터 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/stock-fundamentals")
+async def dev_sync_stock_fundamentals():
+    """[TEST] 종목 재무지표 동기화 — pykrx로 KOSPI/KOSDAQ 전 종목 PER/PBR/ROE를 일괄 업데이트합니다."""
+    logger.info("[DEV] 종목 재무지표 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_stock_fundamentals()
+            return {"status": "ok", "job": "sync_stock_fundamentals"}
+        except Exception as e:
+            logger.error(f"[DEV] 종목 재무지표 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/etf-fundamentals")
+async def dev_sync_etf_fundamentals():
+    """[TEST] ETF 재무지표 계산 — 구성종목 비중 가중평균으로 ETF per/pbr/roe를 계산합니다."""
+    logger.info("[DEV] ETF 재무지표 계산 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_fundamentals()
+            return {"status": "ok", "job": "sync_etf_fundamentals"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 재무지표 계산 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/risk-type")
+async def dev_sync_etf_risk_type():
+    """[TEST] ETF 위험유형 계산 — ETF 속성 기반으로 risk_type을 업데이트합니다."""
+    logger.info("[DEV] ETF 위험유형 계산 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_risk_type()
+            return {"status": "ok", "job": "sync_etf_risk_type"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 위험유형 계산 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/all")
+async def dev_sync_all():
+    """[TEST] 전체 ETF 데이터 파이프라인 순차 실행
+
+    실행 순서:
+    1. sync_etf_tickers       — 신규 ETF 기본 정보 저장
+    2. update_etfs_active_status — is_krx_only 판별
+    3. sync_etf_metadata      — AUM/NAV/운용사/expense_ratio/dividend_yield 등
+    4. sync_stock_fundamentals — KOSPI/KOSDAQ PER/PBR/ROE
+    5. sync_etf_fundamentals  — ETF 가중평균 PER/PBR/ROE
+    6. sync_etf_risk_type     — risk_type 갱신
+    """
+    logger.info("[DEV] 전체 ETF 파이프라인 수동 트리거")
+    results = {}
+    from app.services.etf_service import EtfService
+
+    steps = [
+        ("sync_etf_tickers",           "sync_etf_tickers"),
+        ("update_etfs_active_status",  "update_etfs_active_status"),
+        ("sync_etf_metadata",          "sync_etf_metadata"),
+        ("sync_stock_fundamentals",    "sync_stock_fundamentals"),
+        ("sync_etf_fundamentals",      "sync_etf_fundamentals"),
+        ("sync_etf_risk_type",         "sync_etf_risk_type"),
+    ]
+
+    for display_name, method_name in steps:
+        try:
+            logger.info(f"[DEV] 단계 시작: {display_name}")
+            # 각 단계마다 독립적인 session으로 트랜잭션 격리
+            async with AsyncSessionLocal() as db:
+                service = EtfService(db)
+                fn = getattr(service, method_name)
+                await fn()
+            results[display_name] = "ok"
+            logger.info(f"[DEV] 단계 완료: {display_name}")
+        except Exception as e:
+            logger.error(f"[DEV] 단계 실패 [{display_name}]: {e}", exc_info=True)
+            results[display_name] = f"error: {str(e)[:100]}"
+            # 이전 단계 에러는 계속 진행
+
+    return {"status": "done", "results": results}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
