@@ -156,6 +156,19 @@ async def etf_sync_job():
         except Exception as e:
             logger.error(f"ETF 동기화 실패: {e}")
 
+async def etf_metadata_sync_job():
+    """ETF 상세 메타데이터 동기화 (AUM, NAV, 운용사, 배당주기 등) (매주 일요일 03:30 KST)"""
+    logger.info("=== ETF 상세 메타데이터 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_metadata()
+            logger.info("=== ETF 상세 메타데이터 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 상세 메타데이터 동기화 실패: {e}")
+
 async def etf_active_status_job():
     """ETF 상태 검사 (PDF) 및 활성화 (매일 05:30 KST)"""
     logger.info("=== ETF 상태 검사 및 활성화 시작 ===")
@@ -181,6 +194,82 @@ async def company_info_sync_job():
             logger.info("=== 회사 정보 동기화 완료 ===")
         except Exception as e:
             logger.error(f"회사 정보 동기화 실패: {e}")
+
+async def sync_missing_stock_descriptions_job():
+    """네이버 증권 기업개요 누락분 동기화 (주 1회 등 스케줄러용)"""
+    logger.info("=== Stock Description 누락분 네이버 크롤링 동기화 시작 ===")
+    from app.scrapers.naver_finance_scraper import crawl_stock_description
+    from app.database import AsyncSessionLocal
+    from sqlalchemy import select, update
+    from app.models.stock import Stock
+    
+    async with AsyncSessionLocal() as db:
+        try:
+            # description이 없는 주식 최대 500개 우선 조회
+            stmt = select(Stock).where(
+                (Stock.description.is_(None)) | (Stock.description == "")
+            ).limit(500)
+            result = await db.execute(stmt)
+            stocks = result.scalars().all()
+            
+            if not stocks:
+                logger.info("=== 업데이트가 필요한 Stock Description이 없습니다 ===")
+                return
+                
+            logger.info(f"총 {len(stocks)}개의 주식 description 크롤링을 시작합니다.")
+            
+            success_count = 0
+            for stock in stocks:
+                desc = await crawl_stock_description(stock.ticker)
+                if desc:
+                    stock.description = desc
+                    success_count += 1
+            
+            await db.commit()
+            logger.info(f"=== Stock Description 동기화 완료: {success_count}/{len(stocks)}건 업데이트 성공 ===")
+            
+        except Exception as e:
+            logger.error(f"Stock Description 동기화 중 에러 발생: {e}")
+            await db.rollback()
+
+async def sync_etf_stock_cache_job():
+    """정규 장 시간(09:00 ~ 15:30) 동안 ETF 및 구성종목 캐시를 Redis에 업데이트"""
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone(timedelta(hours=9)))
+    
+    # 오전 9시 이전, 또는 15시 30분 이후이면 스킵
+    if now.hour < 9 or (now.hour == 15 and now.minute > 30):
+        return
+
+    logger.info("=== ETF 및 구성종목(Stock) 실시간 캐시 업데이트 시작 ===")
+    
+    from app.database import AsyncSessionLocal
+    from sqlalchemy import select
+    from app.models.etf import ETF
+    from app.services.cache_service import RedisCacheService
+    
+    async with AsyncSessionLocal() as db:
+        try:
+            # 활성화된 ETF 목록만 가져옴
+            stmt = select(ETF).where(ETF.is_active == True)
+            result = await db.execute(stmt)
+            etfs = result.scalars().all()
+            
+            if not etfs:
+                logger.warning("활성화된 ETF가 없어 캐시 업데이트를 종료합니다.")
+                return
+                
+            cache_service = RedisCacheService()
+            # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient 내부에서 18/s 동시성 제어됨)
+            import asyncio
+            tasks = [cache_service.publish_etf_cache(etf.ticker) for etf in etfs if etf.ticker]
+            await asyncio.gather(*tasks, return_exceptions=True)
+            
+            await cache_service.close()
+            logger.info(f"=== 총 {len(etfs)}개 ETF 캐시 업데이트 성공 ===")
+            
+        except Exception as e:
+            logger.error(f"실시간 캐시 업데이트 스케줄러 실패: {e}")
 
 async def etf_price_sync_job():
     """ETF 가격 이력 동기화 (매일 00:00 KST)"""
@@ -228,12 +317,39 @@ def start_scheduler():
         replace_existing=True
     )
     
+    # ETF 상세 메타데이터 동기화 (AUM, NAV, 운용사 등) (매주 일요일 03:30 KST)
+    scheduler.add_job(
+        etf_metadata_sync_job,
+        trigger=CronTrigger(day_of_week='sun', hour=3, minute=30, timezone='Asia/Seoul'),
+        id="etf_metadata_sync_job",
+        name="ETF Metadata Sync",
+        replace_existing=True
+    )
+    
     # 회사 정보(ceo_name 등) 업데이트 (매일 06:00 KST)
     scheduler.add_job(
         company_info_sync_job,
         trigger=CronTrigger(hour=6, minute=0, timezone='Asia/Seoul'),
         id="company_info_sync_job",
         name="Company Info Sync",
+        replace_existing=True
+    )
+    
+    # 주식 기업개요(설명) 누락분 네이버 크롤링 동기화 (매주 토요일 02:00 KST)
+    scheduler.add_job(
+        sync_missing_stock_descriptions_job,
+        trigger=CronTrigger(day_of_week='sat', hour=2, minute=0, timezone='Asia/Seoul'),
+        id="sync_missing_stock_descriptions_job",
+        name="Sync Missing Stock Descriptions",
+        replace_existing=True
+    )
+
+    # ETF/Stock 실시간 캐시 업데이트 (평일 09:00~15:30 매 1분마다)
+    scheduler.add_job(
+        sync_etf_stock_cache_job,
+        trigger=CronTrigger(day_of_week='mon-fri', hour='9-15', minute='*', timezone='Asia/Seoul'),
+        id="sync_etf_stock_cache_job",
+        name="ETF and Stock Realtime Cache Sync",
         replace_existing=True
     )
 

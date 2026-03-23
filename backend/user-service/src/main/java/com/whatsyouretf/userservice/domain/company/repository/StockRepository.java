@@ -58,7 +58,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
         WHERE ic.groupName = ic2.groupName
         AND s.ticker != :excludeTicker
         AND s.isActive = true
-        ORDER BY c.listedShares DESC
+        ORDER BY s.listedShares DESC
         """)
     List<Stock> findRelatedStocksByIndustryCode(
             @Param("industryCode") String industryCode,

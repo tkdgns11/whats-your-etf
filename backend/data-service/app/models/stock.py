@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey
+from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -11,7 +11,8 @@ class Stock(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     company_id = Column(BigInteger, ForeignKey("company_info.id", ondelete="SET NULL"))
-    ticker = Column(String(20), nullable=False)
+    ticker = Column(String(20), nullable=False, unique=True)
+    description = Column(Text)
     close = Column(DECIMAL(14, 2))
     listing_date = Column(Date)
     face_value = Column(Integer)

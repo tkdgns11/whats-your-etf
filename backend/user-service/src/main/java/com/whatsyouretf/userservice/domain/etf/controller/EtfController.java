@@ -90,4 +90,14 @@ public class EtfController {
                                 .toList()
                 ));
     }
+
+    @GetMapping("/{ticker}/dividends")
+    @Operation(summary = "etf 배당이력 조회", description = "etf의 종목 코드를 기준으로 etf 배당 이력을 응답합니다")
+    public ResponseEntity<ApiResponse<List<EtfDividendsResponse>>> getEtfDividends(@Parameter(description = "etf 종목 코드") @PathVariable String ticker) {
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .body(ApiResponse.success(etfService.getEtfDividends(ticker).stream()
+                .map(EtfDividendsResponse::of)
+                .toList()));
+    }
 }

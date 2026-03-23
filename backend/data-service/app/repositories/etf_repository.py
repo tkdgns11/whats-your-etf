@@ -53,10 +53,20 @@ class EtfRepository:
         await self.db.execute(stmt)
         await self.db.commit()
 
+    async def update_etf_advanced_info(self, etf_id: int, info: dict):
+        from sqlalchemy import update
+        stmt = update(ETF).where(ETF.id == etf_id).values(**info)
+        await self.db.execute(stmt)
+
     async def get_unchecked_etfs(self) -> list[dict]:
-        stmt = select(ETF.id, ETF.stock_code).where(ETF.is_krx_only.is_(None))
+        stmt = select(ETF.id, ETF.stock_code, ETF.name).where(ETF.is_krx_only.is_(None))
         result = await self.db.execute(stmt)
-        return [{"id": row.id, "ticker": row.stock_code} for row in result.all()]
+        return [{"id": row.id, "ticker": row.stock_code, "name": row.name} for row in result.all()]
+
+    async def get_all_etfs(self) -> list[dict]:
+        stmt = select(ETF.id, ETF.stock_code, ETF.name)
+        result = await self.db.execute(stmt)
+        return [{"id": row.id, "ticker": row.stock_code, "name": row.name} for row in result.all()]
 
     async def get_active_etfs(self) -> list[dict]:
         stmt = select(ETF.id, ETF.stock_code).where(ETF.is_active == True)

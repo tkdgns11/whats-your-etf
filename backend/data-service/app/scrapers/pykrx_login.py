@@ -15,6 +15,7 @@ class KrxSessionManager:
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         )
         self.session.headers.update({"User-Agent": self._UA})
+        self.last_login_time = 0
         self.patch_pykrx(webio)
 
     def patch_pykrx(self, webio_module):
@@ -30,10 +31,13 @@ class KrxSessionManager:
 
     def is_authenticated(self) -> bool:
         """
-        현재 세션이 유효한지 검증합니다.
-        가장 단순하게는 JSESSIONID 쿠키 존재 여부를 확인하며,
-        더 엄격하게는 로그인 필수 API를 찔러보고 HTTP 상태 코드나 응답값을 확인할 수 있습니다.
+        현재 세션이 유효한지 검증합니다. JSESSIONID 유무와 더불어
+        서버 세션 만료(통상 30분)를 고려해 마지막 로그인 후 20분이 지났으면 새 로그인을 유도합니다.
         """
+        import time
+        if time.time() - self.last_login_time > 1200: # 20분 초과 시 무효화
+            return False
+            
         cookies = self.session.cookies.get_dict()
         return "JSESSIONID" in cookies
 
@@ -72,6 +76,8 @@ class KrxSessionManager:
 
             success = (error_code == "CD001")
             if success:
+                import time
+                self.last_login_time = time.time()
                 logging.info("KRX 로그인 성공")
             else:
                 logging.error(f"KRX 로그인 실패. 코드: {error_code}")

@@ -4,7 +4,6 @@ import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -29,10 +28,6 @@ public class CompanyInfo {
     @Column(name = "company_name", length = 100)
     private String companyName;
 
-    /** 시장 구분 (KOSPI, KOSDAQ) */
-    @Column(name = "market_type", length = 20)
-    private String marketType;
-
     /** 산업분류 (세분류: SEMI_HBM 등) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "industry_code")
@@ -46,18 +41,6 @@ public class CompanyInfo {
     @Column(name = "industry_group", length = 50)
     private String industryGroup;
 
-    /** 회사 설명/사업 내용 */
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    /** 상장일 */
-    @Column(name = "listing_date")
-    private LocalDate listingDate;
-
-    /** 결산월 */
-    @Column(name = "fiscal_month")
-    private Integer fiscalMonth;
-
     /** 대표자명 */
     @Column(name = "ceo_name", length = 100)
     private String ceoName;
@@ -67,16 +50,8 @@ public class CompanyInfo {
     private String homepage;
 
     /** 지역 */
-    @Column(length = 50)
+    @Column(length = 100)
     private String region;
-
-    /** 액면가 */
-    @Column(name = "face_value")
-    private Integer faceValue;
-
-    /** 상장주식수 */
-    @Column(name = "listed_shares")
-    private Long listedShares;
 
     /** 활성 여부 */
     @Column(name = "is_active")
@@ -85,10 +60,6 @@ public class CompanyInfo {
 
     @Column(name = "corporation_number", length = 50)
     private String corporationNumber;
-
-    /** 데이터 출처 */
-    @Column(name = "data_source", length = 50)
-    private String dataSource;
 
     @Column(name = "created_at")
     @Builder.Default
