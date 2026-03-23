@@ -9,13 +9,14 @@ import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import com.d102.wye.domain.usecase.portfolio.CalculatePortfolioChartUseCase
-import kotlinx.coroutines.async
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -50,22 +51,38 @@ class StrategyDetailViewModel @Inject constructor(
                 }
             }
 
-            // 2. 가격이력 조회 (createdAt-1년 ~ 오늘)
             val tickers = detail.counts.map { it.ticker }
+            val today = LocalDate.now()
+            val endDate = today.toString()
             val startDate = detail.createdAt.minusOneYear()
-            val endDate = LocalDate.now().toString()
 
-            val priceHistories = when (val result = simulationRepository.getEtfPriceHistories(
-                tickers = tickers,
-                startDate = startDate,
-                endDate = endDate
-            )) {
-                is BaseResult.Success -> result.data
-                is BaseResult.Error -> {
-                    _detailState.value = UiState.Error(result.error.message)
-                    return@launch
+            // 2. 가격이력 증분 업데이트 (DB 캐시 우선)
+            tickers.forEach { ticker ->
+                val lastCachedDate = simulationRepository.getLastCachedDate(ticker)
+                val needsFetch = lastCachedDate == null || lastCachedDate < endDate
+
+                if (needsFetch) {
+                    val fetchStart = if (lastCachedDate != null) {
+                        LocalDate.parse(lastCachedDate).plusDays(1).toString()
+                    } else {
+                        today.minusYears(3).toString()
+                    }
+                    Timber.d("[Detail] 증분 조회 | ticker=$ticker | $fetchStart ~ $endDate")
+
+                    when (val result = simulationRepository.getEtfPriceHistories(
+                        tickers = listOf(ticker),
+                        startDate = fetchStart,
+                        endDate = endDate
+                    )) {
+                        is BaseResult.Success -> simulationRepository.savePriceHistories(result.data)
+                        is BaseResult.Error -> Timber.e("[Detail] 가격이력 실패 | ticker=$ticker | ${result.error.message}")
+                    }
+                } else {
+                    Timber.d("[Detail] DB 캐시 사용 | ticker=$ticker | lastDate=$lastCachedDate")
                 }
             }
+
+            val priceHistories = simulationRepository.getCachedPriceHistories(tickers)
 
             // 3. 차트 계산 (두 구간)
             val chartResult = calculatePortfolioChart(
@@ -78,13 +95,13 @@ class StrategyDetailViewModel @Inject constructor(
 
             // 4. 타임라인 + 뉴스 병렬 조회
             val issuesDeferred = async { portfolioRepository.getPortfolioIssues(portfolioId) }
-            val newsDeferred   = async { newsRepository.getPortfolioNews(portfolioId) }
+            val newsDeferred = async { newsRepository.getPortfolioNews(portfolioId) }
 
             val timelines = when (val result = issuesDeferred.await()) {
                 is BaseResult.Success -> result.data.map { issue ->
                     TimelineItem(
-                        date    = issue.localDate,
-                        title   = issue.title,
+                        date = issue.localDate,
+                        title = issue.title,
                         content = issue.description,
                     )
                 }
@@ -92,7 +109,9 @@ class StrategyDetailViewModel @Inject constructor(
             }
 
             val relatedNews = when (val result = newsDeferred.await()) {
-                is BaseResult.Success -> result.data.map { NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl) }
+                is BaseResult.Success -> result.data.map {
+                    NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl)
+                }
                 is BaseResult.Error -> emptyList()
             }
 
@@ -107,11 +126,7 @@ class StrategyDetailViewModel @Inject constructor(
                     },
                     summaryMetrics = listOf(
                         "예상 최종 자산" to chartResult.estimatedFinalValue.formatAmount(),
-                        "실제 수익률" to "${returnSign(chartResult.recentReturn)}${
-                            "%.2f".format(
-                                chartResult.recentReturn
-                            )
-                        }%",
+                        "실제 수익률" to "${returnSign(chartResult.recentReturn)}${"%.2f".format(chartResult.recentReturn)}%",
                         "총 투자 금액" to detail.investAmount.formatAmount()
                     ),
                     recentPerformance = PerformanceData(
@@ -154,7 +169,7 @@ data class PerformanceData(
     val period: String,
     val rate: String,
     val dateRange: String,
-    val points: List<com.d102.wye.domain.model.BacktestPoint>  // ← Float → BacktestPoint
+    val points: List<com.d102.wye.domain.model.BacktestPoint>
 )
 
 data class TimelineItem(

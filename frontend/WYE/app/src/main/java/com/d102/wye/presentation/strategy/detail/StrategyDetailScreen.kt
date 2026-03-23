@@ -4,10 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -86,10 +84,14 @@ private fun StrategyDetailScreenContent(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         SummaryMetricsRow(state.data.summaryMetrics)
+
                         PerformanceSection(state.data.recentPerformance, isMain = true)
+
                         PerformanceSection(state.data.pastPerformance, isMain = false)
+
                         TimelineSection(state.data.timelines)
                         NewsSection(state.data.relatedNews, onNewsClick = onNewsClick)
+
                         WyePrimaryButton(
                             text = "닫기",
                             onClick = onBackClick,
