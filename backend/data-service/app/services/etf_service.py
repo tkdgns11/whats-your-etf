@@ -418,18 +418,18 @@ class EtfService:
         # 구성종목 PER/PBR이 있는 ETF들의 가중평균 계산 (SQL로 효율적 처리)
         stmt = text("""
             SELECT
-                ec.etf_id,
-                SUM(s.per * ec.weight_pct / 100.0) AS weighted_per,
-                SUM(s.pbr * ec.weight_pct / 100.0) AS weighted_pbr
-            FROM etf_compositions ec
-            JOIN stock s ON s.ticker = ec.component_stock_code
+                esc.etf_id,
+                SUM(s.per * esc.weight_pct / 100.0) AS weighted_per,
+                SUM(s.pbr * esc.weight_pct / 100.0) AS weighted_pbr
+            FROM etf_stock_composition esc
+            JOIN stock s ON s.id = esc.stock_id
             WHERE s.per IS NOT NULL AND s.per > 0
               AND s.pbr IS NOT NULL AND s.pbr > 0
-              AND ec.base_date = (
-                  SELECT MAX(base_date) FROM etf_compositions WHERE etf_id = ec.etf_id
+              AND esc.base_date = (
+                  SELECT MAX(base_date) FROM etf_stock_composition WHERE etf_id = esc.etf_id
               )
-            GROUP BY ec.etf_id
-            HAVING SUM(ec.weight_pct) > 0
+            GROUP BY esc.etf_id
+            HAVING SUM(esc.weight_pct) > 0
         """)
 
         result = await self.etf_repository.db.execute(stmt)
