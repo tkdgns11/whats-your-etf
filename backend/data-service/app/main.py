@@ -1,4 +1,5 @@
 """What's Your ETF - Data Service (FastAPI)"""
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query
