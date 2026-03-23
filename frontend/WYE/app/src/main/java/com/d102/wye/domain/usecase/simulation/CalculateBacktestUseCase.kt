@@ -57,8 +57,14 @@ class CalculateBacktestUseCase @Inject constructor() {
     /**
      * 적립형
      * y축 = 수익률 (%)
-     *   매월 평균 단가로 수량 매입
-     *   월말 수익률 = (월말 평가금액 - 누적 납입금) / 누적 납입금 × 100
+     *
+     * 매입 방식:
+     *   매월 거래일 평균 단가로 해당 월 투자금 / 평균단가 = 수량 누적
+     *
+     * 포인트 방식:
+     *   매일 보유 수량 × 당일 주가 = 일별 평가금액
+     *   수익률 = (일별 평가금액 - 누적 납입금) / 누적 납입금 × 100
+     *   → 1개월도 약 20포인트 → 차트 표시 가능
      */
     private fun calcInstallment(
         portfolios: List<Portfolio>,
@@ -70,59 +76,92 @@ class CalculateBacktestUseCase @Inject constructor() {
         val accumulatedShares = mutableMapOf<String, Double>()
         portfolios.forEach { accumulatedShares[it.ticker] = 0.0 }
 
-        // 월별 그룹핑 후, 정확히 사용자가 입력한 개월 수(periodMonths)만큼만 뒤에서 자른다
+        // 월별 그룹핑 (periodMonths만큼만)
         val datesByMonth = dates.groupBy { it.take(7) }
             .entries
             .sortedBy { it.key }
             .takeLast(periodMonths)
 
-        val points = mutableListOf<BacktestPoint>()
+        // 월별 누적 납입금 맵 (날짜 → 해당 시점까지 납입금)
+        // 각 월의 첫 거래일부터 그 달 납입금이 적용됨
+        val cumulativeInvestByDate = mutableMapOf<String, Long>()
         var monthCount = 0
-        var finalEndValue = 0.0 // 마지막 평가금액을 담을 변수
 
         datesByMonth.forEach { (_, monthDates) ->
             monthCount++
+            val cumulativeInvest = monthlyAmount * monthCount
 
+            // 이 달의 매입 처리
             portfolios.forEach { portfolio ->
                 val ticker = portfolio.ticker
                 val weight = portfolio.weightPercent / 100.0
                 val monthlyInvestPerEtf = monthlyAmount * weight
-
                 val monthlyPrices = monthDates.mapNotNull { priceMap[ticker]?.get(it) }
                 if (monthlyPrices.isEmpty()) return@forEach
-
                 val avgPrice = monthlyPrices.average()
                 if (avgPrice <= 0) return@forEach
-
                 accumulatedShares[ticker] = (accumulatedShares[ticker] ?: 0.0) + (monthlyInvestPerEtf / avgPrice)
             }
 
-            val lastDate = monthDates.last()
-            val monthEndValue = portfolios.sumOf { portfolio ->
-                val shares = accumulatedShares[portfolio.ticker] ?: 0.0
-                val lastPrice = priceMap[portfolio.ticker]?.get(lastDate) ?: 0.0
-                shares * lastPrice
+            // 이 달의 모든 날짜에 누적 납입금 기록
+            monthDates.forEach { date ->
+                cumulativeInvestByDate[date] = cumulativeInvest
             }
-
-            finalEndValue = monthEndValue // 매달 평가금액을 갱신 (루프가 끝나면 최종 평가금액이 됨)
-
-            val cumulativeInvest = monthlyAmount * monthCount
-            val returnRate = if (cumulativeInvest > 0)
-                (monthEndValue - cumulativeInvest) / cumulativeInvest * 100.0
-            else 0.0
-
-            points.add(BacktestPoint(date = lastDate, value = returnRate))
         }
 
-        // 실제로 계산된 누적 투자금과 최종 평가금액을 그대로 사용합니다.
-        val actualTotalInvestment = monthlyAmount * monthCount
+        // 일별 포인트 생성 (보유 수량 × 당일 주가 → 수익률)
+        val allDatesInPeriod = datesByMonth.flatMap { it.value }
+        val points = mutableListOf<BacktestPoint>()
+
+        // 월별로 순회하며 각 달의 매입 후 일별 평가금액 계산
+        val runningShares = mutableMapOf<String, Double>()
+        portfolios.forEach { runningShares[it.ticker] = 0.0 }
+        var runningMonthCount = 0
+
+        datesByMonth.forEach { (_, monthDates) ->
+            runningMonthCount++
+
+            // 이 달 매입 처리
+            portfolios.forEach { portfolio ->
+                val ticker = portfolio.ticker
+                val weight = portfolio.weightPercent / 100.0
+                val monthlyInvestPerEtf = monthlyAmount * weight
+                val monthlyPrices = monthDates.mapNotNull { priceMap[ticker]?.get(it) }
+                if (monthlyPrices.isEmpty()) return@forEach
+                val avgPrice = monthlyPrices.average()
+                if (avgPrice <= 0) return@forEach
+                runningShares[ticker] = (runningShares[ticker] ?: 0.0) + (monthlyInvestPerEtf / avgPrice)
+            }
+
+            val cumulativeInvest = monthlyAmount * runningMonthCount
+
+            // 이 달의 일별 포인트
+            monthDates.forEach { date ->
+                val portfolioValue = portfolios.sumOf { portfolio ->
+                    val shares = runningShares[portfolio.ticker] ?: 0.0
+                    val price = priceMap[portfolio.ticker]?.get(date) ?: 0.0
+                    shares * price
+                }
+                val returnRate = if (cumulativeInvest > 0)
+                    (portfolioValue - cumulativeInvest) / cumulativeInvest * 100.0
+                else 0.0
+                points.add(BacktestPoint(date = date, value = returnRate))
+            }
+        }
+
+        val actualTotalInvestment = monthlyAmount * runningMonthCount
+        val finalEndValue = if (points.isNotEmpty()) {
+            // 마지막 날 절대 평가금액 역산
+            val lastReturn = points.last().value
+            (actualTotalInvestment * (1.0 + lastReturn / 100.0)).roundToLong()
+        } else 0L
         val totalReturn = points.lastOrNull()?.value ?: 0.0
 
         return Result(
             points = points,
-            estimatedFinalValue = finalEndValue.roundToLong(), // 실제 계산된 최종 자산
-            totalReturn = totalReturn, // 실제 수익률
-            totalInvestment = actualTotalInvestment // 실제 투입된 총액
+            estimatedFinalValue = finalEndValue,
+            totalReturn = totalReturn,
+            totalInvestment = actualTotalInvestment
         )
     }
 
@@ -154,7 +193,6 @@ class CalculateBacktestUseCase @Inject constructor() {
                 val price = priceMap[portfolio.ticker]?.get(date) ?: 0.0
                 s * price
             }
-            // y축 = 수익률 (%)
             val returnRate = if (initialAmount > 0)
                 (portfolioValue - initialAmount) / initialAmount * 100.0
             else 0.0

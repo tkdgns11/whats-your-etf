@@ -32,6 +32,22 @@ fun InvestmentSetupSection(
     onAmountChanged: (String) -> Unit,
     onPeriodChanged: (String) -> Unit
 ) {
+    // 1. 투자 금액 에러 조건: 빈 값이 아니면서, 0 이하일 때 에러
+    val isAmountError = formState.investmentAmount.isNotEmpty() &&
+            (formState.investmentAmount.toIntOrNull() ?: 0) <= 0
+
+    // 2. 투자 기간 에러 조건: 빈 값이 아니면서, 0 이하이거나 36 초과일 때 에러
+    val periodInt = formState.investmentPeriod.toIntOrNull() ?: 0
+    val isPeriodError = formState.investmentPeriod.isNotEmpty() &&
+            (periodInt > 36 || periodInt <= 0)
+
+    // 에러 메시지도 기간에 따라 더 정확하게 분기해주면 좋습니다.
+    val periodErrorMessage = when {
+        periodInt <= 0 -> "1개월 이상 입력해 주세요"
+        periodInt > 36 -> "최대 36개월까지만 가능해요"
+        else -> null
+    }
+
     Column(
         modifier = Modifier
             .background(BackGroundLightGreen2)
@@ -47,8 +63,6 @@ fun InvestmentSetupSection(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        val periodInt = formState.investmentPeriod.toIntOrNull() ?: 0
-        val isPeriodError = periodInt > 36
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             InvestmentInputField(
@@ -58,6 +72,8 @@ fun InvestmentSetupSection(
                 placeholder = "금액 입력",
                 isCurrencyField = true,
                 suffix = "만원",
+                isError = isAmountError,
+                errorMessage = if (isAmountError) "1만원 이상의 금액을 입력해 주세요" else null,
                 modifier = Modifier.weight(1f)
             )
 
@@ -68,7 +84,7 @@ fun InvestmentSetupSection(
                 placeholder = "최대 36개월",
                 suffix = "개월",
                 isError = isPeriodError,
-                errorMessage = if (isPeriodError) "최대 36개월까지만 가능해요" else null,
+                errorMessage = if (isPeriodError) periodErrorMessage else null,
                 modifier = Modifier.weight(1f)
             )
         }
