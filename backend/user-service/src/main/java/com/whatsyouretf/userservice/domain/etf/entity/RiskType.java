@@ -1,4 +1,4 @@
-package com.whatsyouretf.userservice.domain.etf.dto;
+package com.whatsyouretf.userservice.domain.etf.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
