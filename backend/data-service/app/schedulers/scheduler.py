@@ -271,6 +271,26 @@ async def sync_etf_stock_cache_job():
         except Exception as e:
             logger.error(f"실시간 캐시 업데이트 스케줄러 실패: {e}")
 
+async def sync_fundamentals_job():
+    """종목 및 ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
+    1. KOSPI/KOSDAQ 전 종목 PER/PBR/ROE 업데이트 (pykrx 배치 조회)
+    2. ETF 구성종목 비중 가중평균으로 ETF PER/PBR/ROE 계산
+    3. ETF 위험유형(risk_type) 갱신
+    """
+    logger.info("=== 재무지표 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_stock_fundamentals()
+            await service.sync_etf_fundamentals()
+            await service.sync_etf_risk_type()
+            logger.info("=== 재무지표 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"재무지표 동기화 실패: {e}")
+
+
 async def etf_price_sync_job():
     """ETF 가격 이력 동기화 (매일 00:00 KST)"""
     logger.info("=== ETF 가격 이력 동기화 시작 ===")
@@ -350,6 +370,15 @@ def start_scheduler():
         trigger=CronTrigger(day_of_week='mon-fri', hour='9-15', minute='*', timezone='Asia/Seoul'),
         id="sync_etf_stock_cache_job",
         name="ETF and Stock Realtime Cache Sync",
+        replace_existing=True
+    )
+
+    # 종목/ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
+    scheduler.add_job(
+        sync_fundamentals_job,
+        trigger=CronTrigger(hour=16, minute=30, timezone='Asia/Seoul'),
+        id="sync_fundamentals_job",
+        name="Stock and ETF Fundamentals Sync",
         replace_existing=True
     )
 

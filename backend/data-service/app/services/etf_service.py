@@ -335,6 +335,22 @@ class EtfService:
                 if res.get("bstp_kor_isnm"):
                     info["category"] = res["bstp_kor_isnm"]
 
+                # 총보수율 (expense_ratio): etf_tot_fee 필드 (예: "0.0099")
+                if res.get("etf_tot_fee"):
+                    try:
+                        info["expense_ratio"] = float(res["etf_tot_fee"])
+                    except ValueError:
+                        pass
+
+                # 배당수익률: etf_dvdn_per 필드
+                if res.get("etf_dvdn_per"):
+                    try:
+                        dv = float(res["etf_dvdn_per"])
+                        if dv > 0:
+                            info["dividend_yield"] = dv
+                    except ValueError:
+                        pass
+
                 if info:
                     await self.etf_repository.update_etf_advanced_info(etf_id, info)
                     logger.info(f"[{ticker}] 메타데이터 업데이트 완료: {list(info.keys())}")
@@ -347,3 +363,133 @@ class EtfService:
 
         await self.etf_repository.db.commit()
         logger.info(f"=== ETF 메타데이터 동기화 완료: {len(active_etfs)}개 처리 ===")
+
+    async def sync_stock_fundamentals(self):
+        """
+        pykrx get_market_fundamental을 이용해 KOSPI/KOSDAQ 전 종목의
+        PER, PBR을 일괄 조회하고 stock 테이블을 업데이트합니다.
+        ROE = PBR / PER 으로 계산합니다.
+        """
+        import datetime as dt
+        today = dt.date.today()
+        # 장 마감 후 실행이므로 오늘 날짜 기준
+        date_str = today.strftime("%Y%m%d")
+
+        logger.info(f"=== 종목 재무지표(PER/PBR/ROE) 동기화 시작 ({date_str}) ===")
+        fundamentals = await self.pykrx_client.get_stocks_fundamental_batch(date_str)
+        if not fundamentals:
+            logger.warning("pykrx에서 조회된 재무지표 데이터가 없습니다.")
+            return
+
+        await self.stock_repository.bulk_update_fundamentals(fundamentals)
+        logger.info(f"=== 종목 재무지표 동기화 완료: {len(fundamentals)}개 업데이트 ===")
+
+    async def sync_etf_fundamentals(self):
+        """
+        ETF 구성종목(etf_compositions)의 비중 가중평균으로 ETF의 per, pbr, roe를 계산합니다.
+        roe = pbr / per
+        """
+        from sqlalchemy import select, text
+        from app.models.etf import ETF
+
+        logger.info("=== ETF 재무지표(PER/PBR/ROE) 가중평균 계산 시작 ===")
+
+        # 구성종목 PER/PBR이 있는 ETF들의 가중평균 계산 (SQL로 효율적 처리)
+        stmt = text("""
+            SELECT
+                ec.etf_id,
+                SUM(s.per * ec.weight_pct / 100.0) AS weighted_per,
+                SUM(s.pbr * ec.weight_pct / 100.0) AS weighted_pbr
+            FROM etf_compositions ec
+            JOIN stock s ON s.ticker = ec.component_stock_code
+            WHERE s.per IS NOT NULL AND s.per > 0
+              AND s.pbr IS NOT NULL AND s.pbr > 0
+              AND ec.base_date = (
+                  SELECT MAX(base_date) FROM etf_compositions WHERE etf_id = ec.etf_id
+              )
+            GROUP BY ec.etf_id
+            HAVING SUM(ec.weight_pct) > 0
+        """)
+
+        result = await self.etf_repository.db.execute(stmt)
+        rows = result.fetchall()
+
+        if not rows:
+            logger.warning("ETF 재무지표 계산에 필요한 구성종목 데이터가 없습니다.")
+            return
+
+        from sqlalchemy import update
+        updated = 0
+        for row in rows:
+            etf_id = row[0]
+            w_per = float(row[1]) if row[1] else None
+            w_pbr = float(row[2]) if row[2] else None
+
+            if not w_per or not w_pbr or w_per == 0:
+                continue
+
+            w_roe = round(w_pbr / w_per, 4)
+            stmt_upd = (
+                update(ETF)
+                .where(ETF.id == etf_id)
+                .values(
+                    per=round(w_per, 2),
+                    pbr=round(w_pbr, 2),
+                    roe=w_roe
+                )
+            )
+            await self.etf_repository.db.execute(stmt_upd)
+            updated += 1
+
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 재무지표 계산 완료: {updated}개 ETF 업데이트 ===")
+
+    async def sync_etf_risk_type(self):
+        """
+        ETF 속성(is_leveraged, is_inverse, is_derivatives, is_krx_only, sector/name 키워드)
+        기반으로 risk_type을 계산합니다.
+
+        등급 기준 (RiskType 참조):
+          AGGRESSIVE(5) - 레버리지 ETF
+          ACTIVE(4)     - 인버스/파생/해외자산 ETF
+          MODERATE(3)   - 일반 국내 주식 ETF (기본값)
+          STABLE(2)     - 채권/혼합 ETF
+          CONSERVATIVE(1) - 국채/MMF/단기채 ETF
+        """
+        from sqlalchemy import select, update
+        from app.models.etf import ETF
+
+        logger.info("=== ETF 위험유형(risk_type) 계산 시작 ===")
+
+        stmt = select(ETF.id, ETF.name, ETF.is_leveraged, ETF.is_inverse,
+                      ETF.is_derivatives, ETF.is_krx_only, ETF.sector, ETF.category)
+        result = await self.etf_repository.db.execute(stmt)
+        etfs = result.fetchall()
+
+        conservative_keywords = ['국채', 'MMF', '단기채', '통안채', 'CD', 'RP', 'A-', 'AA-']
+        stable_keywords = ['채권', '회사채', '하이일드', '인플레', '물가']
+
+        updated = 0
+        for etf in etfs:
+            name = etf.name or ""
+            sector = etf.sector or ""
+            category = etf.category or ""
+            combined = f"{name} {sector} {category}"
+
+            if etf.is_leveraged:
+                risk_type = "AGGRESSIVE"
+            elif etf.is_inverse or etf.is_derivatives or etf.is_krx_only is False:
+                risk_type = "ACTIVE"
+            elif any(k in combined for k in conservative_keywords):
+                risk_type = "CONSERVATIVE"
+            elif any(k in combined for k in stable_keywords):
+                risk_type = "STABLE"
+            else:
+                risk_type = "MODERATE"
+
+            stmt_upd = update(ETF).where(ETF.id == etf.id).values(risk_type=risk_type)
+            await self.etf_repository.db.execute(stmt_upd)
+            updated += 1
+
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 위험유형 계산 완료: {updated}개 ETF 업데이트 ===")

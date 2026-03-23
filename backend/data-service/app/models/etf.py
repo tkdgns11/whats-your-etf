@@ -12,6 +12,7 @@ class ETF(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     stock_code = Column(String(20), unique=True, nullable=False)
     name = Column(String(200), nullable=False)
+    english_name = Column(String(200))
 
     # 분류
     category = Column(String(50))  # 국내주식형/해외주식형/채권형 등
@@ -23,7 +24,6 @@ class ETF(Base):
     # 속성 플래그
     is_leveraged = Column(Boolean, default=False)
     is_inverse = Column(Boolean, default=False)
-    is_hedged = Column(Boolean)
     is_derivatives = Column(Boolean, default=False)
     is_krx_only = Column(Boolean, default=None)
 
@@ -36,21 +36,21 @@ class ETF(Base):
     dividend_yield = Column(DECIMAL(6, 3))
     dividend_freq = Column(String(10))  # MONTHLY/QUARTERLY/SEMI_ANNUAL/ANNUAL/NONE
 
-    # 밸류에이션
-    avg_per = Column(DECIMAL(8, 2))
-    avg_pbr = Column(DECIMAL(8, 2))
-    avg_roe = Column(DECIMAL(8, 2))
+    # 밸류에이션 (구성종목 비중 가중평균)
+    per = Column(DECIMAL(8, 2))
+    pbr = Column(DECIMAL(8, 2))
+    roe = Column(DECIMAL(8, 2))
 
-    # 위험 지표
-    risk_grade = Column(String(20))  # HIGH_RISK/MODERATE/STABLE
-    volatility_1y = Column(DECIMAL(8, 4))
+    # 위험 유형 (CONSERVATIVE/STABLE/MODERATE/ACTIVE/AGGRESSIVE)
+    risk_type = Column(String(20))
 
     # 생애주기
     listing_date = Column(Date)
     delisted_date = Column(Date)
     is_active = Column(Boolean, default=True)
 
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
         return f"<ETF(code={self.stock_code}, name={self.name})>"
