@@ -62,7 +62,7 @@ fun EtfDetailInfoTab(
     val showPrice by viewModel.showPrice.collectAsStateWithLifecycle()
     val showKospi by viewModel.showKospi.collectAsStateWithLifecycle()
     val showSp500 by viewModel.showSp500.collectAsStateWithLifecycle()
-    var productInfoExpanded by remember { mutableStateOf(true) }
+    var productInfoExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier

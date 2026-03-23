@@ -1,8 +1,9 @@
 package com.d102.wye.presentation.designsystem
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -120,11 +121,12 @@ fun WyeKakaoButton(
     enabled: Boolean = true,
 ) {
     Image(
-        painter = painterResource(id = R.drawable.ic_kakao_login_button),
+        painter = painterResource(id = R.drawable.kakao_login_medium_wide),
         contentDescription = text,
         contentScale = ContentScale.FillWidth,
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .graphicsLayer(alpha = if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, onClick = onClick),
     )

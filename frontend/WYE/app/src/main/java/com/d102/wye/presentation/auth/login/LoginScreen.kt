@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,7 +29,7 @@ import com.d102.wye.presentation.auth.login.components.LoginFooterLinks
 import com.d102.wye.presentation.auth.login.components.LoginFormSection
 import com.d102.wye.presentation.auth.login.components.LoginHeader
 import com.d102.wye.presentation.auth.login.components.LoginSocialSection
-import com.d102.wye.presentation.theme.SurfaceVariant
+import com.d102.wye.presentation.theme.SurfaceWhite
 import kotlinx.coroutines.flow.collect
 
 @Composable
@@ -83,21 +86,25 @@ private fun LoginScreenContent(
     onJoinClick: () -> Unit,
     onForgotPasswordClick: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceVariant)
-            .verticalScroll(rememberScrollState())
+            .background(SurfaceWhite)
+            .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.Center
     ) {
-        LoginHeader(lowerWaveColor = SurfaceVariant)
-
-        Spacer(modifier = Modifier.height(14.dp))
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
+                .padding(top = 60.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            LoginHeader()
+
+            Spacer(modifier = Modifier.height(48.dp))
+
             LoginFormSection(
                 uiState = uiState,
                 onEmailChanged = onEmailChanged,
@@ -119,8 +126,6 @@ private fun LoginScreenContent(
                 onJoinClick = onJoinClick,
                 onForgotPasswordClick = onForgotPasswordClick
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

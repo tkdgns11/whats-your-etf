@@ -49,6 +49,13 @@ class ExploreViewModel @Inject constructor(
     private val _selectedTickers = MutableStateFlow<Set<String>>(emptySet())
     val selectedTickers: StateFlow<Set<String>> = _selectedTickers.asStateFlow()
 
+    private val _expandedFilterSections = MutableStateFlow<Set<String>>(emptySet())
+    val expandedFilterSections: StateFlow<Set<String>> = _expandedFilterSections.asStateFlow()
+
+    fun toggleFilterSection(title: String) {
+        _expandedFilterSections.update { if (title in it) it - title else it + title }
+    }
+
     init {
         observeFavoriteChanges()
         loadEtfList()

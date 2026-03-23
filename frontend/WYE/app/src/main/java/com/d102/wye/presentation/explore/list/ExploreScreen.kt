@@ -55,6 +55,7 @@ fun ExploreScreen(
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilterDialog by remember { mutableStateOf(false) }
+    val expandedFilterSections by viewModel.expandedFilterSections.collectAsStateWithLifecycle()
     val selectedTickers by viewModel.selectedTickers.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -84,6 +85,8 @@ fun ExploreScreen(
             onFilterChanged = viewModel::onFilterChanged,
             onApply = { showFilterDialog = false },
             onDismiss = { showFilterDialog = false },
+            expandedSections = expandedFilterSections,
+            onToggleSection = viewModel::toggleFilterSection,
         )
     }
 

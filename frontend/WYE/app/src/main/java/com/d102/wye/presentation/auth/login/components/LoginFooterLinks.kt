@@ -29,7 +29,7 @@ fun LoginFooterLinks(
             onClick = onJoinClick
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(0.dp))
 
         FooterLinkRow(
             prefix = "비밀번호를 잊으셨나요?",

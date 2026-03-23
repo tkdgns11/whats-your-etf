@@ -116,7 +116,7 @@ private fun StockDetailContent(
             Text(stock.ticker, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
         // ── 태그 칩 ───────────────────────────────────────────────
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -140,11 +140,11 @@ private fun StockDetailContent(
             )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(32.dp))
 
         // ── 회사 개요 ─────────────────────────────────────────────
         SectionHeader(icon = { Icon(Icons.Outlined.Description, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "회사 개요")
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(20.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -155,15 +155,15 @@ private fun StockDetailContent(
             Text(stock.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = TextSecondary)
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
 
         // ── 포함된 ETF ────────────────────────────────────────────
         SectionHeader(icon = { Icon(Icons.Outlined.AccountBalance, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목이 포함되어있는 ETF")
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         stock.containedEtfs.take(3).forEach { etf ->
             EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(36.dp))
         }
 
         // 전체보기 버튼
@@ -181,16 +181,18 @@ private fun StockDetailContent(
             )
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(48.dp))
 
         // ── 함께 등장하는 종목 ────────────────────────────────────
         SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         relatedStocks.forEach { related ->
             RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
             HorizontalDivider(color = Divider)
         }
+
+        Spacer(Modifier.height(32.dp))
 
     }
 }
@@ -322,7 +324,7 @@ private fun RelatedStockItem(stock: RelatedStock, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
