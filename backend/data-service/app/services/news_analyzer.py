@@ -5,6 +5,7 @@
 2. 키워드 추출
 3. 관련 ETF 추천
 """
+import json
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
@@ -257,28 +258,128 @@ async def analyze_news(db: Session, news_id: int) -> Optional[Dict[str, Any]]:
 
 
 async def analyze_unprocessed_news(db: Session, limit: int = 50) -> int:
-    """미분석 뉴스 일괄 처리"""
-    # content_summary가 NULL인 뉴스 조회
-    articles = db.query(NewsArticle).filter(
-        NewsArticle.content_summary == None,
-        NewsArticle.content != None,
-        NewsArticle.is_active == True
-    ).limit(limit).all()
+    """
+    미분석 뉴스 일괄 처리 (Atomic 선점 방식)
 
-    if not articles:
-        logger.info("분석할 뉴스가 없습니다.")
-        return 0
-
+    Race Condition 방지:
+    - UPDATE + RETURNING으로 원자적 선점
+    - FOR UPDATE SKIP LOCKED로 다른 스케줄러가 선점한 건 스킵
+    - 락은 ms 단위로 짧게, AI 분석 중에는 락 없음
+    """
     analyzer = NewsAnalyzer(db)
     processed = 0
 
     try:
-        for article in articles:
-            result = await analyzer.process_article(article)
-            if result:
+        for _ in range(limit):
+            # 1. Atomic하게 1건 선점: UPDATE + RETURNING
+            #    - FOR UPDATE SKIP LOCKED: 다른 스케줄러가 처리중인 건 스킵
+            #    - content_summary를 PROCESSING으로 마킹하여 중복 처리 방지
+            result = db.execute(text("""
+                UPDATE news_article
+                SET content_summary = '{"status": "PROCESSING"}'::jsonb
+                WHERE id = (
+                    SELECT id FROM news_article
+                    WHERE content_summary IS NULL
+                      AND content IS NOT NULL
+                      AND is_active = true
+                    ORDER BY published_at DESC
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                )
+                RETURNING id, title, content, source
+            """))
+            row = result.fetchone()
+
+            if not row:
+                # 더 이상 처리할 뉴스 없음
+                if processed == 0:
+                    logger.info("분석할 뉴스가 없습니다.")
+                break
+
+            # 2. 즉시 커밋하여 락 해제 (ms 단위)
+            db.commit()
+
+            article_id, title, content, source = row
+            logger.info(f"선점 완료: news_id={article_id}, title={title[:30] if title else 'N/A'}...")
+
+            # 3. AI 분석 수행 (락 없음, 시간 오래 걸려도 OK)
+            try:
+                # 분석용 임시 객체 생성
+                article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
+                if not article:
+                    logger.warning(f"뉴스 조회 실패: {article_id}")
+                    continue
+
+                # AI 분석 (analyze_article만 호출, DB 저장은 별도로)
+                analysis = await analyzer.analyze_article(article)
+
+                if not analysis:
+                    # 분석 실패 시 상태 롤백
+                    db.execute(text("""
+                        UPDATE news_article
+                        SET content_summary = NULL
+                        WHERE id = :id
+                    """), {"id": article_id})
+                    db.commit()
+                    logger.warning(f"뉴스 분석 실패, 상태 롤백: {article_id}")
+                    continue
+
+                # 4. ETF 추천
+                etf_recs = analyzer.recommend_etfs(analysis)
+
+                # 5. 최종 결과 저장 (COMPLETED)
+                db.execute(text("""
+                    UPDATE news_article
+                    SET content_summary = :summary::jsonb,
+                        keywords = :keywords::jsonb
+                    WHERE id = :id
+                """), {
+                    "id": article_id,
+                    "summary": json.dumps({"bullets": analysis.summary}, ensure_ascii=False),
+                    "keywords": json.dumps(analysis.keywords, ensure_ascii=False)
+                })
+
+                # ETF 영향력 저장 (중복 방지: ON CONFLICT DO NOTHING)
+                for rec in etf_recs:
+                    db.execute(text("""
+                        INSERT INTO news_etf_influence
+                            (news_id, etf_id, influence_score, influence_type,
+                             timeline_title, timeline_summary, analysis_reason)
+                        VALUES
+                            (:news_id, :etf_id, :score, :type, :title, :summary, :reason)
+                        ON CONFLICT (news_id, etf_id) DO NOTHING
+                    """), {
+                        "news_id": article_id,
+                        "etf_id": rec.etf_id,
+                        "score": rec.influence_score,
+                        "type": rec.influence_type,
+                        "title": (article.title or "")[:100],
+                        "summary": analysis.summary[0] if analysis.summary else "",
+                        "reason": rec.reason
+                    })
+
+                db.commit()
                 processed += 1
-                logger.info(f"[{processed}/{len(articles)}] 분석 완료: {article.title[:30]}...")
+                logger.info(f"[{processed}] 분석 완료: {title[:30] if title else 'N/A'}... (ETF {len(etf_recs)}개)")
+
+                # 6. 이벤트 발행
+                if etf_recs:
+                    await analyzer._publish_news_event(article, analysis, etf_recs)
+
+            except Exception as e:
+                logger.error(f"뉴스 처리 중 오류 (news_id={article_id}): {e}")
+                # 오류 발생 시 상태 롤백
+                db.rollback()
+                db.execute(text("""
+                    UPDATE news_article
+                    SET content_summary = NULL
+                    WHERE id = :id
+                """), {"id": article_id})
+                db.commit()
+                continue
+
     finally:
         await analyzer.close()
 
+    logger.info(f"뉴스 분석 완료: 총 {processed}건 처리")
     return processed
