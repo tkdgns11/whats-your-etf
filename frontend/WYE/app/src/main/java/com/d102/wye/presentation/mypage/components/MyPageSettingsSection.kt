@@ -5,7 +5,6 @@ import com.d102.wye.presentation.designsystem.WyeListItem
 
 fun LazyListScope.myPageSettingsSection(
     onAlertSettingClick: () -> Unit,
-    onThemeModeClick: () -> Unit
 ) {
     item { MyPageSectionTitle(title = "설정") }
 
@@ -15,15 +14,6 @@ fun LazyListScope.myPageSettingsSection(
             showArrow = true,
             showDivider = false,
             onClick = onAlertSettingClick
-        )
-    }
-
-    item {
-        WyeListItem(
-            title = "라이트/다크 모드",
-            showArrow = true,
-            showDivider = false,
-            onClick = onThemeModeClick
         )
     }
 }

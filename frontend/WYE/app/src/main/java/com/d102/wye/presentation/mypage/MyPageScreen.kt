@@ -43,7 +43,7 @@ fun MyPageScreen(
     onLikedEtfListClick: () -> Unit = {},
     onPasswordChangeClick: () -> Unit = {},
     onAlertSettingClick: () -> Unit = {},
-    onThemeModeClick: () -> Unit = {},
+
     onFaqClick: () -> Unit = {},
     onTermsClick: () -> Unit = {},
     viewModel: MyPageViewModel = hiltViewModel()
@@ -80,7 +80,6 @@ fun MyPageScreen(
         onLikedEtfListClick = onLikedEtfListClick,
         onPasswordChangeClick = onPasswordChangeClick,
         onAlertSettingClick = onAlertSettingClick,
-        onThemeModeClick = onThemeModeClick,
         onFaqClick = onFaqClick,
         onTermsClick = onTermsClick,
         onNicknameEditClick = { viewModel.showNicknameEditDialog() },
@@ -110,7 +109,7 @@ private fun MyPageScreenContent(
     onLikedEtfListClick: () -> Unit,
     onPasswordChangeClick: () -> Unit,
     onAlertSettingClick: () -> Unit,
-    onThemeModeClick: () -> Unit,
+
     onFaqClick: () -> Unit,
     onTermsClick: () -> Unit,
     onNicknameEditClick: () -> Unit,
@@ -168,7 +167,6 @@ private fun MyPageScreenContent(
 
                         myPageSettingsSection(
                             onAlertSettingClick = onAlertSettingClick,
-                            onThemeModeClick = onThemeModeClick
                         )
 
                         myPageSupportSection(

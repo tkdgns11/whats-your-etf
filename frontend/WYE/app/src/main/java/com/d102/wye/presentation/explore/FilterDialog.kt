@@ -59,6 +59,8 @@ fun FilterDialog(
     onFilterChanged: (EtfFilterState) -> Unit,
     onApply: () -> Unit,
     onDismiss: () -> Unit,
+    expandedSections: Set<String> = emptySet(),
+    onToggleSection: (String) -> Unit = {},
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -90,7 +92,7 @@ fun FilterDialog(
                     Spacer(Modifier.height(4.dp))
 
                     // 위험 분류
-                    FilterSection(title = "위험 분류") {
+                    FilterSection(title = "위험 분류", expanded = "위험 분류" in expandedSections, onToggle = { onToggleSection("위험 분류") }) {
                         val riskItems = listOf(
                             Triple("CONSERVATIVE", "안정형", "예금 보호 확정\n금리 추구형"),
                             Triple("STABLE", "안정추구형", "투자원금 손실\n최소화"),
@@ -138,7 +140,7 @@ fun FilterDialog(
                     }
 
                     // 투자 전략
-                    FilterSection(title = "투자 전략") {
+                    FilterSection(title = "투자 전략", expanded = "투자 전략" in expandedSections, onToggle = { onToggleSection("투자 전략") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("시장 대표", "테마형", "배당형", "채권형").forEach { s ->
                                 WyeSelectableChip(
@@ -159,7 +161,7 @@ fun FilterDialog(
                     )
 
                     // 배당률
-                    FilterSection(title = "배당률") {
+                    FilterSection(title = "배당률", expanded = "배당률" in expandedSections, onToggle = { onToggleSection("배당률") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "0 - 5%" to "0-5",
@@ -177,7 +179,7 @@ fun FilterDialog(
                     }
 
                     // 배당주기
-                    FilterSection(title = "배당주기") {
+                    FilterSection(title = "배당주기", expanded = "배당주기" in expandedSections, onToggle = { onToggleSection("배당주기") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("월", "반기", "분기", "년").forEach { cycle ->
                                 WyeSelectableChip(
@@ -192,7 +194,7 @@ fun FilterDialog(
                     }
 
                     // 파생상품
-                    FilterSection(title = "파생상품") {
+                    FilterSection(title = "파생상품", expanded = "파생상품" in expandedSections, onToggle = { onToggleSection("파생상품") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             WyeSelectableChip(
                                 label = "O",
@@ -228,7 +230,7 @@ fun FilterDialog(
                     )
 
                     // P/E
-                    FilterSection(title = "P/E") {
+                    FilterSection(title = "P/E", expanded = "P/E" in expandedSections, onToggle = { onToggleSection("P/E") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "10배 이하" to "under10",
@@ -247,7 +249,7 @@ fun FilterDialog(
                     }
 
                     // P/B
-                    FilterSection(title = "P/B") {
+                    FilterSection(title = "P/B", expanded = "P/B" in expandedSections, onToggle = { onToggleSection("P/B") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "1배 미만" to "under1",
@@ -266,7 +268,7 @@ fun FilterDialog(
                     }
 
                     // ROE
-                    FilterSection(title = "ROE") {
+                    FilterSection(title = "ROE", expanded = "ROE" in expandedSections, onToggle = { onToggleSection("ROE") }) {
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             listOf(
                                                 "5% 미만" to "under5",
@@ -285,7 +287,7 @@ fun FilterDialog(
                     }
 
                     // 운용보수
-                    FilterSection(title = "운용보수(수수료)") {
+                    FilterSection(title = "운용보수(수수료)", expanded = "운용보수(수수료)" in expandedSections, onToggle = { onToggleSection("운용보수(수수료)") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "0.05% 미만" to "under0.05",
@@ -304,7 +306,7 @@ fun FilterDialog(
                     }
 
                     // 순자산액
-                    FilterSection(title = "순자산액") {
+                    FilterSection(title = "순자산액", expanded = "순자산액" in expandedSections, onToggle = { onToggleSection("순자산액") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "100억 미만" to "under100",
@@ -369,10 +371,10 @@ private fun ThemeFilterSection(
     val enabled = filter.strategy == "테마형"
     var expanded by remember { mutableStateOf(false) }
     val themes = listOf(
-        "전자 / IT", "바이오 / 의약", "에너지 / 유틸리티",
-        "자동차", "화학 / 소재", "철강 / 금속",
-        "식품 / 음료", "금융", "건설",
-        "운송", "유통 / 소매", "통신 / 미디어", "기타",
+        "반도체", "IT/전자", "바이오/의약",
+        "자동차", "화학/소재", "에너지",
+        "금융", "건설/부동산", "소비재",
+        "통신/미디어", "운송/물류", "산업재", "지주회사", "기타",
     )
 
     LaunchedEffect(enabled) {
@@ -424,13 +426,17 @@ private fun ThemeFilterSection(
 }
 
 @Composable
-private fun FilterSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+private fun FilterSection(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded },
+                .clickable { onToggle() },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
