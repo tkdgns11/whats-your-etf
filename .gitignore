@@ -51,7 +51,7 @@ bin/
 Thumbs.db
 
 # Environment
-.env
+backend/data-service/.env
 *.env.local
 *.env.*.local
 

@@ -9,7 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-@Component
+// @Component - Redis 구현으로 대체됨 (EtfCacheRedisImpl)
 public class EtfCacheImpl implements EtfCache {
     private final Map<String, EtfCurrentInfo> cache = Map.ofEntries(
 

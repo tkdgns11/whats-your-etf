@@ -16,7 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-@Component
+// @Component - JPA 구현으로 대체됨 (EtfRepositoryImpl)
 public class EtfMockRepository {
         private final Map<String, Etf> db = Map.ofEntries(
                 Map.entry("069500", Etf.builder().id(1035L).stockCode("069500").name("KODEX 200").englishName("KOSPI 200 Index Tracking Fund").strategyType("시장 대표").sector(null).assetManager("삼성").isLeveraged(false).isInverse(false).isHedged(false).expenseRatio(BigDecimal.valueOf(0.15)).nav(BigDecimal.valueOf(35000)).aum(5000000000000L).dividendYield(BigDecimal.valueOf(1.5)).dividendFreq("QUARTERLY").riskType(RiskType.STABLE).listingDate(LocalDate.of(2006, 10, 13)).fundamental(Fundamental.calculateFundamental(22.7, 1.99)).isActive(true).build()),

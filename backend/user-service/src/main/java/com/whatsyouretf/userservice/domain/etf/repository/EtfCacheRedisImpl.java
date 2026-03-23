@@ -7,8 +7,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -25,7 +23,6 @@ public class EtfCacheRedisImpl implements EtfCache {
 
     private static final String HASH_PREFIX = "EtfCurrentInfo:";
     private static final String SET_KEY = "EtfCurrentInfo";
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Override
     public EtfCurrentInfo findByTicker(String ticker) {
@@ -42,38 +39,39 @@ public class EtfCacheRedisImpl implements EtfCache {
             }
 
             // Hash 필드값들을 EtfCurrentInfo로 변환
-            String id = (String) data.get("id");
-            String currentPriceStr = (String) data.get("currentPrice");
-            String dailyFluctuationStr = (String) data.get("dailyFluctuation");
-            String navStr = (String) data.get("nav");
-            String volumeStr = (String) data.get("volume");
-            String updatedAtStr = (String) data.get("updatedAt");
+            String tickerStr = (String) data.get("ticker");
+            if (tickerStr == null) {
+                tickerStr = ticker;  // 폴백
+            }
 
-            if (id == null || currentPriceStr == null) {
+            String name = (String) data.get("name");
+            if (name == null) {
+                name = "";
+            }
+
+            String currentPriceStr = (String) data.get("currentPrice");
+            String previousPriceStr = (String) data.get("previousPrice");
+            String volumeStr = (String) data.get("volume");
+            String navStr = (String) data.get("nav");
+            String dailyReturnStr = (String) data.get("dailyReturn");
+            String dailyFluctuationStr = (String) data.get("dailyFluctuation");
+
+            if (currentPriceStr == null || previousPriceStr == null) {
                 log.warn("[{}] 필수 필드 부족", ticker);
                 return null;
             }
 
-            EtfCurrentInfo info = EtfCurrentInfo.of(
-                id,
-                id,  // name은 ID와 동일 (선택사항)
-                new BigDecimal(currentPriceStr),
-                new BigDecimal(dailyFluctuationStr != null ? dailyFluctuationStr : "0"),
-                Long.parseLong(volumeStr != null ? volumeStr : "0"),
-                new BigDecimal(navStr != null ? navStr : "0")
+            // EtfCurrentInfo 생성자로 직접 객체 생성
+            return new EtfCurrentInfo(
+                    tickerStr,
+                    name,
+                    new BigDecimal(currentPriceStr),
+                    new BigDecimal(previousPriceStr),
+                    Long.parseLong(volumeStr != null ? volumeStr : "0"),
+                    new BigDecimal(navStr != null ? navStr : "0"),
+                    new BigDecimal(dailyReturnStr != null ? dailyReturnStr : "0"),
+                    new BigDecimal(dailyFluctuationStr != null ? dailyFluctuationStr : "0")
             );
-
-            // updatedAt 설정
-            if (updatedAtStr != null) {
-                try {
-                    LocalDateTime updatedAt = LocalDateTime.parse(updatedAtStr, DATE_TIME_FORMATTER);
-                    info.setUpdatedAt(updatedAt);
-                } catch (Exception e) {
-                    log.debug("[{}] updatedAt 파싱 실패: {}", ticker, updatedAtStr);
-                }
-            }
-
-            return info;
         } catch (Exception e) {
             log.error("[{}] Redis 조회 실패: {}", ticker, e.getMessage());
             return null;

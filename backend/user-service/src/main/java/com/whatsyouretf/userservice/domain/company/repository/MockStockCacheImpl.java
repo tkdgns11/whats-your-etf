@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+// @Component  // Redis 기반 StockCacheRedisImpl로 대체됨
 public class MockStockCacheImpl implements StockCache {
 
     private final Map<String, StockInfo> stockMap = new HashMap<>();

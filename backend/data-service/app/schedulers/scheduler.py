@@ -260,7 +260,7 @@ async def sync_etf_stock_cache_job():
                 return
                 
             cache_service = RedisCacheService()
-            # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient 내부에서 18/s 동시성 제어됨)
+            # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient의 Semaphore(15) + 배치 방식으로 초당 정확히 15개 보장)
             import asyncio
             tasks = [cache_service.publish_etf_cache(etf.ticker) for etf in etfs if etf.ticker]
             await asyncio.gather(*tasks, return_exceptions=True)

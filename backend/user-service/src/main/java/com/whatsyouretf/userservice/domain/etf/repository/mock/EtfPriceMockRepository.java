@@ -25,7 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
-@Component
+// @Component - JPA 구현으로 대체됨 (EtfPriceRepositoryImpl)
 @RequiredArgsConstructor
 public class EtfPriceMockRepository {
     private final ListPageImpl<EtfPrice> listPage;
