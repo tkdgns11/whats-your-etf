@@ -21,20 +21,27 @@ class KISClient:
         self.app_secret = settings.kis_app_secret
         self._access_token: Optional[str] = None
 
-        # 순차 처리 (초당 정확히 15개 이하) - 동시 호출 제한 없음
-        # 각 호출마다 정확히 1/15초(66.7ms) 대기로 초당 15개 보장
-        self.semaphore = asyncio.Semaphore(1)
-        self.last_request_time = 0.0
-        self.min_interval = 1.0 / 15.0  # 66.7ms
+        # 동시 15개 + 초당 15개 보장
+        # semaphore=15: 동시에 15개까지 실행
+        # 각 배치(15개) 시작 전에 1초 대기로 초당 15개 정확히 보장
+        self.semaphore = asyncio.Semaphore(15)
+        self.last_batch_time = 0.0
+        self.batch_interval = 1.0  # 1초마다 새 배치 시작
 
     async def _rate_limit_wait(self):
-        """초당 정확히 15개 이하 요청 보장"""
+        """동시 15개 + 초당 정확히 15개 보장"""
         current_time = time.time()
-        elapsed = current_time - self.last_request_time
-        if elapsed < self.min_interval:
-            wait_time = self.min_interval - elapsed
-            await asyncio.sleep(wait_time)
-        self.last_request_time = time.time()
+        elapsed = current_time - self.last_batch_time
+
+        # 첫 요청이거나 1초 이상 경과했으면 즉시 실행
+        if elapsed >= self.batch_interval:
+            self.last_batch_time = time.time()
+            return
+
+        # 1초가 안 경과하면 대기
+        wait_time = self.batch_interval - elapsed
+        await asyncio.sleep(wait_time)
+        self.last_batch_time = time.time()
 
     async def _get_access_token(self) -> str:
         """액세스 토큰 발급 및 로컬 파일 캐싱 (24시간 유효)"""
