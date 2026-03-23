@@ -4,10 +4,7 @@ import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 import com.whatsyouretf.userservice.domain.company.service.StockCache;
 import com.whatsyouretf.userservice.domain.etf.dto.*;
 import com.whatsyouretf.userservice.domain.etf.entity.*;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorAiHistoryRepository;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfSectorClusterRepository;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfStockClusterMappingRepository;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfStockCompositionRepository;
+import com.whatsyouretf.userservice.domain.etf.repository.*;
 import com.whatsyouretf.userservice.domain.etf.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +36,7 @@ public class EtfServiceImpl implements EtfService {
     private final EtfStockCompositionRepository stockCompositionRepository;
     private final EtfStockClusterMappingRepository clusterMappingRepository;
     private final StockCache stockCache;
+    private final EtfDividendRepository etfDividendRepository;
 
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
@@ -106,7 +104,7 @@ public class EtfServiceImpl implements EtfService {
 
     @Override
     public List<EtfDividendsData> getEtfDividends(String ticker) {
-        return null;
+        return etfDividendRepository.getDividends(ticker);
     }
 
     /**
