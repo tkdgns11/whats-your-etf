@@ -1,5 +1,6 @@
 package com.whatsyouretf.userservice.domain.portfolio.repository;
 
+import com.whatsyouretf.userservice.domain.portfolio.controller.PresetDetail;
 import com.whatsyouretf.userservice.domain.portfolio.service.PresetReader;
 import com.whatsyouretf.userservice.domain.portfolio.service.PresetSummary;
 import lombok.RequiredArgsConstructor;
@@ -15,5 +16,10 @@ public class PresetReaderImpl implements PresetReader {
     @Override
     public List<PresetSummary> getPresetList() {
         return presetRepository.findAll();
+    }
+
+    @Override
+    public PresetDetail getPresetDetail(Long presetId) {
+        return presetRepository.findByPresetId(presetId);
     }
 }
