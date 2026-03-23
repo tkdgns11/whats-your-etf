@@ -671,12 +671,10 @@ async def dev_sync_all():
     if not await run_step("sync_etf_tickers", "sync_etf_tickers"):
         return {"status": "failed at step 1", "results": results}
 
-    # 2단계: 상태 확인 + 메타데이터 (병렬)
-    await asyncio.gather(
-        run_step("update_etfs_active_status", "update_etfs_active_status"),
-        run_step("sync_etf_metadata", "sync_etf_metadata"),
-        return_exceptions=True
-    )
+    # 2단계: 상태 확인 → 메타데이터 (순차, API 호출 제한)
+    # KRX + KIS 동시 호출 시 초당 30+ 요청으로 IP 블락 위험
+    await run_step("update_etfs_active_status", "update_etfs_active_status")
+    await run_step("sync_etf_metadata", "sync_etf_metadata")
 
     # 3단계: 재무지표
     if not await run_step("sync_stock_fundamentals", "sync_stock_fundamentals"):
