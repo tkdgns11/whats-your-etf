@@ -639,43 +639,54 @@ async def dev_sync_etf_risk_type():
 
 @app.post("/dev/etf/sync/all")
 async def dev_sync_all():
-    """[TEST] 전체 ETF 데이터 파이프라인 순차 실행
+    """[TEST] 전체 ETF 데이터 파이프라인 (병렬 실행)
 
     실행 순서:
-    1. sync_etf_tickers       — 신규 ETF 기본 정보 저장
-    2. update_etfs_active_status — is_krx_only 판별
-    3. sync_etf_metadata      — AUM/NAV/운용사/expense_ratio/dividend_yield 등
-    4. sync_stock_fundamentals — KOSPI/KOSDAQ PER/PBR/ROE
-    5. sync_etf_fundamentals  — ETF 가중평균 PER/PBR/ROE
-    6. sync_etf_risk_type     — risk_type 갱신
+    1. sync_etf_tickers (신규 ETF 저장)
+    2. update_etfs_active_status + sync_etf_metadata (병렬)
+    3. sync_stock_fundamentals (재무지표)
+    4. sync_etf_fundamentals + sync_etf_risk_type (병렬)
     """
-    logger.info("[DEV] 전체 ETF 파이프라인 수동 트리거")
+    logger.info("[DEV] 전체 ETF 파이프라인 수동 트리거 (병렬 처리)")
     results = {}
     from app.services.etf_service import EtfService
 
-    steps = [
-        ("sync_etf_tickers",           "sync_etf_tickers"),
-        ("update_etfs_active_status",  "update_etfs_active_status"),
-        ("sync_etf_metadata",          "sync_etf_metadata"),
-        ("sync_stock_fundamentals",    "sync_stock_fundamentals"),
-        ("sync_etf_fundamentals",      "sync_etf_fundamentals"),
-        ("sync_etf_risk_type",         "sync_etf_risk_type"),
-    ]
-
-    for display_name, method_name in steps:
+    async def run_step(name: str, method_name: str):
         try:
-            logger.info(f"[DEV] 단계 시작: {display_name}")
-            # 각 단계마다 독립적인 session으로 트랜잭션 격리
+            logger.info(f"[DEV] 단계 시작: {name}")
             async with AsyncSessionLocal() as db:
                 service = EtfService(db)
                 fn = getattr(service, method_name)
                 await fn()
-            results[display_name] = "ok"
-            logger.info(f"[DEV] 단계 완료: {display_name}")
+            results[name] = "ok"
+            logger.info(f"[DEV] 단계 완료: {name}")
+            return True
         except Exception as e:
-            logger.error(f"[DEV] 단계 실패 [{display_name}]: {e}", exc_info=True)
-            results[display_name] = f"error: {str(e)[:100]}"
-            # 이전 단계 에러는 계속 진행
+            logger.error(f"[DEV] 단계 실패 [{name}]: {e}", exc_info=True)
+            results[name] = f"error: {str(e)[:100]}"
+            return False
+
+    # 1단계: 신규 ETF 저장
+    if not await run_step("sync_etf_tickers", "sync_etf_tickers"):
+        return {"status": "failed at step 1", "results": results}
+
+    # 2단계: 상태 확인 + 메타데이터 (병렬)
+    await asyncio.gather(
+        run_step("update_etfs_active_status", "update_etfs_active_status"),
+        run_step("sync_etf_metadata", "sync_etf_metadata"),
+        return_exceptions=True
+    )
+
+    # 3단계: 재무지표
+    if not await run_step("sync_stock_fundamentals", "sync_stock_fundamentals"):
+        logger.warning("[DEV] 재무지표 동기화 실패, 계속 진행...")
+
+    # 4단계: ETF 가중평균 + 위험유형 (병렬)
+    await asyncio.gather(
+        run_step("sync_etf_fundamentals", "sync_etf_fundamentals"),
+        run_step("sync_etf_risk_type", "sync_etf_risk_type"),
+        return_exceptions=True
+    )
 
     return {"status": "done", "results": results}
 

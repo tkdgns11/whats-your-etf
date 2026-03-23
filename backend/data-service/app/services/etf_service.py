@@ -55,51 +55,52 @@ class EtfService:
             logger.info("상태 검사가 필요한 신규 ETF가 없습니다.")
             return
 
-        for etf in unchecked_etfs:
+        foreign_keywords = [
+            '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌',
+            '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국',
+            '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴',
+            '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX',
+            'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
+        ]
+
+        async def check_and_update_etf(etf: dict):
             ticker = etf["ticker"]
             etf_id = etf["id"]
             etf_name = etf.get("name", "")
-            
-            foreign_keywords = [
-                '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌', 
-                '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국', 
-                '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴', 
-                '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX', 
-                'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
-            ]
+
             if any(k in etf_name.upper() for k in foreign_keywords):
                 logger.info(f"[{ticker}] 이름({etf_name}) 기반 해외 자산 판별 (is_krx_only=False)")
                 await self.etf_repository.update_krx_status(etf_id, False)
-                continue
-            
+                return
+
             async with _krx_api_semaphore:
                 await asyncio.sleep(0.2)
                 pdf_infos = await self.pykrx_client.get_etf_pdf_info(ticker)
-                
+
                 if not pdf_infos:
                     logger.warning(f"[{ticker}] PDF 구성종목을 조회하지 못했습니다.")
-                    continue
-                
+                    return
+
                 has_foreign_stock = False
+                import re
                 for pdf in pdf_infos:
                     pdf_ticker = pdf["ticker"].strip()
                     pdf_name = pdf["name"].strip()
-                    
-                    # 1. 6자리 순수 숫자 (표준 국내 주식/ETF)
+
                     is_standard_stock = pdf_ticker.isdigit() and len(pdf_ticker) == 6
-                    import re
-                    # 2. 이름에 한글이 포함된 경우 (국내 파생/채권/스왑/현금/우선주 등 대부분의 국내 상장 자산)
                     has_korean_name = bool(re.search(r'[가-힣]', pdf_name))
-                    # 3. 원화표시
                     is_krw = pdf_ticker.upper() == 'KRW'
-                    
+
                     if not (is_standard_stock or has_korean_name or is_krw):
                         has_foreign_stock = True
                         break
-                
+
                 is_krx_only = not has_foreign_stock
                 logger.info(f"[{ticker}] 국내 전용 여부 판별 완료 (is_krx_only={is_krx_only})")
                 await self.etf_repository.update_krx_status(etf_id, is_krx_only)
+
+        # 모든 ETF 병렬 처리
+        await asyncio.gather(*[check_and_update_etf(etf) for etf in unchecked_etfs], return_exceptions=True)
 
     async def force_update_all_etfs_active_status(self):
         """기존 DB의 모든 ETF를 대상으로 PDF를 재검사하여 is_krx_only 상태를 강제 업데이트합니다."""
@@ -108,49 +109,52 @@ class EtfService:
             logger.info("상태 검사가 필요한 ETF가 없습니다.")
             return
 
-        for etf in all_etfs:
+        foreign_keywords = [
+            '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌',
+            '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국',
+            '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴',
+            '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX',
+            'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
+        ]
+
+        async def force_check_and_update_etf(etf: dict):
             ticker = etf["ticker"]
             etf_id = etf["id"]
             etf_name = etf.get("name", "")
-            
-            # 1차 검증: ETF 이름 자체에 해외 냄새(미국, 중국 등)가 나면 즉시 False 처리 (선물/합성/테마 등 커버)
-            foreign_keywords = [
-                '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌', 
-                '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국', 
-                '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴', 
-                '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX', 
-                'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
-            ]
+
             if any(k in etf_name.upper() for k in foreign_keywords):
                 logger.info(f"[{ticker}] 이름({etf_name}) 기반 해외 자산 판별 강제 업데이트 (is_krx_only=False)")
                 await self.etf_repository.update_krx_status(etf_id, False)
-                continue
-            
+                return
+
             async with _krx_api_semaphore:
                 await asyncio.sleep(0.2)
                 pdf_infos = await self.pykrx_client.get_etf_pdf_info(ticker)
-                
+
                 if not pdf_infos:
                     logger.warning(f"[{ticker}] PDF 구성종목을 조회하지 못했습니다.")
-                    continue
-                
+                    return
+
                 has_foreign_stock = False
+                import re
                 for pdf in pdf_infos:
                     pdf_ticker = pdf["ticker"].strip()
                     pdf_name = pdf["name"].strip()
-                    
+
                     is_standard_stock = pdf_ticker.isdigit() and len(pdf_ticker) == 6
-                    import re
                     has_korean_name = bool(re.search(r'[가-힣]', pdf_name))
                     is_krw = pdf_ticker.upper() == 'KRW'
-                    
+
                     if not (is_standard_stock or has_korean_name or is_krw):
                         has_foreign_stock = True
                         break
-                
+
                 is_krx_only = not has_foreign_stock
                 logger.info(f"[{ticker}] 강제 국내 전용 여부 판별 업데이트 완료 (is_krx_only={is_krx_only})")
                 await self.etf_repository.update_krx_status(etf_id, is_krx_only)
+
+        # 모든 ETF 병렬 처리
+        await asyncio.gather(*[force_check_and_update_etf(etf) for etf in all_etfs], return_exceptions=True)
 
     async def sync_etf_prices(self):
         from datetime import date, datetime, timedelta

@@ -28,16 +28,27 @@ class KISClient:
         """액세스 토큰 발급 및 로컬 파일 캐싱 (24시간 유효)"""
         # 메모리 캐시 확인
         if self._access_token:
+            logger.debug("KIS 토큰 메모리 캐시 사용")
             return self._access_token
-            
+
         # 파일 캐시 확인 (1일 = 86400초, 안전하게 86000초 기준)
+        token_dir = "/tmp"
+        os.makedirs(token_dir, exist_ok=True)
+
         if os.path.exists(self.TOKEN_FILE):
-            if time.time() - os.path.getmtime(self.TOKEN_FILE) < 86000:
-                with open(self.TOKEN_FILE, "r") as f:
-                    cached_token = f.read().strip()
-                if cached_token:
-                    self._access_token = cached_token
-                    return self._access_token
+            file_age = time.time() - os.path.getmtime(self.TOKEN_FILE)
+            if file_age < 86000:
+                try:
+                    with open(self.TOKEN_FILE, "r") as f:
+                        cached_token = f.read().strip()
+                    if cached_token:
+                        self._access_token = cached_token
+                        logger.debug(f"KIS 토큰 파일 캐시 사용 (경과시간: {file_age:.0f}초)")
+                        return self._access_token
+                except Exception as e:
+                    logger.warning(f"토큰 파일 읽기 실패: {e}")
+            else:
+                logger.debug(f"KIS 토큰 만료됨 (경과시간: {file_age:.0f}초)")
                     
         # 신규 발급 (1분당 1회 Limit 주의)
         logger.info("KIS API 토큰 신규 발급 요청 중...")
