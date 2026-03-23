@@ -20,9 +20,21 @@ class KISClient:
         self.app_key = settings.kis_app_key
         self.app_secret = settings.kis_app_secret
         self._access_token: Optional[str] = None
-        
-        # 초당 최대 15건 병렬 호출 제한을 위한 세마포어 (IP 블락 방지)
-        self.semaphore = asyncio.Semaphore(15)
+
+        # 순차 처리 (초당 정확히 15개 이하) - 동시 호출 제한 없음
+        # 각 호출마다 정확히 1/15초(66.7ms) 대기로 초당 15개 보장
+        self.semaphore = asyncio.Semaphore(1)
+        self.last_request_time = 0.0
+        self.min_interval = 1.0 / 15.0  # 66.7ms
+
+    async def _rate_limit_wait(self):
+        """초당 정확히 15개 이하 요청 보장"""
+        current_time = time.time()
+        elapsed = current_time - self.last_request_time
+        if elapsed < self.min_interval:
+            wait_time = self.min_interval - elapsed
+            await asyncio.sleep(wait_time)
+        self.last_request_time = time.time()
 
     async def _get_access_token(self) -> str:
         """액세스 토큰 발급 및 로컬 파일 캐싱 (24시간 유효)"""
@@ -104,8 +116,7 @@ class KISClient:
         }
         
         async with self.semaphore:
-            # Rate limit 완화를 위한 미세한 대기
-            await asyncio.sleep(1.0 / 15.0) 
+            await self._rate_limit_wait() 
             
             async with httpx.AsyncClient(timeout=10.0) as client:
                 try:
