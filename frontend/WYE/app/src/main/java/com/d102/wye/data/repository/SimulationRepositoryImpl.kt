@@ -7,16 +7,15 @@ import com.d102.wye.data.remote.api.SimulationApiService
 import com.d102.wye.data.remote.dto.request.AiEtfInfo
 import com.d102.wye.data.remote.dto.request.AiPortfolioData
 import com.d102.wye.data.remote.dto.request.AiReviewRequest
-import com.d102.wye.data.remote.dto.request.EtfCount
-import com.d102.wye.data.remote.dto.request.SavePortfolioRequest
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiReviewResult
+import com.d102.wye.domain.model.EtfBundle
+import com.d102.wye.domain.model.EtfBundleDetail
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.EtfPricePoint
 import com.d102.wye.domain.model.Portfolio
-import com.d102.wye.domain.model.SavePortfolioParams
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
 import kotlinx.coroutines.async
@@ -164,6 +163,21 @@ class SimulationRepositoryImpl @Inject constructor(
         BaseResult.Error(ApiError(code = -1, message = e.message ?: "AI 진단 실패"))
     }
 
+    override suspend fun getPresetList(): BaseResult<List<EtfBundle>> = runCatching {
+        val data = simulationApiService.getPresetList().data
+            ?: throw IllegalStateException("프리셋 목록 응답 data가 null")
+        BaseResult.Success(data.map { it.toDomain() })
+    }.getOrElse { e ->
+        BaseResult.Error(ApiError(code = -1, message = e.message ?: "프리셋 목록 조회 실패"))
+    }
+
+    override suspend fun getPresetDetail(presetId: Int): BaseResult<EtfBundleDetail> = runCatching {
+        val data = simulationApiService.getPresetDetail(presetId).data
+            ?: throw IllegalStateException("프리셋 상세 응답 data가 null")
+        BaseResult.Success(data.toDomain())
+    }.getOrElse { e ->
+        BaseResult.Error(ApiError(code = -1, message = e.message ?: "프리셋 상세 조회 실패"))
+    }
 
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
 
