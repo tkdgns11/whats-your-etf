@@ -6,6 +6,7 @@ public record PresetDetail(
     Long presetId,
     String presetName,
     String description,
+    String imageTag,
     List<EtfPresetResponse> presetResponseList
 ) {
 }

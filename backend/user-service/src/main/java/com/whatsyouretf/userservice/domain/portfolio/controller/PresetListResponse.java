@@ -11,6 +11,7 @@ public record PresetListResponse(
     Long presetId,
     String title,
     String description,
+    String imageTag,
     List<String> presetTagList
 ) {
     public static List<PresetListResponse> of(List<PresetSummary> presets) {
@@ -19,7 +20,7 @@ public record PresetListResponse(
         for (PresetSummary row : presets) {
             PresetListResponse response = map.computeIfAbsent(
                 row.presetId(),
-                id -> new PresetListResponse(id, row.name(), row.description(), new ArrayList<>())
+                id -> new PresetListResponse(id, row.name(), row.description(), row.imageTag(), new ArrayList<>())
             );
 
             response.presetTagList.add(row.tag());

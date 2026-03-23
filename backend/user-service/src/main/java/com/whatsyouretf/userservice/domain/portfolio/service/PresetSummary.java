@@ -4,6 +4,8 @@ public record PresetSummary(
     Long presetId,
     String name,
     String description,
-    String tag
+    String tag,
+    String imageTag
 ) {
+
 }
