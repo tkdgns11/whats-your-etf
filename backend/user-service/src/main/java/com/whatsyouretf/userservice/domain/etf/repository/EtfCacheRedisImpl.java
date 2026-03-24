@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -84,9 +83,7 @@ public class EtfCacheRedisImpl implements EtfCache {
         try {
             // EtfCurrentInfo set에서 모든 ticker 조회
             Set<String> tickers = redisTemplate.opsForSet().members(SET_KEY);
-            log.debug(Objects.requireNonNull(tickers).toString());
-
-            if (tickers.isEmpty()) {
+            if (tickers != null && tickers.isEmpty()) {
                 log.debug("Redis에 ETF 캐시가 없음");
                 return List.of();
             }
