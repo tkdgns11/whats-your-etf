@@ -15,7 +15,7 @@ from app.models.etf_disclosure import EtfDisclosure
 from app.models.etf import ETF, ETFSectorCluster
 from app.scrapers.news_service import NewsCollectionService
 from app.scrapers.krx_scraper import KrxDisclosureScraper
-from app.schedulers.scheduler import start_scheduler, scheduler
+from app.schedulers.scheduler import start_scheduler, scheduler, run_etf_stock_cache_sync
 from app.config import get_settings
 from app.scrapers.keywords import NEWS_CATEGORIES
 from app.database import AsyncSessionLocal
@@ -35,6 +35,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FastAPI 시작")
     start_scheduler()
+    asyncio.ensure_future(run_etf_stock_cache_sync())
 
     yield
 

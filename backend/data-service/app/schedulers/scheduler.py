@@ -232,44 +232,47 @@ async def sync_missing_stock_descriptions_job():
             logger.error(f"Stock Description 동기화 중 에러 발생: {e}")
             await db.rollback()
 
-async def sync_etf_stock_cache_job():
-    """정규 장 시간(09:00 ~ 15:30) 동안 ETF 및 구성종목 캐시를 Redis에 업데이트"""
-    from datetime import datetime, timezone, timedelta
-    now = datetime.now(timezone(timedelta(hours=9)))
-    
-    # 오전 9시 이전, 또는 15시 30분 이후이면 스킵
-    if now.hour < 9 or (now.hour == 15 and now.minute > 30):
-        return
-
+async def run_etf_stock_cache_sync():
+    """ETF 및 구성종목 캐시 업데이트 (시간 체크 없음 - startup 또는 스케줄러에서 호출)"""
     logger.info("=== ETF 및 구성종목(Stock) 실시간 캐시 업데이트 시작 ===")
-    
+
     from app.database import AsyncSessionLocal
     from sqlalchemy import select
     from app.models.etf import ETF
     from app.services.cache_service import RedisCacheService
-    
+    import asyncio
+
     async with AsyncSessionLocal() as db:
         try:
-            # 활성화된 ETF 목록만 가져옴
             stmt = select(ETF).where(ETF.is_active == True)
             result = await db.execute(stmt)
             etfs = result.scalars().all()
-            
+
             if not etfs:
                 logger.warning("활성화된 ETF가 없어 캐시 업데이트를 종료합니다.")
                 return
-                
+
             cache_service = RedisCacheService()
-            # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient의 Semaphore(15) + 배치 방식으로 초당 정확히 15개 보장)
-            import asyncio
             tasks = [cache_service.publish_etf_cache(etf.ticker) for etf in etfs if etf.ticker]
             await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             await cache_service.close()
             logger.info(f"=== 총 {len(etfs)}개 ETF 캐시 업데이트 성공 ===")
-            
+
         except Exception as e:
-            logger.error(f"실시간 캐시 업데이트 스케줄러 실패: {e}")
+            logger.error(f"실시간 캐시 업데이트 실패: {e}")
+
+
+async def sync_etf_stock_cache_job():
+    """정규 장 시간(09:00 ~ 15:40) 동안 ETF 및 구성종목 캐시를 Redis에 업데이트"""
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone(timedelta(hours=9)))
+
+    # 오전 9시 이전, 또는 15시 40분 이후이면 스킵
+    if now.hour < 9 or (now.hour == 15 and now.minute > 40) or now.hour > 15:
+        return
+
+    await run_etf_stock_cache_sync()
 
 async def sync_fundamentals_job():
     """종목 및 ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
