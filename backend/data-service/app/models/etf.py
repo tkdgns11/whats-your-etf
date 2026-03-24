@@ -1,5 +1,5 @@
 """ETF 관련 모델"""
-from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey
+from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -37,13 +37,12 @@ class ETF(Base):
     dividend_freq = Column(String(10))  # MONTHLY/QUARTERLY/SEMI_ANNUAL/ANNUAL/NONE
 
     # 밸류에이션
-    avg_per = Column(DECIMAL(8, 2))
-    avg_pbr = Column(DECIMAL(8, 2))
-    avg_roe = Column(DECIMAL(8, 2))
+    per = Column(Float)
+    pbr = Column(Float)
+    roe = Column(Float)
 
     # 위험 지표
     risk_grade = Column(String(20))  # HIGH_RISK/MODERATE/STABLE
-    volatility_1y = Column(DECIMAL(8, 4))
 
     # 생애주기
     listing_date = Column(Date)
