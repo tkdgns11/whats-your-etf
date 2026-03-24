@@ -25,14 +25,16 @@ public class NewsController {
     private final NewsService newsService;
 
     /**
-     * 최신 뉴스 목록 조회 (카테고리별 최신 20개)
+     * 최신 뉴스 목록 조회 (페이징)
      */
-    @Operation(summary = "최신 뉴스 목록 조회", description = "카테고리별 최신 뉴스 20개를 조회합니다.")
+    @Operation(summary = "최신 뉴스 목록 조회", description = "카테고리별 최신 뉴스를 페이징하여 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<NewsPageResponse>> getLatestNews(
-            @Parameter(description = "카테고리 코드 필터") @RequestParam(required = false) String category
+            @Parameter(description = "카테고리 코드 필터") @RequestParam(required = false) String category,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기 (10, 30, 50)") @RequestParam(defaultValue = "10") int size
     ) {
-        NewsPageResponse response = newsService.getLatestNews(category);
+        NewsPageResponse response = newsService.getLatestNews(category, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

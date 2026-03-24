@@ -46,30 +46,38 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
-    private static final int NEWS_LIST_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 50;
     private static final int MAX_ETF_NEWS_SIZE = 50;
     private static final int MAX_RELATED_ETFS = 5;
     private static final int MAX_PORTFOLIO_NEWS = 5;
 
     @Override
-    public NewsPageResponse getLatestNews(String categoryCode) {
-        Pageable pageable = PageRequest.of(0, NEWS_LIST_SIZE);
+    public NewsPageResponse getLatestNews(String categoryCode, int page, int size) {
+        // 페이지 번호 검증 (1부터 시작, 내부적으로 0-based 변환)
+        int validPage = Math.max(page - 1, 0);
+        // 페이지 크기 제한 (최대 50)
+        int validSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(validPage, validSize);
 
-        List<NewsArticle> articles;
+        Page<NewsArticle> articlePage;
         if (categoryCode != null && !categoryCode.isBlank()) {
-            articles = newsArticleRepository.findByCategoryCode(categoryCode, pageable)
-                    .getContent();
+            articlePage = newsArticleRepository.findByCategoryCode(categoryCode, pageable);
         } else {
-            articles = newsArticleRepository.findLatestNews(pageable)
-                    .getContent();
+            articlePage = newsArticleRepository.findLatestNews(pageable);
         }
 
-        List<NewsListResponse> newsList = articles.stream()
+        List<NewsListResponse> newsList = articlePage.getContent().stream()
                 .map(NewsListResponse::from)
                 .toList();
 
         return NewsPageResponse.builder()
                 .news(newsList)
+                .page(articlePage.getNumber() + 1)  // 1-based로 반환
+                .size(articlePage.getSize())
+                .totalElements(articlePage.getTotalElements())
+                .totalPages(articlePage.getTotalPages())
+                .last(articlePage.isLast())
                 .build();
     }
 
@@ -181,18 +189,22 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
             throw new BusinessException(ErrorCode.INVALID_KEYWORD);
         }
 
-        Pageable pageable = PageRequest.of(0, NEWS_LIST_SIZE);
+        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
 
-        List<NewsArticle> articles = newsArticleRepository.searchByKeyword(keyword.trim(), pageable)
-                .getContent();
+        Page<NewsArticle> articlePage = newsArticleRepository.searchByKeyword(keyword.trim(), pageable);
 
-        List<NewsListResponse> newsList = articles.stream()
+        List<NewsListResponse> newsList = articlePage.getContent().stream()
                 .map(NewsListResponse::from)
                 .toList();
 
         return NewsPageResponse.builder()
                 .news(newsList)
                 .keyword(keyword)
+                .page(1)
+                .size(DEFAULT_PAGE_SIZE)
+                .totalElements(articlePage.getTotalElements())
+                .totalPages(articlePage.getTotalPages())
+                .last(articlePage.isLast())
                 .build();
     }
 

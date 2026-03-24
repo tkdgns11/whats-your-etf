@@ -109,17 +109,23 @@ class NewsAnalyzer:
 
         1. AI가 산업 영향력 있다고 판단한 경우에만 진행
         2. news_stock_mapping에서 뉴스에 매핑된 종목 조회
-        3. 해당 종목이 실제 포함된 ETF만 추천
+        3. 해당 종목이 AI가 판단한 산업에 속하는지 확인
+        4. 해당 종목이 실제 포함된 ETF만 추천
         """
         # AI가 영향력 있다고 판단한 경우에만 진행
         if not analysis.industries:
             return []
 
-        # 첫 번째 산업의 영향 타입 사용
-        impact = analysis.industries[0].get("impact", "NEUTRAL") if analysis.industries else "NEUTRAL"
+        # AI가 판단한 산업 코드 목록
+        industry_codes = [ind.get("code") for ind in analysis.industries if ind.get("code")]
+        if not industry_codes:
+            return []
 
-        # news_stock_mapping → stock → etf_stock_composition → etf
-        # 뉴스에 매핑된 종목이 실제 포함된 ETF만 조회
+        # 첫 번째 산업의 영향 타입 사용
+        impact = analysis.industries[0].get("impact", "NEUTRAL")
+
+        # news_stock_mapping → company_info(산업 검증) → stock → etf_stock_composition → etf
+        # 뉴스 종목이 AI가 판단한 산업에 속하고, 실제 ETF에 포함된 경우만 조회
         result = self.db.execute(text("""
             SELECT DISTINCT
                 e.id,
@@ -133,10 +139,11 @@ class NewsAnalyzer:
             JOIN etf_stock_composition esc ON esc.stock_id = s.id
             JOIN etf e ON esc.etf_id = e.id
             WHERE nsm.news_id = :news_id
+              AND ci.industry_group = ANY(:industry_codes)
               AND e.is_active = true
             ORDER BY esc.weight_pct DESC
             LIMIT :limit
-        """), {"news_id": news_id, "limit": limit * 2})
+        """), {"news_id": news_id, "industry_codes": industry_codes, "limit": limit * 2})
 
         recommendations = []
         for row in result:
