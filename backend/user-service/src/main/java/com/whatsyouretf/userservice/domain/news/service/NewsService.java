@@ -8,12 +8,14 @@ import com.whatsyouretf.userservice.domain.news.dto.*;
 public interface NewsService {
 
     /**
-     * 최신 뉴스 목록 조회 (최신 20개)
+     * 최신 뉴스 목록 조회 (페이징)
      *
      * @param categoryCode 카테고리 코드 필터 (nullable)
+     * @param page 페이지 번호 (1부터 시작)
+     * @param size 페이지 크기 (10, 30, 50)
      * @return 뉴스 목록 응답
      */
-    NewsPageResponse getLatestNews(String categoryCode);
+    NewsPageResponse getLatestNews(String categoryCode, int page, int size);
 
     /**
      * 뉴스 상세 조회
