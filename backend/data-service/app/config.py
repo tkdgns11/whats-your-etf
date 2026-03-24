@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from urllib.parse import quote_plus
@@ -57,7 +58,7 @@ class Settings(BaseSettings):
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"
-    rabbitmq_password: str = "guest"
+    rabbitmq_password: str = Field(default="guest", validation_alias="RABBITMQ_PASS")
     
     # Redis
     redis_host: str = "localhost"
