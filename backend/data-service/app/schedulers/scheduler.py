@@ -253,7 +253,7 @@ async def run_etf_stock_cache_sync():
                 return
 
             cache_service = RedisCacheService()
-            tasks = [cache_service.publish_etf_cache(etf.ticker) for etf in etfs if etf.ticker]
+            tasks = [cache_service.publish_etf_cache(etf.stock_code) for etf in etfs if etf.stock_code]
             await asyncio.gather(*tasks, return_exceptions=True)
 
             await cache_service.close()
