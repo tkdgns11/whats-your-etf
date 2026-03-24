@@ -255,7 +255,7 @@ public class EtfServiceImpl implements EtfService {
                 .map(comp -> {
                     var stock = comp.getStock();
                     var company = stock.getCompany();
-                    StockInfo stockInfo = stockCache.get(stock.getTicker());
+                    StockInfo stockInfo = stockCache.get(stock.getTicker(), stock.getDescription());
 
                     BigDecimal changeRate = (stockInfo != null && stockInfo.dailyFluctuation() != null)
                             ? stockInfo.dailyFluctuation() : BigDecimal.ZERO;

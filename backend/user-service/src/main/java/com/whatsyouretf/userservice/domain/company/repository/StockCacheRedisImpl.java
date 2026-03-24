@@ -21,7 +21,7 @@ public class StockCacheRedisImpl implements StockCache {
     private static final String HASH_PREFIX = "StockInfo:";
 
     @Override
-    public StockInfo get(String ticker) {
+    public StockInfo get(String ticker, String description) {
         try {
             String key = HASH_PREFIX + ticker;
             var hashOps = redisTemplate.opsForHash();
@@ -65,7 +65,7 @@ public class StockCacheRedisImpl implements StockCache {
                     new BigDecimal(dailyFluctuationStr != null ? dailyFluctuationStr : "0"),
                     new BigDecimal(dailyReturnStr != null ? dailyReturnStr : "0"),
                     new BigDecimal(marketCapStr != null ? marketCapStr : "0"),
-                    null  // description은 Redis에 저장하지 않음
+                    description
             );
         } catch (Exception e) {
             log.error("[{}] Redis 조회 실패: {}", ticker, e.getMessage());

@@ -2,10 +2,10 @@ package com.whatsyouretf.userservice.domain.company.service.impl;
 
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
-import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 import com.whatsyouretf.userservice.domain.company.dto.RelatedStockResponse;
 import com.whatsyouretf.userservice.domain.company.entity.CompanyInfo;
 import com.whatsyouretf.userservice.domain.company.entity.Stock;
+import com.whatsyouretf.userservice.domain.company.repository.StockInfo;
 import com.whatsyouretf.userservice.domain.company.repository.StockRepository;
 import com.whatsyouretf.userservice.domain.company.service.StockCache;
 import com.whatsyouretf.userservice.domain.company.service.StockService;
@@ -20,9 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 주식 서비스 구현체
@@ -105,7 +102,8 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockInfo getStockInfo(String ticker) {
-        return stockCache.get(ticker);
+        Stock stock = stockRepository.findByTickerWithCompany(ticker).orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
+        return stockCache.get(ticker, stock.getDescription());
     }
 
     /**
