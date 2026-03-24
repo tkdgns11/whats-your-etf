@@ -57,10 +57,10 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
         List<NewsArticle> articles;
         if (categoryCode != null && !categoryCode.isBlank()) {
-            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(categoryCode, pageable)
+            articles = newsArticleRepository.findByCategoryCode(categoryCode, pageable)
                     .getContent();
         } else {
-            articles = newsArticleRepository.findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(pageable)
+            articles = newsArticleRepository.findLatestNews(pageable)
                     .getContent();
         }
 
@@ -76,7 +76,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     @Override
     @Transactional
     public NewsDetailResponse getNewsDetail(Long newsId) {
-        NewsArticle article = newsArticleRepository.findById(newsId)
+        NewsArticle article = newsArticleRepository.findByIdWithCategory(newsId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NEWS_NOT_FOUND));
 
         // 조회수 증가
