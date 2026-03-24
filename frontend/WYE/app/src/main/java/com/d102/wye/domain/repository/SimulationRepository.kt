@@ -2,6 +2,8 @@ package com.d102.wye.domain.repository
 
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiReviewResult
+import com.d102.wye.domain.model.EtfBundle
+import com.d102.wye.domain.model.EtfBundleDetail
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.Portfolio
@@ -58,5 +60,8 @@ interface SimulationRepository {
      * 최근에 저장된 날짜 조회
      */
     suspend fun getLastCachedDate(ticker: String): String?
+
+    suspend fun getPresetList(): BaseResult<List<EtfBundle>>
+    suspend fun getPresetDetail(presetId: Int): BaseResult<EtfBundleDetail>
 
 }

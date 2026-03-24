@@ -46,7 +46,7 @@ import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
 fun SimulationEntryScreen(
-    onMakePortfolioClick: () -> Unit,
+    onMakePortfolioClick: (List<String>) -> Unit,
     viewModel: SimulationEntryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,9 +66,9 @@ fun SimulationEntryScreen(
         BundleDetailDialog(
             bundle = bundle,
             onDismiss = { viewModel.onBundleDialogDismiss() },
-            onStartSimulation = {
+            onStartSimulation = { bundle ->
                 viewModel.onBundleDialogDismiss()
-                onMakePortfolioClick()
+                onMakePortfolioClick(bundle.etfItems.map { it.ticker })
             }
         )
     }
@@ -86,7 +86,7 @@ fun SimulationEntryScreen(
 private fun SimulationScreenContent(
     uiState: UiState<SimulationEntryData>,
     snackbarHostState: SnackbarHostState,
-    onMakePortfolioClick: () -> Unit,
+    onMakePortfolioClick: (List<String>) -> Unit,
     onBundleClick: (EtfBundle) -> Unit
 ) {
     Column(
@@ -114,17 +114,15 @@ private fun SimulationScreenContent(
                             .padding(horizontal = 24.dp)
                     ) {
                         // 1. 상단 배너 영역
-                        SimulationBanner(onMakePortfolioClick = onMakePortfolioClick)
+                        SimulationBanner(onMakePortfolioClick = { onMakePortfolioClick(emptyList()) })
 
                         Spacer(modifier = Modifier.height(40.dp))
 
                         // 2. 추천 ETF 꾸러미 영역
-                        if (uiState is UiState.Success) {
-                            RecommendedBundlesSection(
-                                bundles = uiState.data.bundles,
-                                onBundleClick = onBundleClick
-                            )
-                        }
+                        RecommendedBundlesSection(
+                            bundles = uiState.data.bundles,
+                            onBundleClick = onBundleClick
+                        )
                     }
                 }
 

@@ -31,6 +31,10 @@ val NavInactiveLabel  = Color(0xFFBBBBBB)   // 연한 회색          — 하단
 
 val IconBackGroundOrange = Color(0xFFFFF7ED)
 val IconBackGroundBlue = Color(0xFFEFF6FF)
+val IconBackGroundGreen  = Color(0xFFF0FDF4)  // BALANCED_PORTFOLIO - 연한 민트
+val IconBackGroundRed    = Color(0xFFFFF1F2)  // AGGRESSIVE_PLAY - 연한 핑크레드
+val IconBackGroundPurple = Color(0xFFF5F3FF)  // LONG_TERM_INVESTING - 연한 라벤더
+val IconBackGroundGray   = Color(0xFFF8FAFC)  // UNKNOWN - 연한 회색
 
 // ── 테두리 / 구분선 ───────────────────────────────────────────
 val Border            = Color(0xFFCBD5E1)   // 연한 회청색        — 입력 필드 테두리, 비활성 경계선
