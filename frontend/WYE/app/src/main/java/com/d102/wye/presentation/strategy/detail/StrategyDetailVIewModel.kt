@@ -92,7 +92,7 @@ class StrategyDetailViewModel @Inject constructor(
             }
 
             val relatedNews = when (val result = newsDeferred.await()) {
-                is BaseResult.Success -> result.data.map { NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl) }
+                is BaseResult.Success -> result.data.map { NewsItem(it.id, it.title, it.summary, it.source, it.thumbnailUrl, it.publishedAt) }
                 is BaseResult.Error -> emptyList()
             }
 
@@ -169,6 +169,7 @@ data class NewsItem(
     val summary: String,
     val source: String,
     val thumbnailUrl: String?,
+    val publishedAt: String = "",
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

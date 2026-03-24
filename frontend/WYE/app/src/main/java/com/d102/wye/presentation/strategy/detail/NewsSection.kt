@@ -25,6 +25,9 @@ import coil.compose.AsyncImage
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun NewsSection(news: List<NewsItem>, onNewsClick: (Long) -> Unit = {}) {
@@ -63,10 +66,10 @@ fun NewsSection(news: List<NewsItem>, onNewsClick: (Long) -> Unit = {}) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = item.summary,
+                        text = "${item.publishedAt.toTimeAgo()} · ${item.source}",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
-                        maxLines = 2
+                        maxLines = 1
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -76,11 +79,25 @@ fun NewsSection(news: List<NewsItem>, onNewsClick: (Long) -> Unit = {}) {
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(64.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(SurfaceVariant),
                 )
             }
         }
     }
+}
+
+private fun String.toTimeAgo(): String {
+    return runCatching {
+        val publishedAt = LocalDateTime.parse(this, DateTimeFormatter.ISO_DATE_TIME)
+        val duration = Duration.between(publishedAt, LocalDateTime.now())
+        when {
+            duration.toMinutes() < 1 -> "방금 전"
+            duration.toHours() < 1   -> "${duration.toMinutes()}분 전"
+            duration.toDays() < 1    -> "${duration.toHours()}시간 전"
+            duration.toDays() < 7    -> "${duration.toDays()}일 전"
+            else -> publishedAt.toLocalDate().toString()
+        }
+    }.getOrDefault(this)
 }
