@@ -100,62 +100,62 @@ class NewsAnalyzer:
 
     def recommend_etfs(
         self,
+        news_id: int,
         analysis: NewsAnalysisResult,
         limit: int = 5
     ) -> List[ETFRecommendation]:
         """
         뉴스 분석 결과 기반 ETF 추천
 
-        산업 영향력 기반으로 관련 ETF 추천:
-        1. 영향받는 산업(industries)의 ETF 조회
-        2. 해당 산업 비중이 높은 ETF 우선 추천
-        3. 영향 방향(POSITIVE/NEGATIVE)에 따라 점수 조정
+        1. AI가 산업 영향력 있다고 판단한 경우에만 진행
+        2. news_stock_mapping에서 뉴스에 매핑된 종목 조회
+        3. 해당 종목이 실제 포함된 ETF만 추천
         """
+        # AI가 영향력 있다고 판단한 경우에만 진행
         if not analysis.industries:
             return []
 
+        # 첫 번째 산업의 영향 타입 사용
+        impact = analysis.industries[0].get("impact", "NEUTRAL") if analysis.industries else "NEUTRAL"
+
+        # news_stock_mapping → stock → etf_stock_composition → etf
+        # 뉴스에 매핑된 종목이 실제 포함된 ETF만 조회
+        result = self.db.execute(text("""
+            SELECT DISTINCT
+                e.id,
+                e.stock_code,
+                e.name,
+                esc.weight_pct,
+                ci.company_name
+            FROM news_stock_mapping nsm
+            JOIN company_info ci ON nsm.company_id = ci.id
+            JOIN stock s ON s.company_id = ci.id
+            JOIN etf_stock_composition esc ON esc.stock_id = s.id
+            JOIN etf e ON esc.etf_id = e.id
+            WHERE nsm.news_id = :news_id
+              AND e.is_active = true
+            ORDER BY esc.weight_pct DESC
+            LIMIT :limit
+        """), {"news_id": news_id, "limit": limit * 2})
+
         recommendations = []
-
-        for industry in analysis.industries:
-            industry_code = industry.get("code")
-            impact = industry.get("impact", "NEUTRAL")
-
-            if not industry_code:
+        for row in result:
+            # 이미 추천된 ETF 제외
+            if any(r.etf_id == row[0] for r in recommendations):
                 continue
 
-            # 해당 산업 비중이 높은 ETF 조회
-            result = self.db.execute(text("""
-                SELECT
-                    e.id,
-                    e.stock_code,
-                    e.name,
-                    esc.weight_pct,
-                    esc.group_name
-                FROM etf e
-                JOIN etf_sector_cluster esc ON esc.etf_id = e.id
-                WHERE esc.group_code = :industry_code
-                  AND e.is_active = true
-                ORDER BY esc.weight_pct DESC
-                LIMIT 10
-            """), {"industry_code": industry_code})
+            # 영향력 점수 계산 (비중 기반)
+            weight = float(row[3]) if row[3] else 0
+            score = min(weight / 100, 1.0)  # 0~1 범위로 정규화
 
-            for row in result:
-                # 이미 추천된 ETF 제외
-                if any(r.etf_id == row[0] for r in recommendations):
-                    continue
-
-                # 영향력 점수 계산 (비중 기반)
-                weight = float(row[3]) if row[3] else 0
-                score = min(weight / 100, 1.0)  # 0~1 범위로 정규화
-
-                recommendations.append(ETFRecommendation(
-                    etf_id=row[0],
-                    stock_code=row[1],
-                    name=row[2],
-                    influence_score=score,
-                    influence_type=impact,
-                    reason=f"{row[4]} 섹터 비중 {weight:.1f}%"
-                ))
+            recommendations.append(ETFRecommendation(
+                etf_id=row[0],
+                stock_code=row[1],
+                name=row[2],
+                influence_score=score,
+                influence_type=impact,
+                reason=f"{row[4]} 보유 ({weight:.1f}%)"
+            ))
 
         # 점수 높은 순 정렬 후 상위 N개 반환
         recommendations.sort(key=lambda x: x.influence_score, reverse=True)
@@ -185,8 +185,8 @@ class NewsAnalyzer:
             logger.warning(f"뉴스 분석 실패: {article.id}")
             return None
 
-        # 2. ETF 추천
-        etf_recs = self.recommend_etfs(analysis)
+        # 2. ETF 추천 (뉴스에 매핑된 종목 기반)
+        etf_recs = self.recommend_etfs(article.id, analysis)
 
         # 3. DB 저장
         if save_to_db:
@@ -324,8 +324,8 @@ async def analyze_unprocessed_news(db: Session, limit: int = 50) -> int:
                     logger.warning(f"뉴스 분석 실패, 상태 롤백: {article_id}")
                     continue
 
-                # 4. ETF 추천
-                etf_recs = analyzer.recommend_etfs(analysis)
+                # 4. ETF 추천 (뉴스에 매핑된 종목 기반)
+                etf_recs = analyzer.recommend_etfs(article_id, analysis)
 
                 # 5. 최종 결과 저장 (COMPLETED)
                 db.execute(text("""
