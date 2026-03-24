@@ -330,8 +330,8 @@ async def analyze_unprocessed_news(db: Session, limit: int = 50) -> int:
                 # 5. 최종 결과 저장 (COMPLETED)
                 db.execute(text("""
                     UPDATE news_article
-                    SET content_summary = :summary::jsonb,
-                        keywords = :keywords::jsonb
+                    SET content_summary = CAST(:summary AS jsonb),
+                        keywords = CAST(:keywords AS jsonb)
                     WHERE id = :id
                 """), {
                     "id": article_id,
