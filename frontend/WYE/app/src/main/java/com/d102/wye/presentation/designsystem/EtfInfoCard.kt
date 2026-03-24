@@ -15,7 +15,13 @@ import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
-fun EtfInfoCard(name: String, currentPrice: Long, riskType: String, modifier: Modifier = Modifier) {
+fun EtfInfoCard(
+    name: String,
+    currentPrice: Long,
+    riskType: String,
+    modifier: Modifier = Modifier,
+    supportingText: String? = null
+) {
     val (badgeBg, badgeFg, badgeLabel) = riskToBadge(riskType)
 
     Column(modifier = modifier) {
@@ -27,6 +33,14 @@ fun EtfInfoCard(name: String, currentPrice: Long, riskType: String, modifier: Mo
         ) {
             Text(text = "%,d원".format(currentPrice), color = TextSecondary, style = MaterialTheme.typography.bodySmall)
             CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg)
+        }
+        if (!supportingText.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = supportingText,
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }

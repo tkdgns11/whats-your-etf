@@ -27,6 +27,7 @@ import com.d102.wye.presentation.home.news.NewsDetailScreen
 import com.d102.wye.presentation.home.news.NewsListScreen
 import com.d102.wye.presentation.mypage.MyPageScreen
 import com.d102.wye.presentation.mypage.alerts.AlertSettingsScreen
+import com.d102.wye.presentation.mypage.holding.HoldingEtfListScreen
 import com.d102.wye.presentation.mypage.liked.LikedEtfListScreen
 import com.d102.wye.presentation.mypage.support.FaqScreen
 import com.d102.wye.presentation.mypage.support.TermsScreen
@@ -136,6 +137,7 @@ fun AppNavGraph(
         composable(Route.MyPage.route) {
             MyPageScreen(
                 onLikedEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) },
+                onHoldingEtfMoreClick = { navController.navigate(Route.HoldingEtfList.route) },
                 onLikedEtfListClick = { navController.navigate(Route.LikedEtfList.route) },
                 onPasswordChangeClick = { navController.navigate(Route.PasswordReset.route) },
                 onAlertSettingClick = { navController.navigate(Route.AlertSettings.route) },
@@ -151,6 +153,13 @@ fun AppNavGraph(
 
         composable(Route.LikedEtfList.route) {
             LikedEtfListScreen(
+                onBackClick = { navController.popBackStack() },
+                onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
+            )
+        }
+
+        composable(Route.HoldingEtfList.route) {
+            HoldingEtfListScreen(
                 onBackClick = { navController.popBackStack() },
                 onEtfClick = { ticker -> navController.navigate(Route.EtfDetail(ticker).route) }
             )
