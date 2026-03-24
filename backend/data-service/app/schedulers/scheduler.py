@@ -233,17 +233,23 @@ async def sync_missing_stock_descriptions_job():
             await db.rollback()
 
 async def run_etf_stock_cache_sync():
-    """ETF 및 구성종목 캐시 업데이트 (시간 체크 없음 - startup 또는 스케줄러에서 호출)"""
+    """ETF 및 구성종목 캐시 업데이트 (시간 체크 없음 - startup 또는 스케줄러에서 호출)
+    Phase 1: 활성 ETF 전체 → KIS API로 현재가 + 구성종목 저장
+    Phase 2: DB 기준 구성종목 중 Phase 1에서 누락된 종목 → 개별 KIS API 호출
+    """
     logger.info("=== ETF 및 구성종목(Stock) 실시간 캐시 업데이트 시작 ===")
 
     from app.database import AsyncSessionLocal
-    from sqlalchemy import select
+    from sqlalchemy import text, select
     from app.models.etf import ETF
     from app.services.cache_service import RedisCacheService
     import asyncio
 
+    cache_service = RedisCacheService()
+
     async with AsyncSessionLocal() as db:
         try:
+            # Phase 1: 활성 ETF 캐시 업데이트 + 업데이트된 stock tickers 수집
             stmt = select(ETF).where(ETF.is_active == True)
             result = await db.execute(stmt)
             etfs = result.scalars().all()
@@ -252,15 +258,39 @@ async def run_etf_stock_cache_sync():
                 logger.warning("활성화된 ETF가 없어 캐시 업데이트를 종료합니다.")
                 return
 
-            cache_service = RedisCacheService()
-            tasks = [cache_service.publish_etf_cache(etf.stock_code) for etf in etfs if etf.stock_code]
-            await asyncio.gather(*tasks, return_exceptions=True)
+            tasks = [cache_service.publish_etf_cache(etf.stock_code, etf.name or "") for etf in etfs if etf.stock_code]
+            phase1_results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"=== Phase 1 완료: {len(etfs)}개 ETF 캐시 업데이트 ===")
 
-            await cache_service.close()
-            logger.info(f"=== 총 {len(etfs)}개 ETF 캐시 업데이트 성공 ===")
+            # Phase 1에서 업데이트된 stock tickers 수집
+            updated_tickers = set()
+            for r in phase1_results:
+                if isinstance(r, set):
+                    updated_tickers.update(r)
+
+            # Phase 2: DB 기준 전체 구성종목 조회 → 누락 종목만 개별 API 호출
+            all_stocks_result = await db.execute(text("""
+                SELECT DISTINCT s.ticker, ci.company_name
+                FROM etf_stock_composition esc
+                JOIN stock s ON s.id = esc.stock_id
+                JOIN etf e ON e.id = esc.etf_id
+                LEFT JOIN company_info ci ON ci.id = s.company_id
+                WHERE e.is_active = true
+                  AND s.ticker IS NOT NULL
+            """))
+            all_stocks = {row.ticker: (row.company_name or "") for row in all_stocks_result}
+
+            remaining = {ticker: name for ticker, name in all_stocks.items() if ticker not in updated_tickers}
+            logger.info(f"=== Phase 2 시작: 전체 {len(all_stocks)}개 중 누락 {len(remaining)}개 개별 조회 ===")
+
+            stock_tasks = [cache_service.publish_stock_cache(ticker, name) for ticker, name in remaining.items()]
+            await asyncio.gather(*stock_tasks, return_exceptions=True)
+            logger.info(f"=== Phase 2 완료: {len(remaining)}개 Stock 캐시 업데이트 ===")
 
         except Exception as e:
             logger.error(f"실시간 캐시 업데이트 실패: {e}")
+        finally:
+            await cache_service.close()
 
 
 async def sync_etf_stock_cache_job():

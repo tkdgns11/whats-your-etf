@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,7 +34,7 @@ public class EtfCacheRedisImpl implements EtfCache {
             // Redis에서 Hash 데이터 모두 조회
             var data = hashOps.entries(key);
 
-            if (data == null || data.isEmpty()) {
+            if (data.isEmpty()) {
                 log.debug("[{}] Redis에 캐시 데이터 없음", ticker);
                 return null;
             }
@@ -83,8 +84,9 @@ public class EtfCacheRedisImpl implements EtfCache {
         try {
             // EtfCurrentInfo set에서 모든 ticker 조회
             Set<String> tickers = redisTemplate.opsForSet().members(SET_KEY);
+            log.debug(Objects.requireNonNull(tickers).toString());
 
-            if (tickers == null || tickers.isEmpty()) {
+            if (tickers.isEmpty()) {
                 log.debug("Redis에 ETF 캐시가 없음");
                 return List.of();
             }

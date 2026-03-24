@@ -21,10 +21,8 @@ class KISClient:
         self.app_secret = settings.kis_app_secret
         self._access_token: Optional[str] = None
 
-        # 동시 15개 + 초당 15개 보장
-        # semaphore=15: 동시에 15개까지 실행
-        # 각 배치(15개) 시작 전에 1초 대기로 초당 15개 정확히 보장
-        self.semaphore = asyncio.Semaphore(15)
+        # 동시 18개 + 초당 18개 보장 (모든 KIS API 합산 기준)
+        self.semaphore = asyncio.Semaphore(18)
         self.last_batch_time = 0.0
         self.batch_interval = 1.0  # 1초마다 새 배치 시작
 
@@ -182,4 +180,44 @@ class KISClient:
                     return data.get("output", {})
                 except Exception as e:
                     logger.error(f"[{ticker}] FHPST02400000 호출 실패: {e}")
+                    return None
+
+    async def get_stock_price(self, ticker: str) -> Optional[Dict[str, Any]]:
+        """
+        FHKST01010100: 주식 현재가 조회
+        - stck_prpr(현재가), prdy_vrss(전일대비), acml_vol(거래량)
+        """
+        if not self.app_key or not self.app_secret:
+            return None
+
+        token = await self._get_access_token()
+        url = f"{self.BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price"
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "authorization": f"Bearer {token}",
+            "appkey": self.app_key,
+            "appsecret": self.app_secret,
+            "tr_id": "FHKST01010100",
+            "custtype": "P"
+        }
+        params = {
+            "FID_COND_MRKT_DIV_CODE": "J",
+            "FID_INPUT_ISCD": ticker
+        }
+
+        async with self.semaphore:
+            await self._rate_limit_wait()
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                try:
+                    res = await client.get(url, headers=headers, params=params)
+                    res.raise_for_status()
+                    data = res.json()
+
+                    if data.get("rt_cd") != "0":
+                        logger.error(f"[{ticker}] FHKST01010100 에러: {data.get('msg1')}")
+                        return None
+
+                    return data.get("output", {})
+                except Exception as e:
+                    logger.error(f"[{ticker}] FHKST01010100 호출 실패: {e}")
                     return None
