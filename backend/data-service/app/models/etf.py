@@ -52,7 +52,7 @@ class ETF(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     def __repr__(self):
-        return f"<ETF(code={self.stock_code}, name={self.name})>"
+        return f"<ETF(stock_code={self.stock_code}, name={self.name})>"
 
 
 class ETFSectorCluster(Base):
