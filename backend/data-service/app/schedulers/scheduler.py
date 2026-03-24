@@ -9,7 +9,7 @@ from app.database import SessionLocal
 from app.scrapers.stock_news_scraper import StockNewsScraper
 from app.scrapers.krx_scraper import KrxDisclosureScraper
 from app.services.news_analyzer import analyze_unprocessed_news
-from app.models.etf import ETF, ETFComposition
+from app.models.etf import ETF
 from app.models.company import CompanyInfo
 from app.config import get_settings
 

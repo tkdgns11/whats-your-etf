@@ -86,22 +86,6 @@ class ETFSectorCluster(Base):
         return f"<ETFSectorCluster(etf_id={self.etf_id}, group={self.group_code}, weight={self.weight_pct})>"
 
 
-class ETFComposition(Base):
-    """ETF 구성종목 테이블 (ERD: etf_compositions)"""
-    __tablename__ = "etf_compositions"
-
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    etf_id = Column(BigInteger, ForeignKey("etf.id", ondelete="CASCADE"), nullable=False)
-    company_id = Column(BigInteger, ForeignKey("company_info.id", ondelete="SET NULL"))  # NULL = 현금/기타
-    component_stock_code = Column(String(20))
-    weight_pct = Column(DECIMAL(6, 3))
-    base_date = Column(Date, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-
-    def __repr__(self):
-        return f"<ETFComposition(etf_id={self.etf_id}, company_id={self.company_id}, weight={self.weight_pct})>"
-
-
 class ETFPrice(Base):
     """ETF 일별 시세 테이블 (ERD: etf_prices)"""
     __tablename__ = "etf_prices"
