@@ -14,6 +14,7 @@ import com.d102.wye.domain.model.EtfFilter
 import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.model.EtfPage
 import com.d102.wye.domain.model.EtfPriceData
+import com.d102.wye.domain.model.TopVolumeEtfSnapshot
 import com.d102.wye.domain.repository.EtfRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,8 +28,13 @@ class EtfRepositoryImpl @Inject constructor(
 ) : BaseRepository(), EtfRepository {
 
     override suspend fun getTopVolumeEtfs() =
-        safeApiCall { etfApiService.getTopVolumeEtfs() }
-            .map { items -> items.map { item -> item.toDomain() } }
+        safeApiCallWithEnvelope { etfApiService.getTopVolumeEtfs() }
+            .map { body ->
+                TopVolumeEtfSnapshot(
+                    items = body.data.orEmpty().map { item -> item.toDomain() },
+                    timestamp = body.timestamp
+                )
+            }
 
     override suspend fun getEtfList(filter: EtfFilter, page: Int): BaseResult<EtfPage> =
         safeApiCall { etfApiService.getEtfList(filter.toRequest(), page) }

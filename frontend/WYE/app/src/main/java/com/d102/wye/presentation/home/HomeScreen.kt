@@ -61,6 +61,7 @@ fun HomeScreen(
         onNewsClick = onNewsClick,
         onEtfClick = onEtfClick,
         onNewsMoreClick = onNewsMoreClick,
+        onRefreshTop10Click = viewModel::refreshTop10Etfs,
         onBookmarkClick = onBookmarkClick,
         onAlertClick = onAlertClick
     )
@@ -74,6 +75,7 @@ private fun HomeScreenContent(
     onNewsClick: (newsId: Long) -> Unit,
     onEtfClick: (ticker: String) -> Unit,
     onNewsMoreClick: () -> Unit,
+    onRefreshTop10Click: () -> Unit,
     onBookmarkClick: () -> Unit,
     onAlertClick: () -> Unit
 ) {
@@ -130,7 +132,10 @@ private fun HomeScreenContent(
                 is UiState.Success -> {
                     HomeTop10Tab(
                         top10Etfs = uiState.data.top10Etfs,
+                        top10UpdatedText = uiState.data.top10UpdatedText,
+                        isRefreshing = uiState.data.isTop10Refreshing,
                         newsList = uiState.data.newsList,
+                        onRefreshClick = onRefreshTop10Click,
                         onEtfClick = onEtfClick,
                         onNewsClick = onNewsClick,
                         onNewsMoreClick = onNewsMoreClick

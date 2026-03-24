@@ -10,10 +10,13 @@ import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Duration
+import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +35,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadHomeData()
+        startTop10Polling()
     }
 
     fun loadHomeData() {
@@ -50,10 +54,12 @@ class HomeViewModel @Inject constructor(
                                 _uiState.update {
                                     UiState.Success(
                                         HomeData(
-                                            top10Etfs = topVolumeResult.data.map { it.toHomeTop10UiModel() },
+                                            top10Etfs = topVolumeResult.data.items.map { it.toHomeTop10UiModel() },
+                                            top10UpdatedText = formatTop10UpdatedText(topVolumeResult.data.timestamp),
                                             newsList = newsResult.data
                                                 .take(HOME_NEWS_LIMIT)
-                                                .map { it.toHomeNewsUiModel() }
+                                                .map { it.toHomeNewsUiModel() },
+                                            isTop10Refreshing = false
                                         )
                                     )
                                 }
@@ -61,6 +67,51 @@ class HomeViewModel @Inject constructor(
                             is BaseResult.Error -> _uiState.update { UiState.Error(topVolumeResult.error.message) }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private fun startTop10Polling() {
+        viewModelScope.launch {
+            while (true) {
+                delay(TOP10_POLLING_INTERVAL_MS)
+                if (shouldPollTop10()) {
+                    refreshTop10EtfsInternal()
+                }
+            }
+        }
+    }
+
+    fun refreshTop10Etfs() {
+        viewModelScope.launch {
+            refreshTop10EtfsInternal()
+        }
+    }
+
+    private suspend fun refreshTop10EtfsInternal() {
+        val currentState = _uiState.value as? UiState.Success ?: return
+        if (currentState.data.isTop10Refreshing) return
+
+        _uiState.update {
+            UiState.Success(currentState.data.copy(isTop10Refreshing = true))
+        }
+
+        when (val result = etfRepository.getTopVolumeEtfs()) {
+            is BaseResult.Success -> {
+                _uiState.update {
+                    UiState.Success(
+                        currentState.data.copy(
+                            top10Etfs = result.data.items.map { etf -> etf.toHomeTop10UiModel() },
+                            top10UpdatedText = formatTop10UpdatedText(result.data.timestamp),
+                            isTop10Refreshing = false
+                        )
+                    )
+                }
+            }
+            is BaseResult.Error -> {
+                _uiState.update {
+                    UiState.Success(currentState.data.copy(isTop10Refreshing = false))
                 }
             }
         }
@@ -83,6 +134,32 @@ class HomeViewModel @Inject constructor(
         changeRate = dailyReturn
     )
 
+    private fun formatTop10UpdatedText(timestamp: String?): String {
+        val parsed = timestamp?.let {
+            runCatching { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
+        } ?: LocalDateTime.now()
+
+        return if (shouldShowClosingText()) {
+            parsed.format(DateTimeFormatter.ofPattern("yy.MM.dd")) + " 종가"
+        } else {
+            parsed.format(DateTimeFormatter.ofPattern("yy.MM.dd HH:mm"))
+        }
+    }
+
+    private fun shouldPollTop10(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        val day = now.dayOfWeek
+        val time = now.toLocalTime()
+        val isWeekend = day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY
+        return !isWeekend && !time.isBefore(MARKET_OPEN_TIME) && time.isBefore(MARKET_CLOSE_TIME)
+    }
+
+    private fun shouldShowClosingText(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        val day = now.dayOfWeek
+        val time = now.toLocalTime()
+        val isWeekend = day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY
+        return isWeekend || time.isBefore(MARKET_OPEN_TIME) || !time.isBefore(MARKET_CLOSE_TIME)
+    }
+
     /** 서버 시간을 홈 화면 카드용 상대 시간 문자열로 변환한다. */
     private fun String.toTimeAgo(): String {
         return runCatching {
@@ -102,7 +179,9 @@ class HomeViewModel @Inject constructor(
 
 data class HomeData(
     val top10Etfs: List<Top10EtfUiModel>,
-    val newsList: List<HomeNewsUiModel>
+    val top10UpdatedText: String,
+    val newsList: List<HomeNewsUiModel>,
+    val isTop10Refreshing: Boolean,
 )
 
 data class Top10EtfUiModel(
@@ -121,3 +200,6 @@ data class HomeNewsUiModel(
 )
 
 private const val HOME_NEWS_LIMIT = 2
+private const val TOP10_POLLING_INTERVAL_MS = 60_000L
+private val MARKET_OPEN_TIME: LocalTime = LocalTime.of(9, 0)
+private val MARKET_CLOSE_TIME: LocalTime = LocalTime.of(15, 30)
