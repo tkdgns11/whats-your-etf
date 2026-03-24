@@ -1,4 +1,4 @@
-package com.whatsyouretf.userservice.domain.etf.repository.mock;
+package com.whatsyouretf.userservice.domain.etf.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
