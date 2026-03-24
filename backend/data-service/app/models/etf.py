@@ -36,7 +36,6 @@ class ETF(Base):
     dividend_yield = Column(DECIMAL(6, 3))
     dividend_freq = Column(String(10))  # MONTHLY/QUARTERLY/SEMI_ANNUAL/ANNUAL/NONE
 
-<<<<<<< Updated upstream
     # 밸류에이션 (구성종목 비중 가중평균)
     per = Column(DECIMAL(8, 2))
     pbr = Column(DECIMAL(8, 2))
