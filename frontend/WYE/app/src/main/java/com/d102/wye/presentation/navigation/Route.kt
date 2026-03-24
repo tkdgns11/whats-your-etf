@@ -38,6 +38,7 @@ sealed class Route(val route: String) {
     object Join : Route("join")
     object PasswordReset : Route("password_reset")
     object LikedEtfList : Route("liked_etf_list")
+    object HoldingEtfList : Route("holding_etf_list")
     object Faq : Route("faq")
     object Terms : Route("terms")
 
