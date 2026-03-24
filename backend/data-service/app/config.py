@@ -51,8 +51,8 @@ class Settings(BaseSettings):
     data_portal_company_service_key: str = ""
 
     # KIS API (한국투자증권)
-    kis_app_key: str = Field(default="", validation_alias="KIS_API_KEY")
-    kis_app_secret: str = Field(default="", validation_alias="KIS_API_SECRET")
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
 
     # RabbitMQ
     rabbitmq_host: str = "localhost"

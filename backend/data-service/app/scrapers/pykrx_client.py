@@ -9,7 +9,6 @@ from dataclasses import dataclass
 import logging
 
 class PykrxClient:
-    ASSET_MANAGER = {"TIGER", "KODEX"}
     def __init__(self, krx_session_manager : KrxSessionManager):
         self.krx_session_manager = krx_session_manager
 
@@ -30,11 +29,7 @@ class PykrxClient:
             if not name_parts:
                 continue
 
-            # A. 운용사 필터링 (기존 로직)
             etf_manager = name_parts[0]
-            if etf_manager not in self.ASSET_MANAGER:
-                continue
-
             etfs.append(EtfInfo(etf_ticker, etf_manager, etf_full_name))
 
         return etfs
@@ -140,6 +135,89 @@ class PykrxClient:
             logging.error("로그인 실패")
             return []
 
+
+
+    async def get_stock_fundamental(self, ticker: str, date: str = None) -> dict | None:
+        """
+        pykrx get_market_fundamental을 이용해 종목의 PER, PBR을 조회합니다.
+        ROE는 PBR / PER로 계산합니다.
+        반환: {"per": float, "pbr": float, "roe": float} or None
+        """
+        if not self.krx_session_manager.login():
+            logging.error("로그인 실패")
+            return None
+
+        if not date:
+            date = datetime.date.today().strftime("%Y%m%d")
+
+        try:
+            df = await to_thread.run_sync(
+                stock.get_market_fundamental, date, ticker
+            )
+        except Exception as e:
+            logging.error(f"[{ticker}] get_market_fundamental 호출 실패: {e}")
+            return None
+
+        if df is None or df.empty:
+            return None
+
+        row = df.iloc[0] if len(df) > 0 else df
+        try:
+            per = float(row.get("PER", 0) if hasattr(row, "get") else row["PER"])
+            pbr = float(row.get("PBR", 0) if hasattr(row, "get") else row["PBR"])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+        if per == 0 or pbr == 0:
+            return None
+
+        roe = round(pbr / per, 4)
+        return {"per": round(per, 2), "pbr": round(pbr, 2), "roe": roe}
+
+    async def get_stocks_fundamental_batch(self, date: str = None) -> dict[str, dict]:
+        """
+        전체 KOSPI/KOSDAQ 종목 PER, PBR을 한 번에 조회합니다 (종목별 호출보다 효율적).
+        반환: {ticker: {"per": float, "pbr": float, "roe": float}}
+        """
+        if not self.krx_session_manager.login():
+            logging.error("로그인 실패")
+            return {}
+
+        if not date:
+            date = datetime.date.today().strftime("%Y%m%d")
+
+        result = {}
+        for market in ["KOSPI", "KOSDAQ"]:
+            try:
+                df = await to_thread.run_sync(
+                    stock.get_market_fundamental, date, market
+                )
+                if df is None or df.empty:
+                    continue
+
+                df = df.reset_index()
+                for _, row in df.iterrows():
+                    ticker = str(row.get("티커", "")).strip()
+                    if not ticker:
+                        continue
+                    try:
+                        per = float(row.get("PER", 0) or 0)
+                        pbr = float(row.get("PBR", 0) or 0)
+                    except (ValueError, TypeError):
+                        continue
+
+                    if per <= 0 or pbr <= 0:
+                        continue
+
+                    result[ticker] = {
+                        "per": round(per, 2),
+                        "pbr": round(pbr, 2),
+                        "roe": round(pbr / per, 4)
+                    }
+            except Exception as e:
+                logging.error(f"[{market}] get_market_fundamental 배치 조회 실패: {e}")
+
+        return result
 
 
 @dataclass

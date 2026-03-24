@@ -232,44 +232,104 @@ async def sync_missing_stock_descriptions_job():
             logger.error(f"Stock Description 동기화 중 에러 발생: {e}")
             await db.rollback()
 
-async def sync_etf_stock_cache_job():
-    """정규 장 시간(09:00 ~ 15:30) 동안 ETF 및 구성종목 캐시를 Redis에 업데이트"""
-    from datetime import datetime, timezone, timedelta
-    now = datetime.now(timezone(timedelta(hours=9)))
-    
-    # 오전 9시 이전, 또는 15시 30분 이후이면 스킵
-    if now.hour < 9 or (now.hour == 15 and now.minute > 30):
-        return
-
+async def run_etf_stock_cache_sync():
+    """ETF 및 구성종목 캐시 업데이트 (시간 체크 없음 - startup 또는 스케줄러에서 호출)
+    Phase 1: 활성 ETF 전체 → KIS API로 현재가 + 구성종목 저장
+    Phase 2: DB 기준 구성종목 중 Phase 1에서 누락된 종목 → 개별 KIS API 호출
+    """
     logger.info("=== ETF 및 구성종목(Stock) 실시간 캐시 업데이트 시작 ===")
-    
+
     from app.database import AsyncSessionLocal
-    from sqlalchemy import select
+    from sqlalchemy import text, select
     from app.models.etf import ETF
     from app.services.cache_service import RedisCacheService
-    
+    import asyncio
+
+    cache_service = RedisCacheService()
+
     async with AsyncSessionLocal() as db:
         try:
-            # 활성화된 ETF 목록만 가져옴
+            # Phase 1: 활성 ETF 캐시 업데이트 + 업데이트된 stock tickers 수집
             stmt = select(ETF).where(ETF.is_active == True)
             result = await db.execute(stmt)
             etfs = result.scalars().all()
-            
+
             if not etfs:
                 logger.warning("활성화된 ETF가 없어 캐시 업데이트를 종료합니다.")
                 return
-                
+
+            tasks = [cache_service.publish_etf_cache(etf.stock_code, etf.name or "") for etf in etfs if etf.stock_code]
+            phase1_results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"=== Phase 1 완료: {len(etfs)}개 ETF 캐시 업데이트 ===")
+
+            # Phase 1에서 업데이트된 stock tickers 수집
+            updated_tickers = set()
+            for r in phase1_results:
+                if isinstance(r, set):
+                    updated_tickers.update(r)
+
+            # Phase 2: DB 기준 전체 구성종목 조회 → 누락 종목만 개별 API 호출
+            all_stocks_result = await db.execute(text("""
+                SELECT DISTINCT s.ticker, ci.company_name
+                FROM etf_stock_composition esc
+                JOIN stock s ON s.id = esc.stock_id
+                JOIN etf e ON e.id = esc.etf_id
+                LEFT JOIN company_info ci ON ci.id = s.company_id
+                WHERE e.is_active = true
+                  AND s.ticker IS NOT NULL
+            """))
+            all_stocks = {row.ticker: (row.company_name or "") for row in all_stocks_result}
+
+            remaining = {ticker: name for ticker, name in all_stocks.items() if ticker not in updated_tickers}
+            logger.info(f"=== Phase 2 시작: 전체 {len(all_stocks)}개 중 누락 {len(remaining)}개 개별 조회 ===")
+
+            stock_tasks = [cache_service.publish_stock_cache(ticker, name) for ticker, name in remaining.items()]
+            await asyncio.gather(*stock_tasks, return_exceptions=True)
+            logger.info(f"=== Phase 2 완료: {len(remaining)}개 Stock 캐시 업데이트 ===")
+
+        except Exception as e:
+            logger.error(f"실시간 캐시 업데이트 실패: {e}")
+        finally:
+
             cache_service = RedisCacheService()
             # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient 내부에서 18/s 동시성 제어됨)
             import asyncio
             tasks = [cache_service.publish_etf_cache(etf.stock_code) for etf in etfs if etf.stock_code]
             await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             await cache_service.close()
-            logger.info(f"=== 총 {len(etfs)}개 ETF 캐시 업데이트 성공 ===")
-            
+
+
+async def sync_etf_stock_cache_job():
+    """정규 장 시간(09:00 ~ 15:40) 동안 ETF 및 구성종목 캐시를 Redis에 업데이트"""
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone(timedelta(hours=9)))
+
+    # 오전 9시 이전, 또는 15시 40분 이후이면 스킵
+    if now.hour < 9 or (now.hour == 15 and now.minute > 40) or now.hour > 15:
+        return
+
+    await run_etf_stock_cache_sync()
+
+async def sync_fundamentals_job():
+    """종목 및 ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
+    1. KOSPI/KOSDAQ 전 종목 PER/PBR/ROE 업데이트 (pykrx 배치 조회)
+    2. ETF 구성종목 비중 가중평균으로 ETF PER/PBR/ROE 계산
+    3. ETF 위험유형(risk_type) 갱신
+    """
+    logger.info("=== 재무지표 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_stock_fundamentals()
+            await service.sync_etf_fundamentals()
+            await service.sync_etf_risk_type()
+            logger.info("=== 재무지표 동기화 완료 ===")
         except Exception as e:
-            logger.error(f"실시간 캐시 업데이트 스케줄러 실패: {e}")
+            logger.error(f"재무지표 동기화 실패: {e}")
+
 
 async def etf_price_sync_job():
     """ETF 가격 이력 동기화 (매일 00:00 KST)"""
@@ -296,6 +356,19 @@ async def kospi_index_sync_job():
             logger.info("=== KOSPI 지수 동기화 완료 ===")
         except Exception as e:
             logger.error(f"KOSPI 지수 동기화 실패: {e}")
+
+async def nasdaq_index_sync_job():
+    """NASDAQ 벤치마크 지수 동기화 (매일 00:30 KST)"""
+    logger.info("=== NASDAQ 지수 동기화 시작 ===")
+    from app.services.benchmark_service import BenchmarkService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = BenchmarkService(db)
+            await service.sync_nasdaq_index()
+            logger.info("=== NASDAQ 지수 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"NASDAQ 지수 동기화 실패: {e}")
 
 def start_scheduler():
     """스케줄러 시작"""
@@ -353,6 +426,15 @@ def start_scheduler():
         replace_existing=True
     )
 
+    # 종목/ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
+    scheduler.add_job(
+        sync_fundamentals_job,
+        trigger=CronTrigger(hour=16, minute=30, timezone='Asia/Seoul'),
+        id="sync_fundamentals_job",
+        name="Stock and ETF Fundamentals Sync",
+        replace_existing=True
+    )
+
     # ETF 가격 이력 최신화 (매일 00:00 KST)
     scheduler.add_job(
         etf_price_sync_job,
@@ -368,6 +450,15 @@ def start_scheduler():
         trigger=CronTrigger(hour=0, minute=30, timezone='Asia/Seoul'),
         id="kospi_index_sync_job",
         name="KOSPI Index Sync",
+        replace_existing=True
+    )
+
+    # NASDAQ 벤치마크 지수 최신화 (매일 00:30 KST)
+    scheduler.add_job(
+        nasdaq_index_sync_job,
+        trigger=CronTrigger(hour=0, minute=30, timezone='Asia/Seoul'),
+        id="nasdaq_index_sync_job",
+        name="NASDAQ Index Sync",
         replace_existing=True
     )
 
@@ -416,5 +507,6 @@ def start_scheduler():
         f"스케줄러 시작:\n"
         f"  - ETF 구성종목 뉴스: 03:00, 12:00 KST (하루 2회)\n"
         f"  - ETF 동기화: 매일 05:00 KST\n"
-        f"  - AI 뉴스 분석: 크롤링 직후 + 백업(04:00, 13:00) + 매 3시간"
+        f"  - AI 뉴스 분석: 크롤링 직후 + 백업(04:00, 13:00) + 매 3시간\n"
+        f"  - KOSPI/NASDAQ 지수 동기화: 매일 00:30 KST"
     )

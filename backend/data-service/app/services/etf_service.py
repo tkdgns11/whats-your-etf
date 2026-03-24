@@ -29,14 +29,23 @@ class EtfService:
         # 오늘 자 기준 상장된 etf ticker 리스트
         listed_etfs = await self.pykrx_client.get_today_etf_list()
 
+        # KODEX, TIGER만 필터링
+        filtered_etfs = [etf for etf in listed_etfs if etf.etf_manager in ("KODEX", "TIGER")]
+        logger.info(f"KODEX/TIGER 필터링: {len(listed_etfs)}개 → {len(filtered_etfs)}개")
+
         # db 에 있는 etf tickers
         etf_tickers_in_db = set(await self.etf_repository.get_etf_tickers())
         etfs = []
-        for listed_etf in listed_etfs:
+        for listed_etf in filtered_etfs:
             if listed_etf.ticker in etf_tickers_in_db:
+                logger.debug(f"[{listed_etf.ticker}] 이미 DB에 존재함")
                 continue
             etfs.append(listed_etf)
-            
+
+        if not etfs:
+            logger.info("신규 ETF가 없습니다.")
+            return
+
         infos = await self.etf_repository.save_initial_etf_infos(etfs)
         logger.info(f"{len(infos)}개의 신규 ETF가 기본 정보 수집 완료되었습니다.")
 
@@ -46,51 +55,52 @@ class EtfService:
             logger.info("상태 검사가 필요한 신규 ETF가 없습니다.")
             return
 
-        for etf in unchecked_etfs:
+        foreign_keywords = [
+            '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌',
+            '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국',
+            '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴',
+            '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX',
+            'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
+        ]
+
+        async def check_and_update_etf(etf: dict):
             ticker = etf["ticker"]
             etf_id = etf["id"]
             etf_name = etf.get("name", "")
-            
-            foreign_keywords = [
-                '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌', 
-                '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국', 
-                '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴', 
-                '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX', 
-                'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
-            ]
+
             if any(k in etf_name.upper() for k in foreign_keywords):
                 logger.info(f"[{ticker}] 이름({etf_name}) 기반 해외 자산 판별 (is_krx_only=False)")
                 await self.etf_repository.update_krx_status(etf_id, False)
-                continue
-            
+                return
+
             async with _krx_api_semaphore:
                 await asyncio.sleep(0.2)
                 pdf_infos = await self.pykrx_client.get_etf_pdf_info(ticker)
-                
+
                 if not pdf_infos:
                     logger.warning(f"[{ticker}] PDF 구성종목을 조회하지 못했습니다.")
-                    continue
-                
+                    return
+
                 has_foreign_stock = False
+                import re
                 for pdf in pdf_infos:
                     pdf_ticker = pdf["ticker"].strip()
                     pdf_name = pdf["name"].strip()
-                    
-                    # 1. 6자리 순수 숫자 (표준 국내 주식/ETF)
+
                     is_standard_stock = pdf_ticker.isdigit() and len(pdf_ticker) == 6
-                    import re
-                    # 2. 이름에 한글이 포함된 경우 (국내 파생/채권/스왑/현금/우선주 등 대부분의 국내 상장 자산)
                     has_korean_name = bool(re.search(r'[가-힣]', pdf_name))
-                    # 3. 원화표시
                     is_krw = pdf_ticker.upper() == 'KRW'
-                    
+
                     if not (is_standard_stock or has_korean_name or is_krw):
                         has_foreign_stock = True
                         break
-                
+
                 is_krx_only = not has_foreign_stock
                 logger.info(f"[{ticker}] 국내 전용 여부 판별 완료 (is_krx_only={is_krx_only})")
                 await self.etf_repository.update_krx_status(etf_id, is_krx_only)
+
+        # 모든 ETF 병렬 처리
+        await asyncio.gather(*[check_and_update_etf(etf) for etf in unchecked_etfs], return_exceptions=True)
 
     async def force_update_all_etfs_active_status(self):
         """기존 DB의 모든 ETF를 대상으로 PDF를 재검사하여 is_krx_only 상태를 강제 업데이트합니다."""
@@ -99,49 +109,52 @@ class EtfService:
             logger.info("상태 검사가 필요한 ETF가 없습니다.")
             return
 
-        for etf in all_etfs:
+        foreign_keywords = [
+            '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌',
+            '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국',
+            '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴',
+            '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX',
+            'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
+        ]
+
+        async def force_check_and_update_etf(etf: dict):
             ticker = etf["ticker"]
             etf_id = etf["id"]
             etf_name = etf.get("name", "")
-            
-            # 1차 검증: ETF 이름 자체에 해외 냄새(미국, 중국 등)가 나면 즉시 False 처리 (선물/합성/테마 등 커버)
-            foreign_keywords = [
-                '미국', '중국', '일본', '유로', '유럽', '인도', '베트남', '글로벌', 
-                '차이나', '항셍', '러셀', '나스닥', 'S&P', '달러', '선진', '신흥국', 
-                '대만', '프랑스', '독일', '영국', 'MSCI', '브라질', '멕시코', '라틴', 
-                '아시아', '한중', '필라델피아', 'STOXX', 'CSI', '니케이', 'TOPIX', 
-                'STAR50', '엔화', '위안화', '월드', '테슬라', '엔비디아', '애플', '이머징', '(H)'
-            ]
+
             if any(k in etf_name.upper() for k in foreign_keywords):
                 logger.info(f"[{ticker}] 이름({etf_name}) 기반 해외 자산 판별 강제 업데이트 (is_krx_only=False)")
                 await self.etf_repository.update_krx_status(etf_id, False)
-                continue
-            
+                return
+
             async with _krx_api_semaphore:
                 await asyncio.sleep(0.2)
                 pdf_infos = await self.pykrx_client.get_etf_pdf_info(ticker)
-                
+
                 if not pdf_infos:
                     logger.warning(f"[{ticker}] PDF 구성종목을 조회하지 못했습니다.")
-                    continue
-                
+                    return
+
                 has_foreign_stock = False
+                import re
                 for pdf in pdf_infos:
                     pdf_ticker = pdf["ticker"].strip()
                     pdf_name = pdf["name"].strip()
-                    
+
                     is_standard_stock = pdf_ticker.isdigit() and len(pdf_ticker) == 6
-                    import re
                     has_korean_name = bool(re.search(r'[가-힣]', pdf_name))
                     is_krw = pdf_ticker.upper() == 'KRW'
-                    
+
                     if not (is_standard_stock or has_korean_name or is_krw):
                         has_foreign_stock = True
                         break
-                
+
                 is_krx_only = not has_foreign_stock
                 logger.info(f"[{ticker}] 강제 국내 전용 여부 판별 업데이트 완료 (is_krx_only={is_krx_only})")
                 await self.etf_repository.update_krx_status(etf_id, is_krx_only)
+
+        # 모든 ETF 병렬 처리
+        await asyncio.gather(*[force_check_and_update_etf(etf) for etf in all_etfs], return_exceptions=True)
 
     async def sync_etf_prices(self):
         from datetime import date, datetime, timedelta
@@ -335,6 +348,22 @@ class EtfService:
                 if res.get("bstp_kor_isnm"):
                     info["category"] = res["bstp_kor_isnm"]
 
+                # 총보수율 (expense_ratio): etf_tot_fee 필드 (예: "0.0099")
+                if res.get("etf_tot_fee"):
+                    try:
+                        info["expense_ratio"] = float(res["etf_tot_fee"])
+                    except ValueError:
+                        pass
+
+                # 배당수익률: etf_dvdn_per 필드
+                if res.get("etf_dvdn_per"):
+                    try:
+                        dv = float(res["etf_dvdn_per"])
+                        if dv > 0:
+                            info["dividend_yield"] = dv
+                    except ValueError:
+                        pass
+
                 if info:
                     await self.etf_repository.update_etf_advanced_info(etf_id, info)
                     logger.info(f"[{ticker}] 메타데이터 업데이트 완료: {list(info.keys())}")
@@ -347,3 +376,141 @@ class EtfService:
 
         await self.etf_repository.db.commit()
         logger.info(f"=== ETF 메타데이터 동기화 완료: {len(active_etfs)}개 처리 ===")
+
+    async def sync_stock_fundamentals(self):
+        """
+        pykrx get_market_fundamental을 이용해 KOSPI/KOSDAQ 전 종목의
+        PER, PBR을 일괄 조회하고 stock 테이블을 업데이트합니다.
+        ROE = PBR / PER 으로 계산합니다.
+
+        최신 영업일 기준으로 조회 (장 미개장/휴장일 시 자동으로 이전 영업일 데이터 반환됨)
+        """
+        import datetime as dt
+        import pandas as pd
+
+        today = dt.date.today()
+
+        # 과거로 소급하며 영업일 데이터 찾기 (최대 5일 전까지 시도)
+        for days_back in range(6):
+            target_date = today - dt.timedelta(days=days_back)
+            date_str = target_date.strftime("%Y%m%d")
+
+            logger.info(f"=== 종목 재무지표(PER/PBR/ROE) 동기화 시작 ({date_str}) ===")
+            fundamentals = await self.pykrx_client.get_stocks_fundamental_batch(date_str)
+
+            if fundamentals:
+                await self.stock_repository.bulk_update_fundamentals(fundamentals)
+                logger.info(f"=== 종목 재무지표 동기화 완료: {len(fundamentals)}개 업데이트 ===")
+                return
+
+        logger.warning("최근 5일간 pykrx에서 조회된 재무지표 데이터가 없습니다.")
+
+    async def sync_etf_fundamentals(self):
+        """
+        ETF 구성종목(etf_compositions)의 비중 가중평균으로 ETF의 per, pbr, roe를 계산합니다.
+        roe = pbr / per
+        """
+        from sqlalchemy import select, text
+        from app.models.etf import ETF
+
+        logger.info("=== ETF 재무지표(PER/PBR/ROE) 가중평균 계산 시작 ===")
+
+        # 구성종목 PER/PBR이 있는 ETF들의 가중평균 계산 (SQL로 효율적 처리)
+        stmt = text("""
+            SELECT
+                esc.etf_id,
+                SUM(s.per * esc.weight_pct / 100.0) AS weighted_per,
+                SUM(s.pbr * esc.weight_pct / 100.0) AS weighted_pbr
+            FROM etf_stock_composition esc
+            JOIN stock s ON s.id = esc.stock_id
+            WHERE s.per IS NOT NULL AND s.per > 0
+              AND s.pbr IS NOT NULL AND s.pbr > 0
+              AND esc.base_date = (
+                  SELECT MAX(base_date) FROM etf_stock_composition WHERE etf_id = esc.etf_id
+              )
+            GROUP BY esc.etf_id
+            HAVING SUM(esc.weight_pct) > 0
+        """)
+
+        result = await self.etf_repository.db.execute(stmt)
+        rows = result.fetchall()
+
+        if not rows:
+            logger.warning("ETF 재무지표 계산에 필요한 구성종목 데이터가 없습니다.")
+            return
+
+        from sqlalchemy import update
+        updated = 0
+        for row in rows:
+            etf_id = row[0]
+            w_per = float(row[1]) if row[1] else None
+            w_pbr = float(row[2]) if row[2] else None
+
+            if not w_per or not w_pbr or w_per == 0:
+                continue
+
+            w_roe = round(w_pbr / w_per, 4)
+            stmt_upd = (
+                update(ETF)
+                .where(ETF.id == etf_id)
+                .values(
+                    per=round(w_per, 2),
+                    pbr=round(w_pbr, 2),
+                    roe=w_roe
+                )
+            )
+            await self.etf_repository.db.execute(stmt_upd)
+            updated += 1
+
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 재무지표 계산 완료: {updated}개 ETF 업데이트 ===")
+
+    async def sync_etf_risk_type(self):
+        """
+        ETF 속성(is_leveraged, is_inverse, is_derivatives, is_krx_only, sector/name 키워드)
+        기반으로 risk_type을 계산합니다.
+
+        등급 기준 (RiskType 참조):
+          AGGRESSIVE(5) - 레버리지 ETF
+          ACTIVE(4)     - 인버스/파생/해외자산 ETF
+          MODERATE(3)   - 일반 국내 주식 ETF (기본값)
+          STABLE(2)     - 채권/혼합 ETF
+          CONSERVATIVE(1) - 국채/MMF/단기채 ETF
+        """
+        from sqlalchemy import select, update
+        from app.models.etf import ETF
+
+        logger.info("=== ETF 위험유형(risk_type) 계산 시작 ===")
+
+        stmt = select(ETF.id, ETF.name, ETF.is_leveraged, ETF.is_inverse,
+                      ETF.is_derivatives, ETF.is_krx_only, ETF.sector, ETF.category)
+        result = await self.etf_repository.db.execute(stmt)
+        etfs = result.fetchall()
+
+        conservative_keywords = ['국채', 'MMF', '단기채', '통안채', 'CD', 'RP', 'A-', 'AA-']
+        stable_keywords = ['채권', '회사채', '하이일드', '인플레', '물가']
+
+        updated = 0
+        for etf in etfs:
+            name = etf.name or ""
+            sector = etf.sector or ""
+            category = etf.category or ""
+            combined = f"{name} {sector} {category}"
+
+            if etf.is_leveraged:
+                risk_type = "AGGRESSIVE"
+            elif etf.is_inverse or etf.is_derivatives or etf.is_krx_only is False:
+                risk_type = "ACTIVE"
+            elif any(k in combined for k in conservative_keywords):
+                risk_type = "CONSERVATIVE"
+            elif any(k in combined for k in stable_keywords):
+                risk_type = "STABLE"
+            else:
+                risk_type = "MODERATE"
+
+            stmt_upd = update(ETF).where(ETF.id == etf.id).values(risk_type=risk_type)
+            await self.etf_repository.db.execute(stmt_upd)
+            updated += 1
+
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 위험유형 계산 완료: {updated}개 ETF 업데이트 ===")

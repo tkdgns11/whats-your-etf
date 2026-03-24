@@ -1,9 +1,10 @@
 package com.whatsyouretf.userservice.domain.etf.repository;
 
+import com.whatsyouretf.userservice.common.exception.BusinessException;
+import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.repository.mock.EtfMockRepository;
 import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
 import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +22,13 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class EtfReaderImpl implements EtfReader {
-    private final EtfMockRepository etfMockRepository;
     private final EtfCache etfCache;
     private final EtfRepository etfRepository;
+    private final EtfQueryDslReader etfQueryDslReader;
 
     @Override
     public Etf read(String ticker) {
-        return etfMockRepository.findByTicker(ticker);
+        return etfRepository.findByStockCode(ticker).orElseThrow(() -> new BusinessException(ErrorCode.ETF_NOT_FOUND));
     }
 
     @Override
@@ -37,7 +38,7 @@ public class EtfReaderImpl implements EtfReader {
 
     @Override
     public Page<EtfSummary> readEtfList(EtfQuery query, Pageable pageable) {
-        return etfMockRepository.findEtfList(pageable);
+        return etfQueryDslReader.readEtfList(query, pageable);
     }
 
     @Override

@@ -1,5 +1,6 @@
 from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models import ETF, ETFPrice
 from app.scrapers.pykrx_client import EtfInfo
@@ -8,6 +9,27 @@ from app.scrapers.pykrx_client import EtfInfo
 class EtfRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    def _determine_strategy_type(self, etf_name: str) -> str:
+        """ETF 이름 기반으로 strategy_type 판별"""
+        name = etf_name.upper()
+
+        # 채권형 (BOND): 채권, 특수채, 국채, 회사채 등
+        if any(k in name for k in ["채권", "특수채", "국채", "회사채", "하이일드", "인플레"]):
+            return "BOND"
+
+        # 배당형 (DIVIDEND): 배당, 고배당, 배당주 등
+        if any(k in name for k in ["배당", "고배당", "배당주"]):
+            return "DIVIDEND"
+
+        # 테마형 (THEME): 특정 섹터, 산업, 기업 등
+        if any(k in name for k in ["AI", "반도체", "2차전지", "전기차", "바이오", "의약", "헬스", "게임", "카카오",
+                                    "통신", "금융", "건설", "조선", "자동차", "화학", "에너지", "전자", "IT",
+                                    "인터넷", "미디어", "유통", "식품", "운송", "물류", "부동산", "지주회사"]):
+            return "THEME"
+
+        # 기본값: 시장대표 (MARKET)
+        return "MARKET"
 
     # db에 적재 중인 etf 목록
     async def get_etf_tickers(self) -> list[str]:
@@ -19,26 +41,42 @@ class EtfRepository:
         if not etf_infos:
             return []
 
+        # 기존 DB의 ticker 목록
+        existing_tickers = set(await self.get_etf_tickers())
+
+        # 새로운 데이터만 필터링
+        new_infos = [etf for etf in etf_infos if etf.ticker not in existing_tickers]
+
+        if not new_infos:
+            return []
+
         rows = []
-        for etf in etf_infos:
+        for etf in new_infos:
             is_lev = "레버리지" in etf.etf_name
             is_inv = "인버스" in etf.etf_name
-            
+
+            # strategy_type 판별: MARKET / THEME / DIVIDEND / BOND / DERIVATIVE
+            strategy_type = self._determine_strategy_type(etf.etf_name)
+
             rows.append({
                 "stock_code" : etf.ticker,
                 "name" : etf.etf_name,
-                "asset_manager" : etf.etf_manager,
+                "asset_manager" : etf.etf_manager,  # KODEX 또는 TIGER
                 "is_active": False,
                 "is_leveraged": is_lev,
                 "is_inverse": is_inv,
                 "is_derivatives": is_lev or is_inv,
-                "is_krx_only": None
+                "is_krx_only": None,
+                "strategy_type": strategy_type,
+                "sector": None  # strategy_type이 THEME일 때만 캡처로 채움
             })
 
-        await self.db.execute(insert(ETF), rows)
+        # ON CONFLICT DO NOTHING: unique 제약이나 중복으로 인한 에러 무시
+        stmt = pg_insert(ETF).values(rows).on_conflict_do_nothing()
+        await self.db.execute(stmt)
         await self.db.flush()
 
-        tickers = [etf_info.ticker for etf_info in etf_infos]
+        tickers = [etf_info.ticker for etf_info in new_infos]
 
         result = await self.db.execute(
             select(ETF.id, ETF.stock_code).where(ETF.stock_code.in_(tickers))

@@ -18,6 +18,12 @@ class Stock(Base):
     face_value = Column(Integer)
     listed_shares = Column(BigInteger)
     market_type = Column(String(20))  # KOSPI / KOSDAQ / NYSE / NASDAQ 등
+
+    # 재무 지표 (pykrx get_market_fundamental 기반, roe = pbr / per)
+    per = Column(DECIMAL(8, 2))
+    pbr = Column(DECIMAL(8, 2))
+    roe = Column(DECIMAL(8, 2))
+
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 

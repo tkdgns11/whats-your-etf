@@ -20,24 +20,52 @@ class KISClient:
         self.app_key = settings.kis_app_key
         self.app_secret = settings.kis_app_secret
         self._access_token: Optional[str] = None
-        
-        # 초당 최대 18건 병렬 호출 제한을 위한 세마포어
+
+        # 동시 18개 + 초당 18개 보장 (모든 KIS API 합산 기준)
         self.semaphore = asyncio.Semaphore(18)
+        self.last_batch_time = 0.0
+        self.batch_interval = 1.0  # 1초마다 새 배치 시작
+
+    async def _rate_limit_wait(self):
+        """동시 15개 + 초당 정확히 15개 보장"""
+        current_time = time.time()
+        elapsed = current_time - self.last_batch_time
+
+        # 첫 요청이거나 1초 이상 경과했으면 즉시 실행
+        if elapsed >= self.batch_interval:
+            self.last_batch_time = time.time()
+            return
+
+        # 1초가 안 경과하면 대기
+        wait_time = self.batch_interval - elapsed
+        await asyncio.sleep(wait_time)
+        self.last_batch_time = time.time()
 
     async def _get_access_token(self) -> str:
         """액세스 토큰 발급 및 로컬 파일 캐싱 (24시간 유효)"""
         # 메모리 캐시 확인
         if self._access_token:
+            logger.debug("KIS 토큰 메모리 캐시 사용")
             return self._access_token
-            
+
         # 파일 캐시 확인 (1일 = 86400초, 안전하게 86000초 기준)
+        token_dir = "/tmp"
+        os.makedirs(token_dir, exist_ok=True)
+
         if os.path.exists(self.TOKEN_FILE):
-            if time.time() - os.path.getmtime(self.TOKEN_FILE) < 86000:
-                with open(self.TOKEN_FILE, "r") as f:
-                    cached_token = f.read().strip()
-                if cached_token:
-                    self._access_token = cached_token
-                    return self._access_token
+            file_age = time.time() - os.path.getmtime(self.TOKEN_FILE)
+            if file_age < 86000:
+                try:
+                    with open(self.TOKEN_FILE, "r") as f:
+                        cached_token = f.read().strip()
+                    if cached_token:
+                        self._access_token = cached_token
+                        logger.debug(f"KIS 토큰 파일 캐시 사용 (경과시간: {file_age:.0f}초)")
+                        return self._access_token
+                except Exception as e:
+                    logger.warning(f"토큰 파일 읽기 실패: {e}")
+            else:
+                logger.debug(f"KIS 토큰 만료됨 (경과시간: {file_age:.0f}초)")
                     
         # 신규 발급 (1분당 1회 Limit 주의)
         logger.info("KIS API 토큰 신규 발급 요청 중...")
@@ -93,8 +121,7 @@ class KISClient:
         }
         
         async with self.semaphore:
-            # Rate limit 완화를 위한 미세한 대기
-            await asyncio.sleep(1.0 / 18.0) 
+            await self._rate_limit_wait() 
             
             async with httpx.AsyncClient(timeout=10.0) as client:
                 try:
@@ -139,7 +166,7 @@ class KISClient:
         }
 
         async with self.semaphore:
-            await asyncio.sleep(1.0 / 18.0)
+            await asyncio.sleep(1.0 / 15.0)
             async with httpx.AsyncClient(timeout=10.0) as client:
                 try:
                     res = await client.get(url, headers=headers, params=params)
@@ -153,4 +180,44 @@ class KISClient:
                     return data.get("output", {})
                 except Exception as e:
                     logger.error(f"[{ticker}] FHPST02400000 호출 실패: {e}")
+                    return None
+
+    async def get_stock_price(self, ticker: str) -> Optional[Dict[str, Any]]:
+        """
+        FHKST01010100: 주식 현재가 조회
+        - stck_prpr(현재가), prdy_vrss(전일대비), acml_vol(거래량)
+        """
+        if not self.app_key or not self.app_secret:
+            return None
+
+        token = await self._get_access_token()
+        url = f"{self.BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price"
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "authorization": f"Bearer {token}",
+            "appkey": self.app_key,
+            "appsecret": self.app_secret,
+            "tr_id": "FHKST01010100",
+            "custtype": "P"
+        }
+        params = {
+            "FID_COND_MRKT_DIV_CODE": "J",
+            "FID_INPUT_ISCD": ticker
+        }
+
+        async with self.semaphore:
+            await self._rate_limit_wait()
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                try:
+                    res = await client.get(url, headers=headers, params=params)
+                    res.raise_for_status()
+                    data = res.json()
+
+                    if data.get("rt_cd") != "0":
+                        logger.error(f"[{ticker}] FHKST01010100 에러: {data.get('msg1')}")
+                        return None
+
+                    return data.get("output", {})
+                except Exception as e:
+                    logger.error(f"[{ticker}] FHKST01010100 호출 실패: {e}")
                     return None

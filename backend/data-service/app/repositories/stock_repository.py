@@ -62,3 +62,32 @@ class StockRepository:
         stmt = select(Stock.ticker).join(CompanyInfo, Stock.company_id == CompanyInfo.id).where(CompanyInfo.ceo_name.is_(None))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_all_domestic_stock_tickers(self) -> list[str]:
+        """KOSPI/KOSDAQ 국내 주식 티커 목록 조회"""
+        from sqlalchemy import or_
+        stmt = select(Stock.ticker).where(
+            Stock.is_active == True,
+            or_(Stock.market_type == "KOSPI", Stock.market_type == "KOSDAQ")
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def bulk_update_fundamentals(self, fundamentals: dict[str, dict]):
+        """
+        {ticker: {"per": float, "pbr": float, "roe": float}} 형태의 딕셔너리로
+        stock 테이블의 per, pbr, roe를 일괄 업데이트합니다.
+        """
+        from sqlalchemy import update
+        if not fundamentals:
+            return
+
+        for ticker, data in fundamentals.items():
+            stmt = (
+                update(Stock)
+                .where(Stock.ticker == ticker)
+                .values(per=data["per"], pbr=data["pbr"], roe=data["roe"])
+            )
+            await self.db.execute(stmt)
+
+        await self.db.commit()
