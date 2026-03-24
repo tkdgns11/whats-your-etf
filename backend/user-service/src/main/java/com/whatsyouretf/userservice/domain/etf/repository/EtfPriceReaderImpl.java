@@ -12,10 +12,10 @@ import java.time.LocalDate;
 @Component
 @RequiredArgsConstructor
 public class EtfPriceReaderImpl implements EtfPriceReader {
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfPriceQueryDslReader etfPriceQueryDslReader;
 
     @Override
     public Page<EtfPrice> readPrices(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return etfPriceRepository.findByEtfTickerAndDateRange(ticker, startDate, endDate, pageable);
+        return etfPriceQueryDslReader.findByTickerAndDateRange(ticker, startDate, endDate, pageable);
     }
 }
