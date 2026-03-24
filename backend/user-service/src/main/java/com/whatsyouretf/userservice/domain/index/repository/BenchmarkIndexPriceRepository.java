@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface BenchmarkIndexPriceRepository extends JpaRepository<BenchmarkIndexPrice, Long> {
         @Query("""
@@ -15,6 +16,7 @@ public interface BenchmarkIndexPriceRepository extends JpaRepository<BenchmarkIn
                     i.tradingDate
             )
             FROM BenchmarkIndexPrice i
+            WHERE i.marketType = :marketType
         """)
-        Page<IndexSummary> findAllByMarketType(MarketType marketType, Pageable pageable);
+        Page<IndexSummary> findAllByMarketType(@Param("marketType") MarketType marketType, Pageable pageable);
 }
