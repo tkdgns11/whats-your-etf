@@ -1,21 +1,37 @@
 package com.d102.wye.domain.model
 
+enum class BundleType {
+    STABLE_INCOME,
+    HIGH_GROWTH,
+    BALANCED_PORTFOLIO,
+    AGGRESSIVE_PLAY,
+    LONG_TERM_INVESTING,
+    UNKNOWN;
+
+    companion object {
+        fun from(value: String): BundleType = entries.find {
+            it.name.equals(value, ignoreCase = true)
+        } ?: UNKNOWN
+    }
+}
+
 data class EtfBundle(
     val id: Int,
     val name: String,
-    val summary: String,        // 짧은 요약
+    val summary: String,
+    val bundleType: BundleType,
     val tags: List<String>
 )
 
-// 상세용 (다이얼로그)
 data class EtfBundleDetail(
     val id: Int,
     val name: String,
-    val description: String,    // 꾸러미 설명 (긴 텍스트)
-    val etfItems: List<BundleEtfItem>  // 구성 종목들
+    val description: String,
+    val bundleType: BundleType,
+    val etfItems: List<BundleEtfItem>
 )
 
 data class BundleEtfItem(
+    val ticker: String,
     val name: String,
-    val company: String,
 )

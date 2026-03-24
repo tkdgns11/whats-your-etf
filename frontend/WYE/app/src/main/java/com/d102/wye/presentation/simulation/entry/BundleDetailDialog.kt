@@ -76,7 +76,7 @@ fun BundleDetailDialog(
                 ) {
                     // 1. 상단 이모지 아이콘
                     Icon(
-                        painter = painterResource(R.drawable.ic_crown),
+                        painter = painterResource(bundle.bundleType.toDrawable()),
                         contentDescription = null,
                         modifier = Modifier
                             .size(56.dp),

@@ -2,10 +2,11 @@ package com.d102.wye.domain.repository
 
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiReviewResult
+import com.d102.wye.domain.model.EtfBundle
+import com.d102.wye.domain.model.EtfBundleDetail
 import com.d102.wye.domain.model.EtfDividendHistory
 import com.d102.wye.domain.model.EtfPriceHistory
 import com.d102.wye.domain.model.Portfolio
-import com.d102.wye.domain.model.SavePortfolioParams
 import com.d102.wye.domain.state.InvestmentType
 
 interface SimulationRepository {
@@ -32,7 +33,6 @@ interface SimulationRepository {
     ): BaseResult<AiReviewResult>
 
 
-
     // ─── 로컬 DB 캐시 ─────────────────────────────────────────────────────────
 
     /**
@@ -55,4 +55,13 @@ interface SimulationRepository {
      * ETF 제거 시 로컬 DB 캐시도 삭제
      */
     suspend fun deleteCachedPriceHistory(ticker: String)
+
+    /**
+     * 최근에 저장된 날짜 조회
+     */
+    suspend fun getLastCachedDate(ticker: String): String?
+
+    suspend fun getPresetList(): BaseResult<List<EtfBundle>>
+    suspend fun getPresetDetail(presetId: Int): BaseResult<EtfBundleDetail>
+
 }

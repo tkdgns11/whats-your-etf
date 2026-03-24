@@ -6,6 +6,8 @@ import com.d102.wye.data.remote.dto.response.AiReviewResponse
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.EtfDividendHistoryResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryResponse
+import com.d102.wye.data.remote.dto.response.PresetDetailResponse
+import com.d102.wye.data.remote.dto.response.PresetListItemResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -41,5 +43,12 @@ interface SimulationApiService {
         @Body request: AiReviewRequest
     ): BaseResponse<AiReviewResponse>
 
+    @GET("presets")
+    suspend fun getPresetList(): BaseResponse<List<PresetListItemResponse>>
+
+    @GET("presets/{presetId}")
+    suspend fun getPresetDetail(
+        @Path("presetId") presetId: Int
+    ): BaseResponse<PresetDetailResponse>
 
 }

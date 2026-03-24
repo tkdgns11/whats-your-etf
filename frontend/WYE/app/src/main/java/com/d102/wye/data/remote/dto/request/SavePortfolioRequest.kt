@@ -12,5 +12,5 @@ data class SavePortfolioRequest(
 
 data class EtfCount(
     @SerializedName("ticker") val ticker: String,
-    @SerializedName("counts") val counts: Int  // (investAmount × weight / 100) / currentPrice
+    @SerializedName("counts") val counts: Double  // (investAmount × weight / 100) / currentPrice
 )

@@ -114,9 +114,14 @@ fun AppNavGraph(
             )
         }
 
-        composable(Route.SimulationEntry.route) {
+        composable(Route.SimulationEntry.route) { entry ->
             SimulationEntryScreen(
-                onMakePortfolioClick = { navController.navigate(Route.Simulation.route) },
+                onMakePortfolioClick = { tickers ->
+                    navController.navigate(Route.Simulation.route)
+                    // navigate 후 Simulation backStackEntry에 세팅
+                    navController.getBackStackEntry(Route.Simulation.route)
+                        .savedStateHandle["selected_tickers"] = tickers.toTypedArray()
+                }
             )
         }
 

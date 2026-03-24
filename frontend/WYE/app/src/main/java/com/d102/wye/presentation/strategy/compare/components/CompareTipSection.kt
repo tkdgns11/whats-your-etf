@@ -47,7 +47,7 @@ fun CompareTipSection() {
             Column {
                 Text(
                     text = "비교 팁",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = PrimaryGreen
                 )
                 Spacer(modifier = Modifier.height(6.dp))
