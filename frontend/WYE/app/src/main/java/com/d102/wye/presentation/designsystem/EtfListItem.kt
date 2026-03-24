@@ -47,11 +47,13 @@ fun EtfListItem(
     changeRate: Double,
     changeAmount: Long,
     riskType: String,
+    supportingText: String? = null,
 
     // 상태 파라미터
     isLiked: Boolean,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
+    showLikeButton: Boolean = true,
 
     // 액션(이벤트) 파라미터
     onLikeToggled: () -> Unit = {},
@@ -79,18 +81,25 @@ fun EtfListItem(
             )
             Spacer(Modifier.width(12.dp))
 
-            EtfInfoCard(name, currentPrice, riskType, Modifier.weight(1f))
+            EtfInfoCard(
+                name = name,
+                currentPrice = currentPrice,
+                riskType = riskType,
+                modifier = Modifier.weight(1f),
+                supportingText = supportingText
+            )
 
             EtfPriceChange(changeRate, changeAmount)
-            Spacer(Modifier.width(12.dp))
-
-            EtfActionIcon(
-                isSelectionMode = isSelectionMode,
-                isSelected = isSelected,
-                isLiked = isLiked,
-                onToggleSelection = onToggleSelection,
-                onLikeToggled = onLikeToggled
-            )
+            if (showLikeButton || isSelectionMode) {
+                Spacer(Modifier.width(12.dp))
+                EtfActionIcon(
+                    isSelectionMode = isSelectionMode,
+                    isSelected = isSelected,
+                    isLiked = isLiked,
+                    onToggleSelection = onToggleSelection,
+                    onLikeToggled = onLikeToggled
+                )
+            }
         }
         HorizontalDivider(color = Divider, modifier = Modifier.padding(horizontal = 16.dp))
     }
