@@ -2,6 +2,7 @@ package com.whatsyouretf.userservice.domain.alert.service;
 
 import com.whatsyouretf.userservice.domain.alert.entity.*;
 import com.whatsyouretf.userservice.domain.alert.event.NewsAnalyzedEvent;
+import com.whatsyouretf.userservice.domain.alert.repository.AlertMessageTemplateRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.AlertTypeRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
@@ -32,6 +33,7 @@ public class NewsAlertService {
     private final UserNotificationSettingRepository notificationSettingRepository;
     private final UserAlertRepository userAlertRepository;
     private final AlertTypeRepository alertTypeRepository;
+    private final AlertMessageTemplateRepository alertMessageTemplateRepository;
     private final EtfRepository etfRepository;
     private final FcmService fcmService;
 
@@ -52,11 +54,16 @@ public class NewsAlertService {
         // 1. AlertType 조회 (없으면 생성)
         AlertType alertType = getOrCreateAlertType();
 
-        // 2. ETF 정보 조회
+        // 2. 메시지 템플릿 조회
+        AlertMessageTemplate template = alertMessageTemplateRepository
+                .findByAlertTypeCodeAndIsActiveTrue(ALERT_TYPE_CODE)
+                .orElse(null);
+
+        // 3. ETF 정보 조회
         Map<Long, Etf> etfMap = etfRepository.findAllById(event.getEtfIds()).stream()
                 .collect(Collectors.toMap(Etf::getId, e -> e));
 
-        // 3. 각 ETF에 대해 관심 사용자 조회 및 알림 생성
+        // 4. 각 ETF에 대해 관심 사용자 조회 및 알림 생성
         Set<Long> notifiedUserIds = new HashSet<>();
         List<UserAlert> alertsToSave = new ArrayList<>();
 
@@ -76,9 +83,22 @@ public class NewsAlertService {
                 // 알림 설정 확인
                 if (!isNotificationEnabled(user.getId())) continue;
 
-                // 알림 생성
-                String title = String.format("관심 ETF [%s] 관련 뉴스", etf.getName());
-                String message = truncateMessage(event.getNewsSummary(), 200);
+                // 알림 생성 (템플릿 사용)
+                String title;
+                String message;
+
+                if (template != null) {
+                    Map<String, String> variables = Map.of(
+                            "etf_name", etf.getName(),
+                            "news_summary", truncateMessage(event.getNewsSummary(), 200)
+                    );
+                    title = template.renderTitle(variables);
+                    message = template.renderMessage(variables);
+                } else {
+                    // 템플릿 없으면 기본값 사용
+                    title = String.format("관심 ETF [%s] 관련 뉴스", etf.getName());
+                    message = truncateMessage(event.getNewsSummary(), 200);
+                }
 
                 UserAlert alert = UserAlert.builder()
                         .user(user)
