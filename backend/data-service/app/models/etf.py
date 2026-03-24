@@ -1,5 +1,5 @@
 """ETF 관련 모델"""
-from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey
+from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -53,7 +53,7 @@ class ETF(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
-        return f"<ETF(code={self.stock_code}, name={self.name})>"
+        return f"<ETF(stock_code={self.stock_code}, name={self.name})>"
 
 
 class ETFSectorCluster(Base):

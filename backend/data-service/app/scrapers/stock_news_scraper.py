@@ -363,62 +363,8 @@ class StockNewsScraper:
             )
             self.db.add(mapping)
 
-    async def scrape_etf_related_news(
-        self,
-        etf_id: int,
-        top_n: int = 10,
-        max_articles_per_stock: int = 5
-    ) -> Dict[str, int]:
-        """
-        ETF 구성종목들의 뉴스 크롤링
-
-        Args:
-            etf_id: ETF ID
-            top_n: 상위 N개 종목만 크롤링
-            max_articles_per_stock: 종목당 최대 기사 수
-        """
-        from app.models.etf import ETFComposition
-
-        # ETF 상위 구성종목 조회
-        compositions = self.db.query(ETFComposition).filter(
-            ETFComposition.etf_id == etf_id,
-            ETFComposition.company_id != None
-        ).order_by(ETFComposition.weight_pct.desc()).limit(top_n).all()
-
-        total_stats = {"total": 0, "new": 0, "mapped": 0}
-
-        for comp in compositions:
-            # company_id로 stock 조회하여 ticker 얻기
-            stock = self.db.query(Stock).filter(
-                Stock.company_id == comp.company_id,
-                Stock.is_active == True
-            ).first()
-
-            if not stock:
-                continue
-
-            stats = await self.scrape_stock_news(
-                stock_code=stock.ticker,
-                max_articles=max_articles_per_stock
-            )
-
-            total_stats["total"] += stats["total"]
-            total_stats["new"] += stats["new"]
-            total_stats["mapped"] += stats["mapped"]
-
-            await asyncio.sleep(1)  # Rate limit
-
-        return total_stats
-
-
 # 스케줄러/API용 함수
 async def scrape_stock_news(db: Session, stock_code: str, max_articles: int = 10) -> Dict[str, int]:
     """단일 종목 뉴스 크롤링"""
     async with StockNewsScraper(db) as scraper:
         return await scraper.scrape_stock_news(stock_code, max_articles=max_articles)
-
-
-async def scrape_etf_news(db: Session, etf_id: int, top_n: int = 10) -> Dict[str, int]:
-    """ETF 구성종목 뉴스 크롤링"""
-    async with StockNewsScraper(db) as scraper:
-        return await scraper.scrape_etf_related_news(etf_id, top_n=top_n)

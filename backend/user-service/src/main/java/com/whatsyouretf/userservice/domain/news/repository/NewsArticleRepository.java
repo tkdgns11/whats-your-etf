@@ -19,18 +19,23 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     /**
      * 최신 뉴스 목록 조회 (활성 상태 + AI 분석 완료)
      */
-    Page<NewsArticle> findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(Pageable pageable);
+    @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
+           "WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
+           "ORDER BY n.publishedAt DESC")
+    Page<NewsArticle> findLatestNews(Pageable pageable);
 
     /**
      * 카테고리 코드별 최신 뉴스 목록 조회
      */
-    Page<NewsArticle> findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(
-            String categoryCode, Pageable pageable);
+    @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
+           "WHERE n.category.code = :categoryCode AND n.isActive = true AND n.contentSummary IS NOT NULL " +
+           "ORDER BY n.publishedAt DESC")
+    Page<NewsArticle> findByCategoryCode(@Param("categoryCode") String categoryCode, Pageable pageable);
 
     /**
      * 키워드 검색 (제목 + 본문)
      */
-    @Query("SELECT n FROM NewsArticle n WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
+    @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
            "AND (n.title LIKE %:keyword% OR n.content LIKE %:keyword%) " +
            "ORDER BY n.publishedAt DESC")
     Page<NewsArticle> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
@@ -40,6 +45,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
      * - etf_stock_composition JOIN stock JOIN news_stock_mapping
      */
     @Query("SELECT DISTINCT n FROM NewsArticle n " +
+           "LEFT JOIN FETCH n.category " +
            "JOIN n.stockMappings nsm " +
            "JOIN EtfStockComposition ec ON ec.stock.company.id = nsm.companyInfo.id " +
            "WHERE ec.etf.id = :etfId AND n.isActive = true AND n.contentSummary IS NOT NULL " +
@@ -50,10 +56,17 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
      * 회사 ID로 종목 관련 뉴스 조회
      */
     @Query("SELECT n FROM NewsArticle n " +
+           "LEFT JOIN FETCH n.category " +
            "JOIN n.stockMappings nsm " +
            "WHERE nsm.companyInfo.id = :companyId AND n.isActive = true AND n.contentSummary IS NOT NULL " +
            "ORDER BY n.publishedAt DESC")
     List<NewsArticle> findByCompanyId(@Param("companyId") Long companyId, Pageable pageable);
+
+    /**
+     * 뉴스 단건 조회 (category 포함)
+     */
+    @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category WHERE n.id = :id")
+    java.util.Optional<NewsArticle> findByIdWithCategory(@Param("id") Long id);
 
     /**
      * 회사 ID로 종목 관련 뉴스 개수 조회
