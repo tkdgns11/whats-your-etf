@@ -136,6 +136,57 @@ abstract class BaseRepository {
         }
     }
 
+    protected suspend fun <T> safeApiCallWithEnvelope(
+        apiCall: suspend () -> Response<BaseResponse<T>>
+    ): BaseResult<BaseResponse<T>> {
+        return try {
+            val response = apiCall()
+
+            if (response.isSuccessful) {
+                val body = response.body()
+
+                when {
+                    body == null -> {
+                        BaseResult.Error(
+                            ApiError(
+                                message = "응답 데이터가 없습니다",
+                                code = response.code(),
+                                type = ApiError.ErrorType.UNKNOWN
+                            )
+                        )
+                    }
+
+                    body.data != null -> BaseResult.Success(body)
+
+                    else -> {
+                        val resolvedCode = resolveServerCode(
+                            serverCode = body.code,
+                            fallbackCode = response.code()
+                        )
+                        BaseResult.Error(
+                            ApiError(
+                                message = body.message ?: "알 수 없는 오류",
+                                code = resolvedCode,
+                                type = ApiError.getErrorType(resolvedCode)
+                            )
+                        )
+                    }
+                }
+            } else {
+                BaseResult.Error(parseErrorResponse(response))
+            }
+        } catch (e: SocketTimeoutException) {
+            Timber.e(e, "Timeout error")
+            BaseResult.Error(ApiError.timeoutError())
+        } catch (e: IOException) {
+            Timber.e(e, "Network error")
+            BaseResult.Error(ApiError.networkError())
+        } catch (e: Exception) {
+            Timber.e(e, "Unknown error")
+            BaseResult.Error(ApiError.unknownError(e.message ?: "알 수 없는 오류"))
+        }
+    }
+
     /** data 없이 성공 여부만 내려오는 API 응답을 공통 처리한다. */
     protected suspend fun safeApiCallWithoutData(
         onSuccess: (suspend () -> Unit)? = null,
