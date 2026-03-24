@@ -350,6 +350,19 @@ async def kospi_index_sync_job():
         except Exception as e:
             logger.error(f"KOSPI 지수 동기화 실패: {e}")
 
+async def nasdaq_index_sync_job():
+    """NASDAQ 벤치마크 지수 동기화 (매일 00:30 KST)"""
+    logger.info("=== NASDAQ 지수 동기화 시작 ===")
+    from app.services.benchmark_service import BenchmarkService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = BenchmarkService(db)
+            await service.sync_nasdaq_index()
+            logger.info("=== NASDAQ 지수 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"NASDAQ 지수 동기화 실패: {e}")
+
 def start_scheduler():
     """스케줄러 시작"""
     # ETF 티커 동기화 (기본 정보) (매일 05:00 KST)
@@ -433,6 +446,15 @@ def start_scheduler():
         replace_existing=True
     )
 
+    # NASDAQ 벤치마크 지수 최신화 (매일 00:30 KST)
+    scheduler.add_job(
+        nasdaq_index_sync_job,
+        trigger=CronTrigger(hour=0, minute=30, timezone='Asia/Seoul'),
+        id="nasdaq_index_sync_job",
+        name="NASDAQ Index Sync",
+        replace_existing=True
+    )
+
     # ETF 구성종목 뉴스 크롤링 (03:00, 12:00 KST - 하루 2회)
     # - 상위 100개 ETF + 사용자 관심 ETF + 포트폴리오 ETF 구성종목
     for hour in [3, 12]:
@@ -478,5 +500,6 @@ def start_scheduler():
         f"스케줄러 시작:\n"
         f"  - ETF 구성종목 뉴스: 03:00, 12:00 KST (하루 2회)\n"
         f"  - ETF 동기화: 매일 05:00 KST\n"
-        f"  - AI 뉴스 분석: 크롤링 직후 + 백업(04:00, 13:00) + 매 3시간"
+        f"  - AI 뉴스 분석: 크롤링 직후 + 백업(04:00, 13:00) + 매 3시간\n"
+        f"  - KOSPI/NASDAQ 지수 동기화: 매일 00:30 KST"
     )

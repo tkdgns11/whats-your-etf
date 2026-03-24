@@ -13,3 +13,4 @@ pykrx
 greenlet
 aio-pika>=9.0.0
 redis==7.3.0
+yfinance
