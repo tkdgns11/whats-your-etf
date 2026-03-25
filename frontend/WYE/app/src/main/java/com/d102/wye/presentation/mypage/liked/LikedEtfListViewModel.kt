@@ -124,7 +124,7 @@ private fun FavoriteEtf.toUiModel(etf: EtfSummary?) = EtfListItemUiModel(
     currentPrice = etf?.currentPrice ?: currentPrice,
     changeRate = etf?.changeRate ?: changeRate,
     changeAmount = etf?.changeAmount ?: 0L,
-    riskType = etf?.riskType ?: (category ?: DEFAULT_RISK_TYPE),
+    riskType = etf?.riskType ?: (riskType ?: DEFAULT_RISK_TYPE),
     isLiked = true,
 )
 

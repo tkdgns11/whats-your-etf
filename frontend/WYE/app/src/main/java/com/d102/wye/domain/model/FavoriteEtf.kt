@@ -8,7 +8,7 @@ data class FavoriteEtfList(
 data class FavoriteEtf(
     val ticker: String,
     val name: String,
-    val category: String?,
+    val riskType: String?,
     val assetManager: String,
     val currentPrice: Long,
     val changeRate: Double,
