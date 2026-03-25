@@ -32,10 +32,10 @@ fun EtfListItemResponse.toDomain() = Etf(
 fun EtfDetailResponse.toDomain() = EtfDetail(
     ticker = ticker,
     name = name,
-    currentPrice = currentPrice,
-    dailyFluctuation = dailyFluctuation,
+    currentPrice = currentPrice.toLong(),
+    dailyFluctuation = dailyFluctuation.toLong(),
     dailyFluctuationRatio = dailyFluctuationRatio,
-    volume = volume,
+    volume = volume.toLong(),
     company = company,
     riskGrade = riskGrade,
     riskType = riskType,
@@ -43,10 +43,10 @@ fun EtfDetailResponse.toDomain() = EtfDetail(
     per = per,
     pbr = pbr,
     roe = roe,
-    aum = aum,
+    aum = aum.toLong(),
     listingDate = listingDate,
-    inav = inav,
-    inavChangeAmount = inavChangeAmount,
+    inav = inav.toLong(),
+    inavChangeAmount = inavChangeAmount.toLong(),
     inavChangeRate = inavChangeRate,
 )
 
