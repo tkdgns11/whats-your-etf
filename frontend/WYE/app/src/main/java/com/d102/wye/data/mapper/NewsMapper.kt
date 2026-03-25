@@ -7,6 +7,7 @@ import com.d102.wye.data.remote.dto.response.PortfolioNewsItemResponse
 import com.d102.wye.data.remote.dto.response.RelatedEtfResponse
 import com.d102.wye.domain.model.News
 import com.d102.wye.domain.model.NewsDetail
+import com.d102.wye.domain.model.NewsPage
 import com.d102.wye.domain.model.PortfolioNewsItem
 import com.d102.wye.domain.model.RelatedEtf
 
@@ -21,8 +22,12 @@ fun NewsItemResponse.toDomain() = News(
     publishedAt = publishedAt
 )
 
-/** 서버 뉴스 목록 응답을 도메인 뉴스 리스트로 변환한다. */
-fun NewsListResponse.toDomain(): List<News> = news.map { it.toDomain() }
+/** 서버 뉴스 목록 응답을 페이지 도메인 모델로 변환한다. */
+fun NewsListResponse.toDomain() = NewsPage(
+    news = news.map { it.toDomain() },
+    hasMore = hasMore,
+    nextCursor = nextCursor,
+)
 
 /** 서버 뉴스 상세 DTO를 앱에서 사용하는 상세 도메인 모델로 변환한다. */
 fun NewsDetailResponse.toDomain() = NewsDetail(

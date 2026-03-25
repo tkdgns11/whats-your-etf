@@ -4,7 +4,11 @@ import com.google.gson.annotations.SerializedName
 
 data class NewsListResponse(
     @SerializedName("news")
-    val news: List<NewsItemResponse>
+    val news: List<NewsItemResponse>,
+    @SerializedName("hasMore")
+    val hasMore: Boolean,
+    @SerializedName("nextCursor")
+    val nextCursor: Long?,
 )
 
 data class NewsItemResponse(

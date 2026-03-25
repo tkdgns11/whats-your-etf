@@ -378,7 +378,7 @@ private fun RelatedEtfCard(etf: RelatedEtfUiModel, onClick: () -> Unit) {
                 )
             } else {
                 Text(
-                    text = etf.ticker.take(4),
+                    text = etf.name.take(1),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = PrimaryGreen,
                 )

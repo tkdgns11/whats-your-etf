@@ -14,6 +14,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -170,14 +171,16 @@ fun NewsListScreen(
         val categories = state?.data?.categories.orEmpty()
         val selectedCategoryCode = state?.data?.selectedCategoryCode
         val allNews = state?.data?.newsList.orEmpty()
+        val isLast = state?.data?.isLast == true
+        val isLoadingMore = state?.data?.isLoadingMore == true
         val isRefreshing = state?.data?.isRefreshing == true
         val displayNews = if (searchQuery.isBlank()) {
             allNews
         } else {
             allNews.filter { it.title.contains(searchQuery, ignoreCase = true) }
         }
-        val featured = displayNews.firstOrNull()
-        val restNews = if (displayNews.size > 1) displayNews.drop(1) else emptyList()
+        val featured = if (searchQuery.isBlank()) displayNews.firstOrNull() else null
+        val restNews = if (searchQuery.isBlank() && displayNews.size > 1) displayNews.drop(1) else displayNews
 
         if (uiState is UiState.Loading) {
             Box(
@@ -191,42 +194,51 @@ fun NewsListScreen(
             return@Scaffold
         }
 
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding()),
         ) {
-            // 카테고리 칩
-            item {
-                Row(
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+        ) {
+            // 카테고리 칩 (고정)
+            stickyHeader {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(categoryScrollState)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .background(Background),
                 ) {
-                    categories.forEach { cat ->
-                        val selected = cat.code == selectedCategoryCode
-                        Text(
-                            text = cat.label,
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            ),
-                            color = if (selected) TextOnColored else TextPrimary,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(if (selected) PrimaryGreen else SurfaceVariant)
-                                .clickable { viewModel.onCategorySelected(cat.code) }
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(categoryScrollState)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        categories.forEach { cat ->
+                            val selected = cat.code == selectedCategoryCode
+                            Text(
+                                text = cat.label,
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
+                                color = if (selected) TextOnColored else TextPrimary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (selected) PrimaryGreen else SurfaceVariant)
+                                    .clickable { viewModel.onCategorySelected(cat.code) }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+                    if (isRefreshing) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = PrimaryGreen,
+                            trackColor = SurfaceVariant,
                         )
                     }
-                }
-                if (isRefreshing) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = PrimaryGreen,
-                        trackColor = SurfaceVariant,
-                    )
                 }
             }
 
@@ -260,8 +272,8 @@ fun NewsListScreen(
                 }
             }
 
-            // 피처드 뉴스 (첫 번째)
-            if (featured != null) {
+            // 피처드 뉴스 (첫 번째) — 검색어 입력 중에는 숨김
+            if (featured != null && searchQuery.isBlank()) {
                 item(key = "featured_${featured.id}") {
                     FeaturedNewsCard(
                         news = featured,
@@ -287,7 +299,11 @@ fun NewsListScreen(
             }
 
             // 나머지 뉴스 목록
-            items(restNews, key = { it.id }) { news ->
+            itemsIndexed(restNews, key = { _, it -> it.id }) { index, news ->
+                // 마지막에서 3번째 아이템 도달 시 다음 페이지 로드
+                if (index == restNews.lastIndex - 2 && searchQuery.isBlank()) {
+                    LaunchedEffect(index) { viewModel.loadMore() }
+                }
                 NewsListItem(
                     news = news,
                     onClick = { onNewsClick(news.id) },
@@ -301,8 +317,25 @@ fun NewsListScreen(
                 )
             }
 
+            // 더 불러오는 중 인디케이터
+            if (isLoadingMore) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = PrimaryGreen,
+                        )
+                    }
+                }
+            }
+
             item { Spacer(Modifier.height(20.dp)) }
         }
+        } // Column 닫기
     }
 }
 
