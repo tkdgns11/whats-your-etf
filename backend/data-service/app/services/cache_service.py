@@ -25,7 +25,7 @@ class RedisCacheService:
         self._class_etf = "com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo"
         self._class_stock = "com.whatsyouretf.userservice.domain.company.dto.StockInfo"
         
-    async def publish_etf_cache(self, ticker: str, name: str = ""):
+    async def publish_etf_cache(self, ticker: str, name: str = "", stock_name_map: dict = None):
         basic, constituents = await asyncio.gather(
             self.kis_client.get_etf_basic_info(ticker),
             self.kis_client.get_etf_constituents(ticker),
@@ -43,7 +43,7 @@ class RedisCacheService:
 
         # 1. Update EtfCurrentInfo Cache
         try:
-            etf_name = name or basic.get("hts_kor_isnm", ticker)  # DB name 우선, 없으면 API 응답, 최후엔 ticker
+            etf_name = name or basic.get("hts_kor_isnm") or ticker  # DB name 우선, API 응답, 최후엔 ticker
             etf_price = int(basic.get("stck_prpr", 0))
             etf_fluct = int(basic.get("prdy_vrss", 0))  # 변동액 (원)
             nav = float(basic.get("nav", 0.0))
@@ -83,7 +83,8 @@ class RedisCacheService:
                 continue
 
             try:
-                stock_name = stock.get("hts_kor_isnm") or stock_ticker  # 빈 문자열도 ticker로 fallback
+                db_name = (stock_name_map or {}).get(stock_ticker, "")
+                stock_name = stock.get("hts_kor_isnm") or db_name or stock_ticker
                 s_price = int(stock.get("stck_prpr", 0))
                 s_fluct = int(stock.get("prdy_vrss", 0))  # 변동액 (원)
                 market_cap = int(stock.get("hts_avls", 0))  # 시가총액 (억원)
