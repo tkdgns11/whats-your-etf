@@ -258,7 +258,7 @@ public class EtfServiceImpl implements EtfService {
                     StockInfo stockInfo = stockCache.get(stock.getTicker(), stock.getDescription());
 
                     BigDecimal changeRate = (stockInfo != null && stockInfo.dailyFluctuation() != null)
-                            ? stockInfo.dailyFluctuation() : BigDecimal.ZERO;
+                            ? stockInfo.dailyReturn() : BigDecimal.ZERO;
                     BigDecimal currentPrice = (stockInfo != null && stockInfo.currentPrice() != null)
                             ? stockInfo.currentPrice() : BigDecimal.ZERO;
 
