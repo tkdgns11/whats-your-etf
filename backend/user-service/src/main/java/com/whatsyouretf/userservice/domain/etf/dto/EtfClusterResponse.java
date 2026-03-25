@@ -19,12 +19,9 @@ public class EtfClusterResponse {
     /** ETF 영문명 */
     private String englishName;
 
-    /** 섹터 클러스터 목록 (버블 차트용) */
+    /** 섹터 클러스터 목록 (버블 차트용) - 주식 섹터 + 비주식 자산(선물, ETF 등) 포함 */
     private List<EtfSectorResponse> sectors;
 
     /** 영향력 종목 목록 (비중 상위) */
     private List<EtfInfluentialStockResponse> influentialStocks;
-
-    /** 비주식 구성종목 (선물, 채권, 현금 등) */
-    private List<EtfOtherCompositionResponse> otherCompositions;
 }

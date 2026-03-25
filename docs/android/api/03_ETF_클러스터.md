@@ -34,33 +34,46 @@ ETF의 투자 위험도를 1~5 단계로 나타냅니다. 금융투자협회 기
 
 ETF 구성종목의 산업 섹터를 분류합니다. 클러스터 버블 차트에서 사용됩니다.
 
-| 섹터명 | 영문명 | Material Icon | 설명 |
-|--------|--------|---------------|------|
-| 반도체 | Semiconductor | `Memory` | 메모리, 시스템반도체, 장비 |
-| 금융 | Finance | `AccountBalance` | 은행, 증권, 보험, 카드 |
-| 헬스케어/바이오 | Healthcare | `LocalHospital` | 제약, 바이오, 의료기기 |
-| 에너지 | Energy | `Bolt` | 정유, 가스, 신재생에너지 |
-| IT/테크 | IT/Tech | `Computer` | 소프트웨어, 인터넷, 플랫폼 |
-| 소비재 | Consumer | `ShoppingCart` | 유통, 식품, 의류, 화장품 |
-| 산업재 | Industrial | `Factory` | 기계, 조선, 방산, 건설장비 |
-| 통신 | Telecom | `CellTower` | 통신사, 미디어, 방송 |
-| 유틸리티 | Utility | `WaterDrop` | 전력, 가스, 수도 |
-| 부동산 | Real Estate | `Home` | 리츠, 건설, 부동산 개발 |
-| 자동차 | Automobile | `DirectionsCar` | 완성차, 부품, 전기차 |
-| 화학/소재 | Chemical | `Science` | 정밀화학, 철강, 비철금속 |
-| 기타 | Others | `Category` | 분류되지 않은 기타 섹터 |
+#### 주식 섹터 (assetType: null)
 
-### 비주식 자산 유형 (assetType)
+`industry_classification` 테이블의 `group_name` 기준
 
-레버리지/인버스 ETF 등 주식 외 자산을 보유하는 ETF의 구성종목 유형입니다.
+| 섹터명 | Material Icon |
+|--------|---------------|
+| 반도체 | `Memory` |
+| 금융 | `AccountBalance` |
+| 바이오/의약 | `LocalHospital` |
+| 에너지/유틸리티 | `Bolt` |
+| 소프트웨어 | `Computer` |
+| 소비재 | `ShoppingCart` |
+| 산업재 | `Factory` |
+| 통신/미디어 | `CellTower` |
+| 자동차 | `DirectionsCar` |
+| 화학/소재 | `Science` |
+| 건설 | `Home` |
+| 조선 | `DirectionsBoat` |
+| 운송 | `LocalShipping` |
+| 식품/음료 | `Restaurant` |
+| 철강/금속 | `Hardware` |
+| 기계 | `Precision` |
+| 유통/소매 | `Store` |
+| 보험 | `Security` |
+| 지주회사 | `Business` |
+| 전자/IT | `Devices` |
+| 이벤트/테마 | `Category` |
 
-| assetType | 설명 | 예시 |
-|-----------|------|------|
-| `FUTURES` | 선물 | KOSPI200 선물, 코스닥150 선물 |
-| `ETF` | 다른 ETF 편입 | KODEX 인버스, TIGER 200 |
-| `BOND` | 채권/RP | 채권/RP |
-| `CASH` | 현금성 자산 | 현금성 자산 |
-| `PREFERRED_STOCK` | 우선주 | 삼성전자우, 현대차2우B |
+#### 비주식 자산 (assetType 값으로 구분)
+
+레버리지/인버스 ETF 등 주식 외 자산을 보유하는 ETF의 구성종목입니다.
+**asset_type별로 묶어서 1개 섹터로 표시**됩니다. (예: 선물 3개 → "선물" 1개 섹터, 비중 합산)
+
+| assetType | 표시명 | Material Icon | 설명 |
+|-----------|--------|---------------|------|
+| `FUTURES` | 선물 | `ShowChart` | KOSPI200 선물, 금 선물 등 합산 |
+| `ETF` | ETF | `Layers` | KODEX 인버스, TIGER 200 등 합산 |
+| `BOND` | 채권 | `Description` | 채권/RP 합산 |
+| `CASH` | 현금 | `Payments` | 현금성 자산 합산 |
+| `PREFERRED_STOCK` | 우선주 | `Star` | 삼성전자우, 현대차2우B 등 합산 |
 
 ### 에러 코드
 
@@ -91,75 +104,63 @@ ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
   "message": "Success",
   "code": "OK",
   "data": {
-    "englishName": "KOSPI 200 Index Tracking Fund",
+    "englishName": "KOSPI 200 Futures Leverage Fund",
     "sectors": [
       {
         "name": "반도체",
-        "percentage": 45.2,
+        "percentage": 0,
+        "assetType": null,
         "stocks": [
-          {"ticker": "005930", "name": "삼성전자", "percentage": 28.5},
-          {"ticker": "000660", "name": "SK하이닉스", "percentage": 16.7}
+          {"ticker": "005930", "name": "삼성전자", "percentage": 12.768},
+          {"ticker": "000660", "name": "SK하이닉스", "percentage": 7.361}
         ],
         "aiAnalysis": "반도체 섹터는 AI 수요 증가로 인해 성장세가 지속될 것으로 예상됩니다."
       },
       {
-        "name": "전자장비",
-        "percentage": 22.8,
+        "name": "선물",
+        "percentage": 84.432,
+        "assetType": "FUTURES",
         "stocks": [
-          {"ticker": "006400", "name": "삼성SDI", "percentage": 12.3},
-          {"ticker": "051910", "name": "LG화학", "percentage": 10.5}
+          {"ticker": "A01630", "name": "KOSPI200 선물 2503", "percentage": 84.432}
         ],
-        "aiAnalysis": "전자장비 섹터는 전기차 배터리 수요와 연동되어 있습니다."
+        "aiAnalysis": "KOSPI200 선물에 투자하는 고위험-고수익 전략의 ETF입니다."
       },
       {
-        "name": "소프트웨어",
-        "percentage": 15.4,
+        "name": "ETF",
+        "percentage": 15.569,
+        "assetType": "ETF",
         "stocks": [
-          {"ticker": "035720", "name": "카카오", "percentage": 8.2},
-          {"ticker": "035420", "name": "NAVER", "percentage": 7.2}
+          {"ticker": "069500", "name": "KODEX 200", "percentage": 10.2},
+          {"ticker": "102110", "name": "TIGER 200", "percentage": 3.0},
+          {"ticker": "148020", "name": "KBSTAR 200", "percentage": 2.4}
         ],
-        "aiAnalysis": null
+        "aiAnalysis": "다른 ETF를 편입하여 레버리지 전략을 구현합니다."
       }
     ],
     "influentialStocks": [
       {
         "ticker": "005930",
         "name": "삼성전자",
-        "weight": 28.5,
+        "weight": 12.768,
         "currentPrice": 72300,
         "changeRate": 1.85
       },
       {
         "ticker": "000660",
         "name": "SK하이닉스",
-        "weight": 16.7,
+        "weight": 7.361,
         "currentPrice": 178500,
         "changeRate": 2.34
-      },
-      {
-        "ticker": "006400",
-        "name": "삼성SDI",
-        "weight": 12.3,
-        "currentPrice": 412000,
-        "changeRate": -0.72
-      }
-    ],
-    "otherCompositions": [
-      {
-        "assetType": "FUTURES",
-        "assetName": "KOSPI200 선물",
-        "weight": 91.537
-      },
-      {
-        "assetType": "ETF",
-        "assetName": "KODEX 인버스",
-        "weight": 8.463
       }
     ]
   },
   "timestamp": "2025-03-10T14:30:00"
 }
 ```
+
+> **참고**: 비주식 자산은 `assetType`별로 묶어서 반환됩니다. 개별 항목은 `stocks[]`에 포함됩니다.
+
+> **참고**: `assetType`이 `null`이면 주식 섹터, 값이 있으면 비주식 자산(FUTURES, ETF, BOND 등)입니다.
 
 ### 화면 매핑
 
@@ -189,14 +190,18 @@ ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
 | sectors[].stocks[].percentage | 종목 비중 |
 | sectors[].aiAnalysis | AI 분석 텍스트 (있으면 표시) |
 
-#### 비주식 구성종목 섹션 (레버리지/인버스 ETF용)
+#### 비주식 자산 버블 (레버리지/인버스 ETF용)
+
+`sectors[]`에서 `assetType`이 null이 아닌 항목은 비주식 자산입니다. **asset_type별로 묶어서** 동일한 버블 차트 로직으로 표시합니다.
+
 | API 필드 | 화면 표시 |
 |----------|----------|
-| otherCompositions[].assetType | 자산 유형 (FUTURES, ETF, BOND 등) |
-| otherCompositions[].assetName | 자산명 (예: KOSPI200 선물) |
-| otherCompositions[].weight | 비중 % |
+| sectors[].name | 자산 유형명 (선물, ETF, 우선주, 채권, 현금) |
+| sectors[].percentage | 비중 % (동일 유형 합산, 버블 크기) |
+| sectors[].assetType | 아이콘 매핑 (FUTURES→ShowChart, ETF→Layers 등) |
+| sectors[].stocks[] | 개별 자산 목록 (바텀시트에서 표시) |
 
-> **참고**: 일반 ETF는 `otherCompositions`가 빈 배열입니다. 레버리지/인버스 ETF 등 선물, 채권, 다른 ETF를 보유하는 상품에서만 데이터가 반환됩니다.
+> **참고**: 주식 섹터와 비주식 자산 모두 `stocks[]`에 개별 항목이 포함됩니다. 프론트는 동일한 로직으로 렌더링합니다.
 
 ---
 
@@ -221,13 +226,20 @@ etf_other_composition (비주식 구성종목 - 선물, 채권, ETF 등)
 ```
 
 - 섹터별 상위 5개 종목 반환
-- 영향력 종목 상위 5개 반환
-- 비주식 구성종목 (선물, 채권, 현금, 우선주, 다른 ETF) 반환
+- 영향력 종목 상위 5개 반환 (주식 구성종목이 있는 ETF만)
+- 비주식 구성종목을 **asset_type별로 묶어서** sectors에 통합
+  - FUTURES → "선물" (비중 합산)
+  - ETF → "ETF" (비중 합산)
+  - PREFERRED_STOCK → "우선주" (비중 합산)
+  - BOND → "채권" (비중 합산)
+  - CASH → "현금" (비중 합산)
 - 위험등급: AGGRESSIVE → 5, STABLE → 1 매핑
 - 변동성: 1년 변동률 기준 문자열 변환
 
 ## 안드로이드 구현 상태
 
-- [x] `EtfApiService.kt` 존재
-- [x] `EtfDetailResponse.kt` DTO 존재
-- [ ] API 경로 수정 필요 → `/api/v1/etfs/{ticker}/clusters`
+- [x] `EtfApiService.kt` 구현 완료
+- [x] `EtfDetailResponse.kt` DTO 구현 완료
+- [x] API 연동 완료
+
+> **참고**: 비주식 자산 그룹핑은 백엔드에서 처리되므로 프론트엔드 수정 불필요. `sectors[]` 배열을 그대로 렌더링하면 됨.

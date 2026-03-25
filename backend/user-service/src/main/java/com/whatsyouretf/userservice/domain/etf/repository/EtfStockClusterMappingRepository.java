@@ -65,4 +65,69 @@ public interface EtfStockClusterMappingRepository extends JpaRepository<EtfStock
         ORDER BY c.weightPct DESC
         """)
     List<EtfStockClusterMapping> findAllByEtfTicker(@Param("ticker") String ticker);
+
+    /**
+     * 시장형 ETF: 그룹코드별 상위 N개 종목 조회
+     */
+    @Query(value = """
+        SELECT sub.group_code AS groupCode,
+               sub.code AS sectorCode,
+               sub.ticker AS stockTicker,
+               sub.company_name AS companyName,
+               sub.weight_pct AS weightPct
+        FROM (
+            SELECT ic.group_code,
+                   ic.code,
+                   s.ticker,
+                   ci.company_name,
+                   esc.weight_pct,
+                   ROW_NUMBER() OVER (PARTITION BY ic.group_code ORDER BY esc.weight_pct DESC) AS rn
+            FROM etf_stock_cluster_mapping m
+            JOIN etf_stock_composition esc ON m.composition_id = esc.id
+            JOIN stock s ON esc.stock_id = s.id
+            LEFT JOIN company_info ci ON s.company_id = ci.id
+            JOIN industry_classification ic ON m.sector_code = ic.code
+            JOIN etf e ON m.etf_id = e.id
+            WHERE e.stock_code = :ticker
+              AND ic.group_code IS NOT NULL
+        ) sub
+        WHERE sub.rn <= :limit
+        ORDER BY sub.group_code, sub.weight_pct DESC
+        """, nativeQuery = true)
+    List<SectorStockProjection> findTopStocksByGroupCode(
+            @Param("ticker") String ticker,
+            @Param("limit") int limit
+    );
+
+    /**
+     * 테마형 ETF: 섹터코드별 상위 N개 종목 조회
+     */
+    @Query(value = """
+        SELECT sub.group_code AS groupCode,
+               sub.code AS sectorCode,
+               sub.ticker AS stockTicker,
+               sub.company_name AS companyName,
+               sub.weight_pct AS weightPct
+        FROM (
+            SELECT ic.group_code,
+                   ic.code,
+                   s.ticker,
+                   ci.company_name,
+                   esc.weight_pct,
+                   ROW_NUMBER() OVER (PARTITION BY ic.code ORDER BY esc.weight_pct DESC) AS rn
+            FROM etf_stock_cluster_mapping m
+            JOIN etf_stock_composition esc ON m.composition_id = esc.id
+            JOIN stock s ON esc.stock_id = s.id
+            LEFT JOIN company_info ci ON s.company_id = ci.id
+            JOIN industry_classification ic ON m.sector_code = ic.code
+            JOIN etf e ON m.etf_id = e.id
+            WHERE e.stock_code = :ticker
+        ) sub
+        WHERE sub.rn <= :limit
+        ORDER BY sub.code, sub.weight_pct DESC
+        """, nativeQuery = true)
+    List<SectorStockProjection> findTopStocksBySectorCode(
+            @Param("ticker") String ticker,
+            @Param("limit") int limit
+    );
 }
