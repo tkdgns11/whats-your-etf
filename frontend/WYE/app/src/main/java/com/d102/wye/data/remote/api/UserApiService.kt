@@ -5,6 +5,7 @@ import com.d102.wye.data.remote.dto.response.FavoriteEtfListResponse
 import com.d102.wye.data.remote.dto.response.MyDataHoldingResponse
 import com.d102.wye.data.remote.dto.response.UserProfileResponse
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Body
@@ -28,6 +29,11 @@ interface UserApiService {
     suspend fun getFavoriteEtfs(
         @Query("sort") sort: String = "RECENT"
     ): Response<BaseResponse<FavoriteEtfListResponse>>
+
+    @GET("users/me/favorites/etfs")
+    suspend fun getFavoriteEtfsRaw(
+        @Query("sort") sort: String = "RECENT"
+    ): Response<ResponseBody>
 
     /** 특정 ETF가 관심 ETF에 등록되어 있는지 확인한다. */
     @GET("users/me/favorites/etfs/{ticker}/check")

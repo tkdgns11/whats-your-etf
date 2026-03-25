@@ -8,6 +8,8 @@ import android.provider.OpenableColumns
 import com.d102.wye.data.mapper.toDomain
 import com.d102.wye.data.remote.api.UserApiService
 import com.d102.wye.data.remote.dto.request.UpdateUserProfileRequest
+import com.d102.wye.data.remote.dto.response.BaseResponse
+import com.d102.wye.data.remote.dto.response.FavoriteEtfListResponse
 import com.d102.wye.domain.common.ApiError
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
@@ -17,6 +19,8 @@ import com.d102.wye.domain.model.MyDataHolding
 import com.d102.wye.domain.model.UserProfile
 import com.d102.wye.domain.repository.UserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -44,9 +48,48 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFavoriteEtfs(sort: FavoriteEtfSort): BaseResult<FavoriteEtfList> {
-        return safeApiCall {
-            userApiService.getFavoriteEtfs(sort = sort.queryValue)
-        }.map { it.toDomain() }
+        var rawBody: String? = null
+        return try {
+            Timber.d("[FavoriteEtf] list request | sort=${sort.queryValue}")
+            val response = userApiService.getFavoriteEtfsRaw(sort = sort.queryValue)
+            rawBody = if (response.isSuccessful) {
+                response.body()?.string()
+            } else {
+                response.errorBody()?.string()
+            }
+
+            Timber.d("[FavoriteEtf] list raw response | body=$rawBody")
+
+            if (!response.isSuccessful) {
+                BaseResult.Error(
+                    ApiError.unknownError(
+                        "관심 ETF 목록 조회 실패 | http=${response.code()} | body=$rawBody"
+                    )
+                )
+            } else if (rawBody.isNullOrBlank()) {
+                BaseResult.Error(ApiError.unknownError("관심 ETF 목록 응답 데이터가 없습니다."))
+            } else {
+                val responseType = object : TypeToken<BaseResponse<FavoriteEtfListResponse>>() {}.type
+                val parsedBody: BaseResponse<FavoriteEtfListResponse> = Gson().fromJson(rawBody, responseType)
+                val data = parsedBody.data
+
+                if (data == null) {
+                    BaseResult.Error(
+                        ApiError.unknownError(
+                            parsedBody.message ?: "관심 ETF 목록 응답 data가 없습니다."
+                        )
+                    )
+                } else {
+                    Timber.d(
+                        "[FavoriteEtf] list parsed | totalCount=${data.totalCount} | first=${data.favorites.firstOrNull()}"
+                    )
+                    BaseResult.Success(data.toDomain())
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "[FavoriteEtf] list parse failed | rawBody=$rawBody")
+            BaseResult.Error(ApiError.unknownError(e.message ?: "관심 ETF 목록 파싱 중 오류가 발생했습니다."))
+        }
     }
 
     override suspend fun checkFavoriteEtf(ticker: String): BaseResult<Boolean> {
