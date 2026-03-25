@@ -35,6 +35,14 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FastAPI 시작")
     start_scheduler()
+
+    # KIS 토큰 미리 발급 (전역 캐시에 저장) → 이후 병렬 API 호출 시 재발급 없음
+    try:
+        from app.services.kis_client import initialize_token
+        await initialize_token()
+    except Exception as e:
+        logger.warning(f"KIS 토큰 초기화 실패 (서비스는 계속 시작): {e}")
+
     asyncio.ensure_future(run_etf_stock_cache_sync())
 
     yield

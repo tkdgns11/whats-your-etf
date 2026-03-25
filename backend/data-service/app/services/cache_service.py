@@ -83,7 +83,7 @@ class RedisCacheService:
                 continue
 
             try:
-                stock_name = stock.get("hts_kor_isnm", stock_ticker)  # 주식 이름 (없으면 ticker 사용)
+                stock_name = stock.get("hts_kor_isnm") or stock_ticker  # 빈 문자열도 ticker로 fallback
                 s_price = int(stock.get("stck_prpr", 0))
                 s_fluct = int(stock.get("prdy_vrss", 0))  # 변동액 (원)
                 market_cap = int(stock.get("hts_avls", 0))  # 시가총액 (억원)
@@ -126,21 +126,24 @@ class RedisCacheService:
 
         try:
             now_dt = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S")
+            # API 응답 hts_kor_isnm 우선, 없으면 DB company_name, 최후 fallback은 ticker
+            stock_name = data.get("hts_kor_isnm") or name or ticker
             s_price = int(data.get("stck_prpr", 0))
             s_fluct = int(data.get("prdy_vrss", 0))
             s_prev_price = s_price - s_fluct
             s_daily_return = (s_fluct / s_prev_price * 100) if s_prev_price != 0 else 0.0
+            market_cap = int(data.get("hts_avls", 0))
 
             stock_key = f"StockInfo:{ticker}"
             stock_fields = {
                 "_class": self._class_stock,
                 "ticker": ticker,
-                "stockName": name,
+                "stockName": stock_name,
                 "currentPrice": str(s_price),
                 "previousPrice": str(s_prev_price),
                 "dailyFluctuation": str(s_fluct),
                 "dailyReturn": str(round(s_daily_return, 2)),
-                "marketCapitalization": "0",
+                "marketCapitalization": str(market_cap),
                 "updatedAt": now_dt
             }
 
