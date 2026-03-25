@@ -122,9 +122,19 @@ class PykrxClient:
                 
                 pdf_info = []
                 for idx, row in df.iterrows():
+                    try:
+                        weight_val = float(row.get('비중', 0.0) or 0.0)
+                    except (ValueError, TypeError):
+                        weight_val = 0.0
+                    try:
+                        market_val = int(row.get('시장가치', 0) or 0)
+                    except (ValueError, TypeError):
+                        market_val = 0
                     pdf_info.append({
                         "ticker": str(idx),
-                        "name": str(row.get('구성종목명', 'N/A'))
+                        "name": str(row.get('구성종목명', 'N/A')),
+                        "weight": weight_val,
+                        "market_value": market_val,
                     })
                 logging.debug(f"[{ticker}] PDF 구성종목 {len(pdf_info)}개 조회 성공.")
                 return pdf_info

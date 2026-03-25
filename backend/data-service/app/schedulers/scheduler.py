@@ -143,6 +143,20 @@ async def krx_disclosure_job():
         db.close()
 
 
+async def sync_etf_other_composition_job():
+    """ETF 비주식 구성종목 동기화 (채권/선물/현금 등) (매주 일요일 04:00 KST)"""
+    logger.info("=== ETF 비주식 구성종목 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_other_composition()
+            logger.info("=== ETF 비주식 구성종목 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 비주식 구성종목 동기화 실패: {e}")
+
+
 async def etf_sync_job():
     """ETF 티커 동기화 (기본 정보 저장) (매일 05:00 KST)"""
     logger.info("=== ETF 동기화 시작 ===")
@@ -385,6 +399,15 @@ def start_scheduler():
         trigger=CronTrigger(hour=5, minute=30, timezone='Asia/Seoul'),
         id="etf_active_status_job",
         name="ETF Active Status Check",
+        replace_existing=True
+    )
+
+    # ETF 비주식 구성종목 동기화 (채권/선물/현금 등) (매주 일요일 04:00 KST)
+    scheduler.add_job(
+        sync_etf_other_composition_job,
+        trigger=CronTrigger(day_of_week='sun', hour=4, minute=0, timezone='Asia/Seoul'),
+        id="sync_etf_other_composition_job",
+        name="ETF Other Composition Sync",
         replace_existing=True
     )
     
