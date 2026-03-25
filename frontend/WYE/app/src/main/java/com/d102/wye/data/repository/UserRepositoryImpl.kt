@@ -83,6 +83,11 @@ class UserRepositoryImpl @Inject constructor(
                     Timber.d(
                         "[FavoriteEtf] list parsed | totalCount=${data.totalCount} | first=${data.favorites.firstOrNull()}"
                     )
+                    data.favorites.forEach { favorite ->
+                        Timber.d(
+                            "[FavoriteEtf] item | ticker=${favorite.ticker} | name=${favorite.name} | riskType=${favorite.riskType} | assetManager=${favorite.assetManager} | currentPrice=${favorite.currentPrice} | changeRate=${favorite.changeRate} | favoritedAt=${favorite.favoritedAt}"
+                        )
+                    }
                     BaseResult.Success(data.toDomain())
                 }
             }
