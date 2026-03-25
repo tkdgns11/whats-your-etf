@@ -19,8 +19,8 @@ data class EtfDetailResponse(
     @SerializedName("roe") val roe: Double,
     @SerializedName("aum") val aum: Long,
     @SerializedName("listingDate") val listingDate: String,
-    @SerializedName("inav") val inav: Long,
-    @SerializedName("inavChangeAmount") val inavChangeAmount: Long,
+    @SerializedName("inav") val inav: Double,
+    @SerializedName("inavChangeAmount") val inavChangeAmount: Double,
     @SerializedName("inavChangeRate") val inavChangeRate: Double,
 )
 
