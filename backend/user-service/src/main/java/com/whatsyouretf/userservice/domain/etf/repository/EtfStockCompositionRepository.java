@@ -1,6 +1,7 @@
 package com.whatsyouretf.userservice.domain.etf.repository;
 
 import com.whatsyouretf.userservice.domain.etf.entity.EtfStockComposition;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -72,4 +73,19 @@ public interface EtfStockCompositionRepository extends JpaRepository<EtfStockCom
         WHERE esc.stock.ticker = :ticker
     """)
     List<EtfStockComposition> getEtfStockCompositionByStockTicker(@Param("ticker") String ticker);
+
+    /**
+     * ETF 구성종목 ticker 목록 조회 (24시간 캐시)
+     */
+    @Cacheable(value = "etfTickers", key = "#etfId")
+    @Query("""
+        SELECT s.ticker FROM EtfStockComposition esc
+        JOIN esc.stock s
+        WHERE esc.etf.id = :etfId
+          AND esc.baseDate = (
+              SELECT MAX(e.baseDate) FROM EtfStockComposition e
+              WHERE e.etf.id = :etfId
+          )
+        """)
+    List<String> findTickersByEtfId(@Param("etfId") Long etfId);
 }
