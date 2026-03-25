@@ -86,7 +86,7 @@ public class EtfDetailResponse {
             etf.getName(),
             info.currentPrice(),
             priceFluctuation,
-            priceFluctuation.divide(previousPrice, RoundingMode.DOWN),
+            info.dailyReturn(),
             info.nav(),
             navFluctuation,
             navFluctuation.divide(etf.getNav(), RoundingMode.DOWN),
