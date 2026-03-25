@@ -50,8 +50,8 @@ class EtfDetailViewModel @Inject constructor(
 
     private val _showNav    = MutableStateFlow(true)
     private val _showPrice  = MutableStateFlow(true)
-    private val _showKospi  = MutableStateFlow(false)
-    private val _showSp500  = MutableStateFlow(false)
+    private val _showKospi  = MutableStateFlow(true)
+    private val _showSp500  = MutableStateFlow(true)
     val showNav:   StateFlow<Boolean> = _showNav.asStateFlow()
     val showPrice: StateFlow<Boolean> = _showPrice.asStateFlow()
     val showKospi: StateFlow<Boolean> = _showKospi.asStateFlow()
@@ -67,7 +67,10 @@ class EtfDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _detailState.update { UiState.Loading }
             when (val result = etfRepository.getEtfDetail(ticker)) {
-                is BaseResult.Success -> _detailState.update { UiState.Success(result.data) }
+                is BaseResult.Success -> {
+                    _detailState.update { UiState.Success(result.data) }
+                    loadChart()
+                }
                 is BaseResult.Error   -> _detailState.update { UiState.Error(result.error.message) }
             }
         }
@@ -100,6 +103,7 @@ class EtfDetailViewModel @Inject constructor(
                 (_detailState.value as? UiState.Success)?.data?.listingDate?.let { dateStringToMs(it) }
             }
         }
+        loadChart()
     }
 
     fun onDateRangeSelected(start: Long, end: Long) {

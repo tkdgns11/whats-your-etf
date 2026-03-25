@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.News
+import com.d102.wye.domain.model.NewsPage
 import com.d102.wye.domain.repository.NewsRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,63 +27,75 @@ class NewsListViewModel @Inject constructor(
     val uiState: StateFlow<UiState<NewsListData>> = _uiState.asStateFlow()
 
     private var selectedCategoryCode: String? = null
+    private var nextCursor: Long? = null
+    private var hasMore: Boolean = true
+    private var isLoadingMore: Boolean = false
 
     init {
-        loadNews()
+        loadNews(reset = true)
     }
 
     /** 선택한 카테고리로 뉴스 목록을 다시 불러온다. */
     fun onCategorySelected(categoryCode: String?) {
         if (selectedCategoryCode == categoryCode) return
         selectedCategoryCode = categoryCode
-        loadNews()
+        loadNews(reset = true)
     }
 
     /** 현재 선택된 카테고리 기준으로 목록을 새로고침한다. */
     fun refresh() {
-        loadNews()
+        loadNews(reset = true)
     }
 
-    /** Repository에서 뉴스 목록을 받아 화면 상태로 변환한다. */
-    private fun loadNews() {
+    /** 스크롤이 끝에 도달했을 때 다음 페이지를 로드한다. */
+    fun loadMore() {
+        if (!hasMore || isLoadingMore) return
+        loadNews(reset = false)
+    }
+
+    private fun loadNews(reset: Boolean) {
         viewModelScope.launch {
             val currentData = (_uiState.value as? UiState.Success)?.data
-            if (currentData == null) {
-                _uiState.update { UiState.Loading }
-            } else {
-                _uiState.update {
-                    UiState.Success(
-                        currentData.copy(
-                            selectedCategoryCode = selectedCategoryCode,
-                            isRefreshing = true
-                        )
-                    )
+            if (reset) {
+                nextCursor = null
+                hasMore = true
+                if (currentData == null) {
+                    _uiState.update { UiState.Loading }
+                } else {
+                    _uiState.update { UiState.Success(currentData.copy(isRefreshing = true)) }
                 }
+            } else {
+                isLoadingMore = true
+                currentData?.let { data -> _uiState.update { UiState.Success(data.copy(isLoadingMore = true)) } }
             }
-            when (val result = newsRepository.getNewsList(category = selectedCategoryCode)) {
+
+            when (val result = newsRepository.getNewsList(category = selectedCategoryCode, lastId = nextCursor)) {
                 is BaseResult.Success -> {
+                    val page = result.data
+                    hasMore = page.hasMore
+                    nextCursor = page.nextCursor
+                    isLoadingMore = false
+                    val existingList = if (reset) emptyList() else currentData?.newsList.orEmpty()
                     _uiState.update {
                         UiState.Success(
                             NewsListData(
                                 categories = newsCategories,
                                 selectedCategoryCode = selectedCategoryCode,
-                                newsList = result.data.map { it.toUiModel() },
-                                isRefreshing = false
+                                newsList = existingList + page.news.map { it.toUiModel() },
+                                isLast = !page.hasMore,
+                                isRefreshing = false,
+                                isLoadingMore = false,
                             )
                         )
                     }
                 }
                 is BaseResult.Error -> {
+                    isLoadingMore = false
                     if (currentData == null) {
                         _uiState.update { UiState.Error(result.error.message) }
                     } else {
                         _uiState.update {
-                            UiState.Success(
-                                currentData.copy(
-                                    selectedCategoryCode = selectedCategoryCode,
-                                    isRefreshing = false
-                                )
-                            )
+                            UiState.Success(currentData.copy(isRefreshing = false, isLoadingMore = false))
                         }
                     }
                 }
@@ -120,7 +133,9 @@ data class NewsListData(
     val categories: List<NewsCategoryUiModel>,
     val selectedCategoryCode: String?,
     val newsList: List<NewsListItemUiModel>,
-    val isRefreshing: Boolean = false
+    val isLast: Boolean = false,
+    val isRefreshing: Boolean = false,
+    val isLoadingMore: Boolean = false,
 )
 
 data class NewsCategoryUiModel(

@@ -52,7 +52,7 @@ fun EtfDetailResponse.toDomain() = EtfDetail(
 
 // GET /api/v1/etfs/{ticker}/clusters → EtfClusterData
 fun EtfClusterDataResponse.toDomain() = EtfClusterData(
-    englishName = englishName,
+    englishName = englishName ?: "",
     sectors = sectors.map { it.toDomain() },
     influentialStocks = influentialStocks.map {
         InfluentialStock(
