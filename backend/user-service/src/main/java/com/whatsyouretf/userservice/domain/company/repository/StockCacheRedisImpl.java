@@ -7,6 +7,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Redis 기반 Stock 현재 정보 캐시 구현
@@ -71,5 +74,53 @@ public class StockCacheRedisImpl implements StockCache {
             log.error("[{}] Redis 조회 실패: {}", ticker, e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public Map<String, StockInfo> getAll(Set<String> tickers) {
+        Map<String, StockInfo> result = new HashMap<>();
+
+        if (tickers == null || tickers.isEmpty()) {
+            return result;
+        }
+
+        try {
+            var hashOps = redisTemplate.opsForHash();
+
+            for (String ticker : tickers) {
+                String key = HASH_PREFIX + ticker;
+                var data = hashOps.entries(key);
+
+                if (data == null || data.isEmpty()) {
+                    continue;
+                }
+
+                String currentPriceStr = (String) data.get("currentPrice");
+                String previousPriceStr = (String) data.get("previousPrice");
+
+                if (currentPriceStr == null || previousPriceStr == null) {
+                    continue;
+                }
+
+                String dailyReturnStr = (String) data.get("dailyReturn");
+
+                StockInfo stockInfo = new StockInfo(
+                        ticker,
+                        (String) data.getOrDefault("stockName", ""),
+                        new BigDecimal(currentPriceStr),
+                        new BigDecimal(previousPriceStr),
+                        new BigDecimal((String) data.getOrDefault("dailyFluctuation", "0")),
+                        new BigDecimal(dailyReturnStr != null ? dailyReturnStr : "0"),
+                        new BigDecimal((String) data.getOrDefault("marketCapitalization", "0")),
+                        null
+                );
+
+                result.put(ticker, stockInfo);
+            }
+        } catch (Exception e) {
+            log.error("Redis 배치 조회 실패: {}", e.getMessage());
+        }
+
+        return result;
     }
 }

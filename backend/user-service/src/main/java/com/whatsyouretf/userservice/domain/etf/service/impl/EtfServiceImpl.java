@@ -7,6 +7,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.*;
 import com.whatsyouretf.userservice.domain.etf.repository.*;
 import com.whatsyouretf.userservice.domain.etf.repository.SectorStockProjection;
 import com.whatsyouretf.userservice.domain.etf.service.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +40,7 @@ public class EtfServiceImpl implements EtfService {
     private final StockCache stockCache;
     private final EtfDividendRepository etfDividendRepository;
     private final EtfOtherCompositionRepository otherCompositionRepository;
+    private final EntityManager entityManager;
 
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
@@ -251,52 +253,62 @@ public class EtfServiceImpl implements EtfService {
     /**
      * 영향력 종목 조회 (비중 × 현재가 × |등락률| 기준 상위 N개)
      */
+    @SuppressWarnings("unchecked")
     private List<EtfInfluentialStockResponse> getInfluentialStocks(Long etfId) {
-        return stockCompositionRepository.findLatestByEtfId(etfId).stream()
-                .map(comp -> {
-                    var stock = comp.getStock();
-                    var company = stock.getCompany();
-                    StockInfo stockInfo = stockCache.get(stock.getTicker(), stock.getDescription());
+        // 1. ETF의 모든 구성종목 ticker 조회 (24시간 캐시)
+        List<String> tickers = stockCompositionRepository.findTickersByEtfId(etfId);
 
-                    BigDecimal changeRate = (stockInfo != null && stockInfo.dailyReturn() != null)
-                            ? stockInfo.dailyReturn() : BigDecimal.ZERO;
-                    BigDecimal currentPrice = (stockInfo != null && stockInfo.currentPrice() != null)
-                            ? stockInfo.currentPrice() : BigDecimal.ZERO;
+        if (tickers.isEmpty()) {
+            return List.of();
+        }
 
-                    // 영향력 = 비중 × 현재가 × |등락률|
-                    BigDecimal influence = comp.getWeightPct()
-                            .multiply(currentPrice)
-                            .multiply(changeRate.abs());
+        // 2. Redis 배치 조회
+        Map<String, StockInfo> stockInfoMap = stockCache.getAll(Set.copyOf(tickers));
 
-                    return new InfluentialStockTemp(
-                            stock.getTicker(),
-                            company != null ? company.getCompanyName() : null,
-                            comp.getWeightPct(),
-                            currentPrice.longValue() > 0 ? currentPrice.longValue() : null,
-                            changeRate,
-                            influence
-                    );
-                })
-                .sorted((a, b) -> b.influence().compareTo(a.influence()))
-                .limit(MAX_INFLUENTIAL_STOCKS)
-                .map(temp -> EtfInfluentialStockResponse.builder()
-                        .ticker(temp.ticker())
-                        .name(temp.name())
-                        .weight(temp.weight())
-                        .currentPrice(temp.currentPrice())
-                        .changeRate(temp.changeRate())
+        if (stockInfoMap.isEmpty()) {
+            return List.of();
+        }
+
+        // 3. VALUES 절 생성
+        StringBuilder valuesBuilder = new StringBuilder();
+        for (Map.Entry<String, StockInfo> entry : stockInfoMap.entrySet()) {
+            if (valuesBuilder.length() > 0) valuesBuilder.append(",");
+            StockInfo info = entry.getValue();
+            valuesBuilder.append(String.format("('%s', %s, %s)",
+                    entry.getKey(),
+                    info.currentPrice() != null ? info.currentPrice().toPlainString() : "0",
+                    info.dailyReturn() != null ? info.dailyReturn().toPlainString() : "0"));
+        }
+
+        // 4. Native Query로 상위 5개만 조회
+        String sql = String.format("""
+            WITH price_data(ticker, current_price, change_rate) AS (VALUES %s)
+            SELECT s.ticker, ci.company_name, esc.weight_pct, p.current_price, p.change_rate
+            FROM etf_stock_composition esc
+            JOIN stock s ON esc.stock_id = s.id
+            LEFT JOIN company_info ci ON s.company_id = ci.id
+            JOIN price_data p ON s.ticker = p.ticker
+            WHERE esc.etf_id = :etfId
+              AND esc.base_date = (SELECT MAX(base_date) FROM etf_stock_composition WHERE etf_id = :etfId)
+            ORDER BY esc.weight_pct * p.current_price * ABS(p.change_rate) DESC
+            LIMIT :limit
+            """, valuesBuilder);
+
+        List<Object[]> results = entityManager.createNativeQuery(sql)
+                .setParameter("etfId", etfId)
+                .setParameter("limit", MAX_INFLUENTIAL_STOCKS)
+                .getResultList();
+
+        return results.stream()
+                .map(row -> EtfInfluentialStockResponse.builder()
+                        .ticker((String) row[0])
+                        .name((String) row[1])
+                        .weight(row[2] != null ? new BigDecimal(row[2].toString()) : null)
+                        .currentPrice(row[3] != null ? ((Number) row[3]).longValue() : null)
+                        .changeRate(row[4] != null ? new BigDecimal(row[4].toString()) : null)
                         .build())
                 .toList();
     }
-
-    private record InfluentialStockTemp(
-            String ticker,
-            String name,
-            BigDecimal weight,
-            Long currentPrice,
-            BigDecimal changeRate,
-            BigDecimal influence
-    ) {}
 
     @Override
     public Page<EtfPrice> getEtfHistory(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
