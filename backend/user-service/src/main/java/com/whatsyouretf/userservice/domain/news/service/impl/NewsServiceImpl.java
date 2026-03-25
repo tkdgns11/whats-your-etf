@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
@@ -27,8 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +43,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
     private final NewsArticleRepository newsArticleRepository;
     private final EtfRepository etfRepository;
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfReader etfReader;
     private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
@@ -131,18 +132,15 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
             return List.of();
         }
 
-        // ETF ID 목록
-        List<Long> etfIds = etfs.stream().map(Etf::getId).toList();
+        // ETF ticker 목록
+        Set<String> tickers = etfs.stream().map(Etf::getStockCode).collect(Collectors.toSet());
 
-        Map<Long, EtfPrice> priceMap = etfPriceRepository.findLatestByEtfIds(etfIds).stream()
-                .collect(Collectors.toMap(
-                        price -> price.getEtf().getId(),
-                        Function.identity()
-                ));
+        // Redis 캐시에서 최신 시세 조회 (ETF 목록 API와 동일한 데이터 소스)
+        Map<String, EtfCurrentInfo> priceInfoMap = etfReader.getInfosMap(tickers);
 
         // DTO 변환
         return etfs.stream()
-                .map(etf -> RelatedEtfResponse.from(etf, priceMap.get(etf.getId())))
+                .map(etf -> RelatedEtfResponse.from(etf, priceInfoMap.get(etf.getStockCode())))
                 .toList();
     }
 

@@ -24,4 +24,7 @@ public class EtfClusterResponse {
 
     /** 영향력 종목 목록 (비중 상위) */
     private List<EtfInfluentialStockResponse> influentialStocks;
+
+    /** 비주식 구성종목 (선물, 채권, 현금 등) */
+    private List<EtfOtherCompositionResponse> otherCompositions;
 }

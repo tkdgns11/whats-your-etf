@@ -37,6 +37,7 @@ public class EtfServiceImpl implements EtfService {
     private final EtfStockClusterMappingRepository clusterMappingRepository;
     private final StockCache stockCache;
     private final EtfDividendRepository etfDividendRepository;
+    private final EtfOtherCompositionRepository otherCompositionRepository;
 
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
@@ -68,10 +69,14 @@ public class EtfServiceImpl implements EtfService {
         // 영향력 종목 조회
         List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
 
+        // 비주식 구성종목 조회 (선물, 채권 등)
+        List<EtfOtherCompositionResponse> otherCompositions = getOtherCompositions(etf.getId());
+
         return EtfClusterResponse.builder()
                 .englishName(etf.getEnglishName())
                 .sectors(sectors)
                 .influentialStocks(influentialStocks)
+                .otherCompositions(otherCompositions)
                 .build();
     }
 
@@ -257,8 +262,8 @@ public class EtfServiceImpl implements EtfService {
                     var company = stock.getCompany();
                     StockInfo stockInfo = stockCache.get(stock.getTicker(), stock.getDescription());
 
-                    BigDecimal changeRate = (stockInfo != null && stockInfo.dailyFluctuation() != null)
-                            ? stockInfo.dailyFluctuation() : BigDecimal.ZERO;
+                    BigDecimal changeRate = (stockInfo != null && stockInfo.dailyReturn() != null)
+                            ? stockInfo.dailyReturn() : BigDecimal.ZERO;
                     BigDecimal currentPrice = (stockInfo != null && stockInfo.currentPrice() != null)
                             ? stockInfo.currentPrice() : BigDecimal.ZERO;
 
@@ -315,5 +320,14 @@ public class EtfServiceImpl implements EtfService {
     @Override
     public Page<EtfSummary> getEtfList(EtfQuery query, Pageable pageable) {
         return etfReader.readEtfList(query, pageable);
+    }
+
+    /**
+     * 비주식 구성종목 조회 (선물, 채권, 현금 등)
+     */
+    private List<EtfOtherCompositionResponse> getOtherCompositions(Long etfId) {
+        return otherCompositionRepository.findByEtfId(etfId).stream()
+                .map(EtfOtherCompositionResponse::from)
+                .toList();
     }
 }

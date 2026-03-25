@@ -50,6 +50,18 @@ ETF 구성종목의 산업 섹터를 분류합니다. 클러스터 버블 차트
 | 화학/소재 | Chemical | `Science` | 정밀화학, 철강, 비철금속 |
 | 기타 | Others | `Category` | 분류되지 않은 기타 섹터 |
 
+### 비주식 자산 유형 (assetType)
+
+레버리지/인버스 ETF 등 주식 외 자산을 보유하는 ETF의 구성종목 유형입니다.
+
+| assetType | 설명 | 예시 |
+|-----------|------|------|
+| `FUTURES` | 선물 | KOSPI200 선물, 코스닥150 선물 |
+| `ETF` | 다른 ETF 편입 | KODEX 인버스, TIGER 200 |
+| `BOND` | 채권/RP | 채권/RP |
+| `CASH` | 현금성 자산 | 현금성 자산 |
+| `PREFERRED_STOCK` | 우선주 | 삼성전자우, 현대차2우B |
+
 ### 에러 코드
 
 | 코드 | HTTP 상태 | 메시지 | 설명 | 대응 방법 |
@@ -131,6 +143,18 @@ ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
         "currentPrice": 412000,
         "changeRate": -0.72
       }
+    ],
+    "otherCompositions": [
+      {
+        "assetType": "FUTURES",
+        "assetName": "KOSPI200 선물",
+        "weight": 91.537
+      },
+      {
+        "assetType": "ETF",
+        "assetName": "KODEX 인버스",
+        "weight": 8.463
+      }
     ]
   },
   "timestamp": "2025-03-10T14:30:00"
@@ -165,6 +189,15 @@ ETF 클러스터 조회 (섹터 클러스터 + 영향력 종목)
 | sectors[].stocks[].percentage | 종목 비중 |
 | sectors[].aiAnalysis | AI 분석 텍스트 (있으면 표시) |
 
+#### 비주식 구성종목 섹션 (레버리지/인버스 ETF용)
+| API 필드 | 화면 표시 |
+|----------|----------|
+| otherCompositions[].assetType | 자산 유형 (FUTURES, ETF, BOND 등) |
+| otherCompositions[].assetName | 자산명 (예: KOSPI200 선물) |
+| otherCompositions[].weight | 비중 % |
+
+> **참고**: 일반 ETF는 `otherCompositions`가 빈 배열입니다. 레버리지/인버스 ETF 등 선물, 채권, 다른 ETF를 보유하는 상품에서만 데이터가 반환됩니다.
+
 ---
 
 ## 백엔드 구현 상태
@@ -183,10 +216,13 @@ etf_sector_cluster (섹터 클러스터 - 버블 차트)
 etf_sector_ai_history (섹터 AI 분석)
     ↓
 etf_stock_composition → stock → company_info (구성 종목)
+    ↓
+etf_other_composition (비주식 구성종목 - 선물, 채권, ETF 등)
 ```
 
 - 섹터별 상위 5개 종목 반환
 - 영향력 종목 상위 5개 반환
+- 비주식 구성종목 (선물, 채권, 현금, 우선주, 다른 ETF) 반환
 - 위험등급: AGGRESSIVE → 5, STABLE → 1 매핑
 - 변동성: 1년 변동률 기준 문자열 변환
 
