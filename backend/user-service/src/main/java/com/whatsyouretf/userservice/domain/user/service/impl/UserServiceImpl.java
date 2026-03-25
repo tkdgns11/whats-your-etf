@@ -5,10 +5,10 @@ import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.FileStorageService;
 import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioRepository;
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,7 +41,7 @@ public class UserServiceImpl implements UserService {
     private final UserFavoriteEtfRepository userFavoriteEtfRepository;
     private final UserHoldingEtfRepository userHoldingEtfRepository;
     private final EtfRepository etfRepository;
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfReader etfReader;
     private final FileStorageService fileStorageService;
     private final PortfolioRepository portfolioRepository;
     private final UserAlertRepository userAlertRepository;
@@ -172,19 +173,17 @@ public class UserServiceImpl implements UserService {
             return FavoriteEtfListResponse.of(List.of());
         }
 
-        // ETF ID 목록 추출
-        List<Long> etfIds = favorites.stream()
-                .map(f -> f.getEtf().getId())
-                .collect(Collectors.toList());
+        // ETF ticker 목록 추출
+        Set<String> tickers = favorites.stream()
+                .map(f -> f.getEtf().getStockCode())
+                .collect(Collectors.toSet());
 
-        // 최신 시세 조회
-        List<EtfPrice> latestPrices = etfPriceRepository.findLatestByEtfIds(etfIds);
-        Map<Long, EtfPrice> priceMap = latestPrices.stream()
-                .collect(Collectors.toMap(p -> p.getEtf().getId(), p -> p));
+        // Redis 캐시에서 최신 시세 조회
+        Map<String, EtfCurrentInfo> priceInfoMap = etfReader.getInfosMap(tickers);
 
         // DTO 변환
         List<FavoriteEtfResponse> responses = favorites.stream()
-                .map(f -> FavoriteEtfResponse.from(f, priceMap.get(f.getEtf().getId())))
+                .map(f -> FavoriteEtfResponse.from(f, priceInfoMap.get(f.getEtf().getStockCode())))
                 .collect(Collectors.toList());
 
         // 정렬 적용
