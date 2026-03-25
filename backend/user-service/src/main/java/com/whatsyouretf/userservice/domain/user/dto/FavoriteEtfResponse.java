@@ -26,8 +26,8 @@ public class FavoriteEtfResponse {
     /** ETF 명칭 */
     private String name;
 
-    /** 카테고리 */
-    private String category;
+    /** 위험 유형 (안정형, 안정추구형, 위험중립형, 적극투자형, 공격투자형) */
+    private String riskType;
 
     /** 자산운용사 */
     private String assetManager;
@@ -62,6 +62,7 @@ public class FavoriteEtfResponse {
         return FavoriteEtfResponse.builder()
                 .ticker(etf.getStockCode())
                 .name(etf.getName())
+                .riskType(etf.getRiskType() != null ? etf.getRiskType().getTypeName() : null)
                 .assetManager(etf.getAssetManager())
                 .currentPrice(latestPrice != null ? latestPrice.getClose() : null)
                 .changeRate(latestPrice != null ? latestPrice.getChangeRate() : null)
