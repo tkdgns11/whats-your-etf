@@ -91,6 +91,15 @@ public class EtfController {
                 ));
     }
 
+    @GetMapping("/{ticker}/market-data")
+    @Operation(summary = "etf 시장 데이터 조회", description = "캐시에서 현재가 / 등락률 / 거래량을 조회합니다")
+    public ResponseEntity<ApiResponse<EtfMarketDataResponse>> getEtfMarketData(@Parameter(description = "etf 종목 코드") @PathVariable String ticker) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        EtfMarketDataResponse.from(etfService.getEtfCurrentInfo(ticker))));
+    }
+
     @GetMapping("/{ticker}/dividends")
     @Operation(summary = "etf 배당이력 조회", description = "etf의 종목 코드를 기준으로 etf 배당 이력을 응답합니다")
     public ResponseEntity<ApiResponse<List<EtfDividendsResponse>>> getEtfDividends(@Parameter(description = "etf 종목 코드") @PathVariable String ticker) {
