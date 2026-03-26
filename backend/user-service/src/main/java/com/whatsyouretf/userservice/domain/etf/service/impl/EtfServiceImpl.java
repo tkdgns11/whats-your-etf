@@ -9,12 +9,14 @@ import com.whatsyouretf.userservice.domain.etf.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -314,6 +316,32 @@ public class EtfServiceImpl implements EtfService {
 
     @Override
     public Page<EtfSummary> getEtfList(EtfQuery query, Pageable pageable) {
+        String sortedBy = query.sortedBy();
+        if ("dailyReturn".equals(sortedBy) || "volume".equals(sortedBy)) {
+            List<EtfSummary> all = etfReader.readAllEtfList(query);
+            Set<String> tickers = all.stream().map(EtfSummary::ticker).collect(Collectors.toSet());
+            Map<String, EtfCurrentInfo> infoMap = etfReader.getInfosMap(tickers);
+
+            Comparator<EtfSummary> comparator = "dailyReturn".equals(sortedBy)
+                ? Comparator.comparing(
+                (EtfSummary s) -> {
+                    EtfCurrentInfo info = infoMap.get(s.ticker());
+                    return (info != null && info.dailyReturn() != null) ? info.dailyReturn() : BigDecimal.ZERO;
+                },
+                Comparator.reverseOrder())
+                : Comparator.comparing(
+                (EtfSummary s) -> {
+                    EtfCurrentInfo info = infoMap.get(s.ticker());
+                    return (info != null && info.volume() != null) ? info.volume() : 0L;
+                },
+                Comparator.reverseOrder());
+
+            List<EtfSummary> sorted = all.stream().sorted(comparator).toList();
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), sorted.size());
+            List<EtfSummary> page = start >= sorted.size() ? List.of() : sorted.subList(start, end);
+            return new PageImpl<>(page, pageable, sorted.size());
+        }
         return etfReader.readEtfList(query, pageable);
     }
 }

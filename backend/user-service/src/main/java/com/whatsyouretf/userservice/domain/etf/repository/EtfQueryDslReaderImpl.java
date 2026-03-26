@@ -4,10 +4,14 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.whatsyouretf.userservice.domain.company.entity.QCompanyInfo;
+import com.whatsyouretf.userservice.domain.company.entity.QStock;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSector;
 import com.whatsyouretf.userservice.domain.etf.entity.QEtf;
+import com.whatsyouretf.userservice.domain.etf.entity.QEtfStockComposition;
 import com.whatsyouretf.userservice.domain.etf.entity.RiskType;
 import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +28,10 @@ import java.util.List;
 public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
 
     private static final QEtf etf = QEtf.etf;
+    private static final QEtfStockComposition comp = QEtfStockComposition.etfStockComposition;
+    private static final QStock stock = QStock.stock;
+    private static final QCompanyInfo company = QCompanyInfo.companyInfo;
+
     private final JPAQueryFactory queryFactory;
 
     @Override
@@ -37,22 +45,7 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                         etf.riskType.stringValue()
                 ))
                 .from(etf)
-                .where(
-                        etf.isActive.isTrue(),
-                        riskTypeEq(query.ristType()),
-                        strategyEq(query.strategy()),
-                        sectorEq(query.sector()),
-                        dividendYieldGoe(query.dividendYield()),
-                        dividendFreqEq(query.dividendFrequency()),
-                        isDerivativesEq(query.isDerivatives()),
-                        isLeverageEq(query.isLeverage()),
-                        isInverseEq(query.isInverse()),
-                        perBetween(query.perLow(), query.perHigh()),
-                        pbrBetween(query.pbrLow(), query.pbrHigh()),
-                        roeBetween(query.roeLow(), query.roeHigh()),
-                        commissionLoe(query.commission()),
-                        aumGoe(query.aum())
-                )
+                .where(buildWhere(query))
                 .orderBy(orderBy(query.sortedBy()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -61,25 +54,67 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
         Long total = queryFactory
                 .select(etf.count())
                 .from(etf)
-                .where(
-                        etf.isActive.isTrue(),
-                        riskTypeEq(query.ristType()),
-                        strategyEq(query.strategy()),
-                        sectorEq(query.sector()),
-                        dividendYieldGoe(query.dividendYield()),
-                        dividendFreqEq(query.dividendFrequency()),
-                        isDerivativesEq(query.isDerivatives()),
-                        isLeverageEq(query.isLeverage()),
-                        isInverseEq(query.isInverse()),
-                        perBetween(query.perLow(), query.perHigh()),
-                        pbrBetween(query.pbrLow(), query.pbrHigh()),
-                        roeBetween(query.roeLow(), query.roeHigh()),
-                        commissionLoe(query.commission()),
-                        aumGoe(query.aum())
-                )
+                .where(buildWhere(query))
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total != null ? total : 0);
+    }
+
+    @Override
+    public List<EtfSummary> readAllEtfList(EtfQuery query) {
+        return queryFactory
+                .select(Projections.constructor(EtfSummary.class,
+                        etf.id,
+                        etf.stockCode,
+                        etf.name,
+                        Expressions.constant(false),
+                        etf.riskType.stringValue()
+                ))
+                .from(etf)
+                .where(buildWhere(query))
+                .orderBy(etf.aum.desc().nullsLast())
+                .fetch();
+    }
+
+    private BooleanExpression[] buildWhere(EtfQuery query) {
+        return new BooleanExpression[]{
+                etf.isActive.isTrue(),
+                riskTypeEq(query.riskType()),
+                strategyEq(query.strategy()),
+                sectorEq(query.sector()),
+                dividendYieldGoe(query.dividendYield()),
+                dividendFreqEq(query.dividendFrequency()),
+                isDerivativesEq(query.isDerivatives()),
+                isLeverageEq(query.isLeverage()),
+                isInverseEq(query.isInverse()),
+                perBetween(query.perLow(), query.perHigh()),
+                pbrBetween(query.pbrLow(), query.pbrHigh()),
+                roeBetween(query.roeLow(), query.roeHigh()),
+                commissionLoe(query.commission()),
+                aumGoe(query.aum()),
+                searchNameContains(query.searchName())
+        };
+    }
+
+    private BooleanExpression searchNameContains(String searchName) {
+        if (searchName == null || searchName.isBlank()) return null;
+
+        // ETF 이름에 포함
+        BooleanExpression etfNameMatch = etf.name.containsIgnoreCase(searchName);
+
+        // 구성종목의 회사명에 포함 (etf_stock_composition → stock → company_info)
+        BooleanExpression stockNameMatch = JPAExpressions
+                .selectOne()
+                .from(comp)
+                .join(comp.stock, stock)
+                .join(stock.company, company)
+                .where(
+                        comp.etf.eq(etf),
+                        company.companyName.containsIgnoreCase(searchName)
+                )
+                .exists();
+
+        return etfNameMatch.or(stockNameMatch);
     }
 
     private BooleanExpression riskTypeEq(String riskType) {
@@ -154,13 +189,14 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
     }
 
     private OrderSpecifier<?> orderBy(String sortedBy) {
-        if (sortedBy == null) return etf.id.asc();
+        if (sortedBy == null) return etf.aum.desc().nullsLast();
         return switch (sortedBy) {
-            case "aum" -> etf.aum.desc();
+            case "aum" -> etf.aum.desc().nullsLast();
             case "dividend_yield" -> etf.dividendYield.desc();
             case "per" -> etf.fundamental.per.asc();
             case "expense_ratio" -> etf.expenseRatio.asc();
-            default -> etf.id.asc();
+            // dailyReturn / volume 은 서비스 레이어에서 캐시 기반 정렬 → DB 기본 정렬만 적용
+            default -> etf.aum.desc().nullsLast();
         };
     }
 }
