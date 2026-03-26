@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.d102.wye.domain.state.EtfFilterState
+import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
+import com.d102.wye.presentation.theme.TextOnColored
 import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
@@ -56,9 +60,22 @@ fun QuickFilterRow(
             )
         }
 
-        if (hasNoFilters) {
+        // 즐겨찾기 토글 칩
+        Icon(
+            imageVector = if (filterState.onlyLiked) Icons.Filled.Star else Icons.Outlined.StarOutline,
+            contentDescription = "즐겨찾기만 보기",
+            tint = if (filterState.onlyLiked) TextOnColored else TextSecondary,
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(if (filterState.onlyLiked) PrimaryGreen else SurfaceVariant)
+                .clickable { onFilterChanged(filterState.copy(onlyLiked = !filterState.onlyLiked)) }
+                .padding(horizontal = 14.dp, vertical = 7.dp)
+                .size(16.dp),
+        )
+
+        if (hasNoFilters && !filterState.onlyLiked) {
             QuickChip("전체", true, onClick = {})
-        } else {
+        } else if (!filterState.onlyLiked) {
             if (filterCount > 0) {
                 Text(
                     text = "초기화",

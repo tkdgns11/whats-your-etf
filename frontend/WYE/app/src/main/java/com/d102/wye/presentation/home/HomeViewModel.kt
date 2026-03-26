@@ -13,6 +13,8 @@ import java.time.Duration
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -146,14 +148,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun shouldPollTop10(now: LocalDateTime = LocalDateTime.now()): Boolean {
+    private fun nowKst(): ZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+
+    private fun shouldPollTop10(): Boolean {
+        val now = nowKst()
         val day = now.dayOfWeek
         val time = now.toLocalTime()
         val isWeekend = day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY
         return !isWeekend && !time.isBefore(MARKET_OPEN_TIME) && time.isBefore(MARKET_CLOSE_TIME)
     }
 
-    private fun shouldShowClosingText(now: LocalDateTime = LocalDateTime.now()): Boolean {
+    private fun shouldShowClosingText(): Boolean {
+        val now = nowKst()
         val day = now.dayOfWeek
         val time = now.toLocalTime()
         val isWeekend = day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY

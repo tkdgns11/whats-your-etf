@@ -44,7 +44,6 @@ class MyPageViewModel @Inject constructor(
             _uiState.update { UiState.Loading }
             val profileResult = userRepository.getMyProfile()
             val favoriteResult = userRepository.getFavoriteEtfs(FavoriteEtfSort.RECENT)
-            val acceptedResult = userRepository.getMyDataAccepted()
 
             when (profileResult) {
                 is BaseResult.Error -> _uiState.update { UiState.Error(profileResult.error.message) }
@@ -53,6 +52,22 @@ class MyPageViewModel @Inject constructor(
                         is BaseResult.Success -> favoriteResult.data.totalCount
                         is BaseResult.Error -> 0
                     }
+                    // 프로필 먼저 표시, 보유 ETF는 스켈레톤
+                    _uiState.update {
+                        UiState.Success(
+                            MyPageData(
+                                nickname = profileResult.data.nickname,
+                                nicknameDraft = profileResult.data.nickname,
+                                profileImage = profileResult.data.profileImage,
+                                likedEtfCount = likedEtfCount,
+                                myDataState = MyDataUiState.Loading,
+                                holdingEtfs = emptyList()
+                            )
+                        )
+                    }
+
+                    // 마이데이터 로드 후 업데이트
+                    val acceptedResult = userRepository.getMyDataAccepted()
                     val myDataState = when (acceptedResult) {
                         is BaseResult.Success -> {
                             if (!acceptedResult.data) {
@@ -71,18 +86,8 @@ class MyPageViewModel @Inject constructor(
                     } else {
                         emptyList()
                     }
-
-                    _uiState.update {
-                        UiState.Success(
-                            MyPageData(
-                                nickname = profileResult.data.nickname,
-                                nicknameDraft = profileResult.data.nickname,
-                                profileImage = profileResult.data.profileImage,
-                                likedEtfCount = likedEtfCount,
-                                myDataState = myDataState,
-                                holdingEtfs = holdingEtfs
-                            )
-                        )
+                    updateSuccessState { data ->
+                        data.copy(myDataState = myDataState, holdingEtfs = holdingEtfs)
                     }
                 }
             }
@@ -354,6 +359,7 @@ data class MyPageHoldingEtfUiModel(
 )
 
 enum class MyDataUiState {
+    Loading,
     NotConnected,
     Empty,
     Ready,

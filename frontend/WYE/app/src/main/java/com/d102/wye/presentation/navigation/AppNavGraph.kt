@@ -13,6 +13,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.navigation.navArgument
 import com.d102.wye.presentation.auth.join.JoinScreen
 import com.d102.wye.presentation.auth.login.LoginScreen
@@ -52,7 +54,11 @@ fun AppNavGraph(
         startDestination = startDestination,
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = contentPadding.calculateBottomPadding())
+            .padding(bottom = contentPadding.calculateBottomPadding()),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
     ) {
 
         // ─────────────────────────────────────────

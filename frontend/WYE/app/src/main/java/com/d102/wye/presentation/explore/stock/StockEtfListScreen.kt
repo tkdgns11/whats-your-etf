@@ -50,7 +50,7 @@ fun StockEtfListScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(top = innerPadding.calculateTopPadding()),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
                 ) {
                     // 헤더

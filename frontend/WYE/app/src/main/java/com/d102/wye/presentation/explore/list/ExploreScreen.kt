@@ -155,8 +155,8 @@ fun ExploreScreen(
 
                 is UiState.Success -> if (state.data.filteredList.isEmpty()) {
                     WyeEmptyState(
-                        message = "검색 결과가 없어요",
-                        description = "다른 키워드나 필터를 사용해보세요",
+                        message = if (filterState.onlyLiked) "관심 종목이 없어요" else "검색 결과가 없어요",
+                        description = if (filterState.onlyLiked) "즐겨찾기한 ETF가 여기에 표시돼요" else "다른 키워드나 필터를 사용해보세요",
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else LazyColumn(

@@ -4,6 +4,9 @@ data class EtfFilterState(
     // 검색
     val query: String = "",
 
+    // 즐겨찾기만 보기
+    val onlyLiked: Boolean = false,
+
     // 검색 범위: null = 전체 / "etf" = ETF 종목명 / "stock" = 주식명
     val searchScope: String? = null,
 

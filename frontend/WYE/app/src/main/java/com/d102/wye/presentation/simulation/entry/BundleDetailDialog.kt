@@ -39,6 +39,7 @@ import com.d102.wye.presentation.theme.TextTertiary
 @Composable
 fun BundleDetailDialog(
     bundle: EtfBundleDetail,
+    isPortfolioFull: Boolean = false,
     onDismiss: () -> Unit,
     onStartSimulation: (EtfBundleDetail) -> Unit
 ) {
@@ -151,6 +152,7 @@ fun BundleDetailDialog(
                     WyePrimaryButton(
                         text = "이 꾸러미로 시뮬레이션 시작하기",
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !isPortfolioFull,
                         onClick = { onStartSimulation(bundle) }
                     )
                 }

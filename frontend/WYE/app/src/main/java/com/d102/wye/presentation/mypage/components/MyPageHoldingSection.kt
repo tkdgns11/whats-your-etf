@@ -49,6 +49,21 @@ fun MyPageHoldingSection(
     onMyDataConnectClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (myDataState == MyDataUiState.Loading) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(142.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(
+                color = PrimaryGreen,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+        return
+    }
+
     if (myDataState == MyDataUiState.NotConnected) {
         WyeOutlinedCard(
             modifier = modifier.fillMaxWidth(),

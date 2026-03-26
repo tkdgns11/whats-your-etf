@@ -32,7 +32,7 @@ import com.d102.wye.presentation.theme.TextSecondary
 
 // 실험 전략이 없을 때 빈 카드
 @Composable
-fun EmptySavedStrategyCard() {
+fun EmptySavedStrategyCard(onSimulationClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         border= BorderStroke(1.dp, PrimaryGreen.copy(0.1f)),
@@ -72,7 +72,7 @@ fun EmptySavedStrategyCard() {
             Spacer(modifier = Modifier.height(24.dp))
             WyePrimaryButton(
                 text = "시뮬레이션 시작하기",
-                onClick = { /* TODO */ },
+                onClick = onSimulationClick,
                 modifier = Modifier.fillMaxWidth()
             )
         }

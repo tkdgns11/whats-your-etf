@@ -220,7 +220,7 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
                 HorizontalDivider(color = Divider)
                 RiskRow(detail)
                 HorizontalDivider(color = Divider)
-                InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%", valueColor = PrimaryGreen)
+                InfoRow("총보수(수수료)", "연 ${"%.4f".format(detail.expenseRatio)}%")
                 HorizontalDivider(color = Divider)
                 InfoRow("순자산", aumText)
                 HorizontalDivider(color = Divider)
@@ -534,7 +534,7 @@ private fun LineChart(
             listOf(0, refPoints.size / 2, refPoints.size - 1).forEach { idx ->
                 val x     = chartL + chartW * idx / (refPoints.size - 1).toFloat()
                 val date  = refPoints[idx].date.take(10)
-                val label = if (date.length >= 10) date.substring(5).replace("-", ".") else date
+                val label = if (date.length >= 10) date.substring(2).replace("-", ".") else date
                 val measured = textMeasurer.measure(label, style = labelStyle)
                 val labelX = (x - measured.size.width / 2f).coerceIn(chartL, chartR - measured.size.width)
                 drawText(measured, topLeft = Offset(labelX, chartB + 3.dp.toPx()))
@@ -598,7 +598,7 @@ private fun PeriodReturnTable(data: EtfPeriodReturn) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("기간별 수익률", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-            Text("${data.asOfDate.replace("-", ".")}기준", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
+            Text("${data.asOfDate.substring(2).replace("-", ".")} 기준", style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = TextSecondary)
         }
 
         Column(

@@ -42,6 +42,7 @@ import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.theme.BackGroundLightGreen
 import com.d102.wye.presentation.theme.TextPrimary
+import com.d102.wye.presentation.theme.TextSecondary
 import com.d102.wye.presentation.theme.TextTertiary
 
 @Composable
@@ -62,9 +63,12 @@ fun SimulationEntryScreen(
         }
     }
 
+    val isPortfolioFull = (uiState as? UiState.Success)?.data?.isPortfolioFull ?: false
+
     selectedBundle?.let { bundle ->
         BundleDetailDialog(
             bundle = bundle,
+            isPortfolioFull = isPortfolioFull,
             onDismiss = { viewModel.onBundleDialogDismiss() },
             onStartSimulation = { bundle ->
                 viewModel.onBundleDialogDismiss()
@@ -114,7 +118,10 @@ private fun SimulationScreenContent(
                             .padding(horizontal = 24.dp)
                     ) {
                         // 1. 상단 배너 영역
-                        SimulationBanner(onMakePortfolioClick = { onMakePortfolioClick(emptyList()) })
+                        SimulationBanner(
+                            isPortfolioFull = uiState.data.isPortfolioFull,
+                            onMakePortfolioClick = { onMakePortfolioClick(emptyList()) }
+                        )
 
                         Spacer(modifier = Modifier.height(40.dp))
 
@@ -140,7 +147,10 @@ private fun SimulationScreenContent(
 }
 
 @Composable
-fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
+fun SimulationBanner(
+    isPortfolioFull: Boolean,
+    onMakePortfolioClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -184,8 +194,18 @@ fun SimulationBanner(onMakePortfolioClick: () -> Unit) {
             WyePrimaryButton(
                 text = "포트폴리오 만들기",
                 style = MaterialTheme.typography.labelLarge,
+                enabled = !isPortfolioFull,
                 onClick = onMakePortfolioClick
             )
+
+            if (isPortfolioFull) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "포트폴리오는 최대 10개까지 저장할 수 있어요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
         }
     }
 }

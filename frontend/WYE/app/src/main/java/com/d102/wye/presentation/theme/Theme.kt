@@ -8,7 +8,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryGreen,
@@ -25,6 +28,8 @@ private val LightColorScheme = lightColorScheme(
     onBackground = TextPrimary,
     onSurface = TextPrimary,
 )
+
+private const val REFERENCE_WIDTH_DP = 411f
 
 @Composable
 fun WYETheme(
@@ -43,9 +48,18 @@ fun WYETheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val context = LocalContext.current
+    val displayMetrics = context.resources.displayMetrics
+    val targetDensity = displayMetrics.widthPixels / REFERENCE_WIDTH_DP
+    val currentFontScale = LocalDensity.current.fontScale
+
+    CompositionLocalProvider(
+        LocalDensity provides Density(density = targetDensity, fontScale = currentFontScale)
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

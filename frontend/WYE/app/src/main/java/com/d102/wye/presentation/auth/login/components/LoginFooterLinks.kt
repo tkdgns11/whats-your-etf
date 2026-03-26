@@ -33,7 +33,7 @@ fun LoginFooterLinks(
 
         FooterLinkRow(
             prefix = "비밀번호를 잊으셨나요?",
-            action = "비밀번호 변경",
+            action = "비밀번호 찾기",
             onClick = onForgotPasswordClick
         )
     }
