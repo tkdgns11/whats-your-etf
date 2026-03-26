@@ -135,6 +135,7 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
 
     private BooleanExpression strategyEq(String strategy) {
         if (strategy == null) return null;
+        if (strategy.isBlank()) return Expressions.FALSE;
         return etf.strategyType.isNotNull().and(etf.strategyType.eq(strategy));
     }
 
