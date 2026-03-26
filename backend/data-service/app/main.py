@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -15,7 +15,7 @@ from app.models.etf_disclosure import EtfDisclosure
 from app.models.etf import ETF, ETFSectorCluster
 from app.scrapers.news_service import NewsCollectionService
 from app.scrapers.krx_scraper import KrxDisclosureScraper
-from app.schedulers.scheduler import start_scheduler, scheduler, run_etf_stock_cache_sync
+from app.schedulers.scheduler import start_scheduler, scheduler, run_etf_stock_cache_sync, fire_cache_sync
 from app.config import get_settings
 from app.scrapers.keywords import NEWS_CATEGORIES
 from app.database import AsyncSessionLocal
@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     """앱 시작/종료 시 실행"""
     # Startup
     logger.info("FastAPI 시작")
-    start_scheduler()
+    # start_scheduler()  # 로컬 개발 시 스케줄링 비활성화
 
     # KIS 토큰 미리 발급 (전역 캐시에 저장) → 이후 병렬 API 호출 시 재발급 없음
     try:
@@ -43,12 +43,30 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"KIS 토큰 초기화 실패 (서비스는 계속 시작): {e}")
 
-    asyncio.ensure_future(run_etf_stock_cache_sync())
+    # 장 시간(09:00~15:40 KST)에만 startup 캐시 동기화 실행
+    from datetime import datetime, timezone, timedelta
+    _now_kst = datetime.now(timezone(timedelta(hours=9)))
+    _is_market_hours = (
+        _now_kst.weekday() < 5  # 월~금
+        and (9 <= _now_kst.hour < 15 or (_now_kst.hour == 15 and _now_kst.minute <= 40))
+    )
+    if _is_market_hours:
+        fire_cache_sync()
+    else:
+        logger.info("장 시간 외 → startup 캐시 동기화 건너뜀")
+
+    # RabbitMQ ETF 캐시 갱신 consumer 시작
+    from app.consumers.cache_consumer import start_cache_consumer
+    _mq_connection = await start_cache_consumer()
 
     yield
 
+    if _mq_connection:
+        await _mq_connection.close()
+
     # Shutdown
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown()
     logger.info("FastAPI 종료")
 
 
@@ -697,6 +715,95 @@ async def dev_sync_all():
     )
 
     return {"status": "done", "results": results}
+
+
+# ==================== ETF Dividend Endpoints ====================
+
+@app.post("/dev/etf/sync/dividends")
+async def dev_sync_etf_dividends(
+    background_tasks: BackgroundTasks,
+    ticker: Optional[str] = Query(None, description="특정 ETF 종목코드. 없으면 전체 Tiger ETF 대상"),
+):
+    """
+    [DEV] 미래에셋 Tiger ETF 사이트에서 분배금 이력을 크롤링해 DB에 저장합니다.
+    백그라운드로 실행되므로 즉시 응답을 반환합니다.
+
+    - ticker 미지정: 전체 Tiger ETF 분배금 동기화
+    - ticker 지정: 해당 종목만 동기화 (예: 102110)
+    """
+    from app.services.etf_dividend_service import sync_etf_dividends
+
+    async def _run():
+        logger.info(f"[DEV] ETF 분배금 동기화 백그라운드 실행 시작 (ticker={ticker})")
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await sync_etf_dividends(db, ticker=ticker)
+                logger.info(f"[DEV] ETF 분배금 동기화 완료: {result}")
+            except Exception as e:
+                logger.error(f"[DEV] ETF 분배금 동기화 실패: {e}")
+
+    background_tasks.add_task(_run)
+    logger.info(f"[DEV] ETF 분배금 동기화 백그라운드 시작 (ticker={ticker})")
+    return {"status": "accepted", "message": "분배금 동기화가 백그라운드에서 시작되었습니다.", "ticker": ticker}
+
+
+# ==================== ETF Cache Endpoints ====================
+
+@app.post("/dev/etf/cache/sync")
+async def dev_sync_etf_cache():
+    """
+    [DEV] 전체 ETF/Stock Redis 캐시 강제 동기화 (별도 스레드+이벤트루프 실행).
+    uvicorn 이벤트 루프와 분리되므로 동기화 중에도 다른 API 요청 정상 처리됩니다.
+    """
+    fire_cache_sync()
+    logger.info("[DEV] ETF/Stock 캐시 동기화 별도 스레드 시작")
+    return {"status": "accepted", "message": "ETF/Stock 캐시 동기화가 백그라운드에서 시작되었습니다."}
+
+
+@app.get("/etf/{ticker}/realtime")
+async def get_etf_realtime(ticker: str):
+    """
+    특정 ETF의 실시간 정보를 KIS API에서 직접 조회하고 Redis 캐시도 갱신합니다.
+    user-service에서 캐시 miss 시 fallback으로 호출합니다.
+    """
+    from app.services.cache_service import RedisCacheService
+    from app.database import AsyncSessionLocal
+    from sqlalchemy import select, text
+
+    cache_service = RedisCacheService()
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                text("SELECT name FROM etf WHERE stock_code = :ticker AND is_active = true"),
+                {"ticker": ticker}
+            )
+            row = result.first()
+            etf_name = row[0] if row else ""
+
+        await cache_service.publish_etf_cache(ticker, etf_name)
+
+        # 캐시에서 결과 읽어 반환
+        data = await cache_service.redis_client.hgetall(f"EtfCurrentInfo:{ticker}")
+        if not data:
+            raise HTTPException(status_code=404, detail=f"ETF 정보를 가져올 수 없습니다: {ticker}")
+
+        return {
+            "ticker": data.get("ticker", ticker),
+            "name": data.get("name", ""),
+            "currentPrice": data.get("currentPrice"),
+            "previousPrice": data.get("previousPrice"),
+            "dailyReturn": data.get("dailyReturn"),
+            "dailyFluctuation": data.get("dailyFluctuation"),
+            "volume": data.get("volume"),
+            "nav": data.get("nav"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[{ticker}] realtime 조회 실패: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await cache_service.close()
 
 
 if __name__ == "__main__":

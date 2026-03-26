@@ -2,12 +2,15 @@ package com.whatsyouretf.userservice.domain.etf.repository;
 
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.common.config.RabbitMQConfig;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
 import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -19,12 +22,14 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class EtfReaderImpl implements EtfReader {
     private final EtfCache etfCache;
     private final EtfRepository etfRepository;
     private final EtfQueryDslReader etfQueryDslReader;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     public Etf read(String ticker) {
@@ -33,7 +38,20 @@ public class EtfReaderImpl implements EtfReader {
 
     @Override
     public EtfCurrentInfo getInfo(String ticker) {
-        return etfCache.findByTicker(ticker);
+        EtfCurrentInfo info = etfCache.findByTicker(ticker);
+        if (info == null) {
+            log.debug("[{}] 캐시 miss → 전체 캐시 갱신 요청", ticker);
+            try {
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.EXCHANGE_NAME,
+                        RabbitMQConfig.QUEUE_CACHE_ETF_SYNC,
+                        Map.of("action", "sync_all")
+                );
+            } catch (Exception e) {
+                log.warn("[{}] 캐시 갱신 MQ 발행 실패: {}", ticker, e.getMessage());
+            }
+        }
+        return info;
     }
 
     @Override

@@ -32,6 +32,19 @@ def _get_token_lock() -> asyncio.Lock:
     return _token_lock
 
 
+# ── 전역 공유 httpx 클라이언트 (커넥션 풀 재사용, FD 고갈 방지) ──────────────
+_shared_http_client: Optional[httpx.AsyncClient] = None
+
+def get_shared_http_client() -> httpx.AsyncClient:
+    global _shared_http_client
+    if _shared_http_client is None or _shared_http_client.is_closed:
+        _shared_http_client = httpx.AsyncClient(
+            timeout=15.0,
+            limits=httpx.Limits(max_connections=30, max_keepalive_connections=20),
+        )
+    return _shared_http_client
+
+
 async def initialize_token() -> None:
     """서버 시작 시 토큰을 미리 발급/로드.
     lifespan 에서 한 번 await 하면 이후 KISClient 인스턴스들이 재발급하지 않는다."""
@@ -114,10 +127,10 @@ class KISClient:
                 "appsecret": self.app_secret
             }
 
-            async with httpx.AsyncClient(timeout=15.0) as http:
-                res = await http.post(url, json=payload)
-                res.raise_for_status()
-                data = res.json()
+            http = get_shared_http_client()
+            res = await http.post(url, json=payload)
+            res.raise_for_status()
+            data = res.json()
 
             token = data.get("access_token")
             if not token:
@@ -164,21 +177,21 @@ class KISClient:
             "fid_cond_scr_div_code": 11216
         }
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                res = await client.get(url, headers=headers, params=params)
-                res.raise_for_status()
-                data = res.json()
-                if data.get("rt_cd") != "0":
-                    logger.error(f"[{ticker}] FHKST121600C0 에러: {data.get('msg1')}")
-                    return None
-                return {
-                    "output1": data.get("output1", {}),
-                    "output2": data.get("output2", [])
-                }
-            except Exception as e:
-                logger.error(f"[{ticker}] FHKST121600C0 호출 실패: {e}")
+        client = get_shared_http_client()
+        try:
+            res = await client.get(url, headers=headers, params=params)
+            res.raise_for_status()
+            data = res.json()
+            if data.get("rt_cd") != "0":
+                logger.error(f"[{ticker}] FHKST121600C0 에러: {data.get('msg1')}")
                 return None
+            return {
+                "output1": data.get("output1", {}),
+                "output2": data.get("output2", [])
+            }
+        except Exception as e:
+            logger.error(f"[{ticker}] FHKST121600C0 호출 실패: {e}")
+            return None
 
     async def get_etf_basic_info(self, ticker: str) -> Optional[Dict[str, Any]]:
         """FHPST02400000: ETF 현재가/기본정보
@@ -204,18 +217,18 @@ class KISClient:
             "FID_INPUT_ISCD": ticker
         }
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                res = await client.get(url, headers=headers, params=params)
-                res.raise_for_status()
-                data = res.json()
-                if data.get("rt_cd") != "0":
-                    logger.error(f"[{ticker}] FHPST02400000 에러: {data.get('msg1')}")
-                    return None
-                return data.get("output", {})
-            except Exception as e:
-                logger.error(f"[{ticker}] FHPST02400000 호출 실패: {e}")
+        client = get_shared_http_client()
+        try:
+            res = await client.get(url, headers=headers, params=params)
+            res.raise_for_status()
+            data = res.json()
+            if data.get("rt_cd") != "0":
+                logger.error(f"[{ticker}] FHPST02400000 에러: {data.get('msg1')}")
                 return None
+            return data.get("output", {})
+        except Exception as e:
+            logger.error(f"[{ticker}] FHPST02400000 호출 실패: {e}")
+            return None
 
     async def get_stock_price(self, ticker: str) -> Optional[Dict[str, Any]]:
         """FHKST01010100: 주식 현재가 조회
@@ -241,15 +254,15 @@ class KISClient:
             "FID_INPUT_ISCD": ticker
         }
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                res = await client.get(url, headers=headers, params=params)
-                res.raise_for_status()
-                data = res.json()
-                if data.get("rt_cd") != "0":
-                    logger.error(f"[{ticker}] FHKST01010100 에러: {data.get('msg1')}")
-                    return None
-                return data.get("output", {})
-            except Exception as e:
-                logger.error(f"[{ticker}] FHKST01010100 호출 실패: {e}")
+        client = get_shared_http_client()
+        try:
+            res = await client.get(url, headers=headers, params=params)
+            res.raise_for_status()
+            data = res.json()
+            if data.get("rt_cd") != "0":
+                logger.error(f"[{ticker}] FHKST01010100 에러: {data.get('msg1')}")
                 return None
+            return data.get("output", {})
+        except Exception as e:
+            logger.error(f"[{ticker}] FHKST01010100 호출 실패: {e}")
+            return None

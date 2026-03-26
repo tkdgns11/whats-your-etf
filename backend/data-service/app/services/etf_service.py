@@ -18,6 +18,34 @@ import traceback
 
 _krx_api_semaphore = asyncio.Semaphore(5)
 
+# KIS API 섹터 문자열 + ETF 이름 → Java EtfSector enum 값 변환
+# EtfSector: SEMI, IT, BIO, AUTO, CHEM, ENERGY, FINANCE, CONSTRUCT,
+#            CONSUMER, TELECOM, TRANSPORT, INDUSTRY, HOLDING, ETC
+_SECTOR_KEYWORD_MAP = [
+    ("SEMI",      ["반도체"]),
+    ("IT",        ["소프트웨어", "it", "전자", "정보기술", "인터넷", "게임", "ai", "인공지능", "클라우드"]),
+    ("BIO",       ["바이오", "의약", "헬스", "의료", "헬스케어", "제약"]),
+    ("AUTO",      ["자동차", "2차전지", "전기차", "배터리"]),
+    ("CHEM",      ["화학", "소재", "철강", "비철"]),
+    ("ENERGY",    ["에너지", "원유", "천연가스", "신재생", "태양광", "풍력"]),
+    ("FINANCE",   ["금융", "은행", "보험", "증권", "자산운용"]),
+    ("CONSTRUCT", ["건설", "부동산", "리츠", "reit"]),
+    ("CONSUMER",  ["소비재", "유통", "식품", "음식", "경기소비재", "필수소비재"]),
+    ("TELECOM",   ["통신", "미디어", "방송", "커뮤니케이션"]),
+    ("TRANSPORT", ["운송", "물류", "항공", "해운", "조선"]),
+    ("INDUSTRY",  ["산업재", "기계", "방산", "방위"]),
+    ("HOLDING",   ["지주"]),
+]
+
+def _normalize_etf_sector(kis_sector: str, etf_name: str = "") -> str:
+    """KIS API 섹터 문자열 + ETF 이름을 Java EtfSector enum 값으로 변환"""
+    combined = f"{kis_sector} {etf_name}".lower()
+    for sector_code, keywords in _SECTOR_KEYWORD_MAP:
+        if any(kw in combined for kw in keywords):
+            return sector_code
+    return "ETC"
+
+
 class EtfService:
     def __init__(self, db: AsyncSession):
         self.etf_repository = EtfRepository(db)
@@ -340,9 +368,10 @@ class EtfService:
                 if cycle:
                     info["dividend_freq"] = dividend_freq_map.get(cycle, "NONE")
 
-                # 대표 섹터 (KOSPI200, KOSDAQ150 등)
-                if res.get("etf_rprs_bstp_kor_isnm"):
-                    info["sector"] = res["etf_rprs_bstp_kor_isnm"]
+                # 대표 섹터 → Java EtfSector enum 값으로 정규화
+                kis_sector = res.get("etf_rprs_bstp_kor_isnm", "")
+                etf_name_for_sector = res.get("prdt_name", "")
+                info["sector"] = _normalize_etf_sector(kis_sector, etf_name_for_sector)
 
                 # 카테고리 (ETF(실물복제/수익증권) 등)
                 if res.get("bstp_kor_isnm"):
