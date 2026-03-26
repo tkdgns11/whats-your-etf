@@ -3,6 +3,7 @@ package com.whatsyouretf.userservice.domain.user.service.impl;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.FileStorageService;
+import com.whatsyouretf.userservice.domain.alert.repository.FcmTokenRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
@@ -46,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final PortfolioRepository portfolioRepository;
     private final UserAlertRepository userAlertRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final FcmTokenRepository fcmTokenRepository;
     private final MyDataApi myDataApi;
 
     @Override
@@ -147,6 +149,7 @@ public class UserServiceImpl implements UserService {
         // 관련 데이터 삭제 (순서 중요: FK 제약조건 고려)
         userAlertRepository.deleteAllByUserId(userId);
         userNotificationSettingRepository.deleteAllByUserId(userId);
+        fcmTokenRepository.deleteAllByUserId(userId);
         portfolioRepository.deleteAllByUserId(userId);
         userFavoriteEtfRepository.deleteAllByUserId(userId);
         userHoldingEtfRepository.deleteAllByUserId(userId);
