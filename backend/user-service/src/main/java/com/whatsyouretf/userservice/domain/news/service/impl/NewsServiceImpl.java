@@ -198,8 +198,8 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
     @Override
     public NewsPageResponse searchNews(String keyword) {
-        // 키워드 검증
-        if (keyword == null || keyword.trim().length() < 2 || keyword.trim().length() > 50) {
+        // 키워드 검증 (1글자 이상 50글자 이하)
+        if (keyword == null || keyword.trim().isEmpty() || keyword.trim().length() > 50) {
             throw new BusinessException(ErrorCode.INVALID_KEYWORD);
         }
 
