@@ -14,6 +14,7 @@ import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioReposit
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
+import com.whatsyouretf.userservice.domain.user.repository.LoginHistoryRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserFavoriteEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserHoldingEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
@@ -48,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final UserAlertRepository userAlertRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final FcmTokenRepository fcmTokenRepository;
+    private final LoginHistoryRepository loginHistoryRepository;
     private final MyDataApi myDataApi;
 
     @Override
@@ -150,6 +152,7 @@ public class UserServiceImpl implements UserService {
         userAlertRepository.deleteAllByUserId(userId);
         userNotificationSettingRepository.deleteAllByUserId(userId);
         fcmTokenRepository.deleteAllByUserId(userId);
+        loginHistoryRepository.deleteAllByUserId(userId);
         portfolioRepository.deleteAllByUserId(userId);
         userFavoriteEtfRepository.deleteAllByUserId(userId);
         userHoldingEtfRepository.deleteAllByUserId(userId);
