@@ -55,9 +55,6 @@ fun EtfDetailInfoTab(
     val chartState     by viewModel.chartState.collectAsStateWithLifecycle()
     val periodReturn   by viewModel.periodReturn.collectAsStateWithLifecycle()
     val selectedPeriod by viewModel.selectedPeriod.collectAsStateWithLifecycle()
-    val startDateMs        by viewModel.startDateMs.collectAsStateWithLifecycle()
-    val endDateMs          by viewModel.endDateMs.collectAsStateWithLifecycle()
-    val periodDurationDays by viewModel.periodDurationDays.collectAsStateWithLifecycle()
     val showNav   by viewModel.showNav.collectAsStateWithLifecycle()
     val showPrice by viewModel.showPrice.collectAsStateWithLifecycle()
     val showKospi by viewModel.showKospi.collectAsStateWithLifecycle()
@@ -85,16 +82,11 @@ fun EtfDetailInfoTab(
         ReturnChartSection(
             chartState = chartState,
             selectedPeriod = selectedPeriod,
-            startDateMs = startDateMs,
-            endDateMs = endDateMs,
             showNav = showNav,
             showPrice = showPrice,
             showKospi = showKospi,
             showSp500 = showSp500,
-            periodDurationDays = periodDurationDays,
             onPeriodSelected = viewModel::onPeriodSelected,
-            onDateRangeSelected = viewModel::onDateRangeSelected,
-            onLoadChart = { viewModel.loadChart() },
             onToggleNav   = viewModel::toggleNav,
             onTogglePrice = viewModel::togglePrice,
             onToggleKospi = viewModel::toggleKospi,
@@ -302,16 +294,11 @@ private fun InfoRow(label: String, value: String, valueColor: Color = TextPrimar
 private fun ReturnChartSection(
     chartState: UiState<EtfReturnChart>,
     selectedPeriod: String,
-    startDateMs: Long?,
-    endDateMs: Long?,
-    periodDurationDays: Int?,
     showNav: Boolean,
     showPrice: Boolean,
     showKospi: Boolean,
     showSp500: Boolean,
     onPeriodSelected: (String) -> Unit,
-    onDateRangeSelected: (Long, Long) -> Unit,
-    onLoadChart: () -> Unit,
     onToggleNav: () -> Unit,
     onTogglePrice: () -> Unit,
     onToggleKospi: () -> Unit,
@@ -319,8 +306,6 @@ private fun ReturnChartSection(
 ) {
     val periods    = listOf("전체", "1주", "1개월", "3개월", "1년", "3년")
     val periodKeys = listOf("ALL", "1W",  "1M",    "3M",    "1Y",  "3Y")
-
-    var showDatePicker by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // 헤더
@@ -350,30 +335,6 @@ private fun ReturnChartSection(
                     )
                 }
             }
-        }
-
-        // 날짜 범위 입력 + 조회
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DateRangeField(
-                startDateMs = startDateMs,
-                endDateMs = endDateMs,
-                onClick = { showDatePicker = true },
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "조회",
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp),
-                color = TextOnColored,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(PrimaryGreen)
-                    .clickable(onClick = onLoadChart)
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-            )
         }
 
         // 라인 체크박스
@@ -407,18 +368,8 @@ private fun ReturnChartSection(
                     .clip(RoundedCornerShape(12.dp))
                     .background(SurfaceVariant),
                 contentAlignment = Alignment.Center,
-            ) { Text("조회 버튼을 눌러 불러오세요", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary) }
+            ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
         }
-    }
-
-    if (showDatePicker) {
-        RangeCalendarBottomSheet(
-            startDateMs = startDateMs,
-            endDateMs = endDateMs,
-            periodDurationDays = periodDurationDays,
-            onRangeSelected = onDateRangeSelected,
-            onDismiss = { showDatePicker = false },
-        )
     }
 }
 

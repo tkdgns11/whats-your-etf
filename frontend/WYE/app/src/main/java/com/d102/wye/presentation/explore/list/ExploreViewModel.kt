@@ -11,9 +11,6 @@ import com.d102.wye.domain.state.EtfFilterState
 import com.d102.wye.presentation.model.EtfListItemUiModel
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,9 +62,7 @@ class ExploreViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.favoriteEtfChanged.collectLatest {
                 if (rawEtfList.isEmpty()) return@collectLatest
-
-                rawEtfList = syncFavoriteStates(rawEtfList)
-                applyFilter()
+                loadEtfList(_filterState.value)
             }
         }
     }
@@ -83,7 +78,11 @@ class ExploreViewModel @Inject constructor(
             when (val result = etfRepository.getEtfList(filter.toFilter(_sortedBy.value), page = 0)) {
                 is BaseResult.Success -> {
                     isLastPage = result.data.isLast
-                    rawEtfList = syncFavoriteStates(result.data.items.map { it.toUiModel() })
+                    Timber.d(
+                        "[FavoriteEtf] /etfs page=0 loaded | sample=%s",
+                        result.data.items.take(10).joinToString { "${it.ticker}:${it.isFavorite}" }
+                    )
+                    rawEtfList = result.data.items.map { it.toUiModel() }
                     isDataInitialized = true
                     applyFilter()
                 }
@@ -101,10 +100,13 @@ class ExploreViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     currentPage = nextPage
                     isLastPage = result.data.isLast
-                    rawEtfList = syncFavoriteStates(
-                        (rawEtfList + result.data.items.map { it.toUiModel() })
-                        .distinctBy { it.ticker }
+                    Timber.d(
+                        "[FavoriteEtf] /etfs page=%d loaded | sample=%s",
+                        nextPage,
+                        result.data.items.take(10).joinToString { "${it.ticker}:${it.isFavorite}" }
                     )
+                    rawEtfList = (rawEtfList + result.data.items.map { it.toUiModel() })
+                        .distinctBy { it.ticker }
                     applyFilter()
                 }
                 is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
@@ -190,23 +192,6 @@ class ExploreViewModel @Inject constructor(
     fun clearSelection() {
         _selectedTickers.update { emptySet() }
     }
-
-    private suspend fun syncFavoriteStates(items: List<EtfListItemUiModel>): List<EtfListItemUiModel> =
-        coroutineScope {
-            items.map { item ->
-                async {
-                    when (val result = userRepository.checkFavoriteEtf(item.ticker)) {
-                        is BaseResult.Success -> item.copy(isLiked = result.data)
-                        is BaseResult.Error -> {
-                            Timber.w(
-                                "[FavoriteEtf] check failed | ticker=${item.ticker} | message=${result.error.message}"
-                            )
-                            item
-                        }
-                    }
-                }
-            }.awaitAll()
-        }
 
     private fun applyFilter() {
         if (!isDataInitialized) return

@@ -141,10 +141,10 @@ fun riskToBadge(level: Int): Triple<Color, Color, String> = when (level) {
 }
 
 fun riskToBadge(type: String): Triple<Color, Color, String> = when (type) {
-    "안정형"    -> Triple(BadgeConservative, BadgeConservativeFont, type)
-    "안정추구형" -> Triple(BadgeConservativeGrowth, BadgeConservativeGrowthFont, type)
-    "위험중립형" -> Triple(BadgeNeutral, BadgeNeutralFont, type)
-    "적극투자형" -> Triple(BadgeActive, BadgeActiveFont, type)
-    "공격투자형" -> Triple(BadgeAggressive, BadgeAggressiveFont, type)
-    else        -> Triple(BadgeAggressive, BadgeAggressiveFont, type)
+    "CONSERVATIVE", "안정형"    -> Triple(BadgeConservative, BadgeConservativeFont, "안정형")
+    "STABLE", "안정추구형"       -> Triple(BadgeConservativeGrowth, BadgeConservativeGrowthFont, "안정추구형")
+    "MODERATE", "위험중립형"     -> Triple(BadgeNeutral, BadgeNeutralFont, "위험중립형")
+    "ACTIVE", "적극투자형"       -> Triple(BadgeActive, BadgeActiveFont, "적극투자형")
+    "AGGRESSIVE", "공격투자형"   -> Triple(BadgeAggressive, BadgeAggressiveFont, "공격투자형")
+    else                        -> Triple(BadgeAggressive, BadgeAggressiveFont, type)
 }

@@ -43,7 +43,7 @@ class HomeViewModel @Inject constructor(
             _uiState.update { UiState.Loading }
 
             coroutineScope {
-                val newsDeferred = async { newsRepository.getNewsList() }
+                val newsDeferred = async { newsRepository.getNewsList(lastId = null) }
                 val topVolumeDeferred = async { etfRepository.getTopVolumeEtfs() }
 
                 when (val newsResult = newsDeferred.await()) {
@@ -56,7 +56,7 @@ class HomeViewModel @Inject constructor(
                                         HomeData(
                                             top10Etfs = topVolumeResult.data.items.map { it.toHomeTop10UiModel() },
                                             top10UpdatedText = formatTop10UpdatedText(topVolumeResult.data.timestamp),
-                                            newsList = newsResult.data
+                                            newsList = newsResult.data.news
                                                 .take(HOME_NEWS_LIMIT)
                                                 .map { it.toHomeNewsUiModel() },
                                             isTop10Refreshing = false

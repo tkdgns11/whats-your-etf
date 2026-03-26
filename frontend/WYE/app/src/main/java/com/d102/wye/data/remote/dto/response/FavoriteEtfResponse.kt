@@ -10,7 +10,7 @@ data class FavoriteEtfListResponse(
 data class FavoriteEtfResponse(
     @SerializedName("ticker") val ticker: String,
     @SerializedName("name") val name: String,
-    @SerializedName("category") val category: String?,
+    @SerializedName("riskType") val riskType: String?,
     @SerializedName("assetManager") val assetManager: String,
     @SerializedName("currentPrice") val currentPrice: Double,
     @SerializedName("changeRate") val changeRate: Double,

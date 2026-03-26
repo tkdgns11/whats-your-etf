@@ -1,5 +1,11 @@
 package com.d102.wye.domain.model
 
+data class NewsPage(
+    val news: List<News>,
+    val hasMore: Boolean,
+    val nextCursor: Long?,
+)
+
 data class News(
     val id: Long,
     val title: String,

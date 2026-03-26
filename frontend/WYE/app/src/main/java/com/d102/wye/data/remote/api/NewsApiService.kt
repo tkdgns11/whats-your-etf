@@ -16,7 +16,9 @@ interface NewsApiService {
      * */
     @GET("news")
     suspend fun getNewsList(
-        @Query("category") category: String? = null
+        @Query("category") category: String? = null,
+        @Query("lastId") lastId: Long? = null,
+        @Query("size") size: Int = 20,
     ): Response<BaseResponse<NewsListResponse>>
 
     /**
