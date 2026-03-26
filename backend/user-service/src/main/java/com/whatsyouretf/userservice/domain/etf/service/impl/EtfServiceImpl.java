@@ -339,12 +339,14 @@ public class EtfServiceImpl implements EtfService {
      */
     private List<EtfSectorResponse> getOtherCompositionsAsSectors(Long etfId, Map<String, String> aiAnalysisMap) {
         // asset_type별 한글명 매핑
-        Map<String, String> assetTypeNames = Map.of(
-                "FUTURES", "선물",
-                "ETF", "ETF",
-                "BOND", "채권",
-                "CASH", "현금",
-                "PREFERRED_STOCK", "우선주"
+        Map<String, String> assetTypeNames = Map.ofEntries(
+                Map.entry("FUTURES", "선물"),
+                Map.entry("ETF", "ETF"),
+                Map.entry("CASH", "현금"),
+                Map.entry("PREFERRED_STOCK", "우선주"),
+                Map.entry("COMMODITY", "원자재"),
+                Map.entry("REITS", "리츠"),
+                Map.entry("MIXED", "혼합자산")
         );
 
         // asset_type별로 그룹핑
@@ -352,17 +354,49 @@ public class EtfServiceImpl implements EtfService {
                 .collect(Collectors.groupingBy(EtfOtherComposition::getAssetType));
 
         return groupedByType.entrySet().stream()
-                .map(entry -> {
+                .flatMap(entry -> {
                     String assetType = entry.getKey();
                     List<EtfOtherComposition> compositions = entry.getValue();
 
-                    // 비중 합산
+                    // BOND 타입은 채권 유형별로 섹터 분리 (회사채, 국고채, 산금채 등)
+                    if ("BOND".equals(assetType)) {
+                        return compositions.stream()
+                                .collect(Collectors.groupingBy(EtfOtherComposition::getAssetName))
+                                .entrySet().stream()
+                                .map(bondEntry -> {
+                                    String bondType = bondEntry.getKey();
+                                    List<EtfOtherComposition> bondComps = bondEntry.getValue();
+
+                                    BigDecimal bondWeight = bondComps.stream()
+                                            .map(EtfOtherComposition::getWeight)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                                    List<EtfSectorStockResponse> bondStocks = bondComps.stream()
+                                            .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
+                                            .map(comp -> EtfSectorStockResponse.builder()
+                                                    .ticker(comp.getIdentifierValue())
+                                                    .name(comp.getIdentifierValue())
+                                                    .percentage(comp.getWeight())
+                                                    .build())
+                                            .toList();
+
+                                    return EtfSectorResponse.builder()
+                                            .name(bondType)
+                                            .percentage(bondWeight)
+                                            .stocks(bondStocks)
+                                            .aiAnalysis(aiAnalysisMap.get(bondType))
+                                            .assetType(assetType)
+                                            .build();
+                                });
+                    }
+
+                    // 그 외 타입 (FUTURES, ETF, CASH 등)은 기존 로직
                     BigDecimal totalWeight = compositions.stream()
                             .map(EtfOtherComposition::getWeight)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    // 개별 항목을 stocks로 변환
                     List<EtfSectorStockResponse> stocks = compositions.stream()
+                            .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
                             .map(comp -> EtfSectorStockResponse.builder()
                                     .ticker(comp.getIdentifierValue())
                                     .name(comp.getAssetName())
@@ -370,13 +404,13 @@ public class EtfServiceImpl implements EtfService {
                                     .build())
                             .toList();
 
-                    return EtfSectorResponse.builder()
+                    return java.util.stream.Stream.of(EtfSectorResponse.builder()
                             .name(assetTypeNames.getOrDefault(assetType, assetType))
                             .percentage(totalWeight)
                             .stocks(stocks)
                             .aiAnalysis(aiAnalysisMap.get(assetType))
                             .assetType(assetType)
-                            .build();
+                            .build());
                 })
                 .toList();
     }
