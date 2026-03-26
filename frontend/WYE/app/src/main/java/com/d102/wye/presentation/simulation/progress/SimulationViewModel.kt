@@ -56,6 +56,8 @@ class SimulationViewModel @Inject constructor(
     private val _savePortfolioState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val savePortfolioState: StateFlow<UiState<Unit>> = _savePortfolioState.asStateFlow()
 
+    private var lastAiReviewKey: AiReviewKey? = null
+
     private var calcJob: Job? = null
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -279,15 +281,16 @@ class SimulationViewModel @Inject constructor(
     }
 
     private fun fetchAiReview() {
-        if (_aiReviewState.value is UiState.Loading ||
-            _aiReviewState.value is UiState.Success
-        ) return
-
         val form = _formState.value
+        val currentKey = createAiReviewKey(form)
+
+        if (currentKey == lastAiReviewKey) return
+
+        if (_aiReviewState.value is UiState.Loading) return
+
         val amount = (form.investmentAmount.toLongOrNull() ?: 0L) * 10_000L
 
         viewModelScope.launch {
-            Timber.d("[AI] AI 진단 요청 시작")
             _aiReviewState.update { UiState.Loading }
 
             when (val result = simulationRepository.getAiPortfolioReview(
@@ -296,16 +299,24 @@ class SimulationViewModel @Inject constructor(
                 portfolios = form.portfolioItems.toDomain()
             )) {
                 is BaseResult.Success -> {
-                    Timber.d("[AI] AI 진단 완료")
+                    lastAiReviewKey = currentKey
                     _aiReviewState.update { UiState.Success(result.data) }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("[AI] AI 진단 실패 | ${result.error.message}")
                     _aiReviewState.update { UiState.Error(result.error.message) }
                 }
             }
         }
+    }
+
+    private fun createAiReviewKey(form: SimulationFormState): AiReviewKey {
+        return AiReviewKey(
+            investmentType = form.investmentType,
+            items = form.portfolioItems
+                .sortedBy { it.ticker }
+                .map { it.ticker to it.weight }
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -449,4 +460,9 @@ data class SimulationFormState(
 data class SectorWeightUiModel(
     val name: String,
     val ratio: Float
+)
+
+data class AiReviewKey(
+    val investmentType: InvestmentType,
+    val items: List<Pair<String, Int>> // ticker + weight
 )
