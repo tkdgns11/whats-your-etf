@@ -41,4 +41,6 @@ public interface SimulationRepository extends JpaRepository<Simulation, Long> {
      * 사용자의 시뮬레이션 개수 조회
      */
     long countByUserId(Long userId);
+
+    void deleteAllByUserId(Long userId);
 }

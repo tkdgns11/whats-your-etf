@@ -3,10 +3,12 @@ package com.whatsyouretf.userservice.domain.user.service.impl;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.FileStorageService;
+import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.FcmTokenRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
+import com.whatsyouretf.userservice.domain.simulation.repository.SimulationRepository;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
@@ -19,6 +21,8 @@ import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
 import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
 import com.whatsyouretf.userservice.domain.user.repository.LoginHistoryRepository;
+import com.whatsyouretf.userservice.domain.user.repository.PasswordResetTokenRepository;
+import com.whatsyouretf.userservice.domain.user.repository.RefreshTokenRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserFavoriteEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserHoldingEtfRepository;
 import com.whatsyouretf.userservice.domain.user.repository.UserRepository;
@@ -57,6 +61,10 @@ public class UserServiceImpl implements UserService {
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final FcmTokenRepository fcmTokenRepository;
     private final LoginHistoryRepository loginHistoryRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PortfolioAiFeedbackRepository portfolioAiFeedbackRepository;
+    private final SimulationRepository simulationRepository;
     private final MyDataApi myDataApi;
 
     @Override
@@ -160,6 +168,10 @@ public class UserServiceImpl implements UserService {
         userNotificationSettingRepository.deleteAllByUserId(userId);
         fcmTokenRepository.deleteAllByUserId(userId);
         loginHistoryRepository.deleteAllByUserId(userId);
+        passwordResetTokenRepository.deleteAllByUserId(userId);
+        refreshTokenRepository.deleteAllByUserId(userId);
+        portfolioAiFeedbackRepository.deleteAllByUserId(userId);
+        simulationRepository.deleteAllByUserId(userId);
         portfolioRepository.deleteAllByUserId(userId);
         userFavoriteEtfRepository.deleteAllByUserId(userId);
         userHoldingEtfRepository.deleteAllByUserId(userId);
