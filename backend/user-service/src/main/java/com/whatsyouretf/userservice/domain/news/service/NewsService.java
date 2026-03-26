@@ -29,9 +29,10 @@ public interface NewsService {
      * 뉴스 검색 (최신 20개)
      *
      * @param keyword 검색 키워드
+     * @param categoryCode 카테고리 코드 필터 (nullable)
      * @return 뉴스 목록 응답 (keyword 포함)
      */
-    NewsPageResponse searchNews(String keyword);
+    NewsPageResponse searchNews(String keyword, String categoryCode);
 
     /**
      * ETF 관련 뉴스 조회
