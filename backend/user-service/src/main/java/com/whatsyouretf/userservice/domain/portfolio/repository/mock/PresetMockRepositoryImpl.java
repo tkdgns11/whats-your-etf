@@ -4,12 +4,9 @@ import com.whatsyouretf.userservice.domain.portfolio.controller.EtfPresetRespons
 import com.whatsyouretf.userservice.domain.portfolio.controller.PresetDetail;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PresetRepository;
 import com.whatsyouretf.userservice.domain.portfolio.service.PresetSummary;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 
-@Component
 public class PresetMockRepositoryImpl implements PresetRepository {
     public static final Map<Long, PresetDetail> map = Map.of(1L,
         new PresetDetail(
