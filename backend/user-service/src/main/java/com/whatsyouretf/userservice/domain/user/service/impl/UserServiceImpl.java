@@ -9,6 +9,9 @@ import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
+import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
+import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfRepository;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioRepository;
 import com.whatsyouretf.userservice.domain.user.dto.*;
 import com.whatsyouretf.userservice.domain.user.entity.User;
@@ -43,6 +46,7 @@ public class UserServiceImpl implements UserService {
     private final EtfPriceRepository etfPriceRepository;
     private final FileStorageService fileStorageService;
     private final PortfolioRepository portfolioRepository;
+    private final PortfolioEtfRepository portfolioEtfRepository;
     private final UserAlertRepository userAlertRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final MyDataApi myDataApi;
@@ -271,10 +275,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public List<MyDataEtfCount> getMyData(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         user.checkMyDataAccepted();
-        return myDataApi.getMyData(userId);
+
+        List<MyDataEtfCount> myDataList = myDataApi.getMyData(userId);
+
+        // 기존 마이데이터 포트폴리오 삭제 후 재생성
+        portfolioRepository.findByUserIdAndIsMyDataTrue(userId)
+                .ifPresent(portfolioRepository::delete);
+
+        Portfolio portfolio = Portfolio.createMyDataPortfolio(userId);
+        portfolioRepository.save(portfolio);
+
+        List<String> tickers = myDataList.stream().map(MyDataEtfCount::ticker).toList();
+        Map<String, Etf> etfMap = etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
+                .collect(Collectors.toMap(Etf::getStockCode, e -> e));
+
+        List<PortfolioEtf> portfolioEtfs = myDataList.stream()
+                .filter(c -> etfMap.containsKey(c.ticker()))
+                .map(c -> PortfolioEtf.createPortfolioEtf(portfolio, etfMap.get(c.ticker()), c.counts()))
+                .toList();
+        portfolioEtfRepository.saveAll(portfolioEtfs);
+
+        return myDataList;
     }
 
     @Override

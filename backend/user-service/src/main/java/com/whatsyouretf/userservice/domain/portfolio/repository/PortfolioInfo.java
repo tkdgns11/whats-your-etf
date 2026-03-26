@@ -11,7 +11,8 @@ public record PortfolioInfo(
         String title,
         LocalDateTime createdAt,
         List<PortfolioEtfInfo> etfList,
-        BigDecimal totalReturn
+        BigDecimal totalReturn,
+        Boolean isMyData
 ) {
         public static PortfolioInfo of(Portfolio portfolio, List<PortfolioEtfInfo> portfolioEtfs, BigDecimal totalReturn) {
                 return new PortfolioInfo(
@@ -19,7 +20,8 @@ public record PortfolioInfo(
                         portfolio.getName(),
                         portfolio.getCreatedAt(),
                         portfolioEtfs,
-                        totalReturn
+                        totalReturn,
+                        portfolio.getIsMyData()
                 );
         }
 }

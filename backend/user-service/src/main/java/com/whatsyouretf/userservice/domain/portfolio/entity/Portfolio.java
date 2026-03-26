@@ -62,6 +62,10 @@ public class Portfolio {
     @Column(name = "prev_close_value", precision = 15, scale = 2)
     private BigDecimal prevCloseValue;
 
+    /** 마이데이터 포트폴리오 여부 */
+    @Column(name = "is_my_data")
+    private Boolean isMyData = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -89,6 +93,18 @@ public class Portfolio {
         portfolio.investPeriod = investPeriod;
         portfolio.prevCloseValue = investAmount;
         portfolio.portfolioType = portfolioType;
+        return portfolio;
+    }
+
+    public static Portfolio createMyDataPortfolio(Long userId) {
+        Portfolio portfolio = new Portfolio();
+        portfolio.user = User.of(userId);
+        portfolio.name = "마이데이터 포트폴리오";
+        portfolio.investAmount = BigDecimal.valueOf(100000000L);
+        portfolio.investPeriod = 1;
+        portfolio.prevCloseValue = BigDecimal.ZERO;
+        portfolio.portfolioType = PortfolioType.LUMP_SUM;
+        portfolio.isMyData = true;
         return portfolio;
     }
 
