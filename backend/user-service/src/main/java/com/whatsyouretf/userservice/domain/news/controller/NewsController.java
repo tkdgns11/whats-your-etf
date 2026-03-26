@@ -53,12 +53,13 @@ public class NewsController {
     /**
      * 뉴스 검색 (제목 검색, 최신 20개)
      */
-    @Operation(summary = "뉴스 검색", description = "키워드로 뉴스 제목을 검색합니다. 최신 20개를 반환합니다.")
+    @Operation(summary = "뉴스 검색", description = "키워드로 뉴스 제목을 검색합니다. 카테고리 지정 시 해당 카테고리 내에서 검색합니다. 최신 20개를 반환합니다.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<NewsPageResponse>> searchNews(
-            @Parameter(description = "검색 키워드 (1~50자)") @RequestParam String keyword
+            @Parameter(description = "검색 키워드 (1~50자)") @RequestParam String keyword,
+            @Parameter(description = "카테고리 코드 (선택)") @RequestParam(required = false) String category
     ) {
-        NewsPageResponse response = newsService.searchNews(keyword);
+        NewsPageResponse response = newsService.searchNews(keyword, category);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

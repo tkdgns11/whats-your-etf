@@ -197,7 +197,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     }
 
     @Override
-    public NewsPageResponse searchNews(String keyword) {
+    public NewsPageResponse searchNews(String keyword, String categoryCode) {
         // 키워드 검증 (1글자 이상 50글자 이하)
         if (keyword == null || keyword.trim().isEmpty() || keyword.trim().length() > 50) {
             throw new BusinessException(ErrorCode.INVALID_KEYWORD);
@@ -205,7 +205,12 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
         Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
 
-        Page<NewsArticle> articlePage = newsArticleRepository.searchByKeyword(keyword.trim(), pageable);
+        Page<NewsArticle> articlePage;
+        if (categoryCode != null && !categoryCode.trim().isEmpty()) {
+            articlePage = newsArticleRepository.searchByKeywordAndCategory(keyword.trim(), categoryCode.trim(), pageable);
+        } else {
+            articlePage = newsArticleRepository.searchByKeyword(keyword.trim(), pageable);
+        }
 
         List<NewsListResponse> newsList = articlePage.getContent().stream()
                 .map(NewsListResponse::from)
