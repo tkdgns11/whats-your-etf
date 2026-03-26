@@ -202,10 +202,10 @@ fun YieldTrendView(
 
             is UiState.Success -> {
                 BacktestChart(
+                    modifier = Modifier.fillMaxWidth(),
                     points = simulationState.data.backtestPoints,
                     investmentType = simulationState.data.investmentType,
-                    isPositive = simulationState.data.isPositiveReturn,
-                    modifier = Modifier.fillMaxWidth()
+                    periodMonths = formState.investmentPeriod.toIntOrNull() ?: 0,
                 )
             }
 

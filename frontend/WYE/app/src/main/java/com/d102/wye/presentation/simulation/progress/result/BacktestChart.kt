@@ -38,13 +38,16 @@ import kotlin.math.abs
 
 @Composable
 fun BacktestChart(
+    modifier: Modifier = Modifier,
     points: List<BacktestPoint>,
     investmentType: InvestmentType,
-    isPositive: Boolean,
-    modifier: Modifier = Modifier,
+    periodMonths: Int,
     isDashed: Boolean = false
 ) {
     val progress = remember(points) { Animatable(0f) }
+
+    val showDays = periodMonths < 3
+
     LaunchedEffect(points) {
         progress.snapTo(0f)
         progress.animateTo(1f, animationSpec = tween(durationMillis = 1000))
@@ -79,9 +82,11 @@ fun BacktestChart(
                         val h = size.height - (verticalPadding * 2)
 
                         fun xOf(i: Int) = (i.toFloat() / (values.size - 1)) * w
-                        fun yOf(v: Double) = verticalPadding + h - ((v - minVal) / range * h).toFloat()
+                        fun yOf(v: Double) =
+                            verticalPadding + h - ((v - minVal) / range * h).toFloat()
 
-                        val zeroY = yOf(0.0).coerceIn(verticalPadding, size.height - verticalPadding)
+                        val zeroY =
+                            yOf(0.0).coerceIn(verticalPadding, size.height - verticalPadding)
 
                         val linePath = Path().apply {
                             moveTo(xOf(0), yOf(values[0]))
@@ -141,7 +146,8 @@ fun BacktestChart(
                                                 lineColor.copy(alpha = 0.25f),
                                                 Color.Transparent
                                             ),
-                                            startY = verticalPadding, endY = size.height - verticalPadding
+                                            startY = verticalPadding,
+                                            endY = size.height - verticalPadding
                                         )
                                     )
                                 }
@@ -190,12 +196,12 @@ fun BacktestChart(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             listOf(
-                points.first().date.toDateLabel(),
-                points[points.size / 2].date.toDateLabel(),
-                points.last().date.toDateLabel()
-            ).forEach { label ->
+                points.first().date,
+                points[points.size / 2].date,
+                points.last().date
+            ).forEach { rawDate ->
                 Text(
-                    text = label,
+                    text = rawDate.toDateLabel(showDays),
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = TextSecondary
                 )
@@ -204,7 +210,13 @@ fun BacktestChart(
     }
 }
 
-private fun String.toDateLabel(): String {
-    val parts = split("-")
-    return if (parts.size >= 2) "${parts[0].takeLast(2)}.${parts[1]}" else this
+private fun String.toDateLabel(showDays: Boolean): String {
+    val parts = this.split("-")
+    if (parts.size >= 3) {
+        val yy = parts[0].takeLast(2)
+        val mm = parts[1]
+        val dd = parts[2]
+        return if (showDays) "$yy.$mm.$dd" else "$yy.$mm"
+    }
+    return this
 }
