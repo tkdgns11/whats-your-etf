@@ -209,7 +209,7 @@ private fun PortfolioSliderItemRow(
         )
     }
 
-    fun middleEllipsis(text: String, maxLength: Int = 12): String {
+    fun middleEllipsis(text: String, maxLength: Int = 20): String {
         if (text.length <= maxLength) return text
 
         val keep = maxLength / 2

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.designsystem.WyeBadge
 import com.d102.wye.presentation.strategy.list.StrategyCardUiModel
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.EtfRise
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
@@ -165,6 +166,7 @@ fun StrategyCard(
                                     Text(
                                         text = "삭제",
                                         style = MaterialTheme.typography.bodyMedium,
+                                        color = EtfRise
                                     )
                                 },
                                 onClick = {
