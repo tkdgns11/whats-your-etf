@@ -1,4 +1,6 @@
 """네이버 증권 종목뉴스 크롤링, AI 분석, KRX 공시 스케줄러"""
+import asyncio
+import concurrent.futures
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -246,6 +248,43 @@ async def sync_missing_stock_descriptions_job():
             logger.error(f"Stock Description 동기화 중 에러 발생: {e}")
             await db.rollback()
 
+# ── 캐시 싱크 전용 스레드 풀 (uvicorn 이벤트 루프와 완전 분리) ─────────────
+_sync_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="cache-sync")
+_sync_running = False
+
+
+def _run_sync_in_new_loop():
+    """별도 스레드에서 새 이벤트 루프를 생성해 캐시 동기화 실행.
+    uvicorn 이벤트 루프와 완전히 분리되므로 HTTP 요청 처리에 영향 없음."""
+    global _sync_running
+    if _sync_running:
+        logger.info("[캐시 동기화] 이미 실행 중, 건너뜀")
+        return
+    _sync_running = True
+    try:
+        asyncio.run(run_etf_stock_cache_sync())
+    except Exception as e:
+        logger.error(f"[캐시 동기화 스레드] 실패: {e}")
+    finally:
+        _sync_running = False
+
+
+def fire_cache_sync():
+    """uvicorn 이벤트 루프와 분리된 스레드에서 캐시 동기화를 fire-and-forget으로 실행."""
+    _sync_executor.submit(_run_sync_in_new_loop)
+
+
+async def _run_batched(coro_fns, batch_size=15):
+    """코루틴 함수 목록을 batch_size씩 순차 처리.
+    매 배치 후 asyncio.sleep(0)으로 이벤트 루프에 제어를 양보 → 다른 요청 처리 가능."""
+    results = []
+    for i in range(0, len(coro_fns), batch_size):
+        batch_results = await asyncio.gather(*coro_fns[i:i + batch_size], return_exceptions=True)
+        results.extend(batch_results)
+        await asyncio.sleep(0)  # 이벤트 루프에 제어 양보
+    return results
+
+
 async def run_etf_stock_cache_sync():
     """ETF 및 구성종목 캐시 업데이트 (시간 체크 없음 - startup 또는 스케줄러에서 호출)
     Phase 1: 활성 ETF 전체 → KIS API로 현재가 + 구성종목 저장
@@ -284,13 +323,13 @@ async def run_etf_stock_cache_sync():
             """))
             all_stocks = {row.ticker: (row.company_name or "") for row in all_stocks_result.fetchall()}
 
-            # Phase 1: 활성 ETF 캐시 업데이트 (stock_name_map 전달 → hts_kor_isnm 없을 때 DB 이름 사용)
-            tasks = [
+            # Phase 1: 활성 ETF 캐시 업데이트 (15개씩 배치)
+            etf_coros = [
                 cache_service.publish_etf_cache(etf.stock_code, etf.name or "", all_stocks)
                 for etf in etfs if etf.stock_code
             ]
-            phase1_results = await asyncio.gather(*tasks, return_exceptions=True)
-            logger.info(f"=== Phase 1 완료: {len(etfs)}개 ETF 캐시 업데이트 ===")
+            phase1_results = await _run_batched(etf_coros, batch_size=15)
+            logger.info(f"=== Phase 1 완료: {len(etf_coros)}개 ETF 캐시 업데이트 ===")
 
             # Phase 1에서 업데이트된 stock tickers 수집
             updated_tickers = set()
@@ -298,12 +337,15 @@ async def run_etf_stock_cache_sync():
                 if isinstance(r, set):
                     updated_tickers.update(r)
 
-            # Phase 2: Phase 1에서 누락된 종목만 개별 KIS API 호출
+            # Phase 2: Phase 1에서 누락된 종목만 개별 KIS API 호출 (15개씩 배치)
             remaining = {ticker: name for ticker, name in all_stocks.items() if ticker not in updated_tickers}
             logger.info(f"=== Phase 2 시작: 전체 {len(all_stocks)}개 중 누락 {len(remaining)}개 개별 조회 ===")
 
-            stock_tasks = [cache_service.publish_stock_cache(ticker, name) for ticker, name in remaining.items()]
-            await asyncio.gather(*stock_tasks, return_exceptions=True)
+            stock_coros = [
+                cache_service.publish_stock_cache(ticker, name)
+                for ticker, name in remaining.items()
+            ]
+            await _run_batched(stock_coros, batch_size=15)
             logger.info(f"=== Phase 2 완료: {len(remaining)}개 Stock 캐시 업데이트 ===")
 
         except Exception as e:
@@ -444,6 +486,16 @@ def start_scheduler():
         trigger=CronTrigger(day_of_week='mon-fri', hour='9-15', minute='*', timezone='Asia/Seoul'),
         id="sync_etf_stock_cache_job",
         name="ETF and Stock Realtime Cache Sync",
+        replace_existing=True
+    )
+
+    # ETF/Stock 캐시 업데이트 (장 외 시간 - 매 30분마다)
+    # 장 중(09:00~15:40 평일)에는 run_etf_stock_cache_sync 내부에서 중복 실행되므로 무방
+    scheduler.add_job(
+        run_etf_stock_cache_sync,
+        trigger=CronTrigger(minute='0,30', timezone='Asia/Seoul'),
+        id="sync_etf_stock_cache_offhours_job",
+        name="ETF and Stock Cache Sync (Off-hours 30min)",
         replace_existing=True
     )
 

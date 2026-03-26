@@ -1,5 +1,5 @@
 """ETF 관련 모델"""
-from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float
+from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float, UniqueConstraint
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -11,6 +11,7 @@ class ETF(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     stock_code = Column(String(20), unique=True, nullable=False)
+    isin = Column(String(20))  # KSD 펀드코드 (예: KR7102110004)
     name = Column(String(200), nullable=False)
     english_name = Column(String(200))
 
@@ -135,3 +136,21 @@ class EtfOtherComposition(Base):
 
     def __repr__(self):
         return f"<EtfOtherComposition(etf_id={self.etf_id}, type={self.asset_type}, name={self.asset_name})>"
+
+
+class EtfDividend(Base):
+    """ETF 분배금 이력 테이블"""
+    __tablename__ = "etf_dividend"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    etf_id = Column(BigInteger, ForeignKey("etf.id", ondelete="CASCADE"), nullable=False)
+    payment_date = Column(Date, nullable=False)        # 지급일
+    amount_per_unit = Column(DECIMAL(14, 4))           # 주당 분배금
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("etf_id", "payment_date", name="uq_etf_dividend_etf_date"),
+    )
+
+    def __repr__(self):
+        return f"<EtfDividend(etf_id={self.etf_id}, date={self.payment_date}, amount={self.amount_per_unit})>"
