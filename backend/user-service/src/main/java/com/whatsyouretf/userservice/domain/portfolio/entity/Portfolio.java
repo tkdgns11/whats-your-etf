@@ -96,13 +96,13 @@ public class Portfolio {
         return portfolio;
     }
 
-    public static Portfolio createMyDataPortfolio(Long userId) {
+    public static Portfolio createMyDataPortfolio(Long userId, BigDecimal totalValue) {
         Portfolio portfolio = new Portfolio();
         portfolio.user = User.of(userId);
         portfolio.name = "마이데이터 포트폴리오";
-        portfolio.investAmount = BigDecimal.valueOf(100000000L);
+        portfolio.investAmount = totalValue;
         portfolio.investPeriod = 1;
-        portfolio.prevCloseValue = BigDecimal.ZERO;
+        portfolio.prevCloseValue = totalValue;
         portfolio.portfolioType = PortfolioType.LUMP_SUM;
         portfolio.isMyData = true;
         return portfolio;

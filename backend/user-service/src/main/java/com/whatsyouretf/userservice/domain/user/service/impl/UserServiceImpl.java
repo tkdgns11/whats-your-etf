@@ -5,10 +5,12 @@ import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.FileStorageService;
 import com.whatsyouretf.userservice.domain.alert.repository.UserAlertRepository;
 import com.whatsyouretf.userservice.domain.alert.repository.UserNotificationSettingRepository;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfService;
 import com.whatsyouretf.userservice.domain.portfolio.entity.Portfolio;
 import com.whatsyouretf.userservice.domain.portfolio.entity.PortfolioEtf;
 import com.whatsyouretf.userservice.domain.portfolio.repository.PortfolioEtfRepository;
@@ -27,8 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,6 +51,7 @@ public class UserServiceImpl implements UserService {
     private final FileStorageService fileStorageService;
     private final PortfolioRepository portfolioRepository;
     private final PortfolioEtfRepository portfolioEtfRepository;
+    private final EtfService etfService;
     private final UserAlertRepository userAlertRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final MyDataApi myDataApi;
@@ -282,15 +287,25 @@ public class UserServiceImpl implements UserService {
 
         List<MyDataEtfCount> myDataList = myDataApi.getMyData(userId);
 
+        // 실시간 가격 × 수량으로 총 평가액 계산
+        Set<String> tickers = myDataList.stream().map(MyDataEtfCount::ticker).collect(Collectors.toSet());
+        Map<String, EtfCurrentInfo> currentInfoMap = etfService.getEtfCurrentInfoMap(tickers);
+        BigDecimal totalValue = myDataList.stream()
+                .map(c -> {
+                    EtfCurrentInfo info = currentInfoMap.get(c.ticker());
+                    BigDecimal price = (info != null && info.currentPrice() != null) ? info.currentPrice() : BigDecimal.ZERO;
+                    return price.multiply(c.counts());
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 기존 마이데이터 포트폴리오 삭제 후 재생성
         portfolioRepository.findByUserIdAndIsMyDataTrue(userId)
                 .ifPresent(portfolioRepository::delete);
 
-        Portfolio portfolio = Portfolio.createMyDataPortfolio(userId);
+        Portfolio portfolio = Portfolio.createMyDataPortfolio(userId, totalValue);
         portfolioRepository.save(portfolio);
 
-        List<String> tickers = myDataList.stream().map(MyDataEtfCount::ticker).toList();
-        Map<String, Etf> etfMap = etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
+        Map<String, Etf> etfMap = etfRepository.findEtfsByStockCodeInTickers(tickers.stream().toList()).stream()
                 .collect(Collectors.toMap(Etf::getStockCode, e -> e));
 
         List<PortfolioEtf> portfolioEtfs = myDataList.stream()
