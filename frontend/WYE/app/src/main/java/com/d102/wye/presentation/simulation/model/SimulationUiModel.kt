@@ -40,8 +40,8 @@ fun SimulationResult.toUiModel(
 
     return SimulationUiModel(
         estimatedFinalAsset = estimatedFinalValue.formatAmount(),
-        netProfit = if (netProfitValue >= 0) "+${netProfitValue.formatAmount()}"
-        else "-${Math.abs(netProfitValue).formatAmount()}",
+        netProfit = if (netProfitValue >= 0) "+${netProfitValue.formatFullAmount()}"
+        else "-${kotlin.math.abs(netProfitValue).formatFullAmount()}",
         yieldRate = "${if (isPositive) "+" else ""}${String.format("%.2f", totalReturn)}%",
         totalInvestment = totalInvestment.formatAmount(),
         per = "${String.format("%.1f", fundamentals.per)}배",
@@ -76,10 +76,12 @@ private fun Long.formatAmount(): String {
             val eok = absValue / 100_000_000
             val remainder = (absValue % 100_000_000) / 10_000
 
+            val eokStr = "%,d".format(eok)
+
             if (remainder > 0) {
-                "${eok}억 ${"%,d".format(remainder)}만원"
+                "${eokStr}억 ${"%,d".format(remainder)}만원"
             } else {
-                "${eok}억"
+                "${eokStr}억"
             }
         }
 
@@ -88,11 +90,17 @@ private fun Long.formatAmount(): String {
             val jo = absValue / 1_000_000_000_000L
             val remainder = (absValue % 1_000_000_000_000L) / 100_000_000
 
+            val joStr = "%,d".format(jo)
+
             if (remainder > 0) {
-                "${jo}조 ${"%,d".format(remainder)}억"
+                "${joStr}조 ${"%,d".format(remainder)}억"
             } else {
-                "${jo}조"
+                "${joStr}조"
             }
         }
     }
+}
+
+private fun Long.formatFullAmount(): String {
+    return "%,d원".format(this)
 }

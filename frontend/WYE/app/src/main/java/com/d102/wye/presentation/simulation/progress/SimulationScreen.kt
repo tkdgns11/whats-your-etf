@@ -67,6 +67,8 @@ fun SimulationScreen(
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val peekHeight = screenHeight * 0.33f
 
+    val overlayPoints by viewModel.overlayPoints.collectAsStateWithLifecycle()
+
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val coroutineScope = rememberCoroutineScope()
@@ -182,6 +184,7 @@ fun SimulationScreen(
                     formState = formState,
                     simulationState = simulationState,
                     onOverlayToggled = { viewModel.onOverlayToggled(it) },
+                    overlayPoints = overlayPoints,
                     onAiDiagnosisClick = { viewModel.onAiReviewClick() },
                     onDictionaryClick = { showDictionaryDialog = true },
                     idleGuideMessage = idleGuideMessage

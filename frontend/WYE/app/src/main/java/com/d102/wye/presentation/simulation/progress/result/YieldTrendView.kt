@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.presentation.designsystem.DashedContainer
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.model.UiState
@@ -27,6 +28,7 @@ import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.SimulationFormState
 import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.IconInactive
+import com.d102.wye.presentation.theme.MyDataYellow
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceDivider
@@ -42,6 +44,7 @@ fun YieldTrendView(
     formState: SimulationFormState,
     simulationState: UiState<SimulationUiModel>,
     onOverlayToggled: (Boolean) -> Unit,
+    overlayPoints:  List<BacktestPoint>?,
     idleGuideMessage: String
 ) {
     Column {
@@ -50,7 +53,7 @@ fun YieldTrendView(
             modifier = Modifier.fillMaxWidth(),
             innerPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             border = BorderStroke(1.dp, SurfaceVariant),
-            containerColor = SurfaceCard,
+            containerColor = MyDataYellow.copy(alpha = 0.03f),
             elevation = 0.dp
         ) {
             Row(
@@ -74,8 +77,8 @@ fun YieldTrendView(
                     onCheckedChange = onOverlayToggled,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
-                        checkedTrackColor = PrimaryGreen,
-                        checkedBorderColor = PrimaryGreen,
+                        checkedTrackColor = MyDataYellow,
+                        checkedBorderColor = MyDataYellow,
                         uncheckedThumbColor = Color.White,
                         uncheckedTrackColor = SurfaceDivider,
                         uncheckedBorderColor = SurfaceDivider,
@@ -119,7 +122,7 @@ fun YieldTrendView(
                 ResultCard(
                     modifier = Modifier
                         .weight(1f)
-                        .height(100.dp),
+                        .height(110.dp),
                     borderColor = PrimaryGreen.copy(alpha = 0.1f),
                     backgroundColor = PrimaryGreen.copy(alpha = 0.05f)
                 ) {
@@ -204,7 +207,7 @@ fun YieldTrendView(
                 BacktestChart(
                     modifier = Modifier.fillMaxWidth(),
                     points = simulationState.data.backtestPoints,
-                    investmentType = simulationState.data.investmentType,
+                    overlayPoints = overlayPoints,
                     periodMonths = formState.investmentPeriod.toIntOrNull() ?: 0,
                 )
             }

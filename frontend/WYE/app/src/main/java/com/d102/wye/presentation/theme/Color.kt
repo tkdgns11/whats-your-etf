@@ -76,6 +76,8 @@ val ChartColorNasdaq = Color(0xFF2DD4BF)   // 민트청록 — 나스닥
 val TipBackground = Color(0xFFECFDF5)
 val TipBorder = Color(0xFFD1FAE5)
 
+val MyDataYellow = Color(0xFFFFB300)
+
 // ── 섹터 그래프 색상 ────────────────────────────────────────
 val SectorColor1 = Color(0xFF3A6E45)  // PrimaryGreen (진한)
 val SectorColor2 = Color(0xFF5A8F6A)  // 중간 초록

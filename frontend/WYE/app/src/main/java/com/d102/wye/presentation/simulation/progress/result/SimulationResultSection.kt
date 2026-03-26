@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.presentation.designsystem.bottomShadow
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
@@ -21,6 +22,7 @@ fun SimulationResultSection(
     formState: SimulationFormState,
     simulationState: UiState<SimulationUiModel>,
     onOverlayToggled: (Boolean) -> Unit,
+    overlayPoints:  List<BacktestPoint>?,
     onAiDiagnosisClick: () -> Unit,
     onDictionaryClick: () -> Unit,
     idleGuideMessage: String
@@ -37,7 +39,7 @@ fun SimulationResultSection(
                 .padding(16.dp)
         ) {
             when (formState.selectedTabIndex) {
-                0 -> YieldTrendView(formState, simulationState, onOverlayToggled, idleGuideMessage)
+                0 -> YieldTrendView(formState, simulationState, onOverlayToggled, overlayPoints, idleGuideMessage)
                 1 -> PortfolioAnalysisView(simulationState, onDictionaryClick)
             }
         }
