@@ -46,8 +46,8 @@ class ExploreViewModel @Inject constructor(
     private var isLastPage = false
     private var isDataInitialized = false
 
-    private val _selectedTickers = MutableStateFlow<Set<String>>(emptySet())
-    val selectedTickers: StateFlow<Set<String>> = _selectedTickers.asStateFlow()
+    private val _selectedTickers = MutableStateFlow<Set<SelectedEtf>>(emptySet())
+    val selectedTickers = _selectedTickers.asStateFlow()
 
     private val _expandedFilterSections = MutableStateFlow<Set<String>>(emptySet())
     val expandedFilterSections: StateFlow<Set<String>> = _expandedFilterSections.asStateFlow()
@@ -170,15 +170,21 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
-    fun toggleSelection(ticker: String) {
+    fun toggleSelection(ticker: String, name: String) {
         _selectedTickers.update { currentSet ->
-            Timber.d("$ticker selected")
-            if (currentSet.contains(ticker)) currentSet - ticker else currentSet + ticker
+            val existingItem = currentSet.find { it.ticker == ticker }
+            if (existingItem != null) {
+                currentSet - existingItem // 있으면 제거
+            } else {
+                currentSet + SelectedEtf(ticker, name) // 없으면 추가
+            }
         }
     }
 
     fun removeSelection(ticker: String) {
-        _selectedTickers.update { it - ticker }
+        _selectedTickers.update { currentSet ->
+            currentSet.filterNot { it.ticker == ticker }.toSet()
+        }
     }
 
     fun clearSelection() {
@@ -233,7 +239,6 @@ private fun EtfFilterState.toFilter(sortedBy: String? = null) = EtfFilter(
     sortedBy = sortedBy,
 )
 
-// ─── Domain → UiModel 변환 ───────────────────────────────────────
 private fun Etf.toUiModel() = EtfListItemUiModel(
     etfId = etfId,
     ticker = ticker,
@@ -249,4 +254,9 @@ data class ExploreData(
     val etfList: List<EtfListItemUiModel>,
     val filteredList: List<EtfListItemUiModel>,
     val filter: EtfFilterState,
+)
+
+data class SelectedEtf(
+    val ticker: String,
+    val name: String
 )

@@ -102,10 +102,11 @@ fun ExploreScreen(
         bottomBar = {
             if (isSelectionMode) {
                 MultiSelectionBottomBar(
-                    selectedTickers = selectedTickers.toList(),
+                    selectedItems = selectedTickers.toList(),
                     onRemove = { ticker -> viewModel.removeSelection(ticker) },
                     onComplete = {
-                        onSelectionComplete?.let { it(selectedTickers.toList()) }
+                        val tickerList = selectedTickers.map { it.ticker }
+                        onSelectionComplete?.let { it(tickerList) }
                         viewModel.clearSelection()
                     }
                 )
@@ -160,7 +161,7 @@ fun ExploreScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.data.filteredList, key = { it.ticker }) { etf ->
-                        val isSelected = selectedTickers.contains(etf.ticker)
+                        val isSelected = selectedTickers.any { it.ticker == etf.ticker }
                         EtfListItem(
                             name = etf.name,
                             ticker = etf.ticker,
@@ -178,7 +179,7 @@ fun ExploreScreen(
                                         snackbarHostState.showSnackbar("최대 10개까지만 선택할 수 있습니다.")
                                     }
                                 } else {
-                                    viewModel.toggleSelection(etf.ticker)
+                                    viewModel.toggleSelection(etf.ticker, etf.name)
                                 }
                             },
                             onClick = { onEtfClick(etf.ticker, 0) },

@@ -31,17 +31,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import com.d102.wye.presentation.designsystem.WyePrimaryButton
+import com.d102.wye.presentation.explore.list.SelectedEtf
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceWhite
 
 @Composable
 fun MultiSelectionBottomBar(
-    selectedTickers: List<String>,
+    selectedItems: List<SelectedEtf>,
     onRemove: (String) -> Unit,
     onComplete: () -> Unit
 ) {
     AnimatedVisibility(
-        visible = selectedTickers.isNotEmpty(),
+        visible = selectedItems.isNotEmpty(),
         enter = slideInVertically(animationSpec = tween(300)) { it },
         exit = slideOutVertically(animationSpec = tween(300)) { it }
     ) {
@@ -64,13 +65,16 @@ fun MultiSelectionBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                selectedTickers.forEach { ticker ->
-                    SelectedEtfChip(ticker = ticker, onRemove = { onRemove(ticker) })
+                selectedItems.forEach { item ->
+                    SelectedEtfChip(
+                        name = item.name,
+                        onRemove = { onRemove(item.ticker) }
+                    )
                 }
             }
 
             WyePrimaryButton(
-                text = "${selectedTickers.size}개 종목 추가하기",
+                text = "${selectedItems.size}개 종목 추가하기",
                 onClick = onComplete,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,7 +87,7 @@ fun MultiSelectionBottomBar(
 
 @Composable
 private fun SelectedEtfChip(
-    ticker: String,
+    name: String,
     onRemove: () -> Unit
 ) {
     Row(
@@ -94,7 +98,7 @@ private fun SelectedEtfChip(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = ticker,
+            text = name,
             color = PrimaryGreen,
             style = MaterialTheme.typography.labelMedium
         )
