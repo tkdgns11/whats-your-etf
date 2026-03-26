@@ -32,7 +32,8 @@ fun AppScaffold(
                                 saveState = true
                             }
                             launchSingleTop = true
-                            restoreState = true
+
+                            restoreState = tab.route != Route.SimulationEntry.route
                         }
                     }
                 )

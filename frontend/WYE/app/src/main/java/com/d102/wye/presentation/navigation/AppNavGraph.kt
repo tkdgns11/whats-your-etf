@@ -294,8 +294,12 @@ fun AppNavGraph(
                     navController.navigate(Route.SimulationAddStock.route)
                 },
                 onSaveClick = {
-                    navController.navigate(Route.Strategy.route)
-//                    navController.popBackStack()
+                    navController.navigate(Route.Strategy.route) {
+                        // 위로 쌓인 스택을 모두 정리
+                        popUpTo(Route.Home.route) { saveState = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
                 viewModel = viewModel
             )
