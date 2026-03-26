@@ -282,7 +282,7 @@ private fun CompareChartSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "수익률 추이(%)",
+                    text = "수익률 추이",
                     style = MaterialTheme.typography.labelLarge,
                     color = TextPrimary
                 )
@@ -308,11 +308,11 @@ private fun CompareChartSection(
             }
 
             // y축 라벨
-//            Text(
-//                text = "수익률 (%)",
-//                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-//                color = TextSecondary.copy(alpha = 0.6f)
-//            )
+            Text(
+                text = "수익률 (%)",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = TextSecondary.copy(alpha = 0.6f)
+            )
 
             // 차트 (D: 리프레시 중에도 기존 차트 표시)
             Box(
@@ -322,9 +322,7 @@ private fun CompareChartSection(
             ) {
                 MultiLineChart(
                     modifier = Modifier.fillMaxSize(),
-                    lines = chartLines,
-
-
+                    lines = chartLines
                 )
                 // 리프레시 중 살짝 딤처리
                 if (isRefreshing) {

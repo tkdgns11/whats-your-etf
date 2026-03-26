@@ -89,7 +89,6 @@ fun SummaryMetricsRow(data: StrategyDetailData) {
             }
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
 
     RoundedSurface {
         Row(

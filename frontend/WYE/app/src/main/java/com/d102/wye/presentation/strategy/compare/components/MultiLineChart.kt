@@ -27,8 +27,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.strategy.compare.CompareChartLine
@@ -44,10 +42,9 @@ fun MultiLineChart(
 
     val allPoints = validLines.map { it.recentPoints }
     val progress = remember(validLines) { Animatable(0f) }
-    val textMeasurer = rememberTextMeasurer()
+
     val textStyle = MaterialTheme.typography.labelSmall.copy(
         color = Color.Gray.copy(alpha = 0.8f),
-        fontSize = 10.sp
     )
 
     LaunchedEffect(validLines) {
@@ -68,22 +65,13 @@ fun MultiLineChart(
     val lastDate = validLines.first().recentPoints.last().date
     val showDays = firstDate.take(7) == lastDate.take(7) // "YYYY-MM" 비교
 
-    fun String.toDynamicDateLabel(): String {
-        val parts = this.split("-")
-        if (parts.size >= 3) {
-            val yy = parts[0].takeLast(2)
-            val mm = parts[1]
-            val dd = parts[2]
-            return if (showDays) "$yy.$mm.$dd" else "$yy.$mm"
-        }
-        return this
-    }
-
     Column(modifier = modifier) {
         // 차트 영역 (Canvas)
-        Box(modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -92,11 +80,8 @@ fun MultiLineChart(
                         val w = size.width
                         val h = size.height
 
-                        // 하단 패딩 삭제! Y축(수익률)을 위한 우측/상하 패딩만 남김
                         val verticalPad = 12.dp.toPx()
-                        val rightPad = 40.dp.toPx()
-
-                        val chartW = w - rightPad
+                        val chartW = w
                         val chartH = h - (verticalPad * 2)
 
                         fun xOf(i: Int, sz: Int) = (i.toFloat() / (sz - 1)) * chartW
@@ -114,15 +99,8 @@ fun MultiLineChart(
                             }
                         }
 
-                        val maxText =
-                            textMeasurer.measure("+${String.format("%.1f", maxVal)}%", textStyle)
-                        val minText =
-                            textMeasurer.measure("${String.format("%.1f", minVal)}%", textStyle)
-                        val zeroText =
-                            textMeasurer.measure("0%", textStyle.copy(color = Color.Gray))
-
                         onDrawBehind {
-                            // 배경 가이드 라인
+                            // 1. 배경 가이드 라인 (가로 3선)
                             repeat(3) { i ->
                                 val y = verticalPad + chartH * ((i + 1) / 4f)
                                 drawLine(
@@ -133,7 +111,6 @@ fun MultiLineChart(
                                 )
                             }
 
-                            // 0% 기준선
                             // 2. 0% 기준선 (점선)
                             drawLine(
                                 color = Color.Gray.copy(alpha = 0.4f),
@@ -143,31 +120,12 @@ fun MultiLineChart(
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
                             )
 
-                            // Y축 라벨 그리기 (우측 정렬)
-                            val textXOffset = chartW + 6.dp.toPx()
-                            drawText(
-                                zeroText,
-                                topLeft = Offset(textXOffset, zeroY - (zeroText.size.height / 2f))
-                            )
-                            drawText(
-                                maxText,
-                                topLeft = Offset(
-                                    textXOffset,
-                                    verticalPad - (maxText.size.height / 2f)
-                                )
-                            )
-                            drawText(
-                                minText,
-                                topLeft = Offset(
-                                    textXOffset,
-                                    verticalPad + chartH - (minText.size.height / 2f)
-                                )
-                            )
-
+                            // 3. 차트 선 그리기 애니메이션
                             clipRect(right = w * animProgress) {
                                 linePaths.forEachIndexed { index, path ->
                                     drawPath(
-                                        path = path, color = validLines[index].color,
+                                        path = path,
+                                        color = validLines[index].color,
                                         style = Stroke(
                                             width = 1.5.dp.toPx(),
                                             cap = StrokeCap.Round,
@@ -182,14 +140,26 @@ fun MultiLineChart(
             ) {}
         }
 
+        // X축 날짜 영역
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, end = 40.dp),
+                .padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = firstDate.toDynamicDateLabel(), style = textStyle)
-            Text(text = lastDate.toDynamicDateLabel(), style = textStyle)
+            Text(text = firstDate.toDateLabel(showDays), style = textStyle)
+            Text(text = lastDate.toDateLabel(showDays), style = textStyle)
         }
     }
+}
+
+private fun String.toDateLabel(showDays: Boolean): String {
+    val parts = this.split("-")
+    if (parts.size >= 3) {
+        val yy = parts[0].takeLast(2)
+        val mm = parts[1]
+        val dd = parts[2]
+        return if (showDays) "$yy.$mm.$dd" else "$yy.$mm"
+    }
+    return this
 }
