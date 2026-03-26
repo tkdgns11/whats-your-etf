@@ -126,72 +126,80 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
     private BooleanExpression riskTypeEq(String riskType) {
         if (riskType == null) return null;
         try {
-            return etf.riskType.eq(RiskType.valueOf(riskType));
+            RiskType rt = RiskType.valueOf(riskType.toUpperCase());
+            return etf.riskType.isNotNull().and(etf.riskType.eq(rt));
         } catch (IllegalArgumentException e) {
-            return null;
+            return Expressions.FALSE;
         }
     }
 
     private BooleanExpression strategyEq(String strategy) {
-        return strategy != null ? etf.strategyType.eq(strategy) : null;
+        if (strategy == null) return null;
+        return etf.strategyType.isNotNull().and(etf.strategyType.eq(strategy));
     }
 
     private BooleanExpression sectorEq(String sector) {
         if (sector == null) return null;
-        try {
-            return etf.sector.eq(EtfSector.valueOf(sector));
-        } catch (IllegalArgumentException e) {
-            return null;
+        // enum 상수명(SEMI) 또는 tag(SEMI) 로 매칭, 대소문자 무시
+        for (EtfSector s : EtfSector.values()) {
+            if (s.name().equalsIgnoreCase(sector) || s.getTag().equalsIgnoreCase(sector)) {
+                return etf.sector.isNotNull().and(etf.sector.eq(s));
+            }
         }
+        return Expressions.FALSE;  // 알 수 없는 값 → 결과 없음
     }
 
     private BooleanExpression dividendYieldGoe(BigDecimal dividendYield) {
-        return dividendYield != null ? etf.dividendYield.goe(dividendYield) : null;
+        return dividendYield != null ? etf.dividendYield.isNotNull().and(etf.dividendYield.goe(dividendYield)) : null;
     }
 
     private BooleanExpression dividendFreqEq(String dividendFrequency) {
-        return dividendFrequency != null ? etf.dividendFreq.eq(dividendFrequency) : null;
+        if (dividendFrequency == null) return null;
+        return etf.dividendFreq.isNotNull().and(etf.dividendFreq.eq(dividendFrequency));
     }
 
     private BooleanExpression isDerivativesEq(Boolean isDerivatives) {
-        return isDerivatives != null ? etf.isDerivatives.eq(isDerivatives) : null;
+        return isDerivatives != null ? etf.isDerivatives.isNotNull().and(etf.isDerivatives.eq(isDerivatives)) : null;
     }
 
     private BooleanExpression isLeverageEq(Boolean isLeverage) {
-        return isLeverage != null ? etf.isLeveraged.eq(isLeverage) : null;
+        return isLeverage != null ? etf.isLeveraged.isNotNull().and(etf.isLeveraged.eq(isLeverage)) : null;
     }
 
     private BooleanExpression isInverseEq(Boolean isInverse) {
-        return isInverse != null ? etf.isInverse.eq(isInverse) : null;
+        return isInverse != null ? etf.isInverse.isNotNull().and(etf.isInverse.eq(isInverse)) : null;
     }
 
     private BooleanExpression perBetween(BigDecimal perLow, BigDecimal perHigh) {
-        if (perLow != null && perHigh != null) return etf.fundamental.per.between(perLow.doubleValue(), perHigh.doubleValue());
-        if (perLow != null) return etf.fundamental.per.goe(perLow.doubleValue());
-        if (perHigh != null) return etf.fundamental.per.loe(perHigh.doubleValue());
-        return null;
+        if (perLow == null && perHigh == null) return null;
+        BooleanExpression notNull = etf.fundamental.per.isNotNull();
+        if (perLow != null && perHigh != null) return notNull.and(etf.fundamental.per.between(perLow.doubleValue(), perHigh.doubleValue()));
+        if (perLow != null) return notNull.and(etf.fundamental.per.goe(perLow.doubleValue()));
+        return notNull.and(etf.fundamental.per.loe(perHigh.doubleValue()));
     }
 
     private BooleanExpression pbrBetween(BigDecimal pbrLow, BigDecimal pbrHigh) {
-        if (pbrLow != null && pbrHigh != null) return etf.fundamental.pbr.between(pbrLow.doubleValue(), pbrHigh.doubleValue());
-        if (pbrLow != null) return etf.fundamental.pbr.goe(pbrLow.doubleValue());
-        if (pbrHigh != null) return etf.fundamental.pbr.loe(pbrHigh.doubleValue());
-        return null;
+        if (pbrLow == null && pbrHigh == null) return null;
+        BooleanExpression notNull = etf.fundamental.pbr.isNotNull();
+        if (pbrLow != null && pbrHigh != null) return notNull.and(etf.fundamental.pbr.between(pbrLow.doubleValue(), pbrHigh.doubleValue()));
+        if (pbrLow != null) return notNull.and(etf.fundamental.pbr.goe(pbrLow.doubleValue()));
+        return notNull.and(etf.fundamental.pbr.loe(pbrHigh.doubleValue()));
     }
 
     private BooleanExpression roeBetween(BigDecimal roeLow, BigDecimal roeHigh) {
-        if (roeLow != null && roeHigh != null) return etf.fundamental.roe.between(roeLow.doubleValue(), roeHigh.doubleValue());
-        if (roeLow != null) return etf.fundamental.roe.goe(roeLow.doubleValue());
-        if (roeHigh != null) return etf.fundamental.roe.loe(roeHigh.doubleValue());
-        return null;
+        if (roeLow == null && roeHigh == null) return null;
+        BooleanExpression notNull = etf.fundamental.roe.isNotNull();
+        if (roeLow != null && roeHigh != null) return notNull.and(etf.fundamental.roe.between(roeLow.doubleValue(), roeHigh.doubleValue()));
+        if (roeLow != null) return notNull.and(etf.fundamental.roe.goe(roeLow.doubleValue()));
+        return notNull.and(etf.fundamental.roe.loe(roeHigh.doubleValue()));
     }
 
     private BooleanExpression commissionLoe(BigDecimal commission) {
-        return commission != null ? etf.expenseRatio.loe(commission) : null;
+        return commission != null ? etf.expenseRatio.isNotNull().and(etf.expenseRatio.loe(commission)) : null;
     }
 
     private BooleanExpression aumGoe(BigDecimal aum) {
-        return aum != null ? etf.aum.goe(aum.longValue()) : null;
+        return aum != null ? etf.aum.isNotNull().and(etf.aum.goe(aum.longValue())) : null;
     }
 
     private OrderSpecifier<?> orderBy(String sortedBy) {
