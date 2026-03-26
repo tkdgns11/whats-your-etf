@@ -30,8 +30,6 @@ class SimulationRepositoryImpl @Inject constructor(
     private val priceHistoryDao: EtfPriceHistoryDao
 ) : SimulationRepository {
 
-    private val SUPPORTED_TICKERS = listOf("069500", "091160", "102780")
-
     // ─── API ─────────────────────────────────────────────────────────────────
 
     override suspend fun getEtfPriceHistories(
@@ -41,7 +39,7 @@ class SimulationRepositoryImpl @Inject constructor(
         page: Int
     ): BaseResult<Map<String, EtfPriceHistory>> = runCatching {
         coroutineScope {
-            val results = SUPPORTED_TICKERS.map { ticker ->
+            val results = tickers.map { ticker ->
                 async {
                     runCatching {
                         ticker to fetchAllPages(ticker, startDate, endDate)
@@ -53,7 +51,7 @@ class SimulationRepositoryImpl @Inject constructor(
             }.awaitAll()
 
             val successMap = results.filterNotNull().toMap()
-            Timber.d("[API] 전체 조회 완료 | 성공=${successMap.keys} | 실패=${SUPPORTED_TICKERS - successMap.keys.toSet()}")
+            Timber.d("[API] 전체 조회 완료 | 성공=${successMap.keys} | 실패=${tickers - successMap.keys.toSet()}")
             BaseResult.Success(successMap)
         }
     }.getOrElse { e ->
