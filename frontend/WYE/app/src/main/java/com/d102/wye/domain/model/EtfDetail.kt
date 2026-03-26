@@ -17,8 +17,8 @@ data class EtfDetail(
     val roe: Double,
     val aum: Long,
     val listingDate: String,
-    val inav: Double,
-    val inavChangeAmount: Double,
+    val inav: Long,
+    val inavChangeAmount: Long,
     val inavChangeRate: Double,
 )
 
