@@ -33,7 +33,7 @@ public record PortfolioDetail(
                 return new PortfolioDetail(
                         portfolio.getId(),
                         portfolio.getName(),
-                        etfs.stream().map(etf -> new PortfolioEtfCount(etf.getEtf().getStockCode(), etf.getEtfCount())).toList(),
+                        etfs.stream().map(etf -> new PortfolioEtfCount(etf.getEtf().getStockCode(), etf.getEtfCount(), etf.getEtf().getName())).toList(),
                         portfolio.getInvestAmount(),
                         portfolio.getCreatedAt(),
                         portfolio.getPortfolioType()
