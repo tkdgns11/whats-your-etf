@@ -32,11 +32,18 @@ fun InvestmentSetupSection(
     onAmountChanged: (String) -> Unit,
     onPeriodChanged: (String) -> Unit
 ) {
-    // 1. 투자 금액 에러 조건: 빈 값이 아니면서, 0 이하일 때 에러
-    val isAmountError = formState.investmentAmount.isNotEmpty() &&
-            (formState.investmentAmount.toIntOrNull() ?: 0) <= 0
+    // 투자 금액 에러
+    val amountInt = formState.investmentAmount.toLongOrNull() ?: 0
+    val isAmountError =
+        formState.investmentAmount.isNotEmpty() && (amountInt <= 0 || amountInt > 10_000_000)
 
-    // 2. 투자 기간 에러 조건: 빈 값이 아니면서, 0 이하이거나 36 초과일 때 에러
+    val amountErrorMessage = when {
+        amountInt <= 0 -> "1만원 이상의 금액을 입력해 주세요"
+        amountInt > 10_000_000 -> "최대 100억까지 입력 가능해요"
+        else -> null
+    }
+
+    // 투자 기간 에러 조건
     val periodInt = formState.investmentPeriod.toIntOrNull() ?: 0
     val isPeriodError = formState.investmentPeriod.isNotEmpty() &&
             (periodInt > 36 || periodInt <= 0)
@@ -73,7 +80,7 @@ fun InvestmentSetupSection(
                 isCurrencyField = true,
                 suffix = "만원",
                 isError = isAmountError,
-                errorMessage = if (isAmountError) "1만원 이상의 금액을 입력해 주세요" else null,
+                errorMessage = if (isAmountError) amountErrorMessage else null,
                 modifier = Modifier.weight(1f)
             )
 
