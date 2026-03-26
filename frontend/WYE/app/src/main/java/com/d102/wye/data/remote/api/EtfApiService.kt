@@ -4,6 +4,7 @@ import com.d102.wye.data.remote.dto.request.EtfListRequest
 import com.d102.wye.data.remote.dto.response.BaseResponse
 import com.d102.wye.data.remote.dto.response.EtfClusterDataResponse
 import com.d102.wye.data.remote.dto.response.EtfDetailResponse
+import com.d102.wye.data.remote.dto.response.EtfMarketDataResponse
 import com.d102.wye.data.remote.dto.response.EtfPageResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryPageResponse
 import com.d102.wye.data.remote.dto.response.TopVolumeEtfResponse
@@ -46,6 +47,12 @@ interface EtfApiService {
     suspend fun getEtfCluster(
         @Path("ticker") ticker: String,
     ): Response<BaseResponse<EtfClusterDataResponse>>
+
+    // ETF 시장 데이터 조회 GET /api/v1/etfs/{ticker}/market-data
+    @GET("etfs/{ticker}/market-data")
+    suspend fun getMarketData(
+        @Path("ticker") ticker: String,
+    ): Response<BaseResponse<EtfMarketDataResponse>>
 
     // ETF 가격 이력 조회 GET /api/v1/etfs/{ticker}/price-history
     @GET("etfs/{ticker}/price-history")

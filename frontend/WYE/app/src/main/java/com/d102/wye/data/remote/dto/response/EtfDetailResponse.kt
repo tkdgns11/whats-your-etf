@@ -34,6 +34,14 @@ data class EtfPriceHistoryPageResponse(
     @SerializedName("last") val last: Boolean,
 )
 
+// GET /api/v1/etfs/{ticker}/market-data
+data class EtfMarketDataResponse(
+    @SerializedName("ticker") val ticker: String,
+    @SerializedName("currentPrice") val currentPrice: Long,
+    @SerializedName("dailyReturn") val dailyReturn: Double,
+    @SerializedName("volume") val volume: Long,
+)
+
 data class EtfPricePointResponse(
     @SerializedName("date") val date: String,
     @SerializedName("stockPrice") val stockPrice: Long,

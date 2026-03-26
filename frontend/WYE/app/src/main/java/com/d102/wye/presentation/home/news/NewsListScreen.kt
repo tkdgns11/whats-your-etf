@@ -52,8 +52,8 @@ fun NewsListScreen(
     viewModel: NewsListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var isSearchActive by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val categoryScrollState = rememberScrollState()
@@ -100,7 +100,7 @@ fun NewsListScreen(
                         ) {
                             IconButton(onClick = {
                                 isSearchActive = false
-                                searchQuery = ""
+                                viewModel.onSearchQueryChanged("")
                             }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -110,7 +110,7 @@ fun NewsListScreen(
                             }
                             TextField(
                                 value = searchQuery,
-                                onValueChange = { searchQuery = it },
+                                onValueChange = { viewModel.onSearchQueryChanged(it) },
                                 modifier = Modifier
                                     .weight(1f)
                                     .focusRequester(focusRequester),
@@ -137,7 +137,7 @@ fun NewsListScreen(
                                 ),
                             )
                             if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
+                                IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "지우기",
@@ -174,11 +174,7 @@ fun NewsListScreen(
         val isLast = state?.data?.isLast == true
         val isLoadingMore = state?.data?.isLoadingMore == true
         val isRefreshing = state?.data?.isRefreshing == true
-        val displayNews = if (searchQuery.isBlank()) {
-            allNews
-        } else {
-            allNews.filter { it.title.contains(searchQuery, ignoreCase = true) }
-        }
+        val displayNews = allNews
         val featured = if (searchQuery.isBlank()) displayNews.firstOrNull() else null
         val restNews = if (searchQuery.isBlank() && displayNews.size > 1) displayNews.drop(1) else displayNews
 
@@ -384,7 +380,7 @@ private fun FeaturedNewsCard(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "${news.source} · ${news.timeAgo}",
+                text = "${news.timeAgo} · ${news.source}",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextOnColored.copy(alpha = 0.8f),
             )
@@ -425,7 +421,7 @@ private fun NewsListItem(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${news.source} · ${news.timeAgo}",
+                text = "${news.timeAgo} · ${news.source}",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary,
             )

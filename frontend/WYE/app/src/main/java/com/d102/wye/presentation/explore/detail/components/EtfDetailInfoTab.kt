@@ -52,13 +52,14 @@ fun EtfDetailInfoTab(
     detail: EtfDetail,
     viewModel: EtfDetailViewModel,
 ) {
-    val chartState     by viewModel.chartState.collectAsStateWithLifecycle()
-    val periodReturn   by viewModel.periodReturn.collectAsStateWithLifecycle()
-    val selectedPeriod by viewModel.selectedPeriod.collectAsStateWithLifecycle()
-    val showNav   by viewModel.showNav.collectAsStateWithLifecycle()
-    val showPrice by viewModel.showPrice.collectAsStateWithLifecycle()
-    val showKospi by viewModel.showKospi.collectAsStateWithLifecycle()
-    val showSp500 by viewModel.showSp500.collectAsStateWithLifecycle()
+    val chartState         by viewModel.chartState.collectAsStateWithLifecycle()
+    val periodReturn       by viewModel.periodReturn.collectAsStateWithLifecycle()
+    val selectedPeriod     by viewModel.selectedPeriod.collectAsStateWithLifecycle()
+    val showNav            by viewModel.showNav.collectAsStateWithLifecycle()
+    val showPrice          by viewModel.showPrice.collectAsStateWithLifecycle()
+    val showKospi          by viewModel.showKospi.collectAsStateWithLifecycle()
+    val showSp500          by viewModel.showSp500.collectAsStateWithLifecycle()
+    val marketStatusLabel  by viewModel.marketStatusLabel.collectAsStateWithLifecycle()
     var productInfoExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -69,7 +70,7 @@ fun EtfDetailInfoTab(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // 가격 그리드
-        PriceGrid(detail = detail, periodReturn = periodReturn)
+        PriceGrid(detail = detail, periodReturn = periodReturn, marketStatusLabel = marketStatusLabel)
 
         // 상품정보 토글
         ProductInfoSection(
@@ -108,7 +109,7 @@ fun EtfDetailInfoTab(
 // ── 가격 그리드 ────────────────────────────────────────────────
 
 @Composable
-private fun PriceGrid(detail: EtfDetail, periodReturn: UiState<EtfPeriodReturn>) {
+private fun PriceGrid(detail: EtfDetail, periodReturn: UiState<EtfPeriodReturn>, marketStatusLabel: String = "") {
     val changeColor = if (detail.dailyFluctuationRatio >= 0) EtfRise else EtfFall
     val sign        = if (detail.dailyFluctuation >= 0) "+" else ""
     val iNavSign    = if (detail.inavChangeAmount >= 0) "+" else ""
@@ -157,6 +158,15 @@ private fun PriceGrid(detail: EtfDetail, periodReturn: UiState<EtfPeriodReturn>)
                 value = "%,d".format(detail.volume),
                 sub = "주 (당일 누적)",
                 modifier = Modifier.weight(1f),
+            )
+        }
+        if (marketStatusLabel.isNotBlank()) {
+            Text(
+                text = marketStatusLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (marketStatusLabel.contains("기준")) PrimaryGreen else TextSecondary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
             )
         }
     }

@@ -20,4 +20,5 @@ data class EtfListRequest(
     @SerializedName("commission") val commission: Double? = null,
     @SerializedName("aum") val aum: Long? = null,
     @SerializedName("sortedBy") val sortedBy: String? = null,
+    @SerializedName("searchName") val searchName: String? = null,
 )

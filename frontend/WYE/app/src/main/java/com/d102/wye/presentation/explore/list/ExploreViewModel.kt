@@ -11,6 +11,8 @@ import com.d102.wye.domain.state.EtfFilterState
 import com.d102.wye.presentation.model.EtfListItemUiModel
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +20,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -49,6 +56,12 @@ class ExploreViewModel @Inject constructor(
     private val _expandedFilterSections = MutableStateFlow<Set<String>>(emptySet())
     val expandedFilterSections: StateFlow<Set<String>> = _expandedFilterSections.asStateFlow()
 
+    private val _marketStatusLabel = MutableStateFlow("")
+    val marketStatusLabel: StateFlow<String> = _marketStatusLabel.asStateFlow()
+
+    private var pollingJob: Job? = null
+    private var searchDebounceJob: Job? = null
+
     fun toggleFilterSection(title: String) {
         _expandedFilterSections.update { if (title in it) it - title else it + title }
     }
@@ -56,6 +69,55 @@ class ExploreViewModel @Inject constructor(
     init {
         observeFavoriteChanges()
         loadEtfList()
+        startPolling()
+    }
+
+    fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            delay(60_000L) // 첫 로드는 loadEtfList()가 처리
+            while (true) {
+                refreshMarketData()
+                delay(60_000L)
+            }
+        }
+    }
+
+    fun stopPolling() { pollingJob?.cancel() }
+
+    private suspend fun refreshMarketData() {
+        val current = (_uiState.value as? UiState.Success)?.data ?: return
+        val updatedList = current.etfList.map { item ->
+            when (val result = etfRepository.getMarketData(item.ticker)) {
+                is BaseResult.Success -> item.copy(
+                    currentPrice = result.data.currentPrice,
+                    changeRate = result.data.dailyReturn,
+                )
+                is BaseResult.Error -> item
+            }
+        }
+        _uiState.update { UiState.Success(current.copy(etfList = updatedList)) }
+        _marketStatusLabel.update { marketStatusLabel() }
+    }
+
+    private fun isMarketOpen(): Boolean {
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+        if (now.dayOfWeek == DayOfWeek.SATURDAY || now.dayOfWeek == DayOfWeek.SUNDAY) return false
+        val t = now.toLocalTime()
+        return t >= LocalTime.of(9, 0) && t <= LocalTime.of(15, 30)
+    }
+
+    private fun marketStatusLabel(): String {
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+        return if (isMarketOpen()) {
+            now.format(DateTimeFormatter.ofPattern("HH:mm")) + " 기준"
+        } else {
+            var date = now.toLocalDate()
+            while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
+                date = date.minusDays(1)
+            }
+            date.format(DateTimeFormatter.ofPattern("MM.dd")) + " 장마감"
+        }
     }
 
     private fun observeFavoriteChanges() {
@@ -85,6 +147,7 @@ class ExploreViewModel @Inject constructor(
                     rawEtfList = result.data.items.map { it.toUiModel() }
                     isDataInitialized = true
                     applyFilter()
+                    _marketStatusLabel.update { marketStatusLabel() }
                 }
                 is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
             }
@@ -117,7 +180,11 @@ class ExploreViewModel @Inject constructor(
 
     fun onQueryChanged(query: String) {
         _filterState.update { it.copy(query = query) }
-        applyFilter()
+        searchDebounceJob?.cancel()
+        searchDebounceJob = viewModelScope.launch {
+            delay(300L)
+            loadEtfList()
+        }
     }
 
     fun onSearchScopeSelected(scope: String?) {
@@ -196,20 +263,8 @@ class ExploreViewModel @Inject constructor(
     private fun applyFilter() {
         if (!isDataInitialized) return
         val filter = _filterState.value
-        val filtered = if (filter.query.isBlank()) {
-            rawEtfList
-        } else {
-            rawEtfList.filter {
-                when (filter.searchScope) {
-                    "etf"   -> it.name.contains(filter.query, ignoreCase = true)
-                    "stock" -> it.ticker.contains(filter.query, ignoreCase = true)
-                    else    -> it.name.contains(filter.query, ignoreCase = true) ||
-                            it.ticker.contains(filter.query, ignoreCase = true)
-                }
-            }
-        }
         _uiState.update {
-            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = filtered, filter = filter))
+            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = rawEtfList, filter = filter))
         }
     }
 }
@@ -221,6 +276,8 @@ private fun EtfFilterState.toFilter(sortedBy: String? = null) = EtfFilter(
     isDerivatives = hasDerivative,
     isLeverage = hasLeverage,
     isInverse = hasInverse,
+    dividendYield = dividendRateRange?.toDoubleOrNull(),
+    searchName = query.takeIf { it.isNotBlank() },
     sortedBy = sortedBy,
 )
 

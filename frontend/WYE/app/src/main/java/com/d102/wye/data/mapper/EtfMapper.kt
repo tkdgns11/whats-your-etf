@@ -2,6 +2,7 @@ package com.d102.wye.data.mapper
 
 import com.d102.wye.data.remote.dto.response.EtfClusterDataResponse
 import com.d102.wye.data.remote.dto.response.EtfDetailResponse
+import com.d102.wye.data.remote.dto.response.EtfMarketDataResponse
 import com.d102.wye.data.remote.dto.response.EtfListItemResponse
 import com.d102.wye.data.remote.dto.response.EtfPriceHistoryPageResponse
 import com.d102.wye.data.remote.dto.response.EtfPricePointResponse
@@ -9,6 +10,7 @@ import com.d102.wye.data.remote.dto.response.EtfSectorResponse
 import com.d102.wye.data.remote.dto.response.TopVolumeEtfResponse
 import com.d102.wye.domain.model.Etf
 import com.d102.wye.domain.model.EtfCluster
+import com.d102.wye.domain.model.EtfMarketData
 import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfClusterStock
 import com.d102.wye.domain.model.EtfDetail
@@ -50,6 +52,14 @@ fun EtfDetailResponse.toDomain() = EtfDetail(
     inavChangeRate = inavChangeRate,
 )
 
+// GET /api/v1/etfs/{ticker}/market-data → EtfMarketData
+fun EtfMarketDataResponse.toDomain() = EtfMarketData(
+    ticker = ticker,
+    currentPrice = currentPrice,
+    dailyReturn = dailyReturn,
+    volume = volume,
+)
+
 // GET /api/v1/etfs/{ticker}/clusters → EtfClusterData
 fun EtfClusterDataResponse.toDomain() = EtfClusterData(
     englishName = englishName ?: "",
@@ -70,6 +80,7 @@ fun EtfSectorResponse.toDomain() = EtfCluster(
     percentage = percentage,
     stocks = stocks.map { EtfClusterStock(ticker = it.ticker, name = it.name, percentage = it.percentage) },
     aiAnalysis = aiAnalysis,
+    assetType = assetType,
 )
 
 // GET /api/v1/etfs/{ticker}/price-history 항목 → EtfPricePoint

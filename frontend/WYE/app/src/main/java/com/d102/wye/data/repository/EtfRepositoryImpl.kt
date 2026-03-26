@@ -10,6 +10,7 @@ import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.common.map
 import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfDetail
+import com.d102.wye.domain.model.EtfMarketData
 import com.d102.wye.domain.model.EtfFilter
 import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.model.EtfPage
@@ -67,6 +68,9 @@ class EtfRepositoryImpl @Inject constructor(
         safeApiCall { etfApiService.getEtfPriceHistory(ticker, startDate, endDate, validDateRange = false, size = size) }
             .map { it.toDomain() }
 
+    override suspend fun getMarketData(ticker: String): BaseResult<EtfMarketData> =
+        safeApiCall { etfApiService.getMarketData(ticker) }.map { it.toDomain() }
+
 }
 
 private fun EtfFilter.toRequest() = EtfListRequest(
@@ -87,4 +91,5 @@ private fun EtfFilter.toRequest() = EtfListRequest(
     commission = commission,
     aum = aum,
     sortedBy = sortedBy,
+    searchName = searchName?.takeIf { it.isNotBlank() },
 )

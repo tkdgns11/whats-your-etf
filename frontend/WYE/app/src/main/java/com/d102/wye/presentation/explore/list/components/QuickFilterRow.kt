@@ -102,7 +102,7 @@ fun buildActiveChips(f: EtfFilterState): List<Pair<String, EtfFilterState>> {
     f.strategy?.let { chips += it to f.copy(strategy = null, themes = emptySet()) }
     f.themes.forEach { theme -> chips += theme to f.copy(themes = f.themes - theme) }
 
-    val dividendLabels = mapOf("0-5" to "배당률 0~5%", "5-10" to "배당률 5~10%")
+    val dividendLabels = mapOf("3" to "배당률 3%이상", "5" to "배당률 5%이상", "7" to "배당률 7%이상", "10" to "배당률 10%이상")
     f.dividendRateRange?.let {
         chips += (dividendLabels[it] ?: it) to f.copy(dividendRateRange = null)
     }

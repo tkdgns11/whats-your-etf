@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -109,7 +110,8 @@ fun ClusterTab(
                             .weight(1f),
                     )
 
-                    PriceVolumeRow(detail = detail)
+                    val marketStatusLabel by viewModel.marketStatusLabel.collectAsStateWithLifecycle()
+                    PriceVolumeRow(detail = detail, marketStatusLabel = marketStatusLabel)
                 }
             }
 
@@ -666,9 +668,10 @@ private fun InfluentialStocksSection(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "데이터 준비 중입니다.",
+                    "해당 ETF는 주식 외 자산으로 구성되어\n종목 정보를 제공하지 않습니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
         } else {
@@ -767,13 +770,24 @@ private fun EtfHeader(detail: EtfDetail, englishName: String) {
 }
 
 @Composable
-private fun PriceVolumeRow(detail: EtfDetail) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        InfoCard(label = "현재 가격", value = "%,d원".format(detail.currentPrice), valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
-        InfoCard(label = "거래량",   value = formatVolume(detail.volume),          valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
+private fun PriceVolumeRow(detail: EtfDetail, marketStatusLabel: String = "") {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (marketStatusLabel.isNotBlank()) {
+            Text(
+                text = marketStatusLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (marketStatusLabel.contains("기준")) PrimaryGreen else TextSecondary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            InfoCard(label = "현재 가격", value = "%,d원".format(detail.currentPrice), valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
+            InfoCard(label = "거래량", value = formatVolume(detail.volume), valueColor = PrimaryGreen, modifier = Modifier.weight(1f))
+        }
     }
 }
 

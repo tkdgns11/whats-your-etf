@@ -51,7 +51,7 @@ fun SectorBottomSheetContent(
         cluster.stocks.forEach { stock ->
             StockProgressItem(
                 stock = stock,
-                onClick = if (stock.ticker.isNotBlank()) { { onStockClick(stock.ticker) } } else null,
+                onClick = if (cluster.assetType == null && stock.ticker.isNotBlank()) { { onStockClick(stock.ticker) } } else null,
             )
         }
         if (!cluster.aiAnalysis.isNullOrBlank()) AiAnalysisBox(cluster.aiAnalysis)

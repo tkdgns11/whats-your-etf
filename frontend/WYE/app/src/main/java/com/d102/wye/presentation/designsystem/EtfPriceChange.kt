@@ -13,14 +13,17 @@ import com.d102.wye.presentation.theme.EtfRise
 
 @Composable
 fun EtfPriceChange(changeRate: Double, changeAmount: Long) {
-    val isRise = changeRate > 0
     val changeColor = when {
         changeRate > 0 -> EtfRise
         changeRate < 0 -> EtfFall
         else           -> EtfNeutral
     }
-    val arrow = if (isRise) "▲" else "▼"
-    val sign = if (isRise) "+" else ""
+    val sign  = if (changeRate > 0) "+" else ""
+    val arrow = when {
+        changeRate > 0 -> "▲"
+        changeRate < 0 -> "▼"
+        else           -> ""
+    }
 
     Column(horizontalAlignment = Alignment.End) {
         Text(
@@ -29,7 +32,7 @@ fun EtfPriceChange(changeRate: Double, changeAmount: Long) {
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
-            text = "$arrow ${"%,d".format(changeAmount)}",
+            text = if (changeRate == 0.0) "-" else "$arrow ${"%,d".format(changeAmount)}",
             color = changeColor,
             style = MaterialTheme.typography.labelSmall,
         )
