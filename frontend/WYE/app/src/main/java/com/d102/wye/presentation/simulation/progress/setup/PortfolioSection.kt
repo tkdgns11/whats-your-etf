@@ -209,6 +209,13 @@ private fun PortfolioSliderItemRow(
         )
     }
 
+    fun middleEllipsis(text: String, maxLength: Int = 12): String {
+        if (text.length <= maxLength) return text
+
+        val keep = maxLength / 2
+        return text.take(keep) + "..." + text.takeLast(keep)
+    }
+
     WyeCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
@@ -220,7 +227,7 @@ private fun PortfolioSliderItemRow(
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 WyeCircleIcon(
                     tag = item.name,
@@ -237,7 +244,7 @@ private fun PortfolioSliderItemRow(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = item.name,
+                        text = middleEllipsis(item.name),
                         color = TextPrimary,
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
                         maxLines = 1,
@@ -312,7 +319,7 @@ private fun PortfolioSliderItemRow(
                 thumb = {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(14.dp)
                             .background(color = PrimaryGreen, shape = CircleShape)
                     )
                 },
