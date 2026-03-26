@@ -40,7 +40,8 @@ import com.d102.wye.presentation.theme.TextSecondary
 // ─────────────────────────────────────────
 @Composable
 fun StrategyEmptyView(
-    onCreateClick: () -> Unit
+    onCreateClick: () -> Unit,
+    onConnectMyDataClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -103,7 +104,7 @@ fun StrategyEmptyView(
                 shape = RoundedCornerShape(20.dp),
                 border = BorderStroke(1.dp, SurfaceVariant),
                 color = Color.White,
-                onClick = { /* TODO: 자산 연결 플로우 */ }
+                onClick = { onConnectMyDataClick() }
             ) {
                 Text(
                     text = "\uD83D\uDD17 자산 연결하러 가기",

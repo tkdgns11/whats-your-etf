@@ -124,6 +124,7 @@ class StrategyDetailViewModel @Inject constructor(
                         InvestmentType.REGULAR_SAVING -> "적립형"
                         InvestmentType.LUMP_SUM -> "거치형"
                     },
+                    etfNames = detail.counts.map { it.etfName },
                     summaryMetrics = listOf(
                         "예상 최종 자산" to chartResult.estimatedFinalValue.formatAmount(),
                         "실제 수익률" to "${returnSign(chartResult.recentReturn)}${"%.2f".format(chartResult.recentReturn)}%",
@@ -131,13 +132,13 @@ class StrategyDetailViewModel @Inject constructor(
                     ),
                     recentPerformance = PerformanceData(
                         period = "저장 시점~현재",
-                        rate = "${returnSign(chartResult.recentReturn)}${"%.1f".format(chartResult.recentReturn)}%",
+                        rate = "${returnSign(chartResult.recentReturn)}${"%.2f".format(chartResult.recentReturn)}%",
                         dateRange = "${detail.createdAt} (저장일) - $endDate (현재)",
                         points = chartResult.recentPoints
                     ),
                     pastPerformance = PerformanceData(
                         period = "과거 1년",
-                        rate = "${returnSign(chartResult.pastReturn)}${"%.1f".format(chartResult.pastReturn)}%",
+                        rate = "${returnSign(chartResult.pastReturn)}${"%.2f".format(chartResult.pastReturn)}%",
                         dateRange = "$startDate - ${detail.createdAt} (저장일)",
                         points = chartResult.pastPoints
                     ),
@@ -158,6 +159,7 @@ data class StrategyDetailData(
     val title: String,
     val saveDate: String,
     val investmentType: String,
+    val etfNames: List<String>,
     val summaryMetrics: List<Pair<String, String>>,
     val recentPerformance: PerformanceData,
     val pastPerformance: PerformanceData,

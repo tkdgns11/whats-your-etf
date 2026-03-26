@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.strategy.list.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,15 +22,13 @@ import com.d102.wye.presentation.designsystem.DashedContainer
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextPrimary
 
-
-// 자산이 없을 때 점선 빈 카드
 @Composable
-fun EmptyRealAssetCard() {
-    DashedContainer(
-        strokeWidth = 2.dp
-    ) {
+fun EmptyRealAssetCard(onConnectClick: () -> Unit = {}) {
+    DashedContainer(strokeWidth = 2.dp) {
         Column(
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier
+                .clickable { onConnectClick() }
+                .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -46,12 +45,15 @@ fun EmptyRealAssetCard() {
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "연결된 실제 ETF 자산이 없습니다.",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "∞ 내 자산 연결하기",
                 style = MaterialTheme.typography.bodySmall,

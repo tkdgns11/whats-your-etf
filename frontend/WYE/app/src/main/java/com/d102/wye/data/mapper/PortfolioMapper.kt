@@ -14,7 +14,8 @@ import com.d102.wye.domain.state.InvestmentType
 
 fun PortfolioCountDto.toDomain() = PortfolioCount(
     ticker = ticker,
-    counts = counts
+    counts = counts,
+    etfName = etfName
 )
 
 fun PortfolioDetailDto.toDomain() = PortfolioDetail(
@@ -39,7 +40,8 @@ fun PortfolioListItemDto.toDomain() = PortfolioListItem(
     title = title,
     createdAt = createdAt.take(10),
     etfList = etfList.map { it.toDomain() },
-    totalReturn = totalReturn
+    totalReturn = totalReturn,
+    isMyData = isMyData
 )
 
 /** 포트폴리오 이슈 DTO를 도메인 모델로 변환한다. */

@@ -12,8 +12,11 @@ import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,21 +39,34 @@ class StrategyCompareViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val palette = listOf(
-        Color(0xFF3A6E45),
-        Color(0xFFE8924A),
-        Color(0xFF5B8FA8)
+//        Color(0xFF3A6E45), // 1. 기본 초록 (Primary)
+//        Color(0xFFE8924A), // 2. 부드러운 오렌지
+//        Color(0xFF5B8FA8), // 3. 차분한 블루
+        Color(0xFFE56B6F), // 4. 인디 핑크
+        Color(0xFF6D597A), // 5. 뮤트 퍼플
+//        Color(0xFF8AB17D), // 6. 라이트 그린
+//        Color(0xFFE1B07E), // 7. 샌드 옐로우
+        Color(0xFF457B9D), // 8. 스틸 블루
+//        Color(0xFF9E2A2B), // 9. 다크 레드
+//        Color(0xFF2A9D8F)  // 10. 틸(Teal)
     )
 
     private val _uiState = MutableStateFlow<UiState<CompareData>>(UiState.Idle)
     val uiState: StateFlow<UiState<CompareData>> = _uiState.asStateFlow()
 
     private val _compareResultState = MutableStateFlow<UiState<CompareResultData>>(UiState.Idle)
-    val compareResultState: StateFlow<UiState<CompareResultData>> = _compareResultState.asStateFlow()
+    val compareResultState: StateFlow<UiState<CompareResultData>> =
+        _compareResultState.asStateFlow()
 
     private val _selectedPeriod = MutableStateFlow(ComparePeriod.ONE_YEAR)
     val selectedPeriod: StateFlow<ComparePeriod> = _selectedPeriod.asStateFlow()
 
-    init { loadPortfolioList() }
+    private val _snackbarEvent = MutableSharedFlow<String>()
+    val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
+
+    init {
+        loadPortfolioList()
+    }
 
     private fun loadPortfolioList() {
         viewModelScope.launch {
@@ -58,12 +74,21 @@ class StrategyCompareViewModel @Inject constructor(
             when (val result = portfolioRepository.getPortfolioList()) {
                 is BaseResult.Success -> {
                     Timber.d("[Compare] 포트폴리오 목록 조회 성공 | count=${result.data.size}")
+
+                    val sortedList = result.data.sortedByDescending { it.isMyData }
+
                     _uiState.value = UiState.Success(
-                        CompareData(strategyList = result.data.map {
-                            CompareStrategyItem(id = it.portfolioId, name = it.title)
+                        CompareData(strategyList = sortedList.map {
+                            CompareStrategyItem(
+                                id = it.portfolioId,
+                                name = it.title,
+                                isMyData = it.isMyData,
+                                etfNames = it.etfList.map { etf -> etf.name }
+                            )
                         })
                     )
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("[Compare] 포트폴리오 목록 조회 실패 | ${result.error.message}")
                     _uiState.value = UiState.Error(result.error.message)
@@ -74,12 +99,20 @@ class StrategyCompareViewModel @Inject constructor(
 
     fun toggleSelection(id: Long) {
         val current = (_uiState.value as? UiState.Success)?.data ?: return
-        _uiState.update {
-            val list = current.strategyList
-            val selectedCount = list.count { it.isSelected }
-            val target = list.find { it.id == id } ?: return
-            if (!target.isSelected && selectedCount >= 3) return
 
+        val list = current.strategyList
+        val selectedCount = list.count { it.isSelected }
+        val target = list.find { it.id == id } ?: return
+
+        if (!target.isSelected && selectedCount >= 3) {
+            viewModelScope.launch {
+                _snackbarEvent.emit("최대 3개까지만 비교할 수 있습니다.")
+            }
+            return // 상태 업데이트 하지 않고 종료
+        }
+
+        // 정상적으로 선택/해제 상태 업데이트
+        _uiState.update {
             val updated = list.map { item ->
                 if (item.id == id) item.copy(isSelected = !item.isSelected) else item
             }.let { updatedList ->
@@ -92,6 +125,7 @@ class StrategyCompareViewModel @Inject constructor(
             UiState.Success(current.copy(strategyList = updated))
         }
 
+        // 데이터 갱신 로직 (기존과 동일)
         val selectedItems = (_uiState.value as? UiState.Success)?.data
             ?.strategyList?.filter { it.isSelected } ?: return
 
@@ -106,7 +140,10 @@ class StrategyCompareViewModel @Inject constructor(
         if (selectedItems.size >= 2) fetchCompareResult(selectedItems, period)
     }
 
-    private fun fetchCompareResult(selectedItems: List<CompareStrategyItem>, period: ComparePeriod) {
+    private fun fetchCompareResult(
+        selectedItems: List<CompareStrategyItem>,
+        period: ComparePeriod
+    ) {
         viewModelScope.launch {
             _compareResultState.value = UiState.Loading
 
@@ -170,7 +207,13 @@ class StrategyCompareViewModel @Inject constructor(
                     val volatility = calcVolatility(points)
                     val sharpeRatio = calcSharpeRatio(points)
 
-                    CompareCalculatedResult(item, chartResult, totalReturnRate, volatility, sharpeRatio)
+                    CompareCalculatedResult(
+                        item,
+                        chartResult,
+                        totalReturnRate,
+                        volatility,
+                        sharpeRatio
+                    )
                 }
             }.awaitAll().filterNotNull()
 
@@ -198,7 +241,11 @@ class StrategyCompareViewModel @Inject constructor(
                             id = r.item.id,
                             name = r.item.name,
                             color = r.item.color,
-                            totalReturnRate = "${if (r.totalReturnRate >= 0) "+" else ""}${"%.2f".format(r.totalReturnRate)}%",
+                            totalReturnRate = "${if (r.totalReturnRate >= 0) "+" else ""}${
+                                "%.2f".format(
+                                    r.totalReturnRate
+                                )
+                            }%",
                             volatility = "-${"%.2f".format(r.volatility)}%",
                             sharpeRatio = "%.2f".format(r.sharpeRatio),
                             rank = rank
@@ -232,7 +279,8 @@ class StrategyCompareViewModel @Inject constructor(
         if (dailyReturns.isEmpty()) return 0.0
         val avgReturn = dailyReturns.average()
         val riskFreeDaily = 0.03 / 252
-        val variance = dailyReturns.sumOf { (it - avgReturn) * (it - avgReturn) } / dailyReturns.size
+        val variance =
+            dailyReturns.sumOf { (it - avgReturn) * (it - avgReturn) } / dailyReturns.size
         val stdDev = sqrt(variance)
         if (stdDev == 0.0) return 0.0
         return ((avgReturn - riskFreeDaily) / stdDev) * sqrt(252.0)
@@ -253,7 +301,9 @@ data class CompareStrategyItem(
     val id: Long,
     val name: String,
     val isSelected: Boolean = false,
-    val color: Color = Color.Transparent
+    val color: Color = Color.Transparent,
+    val isMyData: Boolean = false,
+    val etfNames: List<String> = emptyList()
 )
 
 data class CompareResultData(

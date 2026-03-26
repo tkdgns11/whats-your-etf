@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +28,8 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextSecondary
 import com.d102.wye.presentation.theme.TextTertiary
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun PerformanceSection(data: PerformanceData, isMain: Boolean) {
@@ -98,11 +101,17 @@ fun PerformanceSection(data: PerformanceData, isMain: Boolean) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                val periodMonths = remember(data.points) {
+                    val startDate = LocalDate.parse(data.points.first().date)
+                    val endDate = LocalDate.parse(data.points.last().date)
+                    ChronoUnit.MONTHS.between(startDate, endDate).toInt()
+                }
+
                 BacktestChart(
                     points = data.points,
                     investmentType = InvestmentType.LUMP_SUM,
-                    isPositive = isPositive,
                     isDashed = !isMain,
+                    periodMonths = periodMonths,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

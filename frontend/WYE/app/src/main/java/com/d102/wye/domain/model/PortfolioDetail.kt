@@ -13,5 +13,6 @@ data class PortfolioDetail(
 
 data class PortfolioCount(
     val ticker: String,
-    val counts: Double
+    val counts: Double,
+    val etfName: String
 )
