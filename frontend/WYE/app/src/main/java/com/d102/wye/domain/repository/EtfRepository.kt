@@ -3,6 +3,7 @@ package com.d102.wye.domain.repository
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.EtfClusterData
 import com.d102.wye.domain.model.EtfDetail
+import com.d102.wye.domain.model.EtfMarketData
 import com.d102.wye.domain.model.EtfFilter
 import com.d102.wye.domain.model.EtfLikeData
 import com.d102.wye.domain.model.EtfPage
@@ -19,4 +20,5 @@ interface EtfRepository {
     suspend fun getEtfDetail(ticker: String): BaseResult<EtfDetail>
     suspend fun getEtfCluster(ticker: String): BaseResult<EtfClusterData>
     suspend fun getEtfPriceHistory(ticker: String, startDate: String, endDate: String, size: Int = 300): BaseResult<List<EtfPriceData>>
+    suspend fun getMarketData(ticker: String): BaseResult<EtfMarketData>
 }

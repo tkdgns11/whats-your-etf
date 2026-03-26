@@ -1,12 +1,15 @@
 package com.d102.wye.presentation.explore.list.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -30,7 +33,7 @@ import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
 
 private val sortOptions = listOf("거래량 순", "등락률 순", "시가총액 순")
-private val sortValues  = listOf("TRADING_VOLUME", "DAILY_RETURN", "MARKET_CAPITALIZATION")
+private val sortValues  = listOf("volume", "dailyReturn", "aum")
 
 fun sortLabelOf(value: String?) = sortOptions[sortValues.indexOf(value).coerceAtLeast(0)]
 
@@ -40,15 +43,38 @@ fun SortRow(
     selectedSort: String?,
     onSortChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
+    marketStatusLabel: String = "",
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selected = sortLabelOf(selectedSort)
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (marketStatusLabel.isNotBlank()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (marketStatusLabel.contains("기준")) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryGreen)
+                    )
+                }
+                Text(
+                    text = marketStatusLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (marketStatusLabel.contains("기준")) PrimaryGreen else TextSecondary,
+                )
+            }
+        } else {
+            Box(modifier = Modifier)
+        }
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

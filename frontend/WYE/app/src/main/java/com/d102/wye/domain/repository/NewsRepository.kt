@@ -15,4 +15,7 @@ interface NewsRepository {
 
     /** 포트폴리오 관련 뉴스를 조회한다. */
     suspend fun getPortfolioNews(portfolioId: Long): BaseResult<List<PortfolioNewsItem>>
+
+    /** 키워드로 뉴스를 검색한다. */
+    suspend fun searchNews(keyword: String): BaseResult<NewsPage>
 }

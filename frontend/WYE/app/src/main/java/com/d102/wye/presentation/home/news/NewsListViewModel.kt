@@ -12,6 +12,8 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +32,10 @@ class NewsListViewModel @Inject constructor(
     private var nextCursor: Long? = null
     private var hasMore: Boolean = true
     private var isLoadingMore: Boolean = false
+    private var searchDebounceJob: Job? = null
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     init {
         loadNews(reset = true)
@@ -39,12 +45,53 @@ class NewsListViewModel @Inject constructor(
     fun onCategorySelected(categoryCode: String?) {
         if (selectedCategoryCode == categoryCode) return
         selectedCategoryCode = categoryCode
+        _searchQuery.update { "" }
+        searchDebounceJob?.cancel()
         loadNews(reset = true)
     }
 
     /** 현재 선택된 카테고리 기준으로 목록을 새로고침한다. */
     fun refresh() {
         loadNews(reset = true)
+    }
+
+    /** 검색어 변경 시 즉시 API 호출 */
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.update { query }
+        searchDebounceJob?.cancel()
+        if (query.isBlank()) {
+            loadNews(reset = true)
+            return
+        }
+        searchDebounceJob = viewModelScope.launch {
+            searchNews(query)
+        }
+    }
+
+    private fun searchNews(keyword: String) {
+        viewModelScope.launch {
+            _uiState.update { UiState.Loading }
+            when (val result = newsRepository.searchNews(keyword)) {
+                is BaseResult.Success -> {
+                    val page = result.data
+                    hasMore = false
+                    nextCursor = null
+                    _uiState.update {
+                        UiState.Success(
+                            NewsListData(
+                                categories = newsCategories,
+                                selectedCategoryCode = selectedCategoryCode,
+                                newsList = page.news.map { it.toUiModel() },
+                                isLast = true,
+                                isRefreshing = false,
+                                isLoadingMore = false,
+                            )
+                        )
+                    }
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
+        }
     }
 
     /** 스크롤이 끝에 도달했을 때 다음 페이지를 로드한다. */

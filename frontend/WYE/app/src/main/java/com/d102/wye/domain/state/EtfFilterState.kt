@@ -20,7 +20,7 @@ data class EtfFilterState(
     val themes: Set<String> = emptySet(),
 
     // 배당률 범위
-    val dividendRateRange: String? = null,  // "0-5" / "5-10"
+    val dividendRateRange: String? = null,  // "3" / "5" / "7" / "10"
 
     // 배당주기
     val dividendCycle: String? = null,      // "월" / "반기" / "분기" / "년"

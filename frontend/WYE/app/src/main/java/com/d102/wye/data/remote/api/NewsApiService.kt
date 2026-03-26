@@ -34,4 +34,10 @@ interface NewsApiService {
     suspend fun getPortfolioNews(
         @Path("portfolioId") portfolioId: Long
     ): Response<BaseResponse<PortfolioNewsResponse>>
+
+    /** 키워드로 뉴스를 검색한다. */
+    @GET("news/search")
+    suspend fun searchNews(
+        @Query("keyword") keyword: String,
+    ): Response<BaseResponse<NewsListResponse>>
 }

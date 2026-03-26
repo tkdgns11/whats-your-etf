@@ -14,6 +14,7 @@ data class EtfSectorResponse(
     @SerializedName("percentage") val percentage: Double,
     @SerializedName("stocks") val stocks: List<EtfClusterStockResponse>,
     @SerializedName("aiAnalysis") val aiAnalysis: String?,
+    @SerializedName("assetType") val assetType: String?,
 )
 
 data class EtfClusterStockResponse(

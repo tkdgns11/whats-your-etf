@@ -1,6 +1,9 @@
 package com.d102.wye.presentation.explore.detail
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,12 +26,27 @@ fun EtfDetailScreen(
 ) {
     val detailState  by viewModel.detailState.collectAsStateWithLifecycle()
     val clusterState by viewModel.clusterState.collectAsStateWithLifecycle()
+    val isLiked      by viewModel.isLiked.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("클러스터", "ETF 상세보기")
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { WyeTopBar(title = "ETF 상세", onBackClick = onBack) },
+        topBar = {
+            WyeTopBar(
+                title = "ETF 상세",
+                onBackClick = onBack,
+                actions = {
+                    IconButton(onClick = { viewModel.onLikeToggled() }) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                            contentDescription = "즐겨찾기",
+                            tint = if (isLiked) PrimaryGreen else TextSecondary,
+                        )
+                    }
+                }
+            )
+        },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
             WyeTabs(

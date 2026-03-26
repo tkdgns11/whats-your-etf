@@ -37,4 +37,11 @@ class NewsRepositoryImpl @Inject constructor(
             newsApiService.getPortfolioNews(portfolioId = portfolioId)
         }.map { it.news.map { item -> item.toDomain() } }
     }
+
+    /** 뉴스 검색 API를 호출하고 응답 DTO를 도메인 모델로 변환한다. */
+    override suspend fun searchNews(keyword: String): BaseResult<NewsPage> {
+        return safeApiCall {
+            newsApiService.searchNews(keyword = keyword)
+        }.map { it.toDomain() }
+    }
 }

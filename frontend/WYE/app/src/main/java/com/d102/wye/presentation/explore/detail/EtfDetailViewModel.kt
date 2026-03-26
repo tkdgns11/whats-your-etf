@@ -7,20 +7,29 @@ import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.*
 import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.IndexRepository
+import com.d102.wye.domain.repository.UserRepository
 import timber.log.Timber
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
 class EtfDetailViewModel @Inject constructor(
     private val etfRepository: EtfRepository,
     private val indexRepository: IndexRepository,
+    private val userRepository: UserRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -57,10 +66,92 @@ class EtfDetailViewModel @Inject constructor(
     val showKospi: StateFlow<Boolean> = _showKospi.asStateFlow()
     val showSp500: StateFlow<Boolean> = _showSp500.asStateFlow()
 
+    private val _marketData = MutableStateFlow<EtfMarketData?>(null)
+    val marketData: StateFlow<EtfMarketData?> = _marketData.asStateFlow()
+
+    private val _marketStatusLabel = MutableStateFlow("")
+    val marketStatusLabel: StateFlow<String> = _marketStatusLabel.asStateFlow()
+
+    private val _isLiked = MutableStateFlow(false)
+    val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
+
+    private var pollingJob: Job? = null
+
     init {
         loadDetail()
         loadCluster()
         loadPeriodReturn()
+        loadLikeState()
+        startPolling()
+    }
+
+    fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                when (val result = etfRepository.getMarketData(ticker)) {
+                    is BaseResult.Success -> {
+                        _marketData.update { result.data }
+                        _detailState.update { state ->
+                            if (state is UiState.Success) {
+                                UiState.Success(state.data.copy(
+                                    currentPrice = result.data.currentPrice,
+                                    volume = result.data.volume,
+                                    dailyFluctuationRatio = result.data.dailyReturn,
+                                ))
+                            } else state
+                        }
+                    }
+                    is BaseResult.Error -> Unit
+                }
+                _marketStatusLabel.update { marketStatusLabel() }
+                delay(60_000L)
+            }
+        }
+    }
+
+    fun stopPolling() { pollingJob?.cancel() }
+
+    private fun loadLikeState() {
+        viewModelScope.launch {
+            when (val result = userRepository.checkFavoriteEtf(ticker)) {
+                is BaseResult.Success -> _isLiked.update { result.data }
+                is BaseResult.Error   -> Unit
+            }
+        }
+    }
+
+    fun onLikeToggled() {
+        viewModelScope.launch {
+            val result = if (_isLiked.value) {
+                userRepository.deleteFavoriteEtf(ticker)
+            } else {
+                userRepository.addFavoriteEtf(ticker)
+            }
+            if (result is BaseResult.Success) {
+                _isLiked.update { !it }
+            }
+        }
+    }
+
+    private fun isMarketOpen(): Boolean {
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+        if (now.dayOfWeek == DayOfWeek.SATURDAY || now.dayOfWeek == DayOfWeek.SUNDAY) return false
+        val t = now.toLocalTime()
+        return t >= LocalTime.of(9, 0) && t <= LocalTime.of(15, 30)
+    }
+
+    private fun marketStatusLabel(): String {
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+        return if (isMarketOpen()) {
+            now.format(DateTimeFormatter.ofPattern("MM.dd HH:mm")) + " 기준"
+        } else {
+            var date = now.toLocalDate()
+            while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
+                date = date.minusDays(1)
+            }
+            date.format(DateTimeFormatter.ofPattern("MM.dd")) + " 장마감"
+        }
     }
 
     fun loadDetail() {
@@ -135,7 +226,7 @@ class EtfDetailViewModel @Inject constructor(
                 _chartState.update { UiState.Error(etfResult.error.message) }
                 return@launch
             }
-            val points = (etfResult as BaseResult.Success).data
+            val points = (etfResult as BaseResult.Success).data.sortedBy { it.date }
             if (points.isEmpty()) {
                 _chartState.update { UiState.Error("해당 기간의 데이터가 없습니다.") }
                 return@launch
@@ -172,8 +263,9 @@ class EtfDetailViewModel @Inject constructor(
             is BaseResult.Success -> {
                 val pts = result.data
                 Timber.d("$marketType 데이터: ${pts.size}개, 첫날=${pts.firstOrNull()?.date}, 마지막=${pts.lastOrNull()?.date}")
-                val base = pts.firstOrNull()?.close?.takeIf { it > 0 } ?: return emptyList()
-                pts.map { ChartPoint(it.date, (it.close - base) / base * 100.0) }
+                val sorted = pts.sortedBy { it.date }
+                val base = sorted.firstOrNull()?.close?.takeIf { it > 0 } ?: return emptyList()
+                sorted.map { ChartPoint(it.date, (it.close - base) / base * 100.0) }
             }
             is BaseResult.Error -> {
                 Timber.e("$marketType 인덱스 로드 실패: ${result.error.message}")
@@ -182,10 +274,10 @@ class EtfDetailViewModel @Inject constructor(
         }
     }
 
-    fun toggleNav()   { _showNav.update   { !it } }
-    fun togglePrice() { _showPrice.update { !it } }
-    fun toggleKospi() { _showKospi.update { !it } }
-    fun toggleSp500() { _showSp500.update { !it } }
+    fun toggleNav()   { _showNav.update   { !it }; loadChart() }
+    fun togglePrice() { _showPrice.update { !it }; loadChart() }
+    fun toggleKospi() { _showKospi.update { !it }; loadChart() }
+    fun toggleSp500() { _showSp500.update { !it }; loadChart() }
 
     private fun loadPeriodReturn() {
         viewModelScope.launch {
@@ -193,7 +285,7 @@ class EtfDetailViewModel @Inject constructor(
             val today = todayString()
             when (val result = etfRepository.getEtfPriceHistory(ticker, startDate, today, size = 200)) {
                 is BaseResult.Success -> {
-                    val points = result.data
+                    val points = result.data.sortedBy { it.date }
                     if (points.isEmpty()) return@launch
                     _periodReturn.update {
                         UiState.Success(EtfPeriodReturn(

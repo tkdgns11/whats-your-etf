@@ -13,6 +13,7 @@ data class EtfCluster(
     val percentage: Double,
     val stocks: List<EtfClusterStock>,
     val aiAnalysis: String?,
+    val assetType: String?,
 )
 
 data class EtfClusterStock(

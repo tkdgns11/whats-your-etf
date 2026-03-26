@@ -22,6 +22,14 @@ data class EtfDetail(
     val inavChangeRate: Double,
 )
 
+// GET /api/v1/etfs/{ticker}/market-data
+data class EtfMarketData(
+    val ticker: String,
+    val currentPrice: Long,
+    val dailyReturn: Double,
+    val volume: Long,
+)
+
 // GET /api/v1/etfs/{ticker}/price-history 응답 항목
 data class EtfPriceData(
     val date: String,

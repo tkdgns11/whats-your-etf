@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,6 +58,7 @@ fun ExploreScreen(
     var showFilterDialog by remember { mutableStateOf(false) }
     val expandedFilterSections by viewModel.expandedFilterSections.collectAsStateWithLifecycle()
     val selectedTickers by viewModel.selectedTickers.collectAsStateWithLifecycle()
+    val marketStatusLabel by viewModel.marketStatusLabel.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
@@ -139,6 +141,7 @@ fun ExploreScreen(
             SortRow(
                 selectedSort = sortedBy,
                 onSortChanged = viewModel::onSortChanged,
+                marketStatusLabel = marketStatusLabel,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp),

@@ -164,8 +164,10 @@ fun FilterDialog(
                     FilterSection(title = "배당률", expanded = "배당률" in expandedSections, onToggle = { onToggleSection("배당률") }) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
-                                "0 - 5%" to "0-5",
-                                "5 - 10%" to "5-10"
+                                "3% 이상" to "3",
+                                "5% 이상" to "5",
+                                "7% 이상" to "7",
+                                "10% 이상" to "10",
                             ).forEach { (label, value) ->
                                 WyeSelectableChip(
                                     label = label,
