@@ -109,7 +109,6 @@ fun PerformanceSection(data: PerformanceData, isMain: Boolean) {
 
                 BacktestChart(
                     points = data.points,
-                    investmentType = InvestmentType.LUMP_SUM,
                     isDashed = !isMain,
                     periodMonths = periodMonths,
                     modifier = Modifier.fillMaxWidth()

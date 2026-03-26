@@ -11,7 +11,6 @@ data class EtfFundamentals(
 /** 날짜별 포트폴리오 수익률/가치 포인트 */
 data class BacktestPoint(
     val date: String,
-    /** 적립형: 누적 수익률 (%), 거치형: 포트폴리오 평가 금액 (원) */
     val value: Double
 )
 

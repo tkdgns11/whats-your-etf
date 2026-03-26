@@ -1,6 +1,8 @@
 package com.d102.wye.presentation.strategy.detail.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +17,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.strategy.detail.StrategyDetailData
@@ -30,97 +37,137 @@ import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun SummaryMetricsRow(data: StrategyDetailData) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    // ✨ 태그 펼침 상태 기억
+    var isTagsExpanded by remember { mutableStateOf(false) }
+    // 기본으로 보여줄 태그 개수
+    val maxVisibleTags = 3
+
+    RoundedSurface(horizontalPaddingValue = 24.dp) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+                .animateContentSize()
         ) {
-            Text(
-                text = data.investmentType,
-                color = PrimaryGreen,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier
-                    .background(
-                        PrimaryGreen.copy(alpha = 0.1f),
-                        RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-            Text(
-                text = "생성일 ${data.saveDate.take(10)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary
-            )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // 포트폴리오 이름
-        Text(
-            text = data.title,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 편입된 ETF 종목 태그
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            data.etfNames.forEach { etfName ->
+            // 1. 상단 (날짜, 제목 등)
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 2. 투자 유형 (텍스트로 깔끔하게)
                 Text(
-                    text = "#$etfName",
+                    modifier = Modifier.align(Alignment.TopStart),
+                    text = "•  ${data.investmentType}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = PrimaryGreen
+                )
+
+                Text(
+                    modifier = Modifier.align(Alignment.TopEnd),
+                    text = "생성일 ${data.saveDate.take(10)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = data.title,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val displayTags = if (isTagsExpanded || data.etfNames.size <= maxVisibleTags) {
+                data.etfNames
+            } else {
+                data.etfNames.take(maxVisibleTags)
+            }
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                displayTags.forEach { etfName ->
+                    Text(
+                        text = "#$etfName",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextSecondary,
+                        modifier = Modifier
+                            .background(SurfaceVariant, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                    )
+                }
+
+                // 태그가 많고 접혀있는 상태라면 "+ N개" 뱃지 표시
+                if (!isTagsExpanded && data.etfNames.size > maxVisibleTags) {
+                    val hiddenCount = data.etfNames.size - maxVisibleTags
+                    Text(
+                        text = "+ $hiddenCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = PrimaryGreen, // 클릭 유도를 위해 색상 다르게
+                        modifier = Modifier
+                            .background(PrimaryGreen.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                            .clickable { isTagsExpanded = true }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // 다 펼쳐졌을 때 다시 접는 버튼 (선택 사항)
+            if (isTagsExpanded && data.etfNames.size > maxVisibleTags) {
+                Text(
+                    text = "접기",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextSecondary,
                     modifier = Modifier
-                        .background(
-                            SurfaceVariant,
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(top = 8.dp)
+                        .clickable { isTagsExpanded = false }
                 )
             }
-        }
-    }
 
-    RoundedSurface {
-        Row(
-            modifier = Modifier.padding(vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            data.summaryMetrics.forEachIndexed { index, (label, value) ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-                        color = when {
-                            value.startsWith("+") -> EtfRise
-                            value.startsWith("-") -> EtfFall
-                            else -> TextPrimary
-                        }
-                    )
-                }
-                if (index < data.summaryMetrics.size - 1) {
-                    Box(
-                        modifier = Modifier
-                            .height(24.dp)
-                            .width(1.dp)
-                            .background(SurfaceVariant)
-                    )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 2. 하단 지표 (수익률, 자산 등)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                data.summaryMetrics.forEachIndexed { index, (label, value) ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f) // 균등 분할
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            ),
+                            color = when {
+                                value.startsWith("+") -> EtfRise
+                                value.startsWith("-") -> EtfFall
+                                else -> TextPrimary
+                            },
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 지표 사이 세로 구분선
+                    if (index < data.summaryMetrics.size - 1) {
+                        Box(
+                            modifier = Modifier
+                                .height(20.dp)
+                                .width(1.dp)
+                                .background(SurfaceVariant)
+                        )
+                    }
                 }
             }
         }

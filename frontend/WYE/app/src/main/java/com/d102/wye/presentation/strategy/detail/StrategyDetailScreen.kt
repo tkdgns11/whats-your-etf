@@ -96,6 +96,7 @@ private fun StrategyDetailScreenContent(
                         PerformanceSection(state.data.pastPerformance, isMain = false)
 
                         TimelineSection(state.data.timelines)
+
                         NewsSection(state.data.relatedNews, onNewsClick = onNewsClick)
 
                         WyePrimaryButton(
@@ -104,6 +105,7 @@ private fun StrategyDetailScreenContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 24.dp)
+                                .padding(bottom = 24.dp)
                         )
                     }
                 }

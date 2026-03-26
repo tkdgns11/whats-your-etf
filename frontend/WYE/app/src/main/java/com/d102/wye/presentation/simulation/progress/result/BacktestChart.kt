@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d102.wye.domain.model.BacktestPoint
-import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.presentation.theme.MyDataYellow
 import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.TextSecondary
 import kotlin.math.abs
@@ -40,7 +40,7 @@ import kotlin.math.abs
 fun BacktestChart(
     modifier: Modifier = Modifier,
     points: List<BacktestPoint>,
-    investmentType: InvestmentType,
+    overlayPoints: List<BacktestPoint>? = null,
     periodMonths: Int,
     isDashed: Boolean = false
 ) {
@@ -60,8 +60,14 @@ fun BacktestChart(
     }
 
     val values = remember(points) { points.map { it.value } }
-    val minVal = remember(values) { values.min() }
-    val maxVal = remember(values) { values.max() }
+    val overlayValues = remember(overlayPoints) { overlayPoints?.map { it.value } ?: emptyList() }
+
+    val minVal = remember(values, overlayValues) {
+        (values + overlayValues).minOrNull() ?: 0.0
+    }
+    val maxVal = remember(values, overlayValues) {
+        (values + overlayValues).maxOrNull() ?: 1.0
+    }
     val range = remember(minVal, maxVal) {
         if (abs(maxVal - minVal) < 0.001) 1.0 else maxVal - minVal
     }
@@ -70,7 +76,7 @@ fun BacktestChart(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(150.dp)
+                .height(160.dp)
                 .padding(horizontal = 4.dp)
         ) {
             Canvas(
@@ -78,55 +84,85 @@ fun BacktestChart(
                     .fillMaxSize()
                     .drawWithCache {
                         val w = size.width
-                        val verticalPadding = 8.dp.toPx()
+                        val verticalPadding = 1.dp.toPx()
                         val h = size.height - (verticalPadding * 2)
 
-                        fun xOf(i: Int) = (i.toFloat() / (values.size - 1)) * w
+                        fun xOf(i: Int, size: Int) = (i.toFloat() / (size - 1).coerceAtLeast(1)) * w
                         fun yOf(v: Double) =
                             verticalPadding + h - ((v - minVal) / range * h).toFloat()
 
                         val zeroY =
                             yOf(0.0).coerceIn(verticalPadding, size.height - verticalPadding)
 
+                        // 메인 차트 라인 경로
                         val linePath = Path().apply {
-                            moveTo(xOf(0), yOf(values[0]))
+                            moveTo(xOf(0, values.size), yOf(values[0]))
                             for (i in 1 until values.size) {
-                                val x0 = xOf(i - 1);
+                                val x0 = xOf(i - 1, values.size);
                                 val y0 = yOf(values[i - 1])
-                                val x1 = xOf(i);
+                                val x1 = xOf(i, values.size);
                                 val y1 = yOf(values[i])
                                 cubicTo((x0 + x1) / 2f, y0, (x0 + x1) / 2f, y1, x1, y1)
                             }
                         }
 
-                        // 그라디언트 채우기: 0% 기준선 기준
+                        // ✨ 포인트 2: 마이데이터 차트 라인 경로
+                        val overlayPath = if (overlayValues.isNotEmpty()) {
+                            Path().apply {
+                                moveTo(xOf(0, overlayValues.size), yOf(overlayValues[0]))
+                                for (i in 1 until overlayValues.size) {
+                                    val x0 = xOf(i - 1, overlayValues.size);
+                                    val y0 = yOf(overlayValues[i - 1])
+                                    val x1 = xOf(i, overlayValues.size);
+                                    val y1 = yOf(overlayValues[i])
+                                    cubicTo((x0 + x1) / 2f, y0, (x0 + x1) / 2f, y1, x1, y1)
+                                }
+                            }
+                        } else null
+
+                        // 메인 차트 그라디언트 채우기
                         val fillPath = Path().apply {
-                            moveTo(xOf(0), zeroY)
-                            lineTo(xOf(0), yOf(values[0]))
+                            moveTo(xOf(0, values.size), zeroY)
+                            lineTo(xOf(0, values.size), yOf(values[0]))
                             for (i in 1 until values.size) {
-                                val x0 = xOf(i - 1);
+                                val x0 = xOf(i - 1, values.size);
                                 val y0 = yOf(values[i - 1])
-                                val x1 = xOf(i);
+                                val x1 = xOf(i, values.size);
                                 val y1 = yOf(values[i])
                                 cubicTo((x0 + x1) / 2f, y0, (x0 + x1) / 2f, y1, x1, y1)
                             }
-                            lineTo(xOf(values.size - 1), zeroY)
+                            lineTo(xOf(values.size - 1, values.size), zeroY)
                             close()
                         }
 
+                        // ✨ 포인트 3: 마이데이터 그라디언트 채우기 경로 추가
+                        val overlayFillPath = if (overlayValues.isNotEmpty()) {
+                            Path().apply {
+                                moveTo(xOf(0, overlayValues.size), zeroY)
+                                lineTo(xOf(0, overlayValues.size), yOf(overlayValues[0]))
+                                for (i in 1 until overlayValues.size) {
+                                    val x0 = xOf(i - 1, overlayValues.size);
+                                    val y0 = yOf(overlayValues[i - 1])
+                                    val x1 = xOf(i, overlayValues.size);
+                                    val y1 = yOf(overlayValues[i])
+                                    cubicTo((x0 + x1) / 2f, y0, (x0 + x1) / 2f, y1, x1, y1)
+                                }
+                                lineTo(xOf(overlayValues.size - 1, overlayValues.size), zeroY)
+                                close()
+                            }
+                        } else null
+
                         onDrawBehind {
-                            // 그리드
+                            // 그리드 & 0% 기준선 (기존과 동일)
                             repeat(3) { i ->
                                 val y = verticalPadding + (h * ((i + 1) / 4f))
                                 drawLine(
-                                    color = Color.Gray.copy(alpha = 0.1f),
-                                    start = Offset(0f, y),
-                                    end = Offset(w, y),
-                                    strokeWidth = 0.5.dp.toPx()
+                                    Color.Gray.copy(alpha = 0.1f),
+                                    Offset(0f, y),
+                                    Offset(w, y),
+                                    0.5.dp.toPx()
                                 )
                             }
-
-                            // 0% 기준선
                             if (minVal < 0.0 || maxVal > 0.0) {
                                 drawLine(
                                     color = Color.Gray.copy(alpha = 0.4f),
@@ -138,6 +174,33 @@ fun BacktestChart(
                             }
 
                             clipRect(right = w * animProgress) {
+                                if (overlayValues.isNotEmpty()) {
+                                    overlayFillPath?.let { path ->
+                                        drawPath(
+                                            path = path,
+                                            brush = Brush.verticalGradient(
+                                                colors = listOf(
+                                                    MyDataYellow.copy(alpha = 0.2f), // 부드러운 노란색
+                                                    Color.Transparent
+                                                ),
+                                                startY = verticalPadding,
+                                                endY = size.height - verticalPadding
+                                            )
+                                        )
+                                    }
+                                    overlayPath?.let { path ->
+                                        drawPath(
+                                            path = path,
+                                            color = MyDataYellow,
+                                            style = Stroke(
+                                                width = 1.5.dp.toPx(), // 메인보다 살짝 가늘게
+                                                cap = StrokeCap.Round
+                                            )
+                                        )
+                                    }
+                                }
+
+                                // 메인 차트 그라디언트 & 라인 (기존과 동일)
                                 if (!isDashed) {
                                     drawPath(
                                         path = fillPath,
@@ -154,16 +217,13 @@ fun BacktestChart(
                                 drawPath(
                                     path = linePath,
                                     color = lineColor,
-                                    style = Stroke(
-                                        width = 2.dp.toPx(),
-                                        cap = StrokeCap.Round
-                                    )
+                                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                                 )
                             }
 
-                            // 마지막 점
+                            // 마지막 점 (기존과 동일)
                             if (!isDashed && animProgress >= 0.99f) {
-                                val lastX = xOf(values.size - 1)
+                                val lastX = xOf(values.size - 1, values.size)
                                 val lastY = yOf(values.last())
                                 drawCircle(
                                     color = lineColor,
@@ -188,7 +248,7 @@ fun BacktestChart(
             )
         }
 
-        // x축 날짜 레이블
+        // x축 날짜 레이블 (기존과 동일)
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.AiReviewResult
+import com.d102.wye.domain.model.BacktestPoint
 import com.d102.wye.domain.model.EtfCountItem
 import com.d102.wye.domain.model.EtfFundamentals
 import com.d102.wye.domain.model.SavePortfolioParams
@@ -11,6 +12,7 @@ import com.d102.wye.domain.repository.EtfRepository
 import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.domain.state.InvestmentType
+import com.d102.wye.domain.usecase.portfolio.CalculatePortfolioChartUseCase
 import com.d102.wye.domain.usecase.simulation.RunSimulationUseCase
 import com.d102.wye.presentation.model.UiState
 import com.d102.wye.presentation.simulation.model.SimulationUiModel
@@ -32,10 +34,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SimulationViewModel @Inject constructor(
-    private val runSimulation: RunSimulationUseCase,
     private val simulationRepository: SimulationRepository,
     private val portfolioRepository: PortfolioRepository,
-    private val etfRepository: EtfRepository
+    private val etfRepository: EtfRepository,
+    private val runSimulation: RunSimulationUseCase,
+    private val calculatePortfolioChart: CalculatePortfolioChartUseCase
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(SimulationFormState())
@@ -43,6 +46,9 @@ class SimulationViewModel @Inject constructor(
 
     private val _simulationState = MutableStateFlow<UiState<SimulationUiModel>>(UiState.Idle)
     val simulationState: StateFlow<UiState<SimulationUiModel>> = _simulationState.asStateFlow()
+
+    private val _overlayPoints = MutableStateFlow<List<BacktestPoint>?>(null)
+    val overlayPoints: StateFlow<List<BacktestPoint>?> = _overlayPoints.asStateFlow()
 
     private val _showAiDialog = MutableStateFlow(false)
     val showAiDialog: StateFlow<Boolean> = _showAiDialog.asStateFlow()
@@ -55,6 +61,8 @@ class SimulationViewModel @Inject constructor(
 
     private val _savePortfolioState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val savePortfolioState: StateFlow<UiState<Unit>> = _savePortfolioState.asStateFlow()
+
+    private var lastAiReviewKey: AiReviewKey? = null
 
     private var calcJob: Job? = null
 
@@ -246,9 +254,17 @@ class SimulationViewModel @Inject constructor(
     fun onTabSelected(index: Int) =
         _formState.update { it.copy(selectedTabIndex = index) }
 
-    fun onOverlayToggled(enabled: Boolean) =
+    fun onOverlayToggled(enabled: Boolean) {
         _formState.update { it.copy(isOverlayEnabled = enabled) }
 
+        // ✨ 토글이 켜지면 마이데이터 계산, 꺼지면 초기화
+        if (enabled) {
+            val period = _formState.value.investmentPeriod.toIntOrNull() ?: 0
+            if (period > 0) fetchMyDataOverlay(period)
+        } else {
+            _overlayPoints.value = null
+        }
+    }
     fun onInvestmentTypeSelected(type: InvestmentType) {
         Timber.d("[Form] 투자 방식 변경 | type=$type")
         _formState.update { it.copy(investmentType = type) }
@@ -279,15 +295,16 @@ class SimulationViewModel @Inject constructor(
     }
 
     private fun fetchAiReview() {
-        if (_aiReviewState.value is UiState.Loading ||
-            _aiReviewState.value is UiState.Success
-        ) return
-
         val form = _formState.value
+        val currentKey = createAiReviewKey(form)
+
+        if (currentKey == lastAiReviewKey) return
+
+        if (_aiReviewState.value is UiState.Loading) return
+
         val amount = (form.investmentAmount.toLongOrNull() ?: 0L) * 10_000L
 
         viewModelScope.launch {
-            Timber.d("[AI] AI 진단 요청 시작")
             _aiReviewState.update { UiState.Loading }
 
             when (val result = simulationRepository.getAiPortfolioReview(
@@ -296,16 +313,24 @@ class SimulationViewModel @Inject constructor(
                 portfolios = form.portfolioItems.toDomain()
             )) {
                 is BaseResult.Success -> {
-                    Timber.d("[AI] AI 진단 완료")
+                    lastAiReviewKey = currentKey
                     _aiReviewState.update { UiState.Success(result.data) }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("[AI] AI 진단 실패 | ${result.error.message}")
                     _aiReviewState.update { UiState.Error(result.error.message) }
                 }
             }
         }
+    }
+
+    private fun createAiReviewKey(form: SimulationFormState): AiReviewKey {
+        return AiReviewKey(
+            investmentType = form.investmentType,
+            items = form.portfolioItems
+                .sortedBy { it.ticker }
+                .map { it.ticker to it.weight }
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -366,7 +391,58 @@ class SimulationViewModel @Inject constructor(
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 계산 트리거 (300ms debounce)
+    // ✨ 마이데이터 오버레이 계산 로직
+    // ─────────────────────────────────────────────────────────────────────────
+    private fun fetchMyDataOverlay(periodMonths: Int) {
+        viewModelScope.launch {
+            // 1. 내 자산(isMyData == true) 포트폴리오 ID 찾기
+            val listResult = portfolioRepository.getPortfolioList()
+            if (listResult !is BaseResult.Success) return@launch
+            val myDataPortfolio = listResult.data.find { it.isMyData == true }
+
+            if (myDataPortfolio == null) {
+                _overlayPoints.value = emptyList() // 마이데이터가 없을 경우
+                return@launch
+            }
+
+            // 2. 상세(counts) 조회
+            val detailResult = portfolioRepository.getPortfolioDetail(myDataPortfolio.portfolioId)
+            if (detailResult !is BaseResult.Success) return@launch
+            val detail = detailResult.data
+
+            // 3. 가격 이력 증분 업데이트 (메인 시뮬레이션과 동일한 기간 기준)
+            val tickers = detail.counts.map { it.ticker }
+            val today = LocalDate.now()
+            val endDate = today.toString()
+            val startDate = today.minusMonths(periodMonths.toLong()).toString()
+
+            tickers.forEach { ticker ->
+                val lastCachedDate = simulationRepository.getLastCachedDate(ticker)
+                val needsFetch = lastCachedDate == null || lastCachedDate < endDate
+                if (needsFetch) {
+                    val fetchStart = lastCachedDate?.let { LocalDate.parse(it).plusDays(1).toString() } ?: today.minusYears(3).toString()
+                    when (val res = simulationRepository.getEtfPriceHistories(listOf(ticker), fetchStart, endDate)) {
+                        is BaseResult.Success -> simulationRepository.savePriceHistories(res.data)
+                        is BaseResult.Error -> Timber.e("[Overlay] 가격 이력 실패: ${res.error.message}")
+                    }
+                }
+            }
+
+            val priceHistories = simulationRepository.getCachedPriceHistories(tickers)
+
+            // 4. 차트 수익률 계산
+            val chartResult = calculatePortfolioChart(
+                counts = detail.counts,
+                priceHistories = priceHistories,
+                createdAt = startDate // ✨ 투자 기간(N개월 전)을 기준으로 시작점 맞춤
+            )
+
+            _overlayPoints.value = chartResult.recentPoints
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 계산 트리거
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun triggerCalculation() {
@@ -426,6 +502,10 @@ class SimulationViewModel @Inject constructor(
                     _simulationState.update {
                         UiState.Success(result.data.toUiModel(form.investmentType, sectorWeights))
                     }
+
+                    if (form.isOverlayEnabled) {
+                        fetchMyDataOverlay(periodMonths)
+                    }
                 }
 
                 is BaseResult.Error -> {
@@ -449,4 +529,9 @@ data class SimulationFormState(
 data class SectorWeightUiModel(
     val name: String,
     val ratio: Float
+)
+
+data class AiReviewKey(
+    val investmentType: InvestmentType,
+    val items: List<Pair<String, Int>> // ticker + weight
 )

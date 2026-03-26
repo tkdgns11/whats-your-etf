@@ -40,8 +40,8 @@ fun SimulationResult.toUiModel(
 
     return SimulationUiModel(
         estimatedFinalAsset = estimatedFinalValue.formatAmount(),
-        netProfit = if (netProfitValue >= 0) "+${netProfitValue.formatAmount()}"
-        else "-${Math.abs(netProfitValue).formatAmount()}",
+        netProfit = if (netProfitValue >= 0) "+${netProfitValue.formatFullAmount()}"
+        else "-${kotlin.math.abs(netProfitValue).formatFullAmount()}",
         yieldRate = "${if (isPositive) "+" else ""}${String.format("%.2f", totalReturn)}%",
         totalInvestment = totalInvestment.formatAmount(),
         per = "${String.format("%.1f", fundamentals.per)}배",
@@ -57,19 +57,50 @@ fun SimulationResult.toUiModel(
 }
 
 private fun Long.formatAmount(): String {
-    val absValue = Math.abs(this)
-    val eok = absValue / 100_000_000L
-    val remainder = absValue % 100_000_000L
+    val absValue = kotlin.math.abs(this)
 
     return when {
-        eok > 0 -> {
-            // 억 단위가 있을 경우: "1억 2,345,678원"
-            "${eok}억 ${"%,d".format(remainder)}원"
+        // 1천만원 이하 → 원 단위
+        absValue < 10_000_000 -> {
+            "%,d원".format(absValue)
         }
 
+        // 1억원 이하 → 만원 단위
+        absValue < 100_000_000 -> {
+            val man = absValue / 10_000
+            "%,d만원".format(man)
+        }
+
+        // 1조 이하 → 억 + 만원
+        absValue < 1_000_000_000_000L -> {
+            val eok = absValue / 100_000_000
+            val remainder = (absValue % 100_000_000) / 10_000
+
+            val eokStr = "%,d".format(eok)
+
+            if (remainder > 0) {
+                "${eokStr}억 ${"%,d".format(remainder)}만원"
+            } else {
+                "${eokStr}억"
+            }
+        }
+
+        // 1조 이상 → 조 + 억
         else -> {
-            // 억 단위가 없을 경우: "1,234,567원"
-            "%,d원".format(remainder)
+            val jo = absValue / 1_000_000_000_000L
+            val remainder = (absValue % 1_000_000_000_000L) / 100_000_000
+
+            val joStr = "%,d".format(jo)
+
+            if (remainder > 0) {
+                "${joStr}조 ${"%,d".format(remainder)}억"
+            } else {
+                "${joStr}조"
+            }
         }
     }
+}
+
+private fun Long.formatFullAmount(): String {
+    return "%,d원".format(this)
 }

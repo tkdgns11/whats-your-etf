@@ -235,9 +235,6 @@ private fun StrategyCompareScreenContent(
                                 CompareTableSection(items = tableData)
                             } else {
                                 EmptyTableSection()
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
                                 CompareTipSection()
                             }
 
@@ -248,6 +245,7 @@ private fun StrategyCompareScreenContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = onBackClick
                             )
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }

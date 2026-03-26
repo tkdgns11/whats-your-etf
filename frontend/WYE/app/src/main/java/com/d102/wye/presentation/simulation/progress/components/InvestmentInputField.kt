@@ -60,8 +60,22 @@ fun InvestmentInputField(
         BasicTextField(
             value = displayValue,
             onValueChange = { input ->
-                val clean = input.replace(",", "").filter { it.isDigit() }
-                onValueChange(clean)
+                val cleaned = input
+                    .replace(",", "")
+                    .filter { it.isDigit() }
+                    .trimStart('0')
+
+                val normalized = cleaned.ifEmpty { "0" }
+
+                // 최대 100억
+                val maxAmount = 10_000_000
+
+                val finalValue = normalized.toLongOrNull()?.let {
+                    if (it > maxAmount) maxAmount.toString() else it.toString()
+                } ?: ""
+
+                // "0" 단독 입력 허용하려면 조건 유지
+                onValueChange(finalValue)
             },
             textStyle = MaterialTheme.typography.bodySmall.copy(color = TextPrimary),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
