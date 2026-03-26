@@ -219,7 +219,7 @@ private fun BubbleChartLayout(
 
     // 전체 뷰일 때 궤도 반경 확장 → 버블이 바깥으로 퍼짐
     val orbitFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.60f else 0.40f,
+        targetValue   = if (isAllView) 0.60f else 0.37f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "orbitFraction",
     )

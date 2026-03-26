@@ -142,7 +142,13 @@ class HomeViewModel @Inject constructor(
         } ?: LocalDateTime.now()
 
         return if (shouldShowClosingText()) {
-            parsed.format(DateTimeFormatter.ofPattern("yy.MM.dd")) + " 종가"
+            val now = nowKst()
+            var date = now.toLocalDate()
+            if (now.toLocalTime() < LocalTime.of(9, 0)) date = date.minusDays(1)
+            while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
+                date = date.minusDays(1)
+            }
+            date.format(DateTimeFormatter.ofPattern("yy.MM.dd")) + " 종가"
         } else {
             parsed.format(DateTimeFormatter.ofPattern("yy.MM.dd HH:mm"))
         }
