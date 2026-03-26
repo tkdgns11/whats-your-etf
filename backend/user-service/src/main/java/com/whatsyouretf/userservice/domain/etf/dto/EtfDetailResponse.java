@@ -110,7 +110,7 @@ public class EtfDetailResponse {
             etf.getName(),
             info.currentPrice(),
             priceFluctuation,
-            priceFluctuationRatio,
+            info.dailyReturn(),
             info.nav(),
             navFluctuation,
             navFluctuationRatio,

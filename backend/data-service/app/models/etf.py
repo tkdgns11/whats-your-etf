@@ -117,3 +117,21 @@ class ETFPrice(Base):
 
     def __repr__(self):
         return f"<ETFPrice(etf_id={self.etf_id}, date={self.trade_date}, change={self.change_rate})>"
+
+
+class EtfOtherComposition(Base):
+    """ETF 비주식 구성종목 (채권/선물/현금/원자재 등) 테이블"""
+    __tablename__ = "etf_other_composition"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    etf_id = Column(BigInteger, ForeignKey("etf.id", ondelete="CASCADE"), nullable=False)
+    asset_type = Column(String(20))      # FUTURES / BOND / CASH / COMMODITY / OTHER
+    asset_name = Column(String(50))
+    identifier_type = Column(String(20)) # ISIN / KRX_CODE / INTERNAL_CODE
+    identifier_value = Column(String(30))
+    weight = Column(DECIMAL(6, 3))
+    market_value = Column(BigInteger)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<EtfOtherComposition(etf_id={self.etf_id}, type={self.asset_type}, name={self.asset_name})>"

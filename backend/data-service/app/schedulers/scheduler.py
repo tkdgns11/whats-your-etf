@@ -143,6 +143,20 @@ async def krx_disclosure_job():
         db.close()
 
 
+async def sync_etf_other_composition_job():
+    """ETF 비주식 구성종목 동기화 (채권/선물/현금 등) (매주 일요일 04:00 KST)"""
+    logger.info("=== ETF 비주식 구성종목 동기화 시작 ===")
+    from app.services.etf_service import EtfService
+    from app.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_other_composition()
+            logger.info("=== ETF 비주식 구성종목 동기화 완료 ===")
+        except Exception as e:
+            logger.error(f"ETF 비주식 구성종목 동기화 실패: {e}")
+
+
 async def etf_sync_job():
     """ETF 티커 동기화 (기본 정보 저장) (매일 05:00 KST)"""
     logger.info("=== ETF 동기화 시작 ===")
@@ -249,7 +263,7 @@ async def run_etf_stock_cache_sync():
 
     async with AsyncSessionLocal() as db:
         try:
-            # Phase 1: 활성 ETF 캐시 업데이트 + 업데이트된 stock tickers 수집
+            # 활성 ETF 조회
             stmt = select(ETF).where(ETF.is_active == True)
             result = await db.execute(stmt)
             etfs = result.scalars().all()
@@ -258,17 +272,7 @@ async def run_etf_stock_cache_sync():
                 logger.warning("활성화된 ETF가 없어 캐시 업데이트를 종료합니다.")
                 return
 
-            tasks = [cache_service.publish_etf_cache(etf.stock_code, etf.name or "") for etf in etfs if etf.stock_code]
-            phase1_results = await asyncio.gather(*tasks, return_exceptions=True)
-            logger.info(f"=== Phase 1 완료: {len(etfs)}개 ETF 캐시 업데이트 ===")
-
-            # Phase 1에서 업데이트된 stock tickers 수집
-            updated_tickers = set()
-            for r in phase1_results:
-                if isinstance(r, set):
-                    updated_tickers.update(r)
-
-            # Phase 2: DB 기준 전체 구성종목 조회 → 누락 종목만 개별 API 호출
+            # Phase 1/2 공통: 전체 구성종목 이름 미리 조회 (API 응답에 이름이 없을 때 fallback 용)
             all_stocks_result = await db.execute(text("""
                 SELECT DISTINCT s.ticker, ci.company_name
                 FROM etf_stock_composition esc
@@ -278,8 +282,23 @@ async def run_etf_stock_cache_sync():
                 WHERE e.is_active = true
                   AND s.ticker IS NOT NULL
             """))
-            all_stocks = {row.ticker: (row.company_name or "") for row in all_stocks_result}
+            all_stocks = {row.ticker: (row.company_name or "") for row in all_stocks_result.fetchall()}
 
+            # Phase 1: 활성 ETF 캐시 업데이트 (stock_name_map 전달 → hts_kor_isnm 없을 때 DB 이름 사용)
+            tasks = [
+                cache_service.publish_etf_cache(etf.stock_code, etf.name or "", all_stocks)
+                for etf in etfs if etf.stock_code
+            ]
+            phase1_results = await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"=== Phase 1 완료: {len(etfs)}개 ETF 캐시 업데이트 ===")
+
+            # Phase 1에서 업데이트된 stock tickers 수집
+            updated_tickers = set()
+            for r in phase1_results:
+                if isinstance(r, set):
+                    updated_tickers.update(r)
+
+            # Phase 2: Phase 1에서 누락된 종목만 개별 KIS API 호출
             remaining = {ticker: name for ticker, name in all_stocks.items() if ticker not in updated_tickers}
             logger.info(f"=== Phase 2 시작: 전체 {len(all_stocks)}개 중 누락 {len(remaining)}개 개별 조회 ===")
 
@@ -290,13 +309,6 @@ async def run_etf_stock_cache_sync():
         except Exception as e:
             logger.error(f"실시간 캐시 업데이트 실패: {e}")
         finally:
-
-            cache_service = RedisCacheService()
-            # 비동기로 모든 ETF의 캐시 업데이트 실행 (KISClient 내부에서 18/s 동시성 제어됨)
-            import asyncio
-            tasks = [cache_service.publish_etf_cache(etf.stock_code) for etf in etfs if etf.stock_code]
-            await asyncio.gather(*tasks, return_exceptions=True)
-
             await cache_service.close()
 
 
@@ -387,6 +399,15 @@ def start_scheduler():
         trigger=CronTrigger(hour=5, minute=30, timezone='Asia/Seoul'),
         id="etf_active_status_job",
         name="ETF Active Status Check",
+        replace_existing=True
+    )
+
+    # ETF 비주식 구성종목 동기화 (채권/선물/현금 등) (매주 일요일 04:00 KST)
+    scheduler.add_job(
+        sync_etf_other_composition_job,
+        trigger=CronTrigger(day_of_week='sun', hour=4, minute=0, timezone='Asia/Seoul'),
+        id="sync_etf_other_composition_job",
+        name="ETF Other Composition Sync",
         replace_existing=True
     )
     

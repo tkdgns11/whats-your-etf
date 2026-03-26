@@ -3,7 +3,7 @@ package com.whatsyouretf.userservice.domain.etf.service;
 import java.math.BigDecimal;
 
 public record EtfQuery(
-        String ristType,
+        String riskType,
         String strategy,
         String sector,
         BigDecimal dividendYield,
@@ -19,6 +19,8 @@ public record EtfQuery(
         BigDecimal roeHigh,
         BigDecimal commission,
         BigDecimal aum,
-        String sortedBy
+        String sortedBy,
+        String searchName,
+        Long userId
 ) {
 }

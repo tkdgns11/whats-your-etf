@@ -514,3 +514,92 @@ class EtfService:
 
         await self.etf_repository.db.commit()
         logger.info(f"=== ETF 위험유형 계산 완료: {updated}개 ETF 업데이트 ===")
+
+    async def sync_etf_other_composition(self):
+        """pykrx PDF에서 비주식 구성종목(채권/선물/현금 등)을 etf_other_composition에 저장.
+
+        - 6자리 숫자 종목(일반 주식)은 제외 → etf_stock_composition 에서 관리
+        - KRW / 채권 / 선물 / 원자재 등을 asset_type으로 분류하여 저장
+        - ETF 별로 DELETE → INSERT (항상 최신 PDF 기준 덮어쓰기)
+        """
+        import re
+        import asyncio
+        from sqlalchemy import delete
+        from app.models.etf import EtfOtherComposition
+
+        def _classify_asset_type(ticker: str, name: str) -> str:
+            t = ticker.upper()
+            n = name
+            if t == 'KRW' or '현금' in n or 'CASH' in t:
+                return 'CASH'
+            if any(k in n for k in ['채권', '국고채', '통안채', '회사채', 'RP', ' CD', ' CP', 'BOND']):
+                return 'BOND'
+            if any(k in n for k in ['선물', 'FUTURES', 'FORWARD', 'SWAP']) or re.match(r'^[A-Z]\d{5}$', t):
+                return 'FUTURES'
+            if any(k in n for k in ['금 선물', '원유', '오일', 'OIL', 'GOLD', '원자재', '구리', '천연가스']):
+                return 'COMMODITY'
+            return 'OTHER'
+
+        def _classify_identifier_type(ticker: str) -> str:
+            t = ticker.upper()
+            if t == 'KRW':
+                return 'INTERNAL_CODE'
+            if re.match(r'^KR[A-Z0-9]{10}$', t):  # ISIN 형식: KR + 10자리
+                return 'ISIN'
+            if re.match(r'^[A-Z]\d{5}$', t):       # KRX 선물코드: 알파벳 + 5자리
+                return 'KRX_CODE'
+            return 'INTERNAL_CODE'
+
+        active_etfs = await self.etf_repository.get_active_etfs()
+        if not active_etfs:
+            logger.info("비주식 구성종목 동기화: 활성 ETF 없음")
+            return
+
+        logger.info(f"=== ETF 비주식 구성종목 동기화 시작: {len(active_etfs)}개 ETF ===")
+        total_saved = 0
+        _krx_sem = asyncio.Semaphore(5)
+
+        async def _sync_one(etf: dict):
+            nonlocal total_saved
+            ticker = etf["ticker"]
+            etf_id = etf["id"]
+
+            async with _krx_sem:
+                await asyncio.sleep(0.2)
+                pdf_infos = await self.pykrx_client.get_etf_pdf_info(ticker)
+
+            if not pdf_infos:
+                return
+
+            # 비주식 항목만 필터링
+            other_items = []
+            for pdf in pdf_infos:
+                pdf_ticker = pdf["ticker"].strip()
+                pdf_name = pdf["name"].strip()
+                # 6자리 숫자 → 일반 주식, 제외
+                if pdf_ticker.isdigit() and len(pdf_ticker) == 6:
+                    continue
+                asset_type = _classify_asset_type(pdf_ticker, pdf_name)
+                identifier_type = _classify_identifier_type(pdf_ticker)
+                other_items.append(EtfOtherComposition(
+                    etf_id=etf_id,
+                    asset_type=asset_type,
+                    asset_name=pdf_name[:50],
+                    identifier_type=identifier_type,
+                    identifier_value=pdf_ticker[:30],
+                    weight=round(pdf.get("weight", 0.0), 3),
+                    market_value=pdf.get("market_value", 0),
+                ))
+
+            # DELETE → INSERT
+            await self.etf_repository.db.execute(
+                delete(EtfOtherComposition).where(EtfOtherComposition.etf_id == etf_id)
+            )
+            if other_items:
+                self.etf_repository.db.add_all(other_items)
+                total_saved += len(other_items)
+            logger.debug(f"[{ticker}] 비주식 구성종목 {len(other_items)}개 저장")
+
+        await asyncio.gather(*[_sync_one(etf) for etf in active_etfs], return_exceptions=True)
+        await self.etf_repository.db.commit()
+        logger.info(f"=== ETF 비주식 구성종목 동기화 완료: {total_saved}건 저장 ===")

@@ -42,6 +42,11 @@ public class EtfReaderImpl implements EtfReader {
     }
 
     @Override
+    public List<EtfSummary> readAllEtfList(EtfQuery query) {
+        return etfQueryDslReader.readAllEtfList(query);
+    }
+
+    @Override
     public Map<String, Etf> getValidEtfs(List<String> tickers) {
             return etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
                     .collect(Collectors.toMap(Etf::getStockCode, etf -> etf));

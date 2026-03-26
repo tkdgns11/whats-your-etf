@@ -21,9 +21,10 @@ public record EtfListRequest(
         BigDecimal roeHigh,
         BigDecimal commission,
         BigDecimal aum,
-        String sortedBy
+        String sortedBy,
+        String searchName
 ) {
-        public EtfQuery toQuery() {
+        public EtfQuery toQuery(Long userId) {
                 return new EtfQuery(
                         riskType,
                         strategy,
@@ -41,7 +42,9 @@ public record EtfListRequest(
                         roeHigh,
                         commission,
                         aum,
-                        sortedBy
+                        sortedBy,
+                        searchName,
+                        userId
                 );
         }
 }
