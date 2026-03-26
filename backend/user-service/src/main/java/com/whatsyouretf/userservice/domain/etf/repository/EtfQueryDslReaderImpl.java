@@ -6,8 +6,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.whatsyouretf.userservice.domain.company.entity.QCompanyInfo;
-import com.whatsyouretf.userservice.domain.company.entity.QStock;
 import com.whatsyouretf.userservice.domain.etf.dto.EtfSummary;
 import com.whatsyouretf.userservice.domain.etf.entity.EtfSector;
 import com.whatsyouretf.userservice.domain.etf.entity.QEtf;
@@ -30,8 +28,6 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
 
     private static final QEtf etf = QEtf.etf;
     private static final QEtfStockComposition comp = QEtfStockComposition.etfStockComposition;
-    private static final QStock stock = QStock.stock;
-    private static final QCompanyInfo company = QCompanyInfo.companyInfo;
     private static final QUserFavoriteEtf fav = QUserFavoriteEtf.userFavoriteEtf;
 
     private final JPAQueryFactory queryFactory;
@@ -112,14 +108,15 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
         BooleanExpression etfNameMatch = etf.name.containsIgnoreCase(searchName);
 
         // 구성종목의 회사명에 포함 (etf_stock_composition → stock → company_info)
+        // 명시적 join 대신 경로 탐색으로 JPQL implicit join 사용 → alias 충돌 방지
         BooleanExpression stockNameMatch = JPAExpressions
                 .selectOne()
                 .from(comp)
-                .join(comp.stock, stock)
-                .join(stock.company, company)
                 .where(
                         comp.etf.eq(etf),
-                        company.companyName.containsIgnoreCase(searchName)
+                        comp.stock.isNotNull(),
+                        comp.stock.company.isNotNull(),
+                        comp.stock.company.companyName.containsIgnoreCase(searchName)
                 )
                 .exists();
 
