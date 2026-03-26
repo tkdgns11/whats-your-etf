@@ -44,6 +44,10 @@ public class EtfOtherComposition {
     @Column(name = "identifier_value", length = 30)
     private String identifierValue;
 
+    /** 표시명 (패턴 기반 변환) */
+    @Column(name = "display_name", length = 100)
+    private String displayName;
+
     /** 비중 (%) */
     @Column(precision = 6, scale = 3)
     private BigDecimal weight;

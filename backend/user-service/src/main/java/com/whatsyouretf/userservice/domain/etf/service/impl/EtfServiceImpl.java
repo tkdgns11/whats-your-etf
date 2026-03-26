@@ -404,7 +404,7 @@ public class EtfServiceImpl implements EtfService {
                                             .limit(MAX_SECTOR_STOCKS)
                                             .map(comp -> EtfSectorStockResponse.builder()
                                                     .ticker(comp.getIdentifierValue())
-                                                    .name(comp.getIdentifierValue())
+                                                    .name(comp.getDisplayName() != null ? comp.getDisplayName() : comp.getIdentifierValue())
                                                     .percentage(comp.getWeight())
                                                     .build())
                                             .toList();
