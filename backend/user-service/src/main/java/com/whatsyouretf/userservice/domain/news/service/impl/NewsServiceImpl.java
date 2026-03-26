@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
@@ -27,8 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +43,7 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
     private final NewsArticleRepository newsArticleRepository;
     private final EtfRepository etfRepository;
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfReader etfReader;
     private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
@@ -53,31 +54,47 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     private static final int MAX_PORTFOLIO_NEWS = 5;
 
     @Override
-    public NewsPageResponse getLatestNews(String categoryCode, int page, int size) {
-        // 페이지 번호 검증 (1부터 시작, 내부적으로 0-based 변환)
-        int validPage = Math.max(page - 1, 0);
+    public NewsPageResponse getLatestNews(String categoryCode, Long lastId, int size) {
         // 페이지 크기 제한 (최대 50)
         int validSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        Pageable pageable = PageRequest.of(validPage, validSize);
+        // 1개 더 조회해서 hasMore 판단
+        Pageable pageable = PageRequest.of(0, validSize + 1);
 
-        Page<NewsArticle> articlePage;
+        List<NewsArticle> articles;
         if (categoryCode != null && !categoryCode.isBlank()) {
-            articlePage = newsArticleRepository.findByCategoryCode(categoryCode, pageable);
+            // 카테고리 필터 적용
+            if (lastId != null) {
+                articles = newsArticleRepository.findByCategoryCodeByCursor(categoryCode, lastId, pageable);
+            } else {
+                articles = newsArticleRepository.findByCategoryCodeFirstPage(categoryCode, pageable);
+            }
         } else {
-            articlePage = newsArticleRepository.findLatestNews(pageable);
+            // 전체 조회
+            if (lastId != null) {
+                articles = newsArticleRepository.findLatestNewsByCursor(lastId, pageable);
+            } else {
+                articles = newsArticleRepository.findLatestNewsFirstPage(pageable);
+            }
         }
 
-        List<NewsListResponse> newsList = articlePage.getContent().stream()
+        // hasMore 판단: 요청한 것보다 1개 더 조회되면 다음 페이지 존재
+        boolean hasMore = articles.size() > validSize;
+
+        // 실제 반환할 뉴스 목록 (요청한 크기만큼만)
+        List<NewsArticle> resultArticles = hasMore ? articles.subList(0, validSize) : articles;
+
+        List<NewsListResponse> newsList = resultArticles.stream()
                 .map(NewsListResponse::from)
                 .toList();
 
+        // 다음 커서: 마지막 뉴스의 ID
+        Long nextCursor = resultArticles.isEmpty() ? null : resultArticles.get(resultArticles.size() - 1).getId();
+
         return NewsPageResponse.builder()
                 .news(newsList)
-                .page(articlePage.getNumber() + 1)  // 1-based로 반환
-                .size(articlePage.getSize())
-                .totalElements(articlePage.getTotalElements())
-                .totalPages(articlePage.getTotalPages())
-                .last(articlePage.isLast())
+                .size(validSize)
+                .hasMore(hasMore)
+                .nextCursor(hasMore ? nextCursor : null)
                 .build();
     }
 
@@ -115,18 +132,15 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
             return List.of();
         }
 
-        // ETF ID 목록
-        List<Long> etfIds = etfs.stream().map(Etf::getId).toList();
+        // ETF ticker 목록
+        Set<String> tickers = etfs.stream().map(Etf::getStockCode).collect(Collectors.toSet());
 
-        Map<Long, EtfPrice> priceMap = etfPriceRepository.findLatestByEtfIds(etfIds).stream()
-                .collect(Collectors.toMap(
-                        price -> price.getEtf().getId(),
-                        Function.identity()
-                ));
+        // Redis 캐시에서 최신 시세 조회 (ETF 목록 API와 동일한 데이터 소스)
+        Map<String, EtfCurrentInfo> priceInfoMap = etfReader.getInfosMap(tickers);
 
         // DTO 변환
         return etfs.stream()
-                .map(etf -> RelatedEtfResponse.from(etf, priceMap.get(etf.getId())))
+                .map(etf -> RelatedEtfResponse.from(etf, priceInfoMap.get(etf.getStockCode())))
                 .toList();
     }
 
@@ -200,11 +214,9 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         return NewsPageResponse.builder()
                 .news(newsList)
                 .keyword(keyword)
-                .page(1)
                 .size(DEFAULT_PAGE_SIZE)
-                .totalElements(articlePage.getTotalElements())
-                .totalPages(articlePage.getTotalPages())
-                .last(articlePage.isLast())
+                .hasMore(false)
+                .nextCursor(null)
                 .build();
     }
 

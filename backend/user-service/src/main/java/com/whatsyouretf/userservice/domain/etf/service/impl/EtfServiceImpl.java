@@ -5,7 +5,9 @@ import com.whatsyouretf.userservice.domain.company.service.StockCache;
 import com.whatsyouretf.userservice.domain.etf.dto.*;
 import com.whatsyouretf.userservice.domain.etf.entity.*;
 import com.whatsyouretf.userservice.domain.etf.repository.*;
+import com.whatsyouretf.userservice.domain.etf.repository.SectorStockProjection;
 import com.whatsyouretf.userservice.domain.etf.service.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,8 @@ public class EtfServiceImpl implements EtfService {
     private final EtfStockClusterMappingRepository clusterMappingRepository;
     private final StockCache stockCache;
     private final EtfDividendRepository etfDividendRepository;
+    private final EtfOtherCompositionRepository otherCompositionRepository;
+    private final EntityManager entityManager;
 
     private static final int MAX_INFLUENTIAL_STOCKS = 5;
     private static final int MAX_SECTOR_STOCKS = 5;
@@ -64,15 +68,30 @@ public class EtfServiceImpl implements EtfService {
         boolean isThemeEtf = isThemeEtf(etf);
         String clusterType = isThemeEtf ? CLUSTER_TYPE_SUB_SECTOR : CLUSTER_TYPE_GROUP;
 
-        // 섹터 클러스터 조회
-        List<EtfSectorResponse> sectors = getSectorClusters(ticker, clusterType, isThemeEtf);
+        // AI 분석 조회 (모든 그룹코드 - 주식 섹터 + 비주식 자산)
+        Map<String, String> aiAnalysisMap = sectorAiHistoryRepository.findLatestAllByEtfTicker(ticker).stream()
+            .collect(Collectors.toMap(
+                EtfSectorAiHistory::getGroupCode,
+                EtfSectorAiHistory::getAiAnalysis,
+                (a, b) -> a // 중복 시 첫번째 사용
+            ));
+
+        // 섹터 클러스터 조회 (주식 섹터)
+        List<EtfSectorResponse> stockSectors = getSectorClusters(ticker, clusterType, isThemeEtf, aiAnalysisMap);
+
+        // 비주식 구성종목을 섹터로 변환 (선물, 채권 등)
+        List<EtfSectorResponse> otherSectors = getOtherCompositionsAsSectors(etf.getId(), aiAnalysisMap);
+
+        // 주식 섹터 + 비주식 섹터 합치기
+        List<EtfSectorResponse> allSectors = new java.util.ArrayList<>(stockSectors);
+        allSectors.addAll(otherSectors);
 
         // 영향력 종목 조회
         List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
 
         return EtfClusterResponse.builder()
                 .englishName(etf.getEnglishName())
-                .sectors(sectors)
+                .sectors(allSectors)
                 .influentialStocks(influentialStocks)
                 .build();
     }
@@ -115,22 +134,15 @@ public class EtfServiceImpl implements EtfService {
      * @param ticker ETF 티커
      * @param clusterType 클러스터 타입 (GROUP_CODE / SUB_SECTOR)
      * @param isThemeEtf 테마형 ETF 여부
+     * @param aiAnalysisMap AI 분석 맵 (그룹코드 -> 분석 텍스트)
      */
-    private List<EtfSectorResponse> getSectorClusters(String ticker, String clusterType, boolean isThemeEtf) {
+    private List<EtfSectorResponse> getSectorClusters(String ticker, String clusterType, boolean isThemeEtf, Map<String, String> aiAnalysisMap) {
         // 섹터 클러스터 조회
         List<EtfSectorCluster> clusters = sectorClusterRepository.findLatestByEtfTickerAndClusterType(ticker, clusterType);
 
         if (clusters.isEmpty()) {
             return List.of();
         }
-
-        // AI 분석 조회 (그룹코드별)
-        Map<String, String> aiAnalysisMap = sectorAiHistoryRepository.findLatestAllByEtfTicker(ticker).stream()
-            .collect(Collectors.toMap(
-                EtfSectorAiHistory::getGroupCode,
-                EtfSectorAiHistory::getAiAnalysis,
-                (a, b) -> a // 중복 시 첫번째 사용
-            ));
 
         Map<String, List<EtfSectorStockResponse>> stocksByCode = isThemeEtf
             ? loadAllStocksBySectorCode(ticker)
@@ -139,12 +151,8 @@ public class EtfServiceImpl implements EtfService {
         // 섹터별 응답 생성
         return clusters.stream()
             .map(cluster -> {
-                // 그룹화된 데이터에서 해당 섹터 종목 조회
                 String code = isThemeEtf ? cluster.getIndustryCode() : cluster.getGroupCode();
-                List<EtfSectorStockResponse> stocks = stocksByCode.getOrDefault(code, List.of())
-                    .stream()
-                    .limit(MAX_SECTOR_STOCKS)
-                    .toList();
+                List<EtfSectorStockResponse> stocks = stocksByCode.getOrDefault(code, List.of());
 
                 // 섹터명 결정: 테마형은 subSector, 시장형은 groupName
                 String sectorName = isThemeEtf
@@ -162,40 +170,35 @@ public class EtfServiceImpl implements EtfService {
     }
 
     /**
-     * 테마형 ETF: 모든 종목을 한 번에 조회 후 sectorCode별 그룹화
+     * 테마형 ETF: 섹터코드별 상위 5개 종목 조회
      */
     private Map<String, List<EtfSectorStockResponse>> loadAllStocksBySectorCode(String ticker) {
-        return clusterMappingRepository.findAllByEtfTicker(ticker).stream()
+        return clusterMappingRepository.findTopStocksBySectorCode(ticker, MAX_SECTOR_STOCKS).stream()
             .collect(Collectors.groupingBy(
-                m -> m.getSector().getCode(),
+                SectorStockProjection::getSectorCode,
                 Collectors.mapping(this::toSectorStockResponse, Collectors.toList())
             ));
     }
 
     /**
-     * 시장형 ETF: 모든 종목을 한 번에 조회 후 groupCode별 그룹화
+     * 시장형 ETF: 그룹코드별 상위 5개 종목 조회
      */
     private Map<String, List<EtfSectorStockResponse>> loadAllStocksByGroupCode(String ticker) {
-        return clusterMappingRepository.findAllByEtfTicker(ticker).stream()
-            .filter(m -> m.getSector().getGroupCode() != null)
+        return clusterMappingRepository.findTopStocksByGroupCode(ticker, MAX_SECTOR_STOCKS).stream()
             .collect(Collectors.groupingBy(
-                m -> m.getSector().getGroupCode(),
+                SectorStockProjection::getGroupCode,
                 Collectors.mapping(this::toSectorStockResponse, Collectors.toList())
             ));
     }
 
     /**
-     * EtfStockClusterMapping -> EtfSectorStockResponse 변환
+     * SectorStockProjection -> EtfSectorStockResponse 변환
      */
-    private EtfSectorStockResponse toSectorStockResponse(EtfStockClusterMapping mapping) {
-        var comp = mapping.getComposition();
-        var stock = comp.getStock();
-        var company = stock.getCompany();
-
+    private EtfSectorStockResponse toSectorStockResponse(SectorStockProjection projection) {
         return EtfSectorStockResponse.builder()
-            .ticker(stock.getTicker())
-            .name(company != null ? company.getCompanyName() : null)
-            .percentage(comp.getWeightPct())
+            .ticker(projection.getStockTicker())
+            .name(projection.getCompanyName())
+            .percentage(projection.getWeightPct())
             .build();
     }
 
@@ -252,52 +255,62 @@ public class EtfServiceImpl implements EtfService {
     /**
      * 영향력 종목 조회 (비중 × 현재가 × |등락률| 기준 상위 N개)
      */
+    @SuppressWarnings("unchecked")
     private List<EtfInfluentialStockResponse> getInfluentialStocks(Long etfId) {
-        return stockCompositionRepository.findLatestByEtfId(etfId).stream()
-                .map(comp -> {
-                    var stock = comp.getStock();
-                    var company = stock.getCompany();
-                    StockInfo stockInfo = stockCache.get(stock.getTicker(), stock.getDescription());
+        // 1. ETF의 모든 구성종목 ticker 조회 (24시간 캐시)
+        List<String> tickers = stockCompositionRepository.findTickersByEtfId(etfId);
 
-                    BigDecimal changeRate = (stockInfo != null && stockInfo.dailyFluctuation() != null)
-                            ? stockInfo.dailyReturn() : BigDecimal.ZERO;
-                    BigDecimal currentPrice = (stockInfo != null && stockInfo.currentPrice() != null)
-                            ? stockInfo.currentPrice() : BigDecimal.ZERO;
+        if (tickers.isEmpty()) {
+            return List.of();
+        }
 
-                    // 영향력 = 비중 × 현재가 × |등락률|
-                    BigDecimal influence = comp.getWeightPct()
-                            .multiply(currentPrice)
-                            .multiply(changeRate.abs());
+        // 2. Redis 배치 조회
+        Map<String, StockInfo> stockInfoMap = stockCache.getAll(Set.copyOf(tickers));
 
-                    return new InfluentialStockTemp(
-                            stock.getTicker(),
-                            company != null ? company.getCompanyName() : null,
-                            comp.getWeightPct(),
-                            currentPrice.longValue() > 0 ? currentPrice.longValue() : null,
-                            changeRate,
-                            influence
-                    );
-                })
-                .sorted((a, b) -> b.influence().compareTo(a.influence()))
-                .limit(MAX_INFLUENTIAL_STOCKS)
-                .map(temp -> EtfInfluentialStockResponse.builder()
-                        .ticker(temp.ticker())
-                        .name(temp.name())
-                        .weight(temp.weight())
-                        .currentPrice(temp.currentPrice())
-                        .changeRate(temp.changeRate())
+        if (stockInfoMap.isEmpty()) {
+            return List.of();
+        }
+
+        // 3. VALUES 절 생성
+        StringBuilder valuesBuilder = new StringBuilder();
+        for (Map.Entry<String, StockInfo> entry : stockInfoMap.entrySet()) {
+            if (valuesBuilder.length() > 0) valuesBuilder.append(",");
+            StockInfo info = entry.getValue();
+            valuesBuilder.append(String.format("('%s', %s, %s)",
+                    entry.getKey(),
+                    info.currentPrice() != null ? info.currentPrice().toPlainString() : "0",
+                    info.dailyReturn() != null ? info.dailyReturn().toPlainString() : "0"));
+        }
+
+        // 4. Native Query로 상위 5개만 조회
+        String sql = String.format("""
+            WITH price_data(ticker, current_price, change_rate) AS (VALUES %s)
+            SELECT s.ticker, ci.company_name, esc.weight_pct, p.current_price, p.change_rate
+            FROM etf_stock_composition esc
+            JOIN stock s ON esc.stock_id = s.id
+            LEFT JOIN company_info ci ON s.company_id = ci.id
+            JOIN price_data p ON s.ticker = p.ticker
+            WHERE esc.etf_id = :etfId
+              AND esc.base_date = (SELECT MAX(base_date) FROM etf_stock_composition WHERE etf_id = :etfId)
+            ORDER BY esc.weight_pct * p.current_price * ABS(p.change_rate) DESC
+            LIMIT :limit
+            """, valuesBuilder);
+
+        List<Object[]> results = entityManager.createNativeQuery(sql)
+                .setParameter("etfId", etfId)
+                .setParameter("limit", MAX_INFLUENTIAL_STOCKS)
+                .getResultList();
+
+        return results.stream()
+                .map(row -> EtfInfluentialStockResponse.builder()
+                        .ticker((String) row[0])
+                        .name((String) row[1])
+                        .weight(row[2] != null ? new BigDecimal(row[2].toString()) : null)
+                        .currentPrice(row[3] != null ? ((Number) row[3]).longValue() : null)
+                        .changeRate(row[4] != null ? new BigDecimal(row[4].toString()) : null)
                         .build())
                 .toList();
     }
-
-    private record InfluentialStockTemp(
-            String ticker,
-            String name,
-            BigDecimal weight,
-            Long currentPrice,
-            BigDecimal changeRate,
-            BigDecimal influence
-    ) {}
 
     @Override
     public Page<EtfPrice> getEtfHistory(String ticker, LocalDate startDate, LocalDate endDate, Pageable pageable) {
@@ -343,5 +356,90 @@ public class EtfServiceImpl implements EtfService {
             return new PageImpl<>(page, pageable, sorted.size());
         }
         return etfReader.readEtfList(query, pageable);
+    }
+
+    /**
+     * 비주식 구성종목을 asset_type별로 묶어서 섹터 형태로 변환
+     * 예: FUTURES 3개 → "선물" 1개 섹터 (비중 합산, 개별 항목은 stocks에 포함)
+     *
+     * @param etfId ETF ID
+     * @param aiAnalysisMap AI 분석 맵 (asset_type -> 분석 텍스트)
+     */
+    private List<EtfSectorResponse> getOtherCompositionsAsSectors(Long etfId, Map<String, String> aiAnalysisMap) {
+        // asset_type별 한글명 매핑
+        Map<String, String> assetTypeNames = Map.ofEntries(
+                Map.entry("FUTURES", "선물"),
+                Map.entry("ETF", "ETF"),
+                Map.entry("CASH", "현금"),
+                Map.entry("PREFERRED_STOCK", "우선주"),
+                Map.entry("COMMODITY", "원자재"),
+                Map.entry("REITS", "리츠"),
+                Map.entry("MIXED", "혼합자산")
+        );
+
+        // asset_type별로 그룹핑
+        Map<String, List<EtfOtherComposition>> groupedByType = otherCompositionRepository.findByEtfId(etfId).stream()
+                .collect(Collectors.groupingBy(EtfOtherComposition::getAssetType));
+
+        return groupedByType.entrySet().stream()
+                .flatMap(entry -> {
+                    String assetType = entry.getKey();
+                    List<EtfOtherComposition> compositions = entry.getValue();
+
+                    // BOND 타입은 채권 유형별로 섹터 분리 (회사채, 국고채, 산금채 등)
+                    if ("BOND".equals(assetType)) {
+                        return compositions.stream()
+                                .collect(Collectors.groupingBy(EtfOtherComposition::getAssetName))
+                                .entrySet().stream()
+                                .map(bondEntry -> {
+                                    String bondType = bondEntry.getKey();
+                                    List<EtfOtherComposition> bondComps = bondEntry.getValue();
+
+                                    BigDecimal bondWeight = bondComps.stream()
+                                            .map(EtfOtherComposition::getWeight)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                                    List<EtfSectorStockResponse> bondStocks = bondComps.stream()
+                                            .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
+                                            .map(comp -> EtfSectorStockResponse.builder()
+                                                    .ticker(comp.getIdentifierValue())
+                                                    .name(comp.getIdentifierValue())
+                                                    .percentage(comp.getWeight())
+                                                    .build())
+                                            .toList();
+
+                                    return EtfSectorResponse.builder()
+                                            .name(bondType)
+                                            .percentage(bondWeight)
+                                            .stocks(bondStocks)
+                                            .aiAnalysis(aiAnalysisMap.get(bondType))
+                                            .assetType(assetType)
+                                            .build();
+                                });
+                    }
+
+                    // 그 외 타입 (FUTURES, ETF, CASH 등)은 기존 로직
+                    BigDecimal totalWeight = compositions.stream()
+                            .map(EtfOtherComposition::getWeight)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    List<EtfSectorStockResponse> stocks = compositions.stream()
+                            .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
+                            .map(comp -> EtfSectorStockResponse.builder()
+                                    .ticker(comp.getIdentifierValue())
+                                    .name(comp.getAssetName())
+                                    .percentage(comp.getWeight())
+                                    .build())
+                            .toList();
+
+                    return java.util.stream.Stream.of(EtfSectorResponse.builder()
+                            .name(assetTypeNames.getOrDefault(assetType, assetType))
+                            .percentage(totalWeight)
+                            .stocks(stocks)
+                            .aiAnalysis(aiAnalysisMap.get(assetType))
+                            .assetType(assetType)
+                            .build());
+                })
+                .toList();
     }
 }

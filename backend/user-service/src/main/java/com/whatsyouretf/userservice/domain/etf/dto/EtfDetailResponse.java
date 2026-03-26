@@ -77,9 +77,33 @@ public class EtfDetailResponse {
             Etf etf,
             EtfCurrentInfo info
     ) {
+        if (info == null) {
+            return new EtfDetailResponse(
+                etf.getStockCode(),
+                etf.getName(),
+                null, null, null, null, null, null, null,
+                etf.getAssetManager(),
+                etf.getRiskType() != null ? etf.getRiskType().getRiskGrade() : null,
+                etf.getRiskType() != null ? etf.getRiskType().getTypeName() : null,
+                etf.getExpenseRatio(),
+                etf.getFundamental() != null ? etf.getFundamental().getPer() : null,
+                etf.getFundamental() != null ? etf.getFundamental().getPbr() : null,
+                etf.getFundamental() != null ? etf.getFundamental().getRoe() : null,
+                etf.getAum(),
+                etf.getListingDate()
+            );
+        }
+
         BigDecimal previousPrice = info.previousPrice() == null ? info.currentPrice() : info.previousPrice();
-        BigDecimal priceFluctuation = info.currentPrice().subtract(info.previousPrice());
-        BigDecimal navFluctuation = info.nav().subtract(etf.getNav());
+        BigDecimal priceFluctuation = info.currentPrice() != null && info.previousPrice() != null
+            ? info.currentPrice().subtract(info.previousPrice()) : BigDecimal.ZERO;
+        BigDecimal etfNav = etf.getNav() != null ? etf.getNav() : BigDecimal.ZERO;
+        BigDecimal navFluctuation = info.nav() != null ? info.nav().subtract(etfNav) : BigDecimal.ZERO;
+
+        BigDecimal priceFluctuationRatio = (previousPrice != null && previousPrice.compareTo(BigDecimal.ZERO) != 0)
+            ? priceFluctuation.divide(previousPrice, 4, RoundingMode.DOWN) : BigDecimal.ZERO;
+        BigDecimal navFluctuationRatio = (etfNav.compareTo(BigDecimal.ZERO) != 0)
+            ? navFluctuation.divide(etfNav, 4, RoundingMode.DOWN) : BigDecimal.ZERO;
 
         return new EtfDetailResponse(
             etf.getStockCode(),
@@ -89,15 +113,15 @@ public class EtfDetailResponse {
             info.dailyReturn(),
             info.nav(),
             navFluctuation,
-            navFluctuation.divide(etf.getNav(), RoundingMode.DOWN),
+            navFluctuationRatio,
             info.volume(),
             etf.getAssetManager(),
-            etf.getRiskType().getRiskGrade(),
-            etf.getRiskType().getTypeName(),
+            etf.getRiskType() != null ? etf.getRiskType().getRiskGrade() : null,
+            etf.getRiskType() != null ? etf.getRiskType().getTypeName() : null,
             etf.getExpenseRatio(),
-            etf.getFundamental().getPer(),
-            etf.getFundamental().getPbr(),
-            etf.getFundamental().getRoe(),
+            etf.getFundamental() != null ? etf.getFundamental().getPer() : null,
+            etf.getFundamental() != null ? etf.getFundamental().getPbr() : null,
+            etf.getFundamental() != null ? etf.getFundamental().getRoe() : null,
             etf.getAum(),
             etf.getListingDate()
         );

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * 뉴스 목록 응답 DTO (페이징 지원)
+ * 뉴스 목록 응답 DTO (커서 기반 페이징)
  */
 @Getter
 @NoArgsConstructor
@@ -22,18 +22,12 @@ public class NewsPageResponse {
     /** 검색 키워드 (검색 시에만) */
     private String keyword;
 
-    /** 현재 페이지 (1부터 시작) */
-    private int page;
-
     /** 페이지 크기 */
     private int size;
 
-    /** 전체 요소 수 */
-    private long totalElements;
+    /** 다음 페이지 존재 여부 */
+    private boolean hasMore;
 
-    /** 전체 페이지 수 */
-    private int totalPages;
-
-    /** 마지막 페이지 여부 */
-    private boolean last;
+    /** 다음 커서 (마지막 뉴스 ID) */
+    private Long nextCursor;
 }

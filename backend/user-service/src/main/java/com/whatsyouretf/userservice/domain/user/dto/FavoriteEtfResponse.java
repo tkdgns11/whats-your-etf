@@ -1,7 +1,7 @@
 package com.whatsyouretf.userservice.domain.user.dto;
 
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import com.whatsyouretf.userservice.domain.user.entity.UserFavoriteEtf;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,8 +26,8 @@ public class FavoriteEtfResponse {
     /** ETF 명칭 */
     private String name;
 
-    /** 카테고리 */
-    private String category;
+    /** 위험 유형 (안정형, 안정추구형, 위험중립형, 적극투자형, 공격투자형) */
+    private String riskType;
 
     /** 자산운용사 */
     private String assetManager;
@@ -55,16 +55,17 @@ public class FavoriteEtfResponse {
     }
 
     /**
-     * Entity + Price -> DTO 변환
+     * Entity + CurrentInfo (Redis 캐시) -> DTO 변환
      */
-    public static FavoriteEtfResponse from(UserFavoriteEtf favorite, EtfPrice latestPrice) {
+    public static FavoriteEtfResponse from(UserFavoriteEtf favorite, EtfCurrentInfo currentInfo) {
         Etf etf = favorite.getEtf();
         return FavoriteEtfResponse.builder()
                 .ticker(etf.getStockCode())
                 .name(etf.getName())
+                .riskType(etf.getRiskType() != null ? etf.getRiskType().getTypeName() : null)
                 .assetManager(etf.getAssetManager())
-                .currentPrice(latestPrice != null ? latestPrice.getClose() : null)
-                .changeRate(latestPrice != null ? latestPrice.getChangeRate() : null)
+                .currentPrice(currentInfo != null ? currentInfo.currentPrice() : null)
+                .changeRate(currentInfo != null ? currentInfo.dailyReturn() : null)
                 .favoritedAt(favorite.getCreatedAt())
                 .build();
     }

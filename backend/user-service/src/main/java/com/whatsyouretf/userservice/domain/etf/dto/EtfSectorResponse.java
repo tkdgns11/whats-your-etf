@@ -28,4 +28,7 @@ public class EtfSectorResponse {
 
     /** AI 분석 텍스트 (없으면 null) */
     private String aiAnalysis;
+
+    /** 자산 유형 (FUTURES, ETF, BOND, CASH / 주식 섹터는 null) */
+    private String assetType;
 }

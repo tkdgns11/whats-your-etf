@@ -53,6 +53,9 @@ public class CacheConfig {
         // 포트폴리오 뉴스 캐시 (TTL: 24시간, 매일 오전 9시 전체 무효화)
         cacheConfigurations.put("portfolioNews", defaultConfig.entryTtl(Duration.ofHours(24)));
 
+        // ETF 구성종목 ticker 캐시 (TTL: 24시간)
+        cacheConfigurations.put("etfTickers", defaultConfig.entryTtl(Duration.ofHours(24)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
