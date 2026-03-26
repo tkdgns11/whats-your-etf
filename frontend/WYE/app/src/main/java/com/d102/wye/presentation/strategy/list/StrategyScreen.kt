@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d102.wye.presentation.designsystem.WyePortfolioDialog
 import com.d102.wye.presentation.designsystem.WyeTopBar
 import com.d102.wye.presentation.model.UiState
+import com.d102.wye.presentation.mypage.components.MyDataConsentDialog
 import com.d102.wye.presentation.strategy.list.components.CompareButton
 import com.d102.wye.presentation.strategy.list.components.EmptyRealAssetCard
 import com.d102.wye.presentation.strategy.list.components.EmptySavedStrategyCard
@@ -50,6 +51,8 @@ fun StrategyScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val showEditDialog by viewModel.showEditDialog.collectAsStateWithLifecycle()
+    val showMyDataDialog by viewModel.showMyDataDialog.collectAsStateWithLifecycle()
+    val myDataConsentChecked by viewModel.myDataConsentChecked.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -64,7 +67,7 @@ fun StrategyScreen(
         }
     }
 
-    // 수정 다이얼로그
+    // 포트폴리오 수정 다이얼로그
     showEditDialog?.let { strategy ->
         WyePortfolioDialog(
             title = "포트폴리오 이름 수정",
@@ -81,6 +84,16 @@ fun StrategyScreen(
         )
     }
 
+    // 마이데이터 연동 다이얼로그
+    if (showMyDataDialog) {
+        MyDataConsentDialog(
+            isChecked = myDataConsentChecked,
+            onCheckedChange = { viewModel.onMyDataConsentChecked(it) },
+            onDismiss = { viewModel.onMyDataDialogDismiss() },
+            onConfirm = { viewModel.onMyDataConsentConfirm() }
+        )
+    }
+
     StrategyScreenContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
@@ -88,7 +101,8 @@ fun StrategyScreen(
         onCompareClick = onCompareClick,
         onCreateFirstStrategyClick = onCreateFirstStrategyClick,
         onEditClick = { viewModel.onEditClick(it) },
-        onDeleteClick = { viewModel.onDeleteStrategy(it) }
+        onDeleteClick = { viewModel.onDeleteStrategy(it) },
+        onMyDataConnectClick = { viewModel.onMyDataConnectClick() }
     )
 }
 
@@ -101,7 +115,8 @@ private fun StrategyScreenContent(
     onCompareClick: () -> Unit,
     onCreateFirstStrategyClick: () -> Unit,
     onEditClick: (StrategyCardUiModel) -> Unit,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    onMyDataConnectClick: () -> Unit
 ) {
     val listData = (uiState as? UiState.Success)?.data
     val isCompletelyEmpty = listData?.realAsset == null && listData?.strategies.isNullOrEmpty()
@@ -113,7 +128,7 @@ private fun StrategyScreenContent(
         containerColor = Color.White,
         floatingActionButton = {
             if (uiState is UiState.Success && !isCompletelyEmpty) {
-                CompareButton(onClick = { onCompareClick() })
+                CompareButton(onClick = onCompareClick)
             }
         }
     ) { innerPadding ->
@@ -129,20 +144,22 @@ private fun StrategyScreenContent(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
                 is UiState.Success -> {
                     if (isCompletelyEmpty) {
-                        StrategyEmptyView(onCreateClick = onCreateFirstStrategyClick)
+                        StrategyEmptyView(
+                            onCreateClick = onCreateFirstStrategyClick,
+                            onConnectMyDataClick = onMyDataConnectClick
+                        )
                     } else {
                         StrategyListView(
                             data = uiState.data,
                             onItemClick = onStrategyClick,
                             onEditClick = onEditClick,
-                            onDeleteClick = onDeleteClick
+                            onDeleteClick = onDeleteClick,
+                            onMyDataConnectClick = onMyDataConnectClick
                         )
                     }
                 }
-
                 is UiState.Error -> Unit
                 UiState.Idle -> Unit
             }
@@ -155,7 +172,8 @@ private fun StrategyListView(
     data: StrategyListData,
     onItemClick: (Long) -> Unit,
     onEditClick: (StrategyCardUiModel) -> Unit,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    onMyDataConnectClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -171,13 +189,12 @@ private fun StrategyListView(
                     color = TextSecondary
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                if (data.realAsset == null) {
-                    EmptyRealAssetCard()
+                if (!data.isMyDataConnected || data.realAsset == null) {
+                    EmptyRealAssetCard(onConnectClick = onMyDataConnectClick)
                 } else {
                     StrategyCard(
                         strategy = data.realAsset,
                         onItemClick = onItemClick
-                        // 실제 자산은 수정/삭제 없음
                     )
                 }
             }
@@ -211,8 +228,8 @@ private fun StrategyListView(
                 StrategyCard(
                     strategy = strategy,
                     onItemClick = onItemClick,
-                    onEditClick = onEditClick,    // ← 추가
-                    onDeleteClick = onDeleteClick  // ← 추가
+                    onEditClick = onEditClick,
+                    onDeleteClick = onDeleteClick
                 )
             }
         }
