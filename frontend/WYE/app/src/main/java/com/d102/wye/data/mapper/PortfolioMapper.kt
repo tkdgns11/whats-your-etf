@@ -14,7 +14,8 @@ import com.d102.wye.domain.state.InvestmentType
 
 fun PortfolioCountDto.toDomain() = PortfolioCount(
     ticker = ticker,
-    counts = counts
+    counts = counts,
+    etfName = etfName
 )
 
 fun PortfolioDetailDto.toDomain() = PortfolioDetail(

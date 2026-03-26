@@ -13,5 +13,6 @@ data class PortfolioDetail(
 
 data class PortfolioCount(
     @SerializedName("ticker") val ticker: String,
-    @SerializedName("counts") val counts: Double
+    @SerializedName("counts") val counts: Double,
+    @SerializedName("etfName") val etfName: String,
 )

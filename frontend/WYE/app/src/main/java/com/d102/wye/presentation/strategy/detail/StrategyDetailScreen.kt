@@ -14,6 +14,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -60,30 +61,35 @@ private fun StrategyDetailScreenContent(
     onBackClick: () -> Unit,
     onNewsClick: (Long) -> Unit = {}
 ) {
+    val scrollState = rememberScrollState()
+
+    val isScrolled by remember { derivedStateOf { scrollState.value > 150 } }
+
+    val topBarTitle = (detailState as? UiState.Success)?.data?.title ?: ""
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BackGroundLightGreen2)
     ) {
         WyeTopBar(
-            title = (detailState as? UiState.Success)?.data?.title ?: "",
+            title = if (isScrolled) topBarTitle else "전략 상세 보기",
             onBackClick = onBackClick,
             backgroundColor = BackGroundLightGreen2
         )
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             when (val state = detailState) {
                 is UiState.Success -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
+                            .verticalScroll(scrollState),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        SummaryMetricsRow(state.data.summaryMetrics)
+                        SummaryMetricsRow(state.data)
 
                         PerformanceSection(state.data.recentPerformance, isMain = true)
 
