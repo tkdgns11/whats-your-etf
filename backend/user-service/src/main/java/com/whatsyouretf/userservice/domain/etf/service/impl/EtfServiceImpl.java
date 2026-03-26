@@ -373,6 +373,7 @@ public class EtfServiceImpl implements EtfService {
 
                                     List<EtfSectorStockResponse> bondStocks = bondComps.stream()
                                             .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
+                                            .limit(MAX_SECTOR_STOCKS)
                                             .map(comp -> EtfSectorStockResponse.builder()
                                                     .ticker(comp.getIdentifierValue())
                                                     .name(comp.getIdentifierValue())
@@ -397,6 +398,7 @@ public class EtfServiceImpl implements EtfService {
 
                     List<EtfSectorStockResponse> stocks = compositions.stream()
                             .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))
+                            .limit(MAX_SECTOR_STOCKS)
                             .map(comp -> EtfSectorStockResponse.builder()
                                     .ticker(comp.getIdentifierValue())
                                     .name(comp.getAssetName())
