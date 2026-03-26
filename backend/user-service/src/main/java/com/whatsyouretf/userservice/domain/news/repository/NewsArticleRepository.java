@@ -33,10 +33,10 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     Page<NewsArticle> findByCategoryCode(@Param("categoryCode") String categoryCode, Pageable pageable);
 
     /**
-     * 키워드 검색 (제목 + 본문)
+     * 키워드 검색 (제목)
      */
     @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
-           "AND (n.title LIKE %:keyword% OR n.content LIKE %:keyword%) " +
+           "AND n.title LIKE %:keyword% " +
            "ORDER BY n.publishedAt DESC")
     Page<NewsArticle> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
