@@ -110,13 +110,13 @@ class ExploreViewModel @Inject constructor(
     private fun marketStatusLabel(): String {
         val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
         return if (isMarketOpen()) {
-            now.format(DateTimeFormatter.ofPattern("HH:mm")) + " 기준"
+            now.format(DateTimeFormatter.ofPattern("yy.MM.dd HH:mm")) + " 기준"
         } else {
             var date = now.toLocalDate()
             while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
                 date = date.minusDays(1)
             }
-            date.format(DateTimeFormatter.ofPattern("MM.dd")) + " 장마감"
+            date.format(DateTimeFormatter.ofPattern("yy.MM.dd")) + " 종가 기준"
         }
     }
 
@@ -263,8 +263,9 @@ class ExploreViewModel @Inject constructor(
     private fun applyFilter() {
         if (!isDataInitialized) return
         val filter = _filterState.value
+        val filtered = if (filter.onlyLiked) rawEtfList.filter { it.isLiked } else rawEtfList
         _uiState.update {
-            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = rawEtfList, filter = filter))
+            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = filtered, filter = filter))
         }
     }
 }

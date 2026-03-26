@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.d102.wye.domain.common.BaseResult
 import com.d102.wye.domain.model.EtfBundle
 import com.d102.wye.domain.model.EtfBundleDetail
+import com.d102.wye.domain.repository.PortfolioRepository
 import com.d102.wye.domain.repository.SimulationRepository
 import com.d102.wye.presentation.model.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SimulationEntryViewModel @Inject constructor(
-    private val simulationRepository: SimulationRepository
+    private val simulationRepository: SimulationRepository,
+    private val portfolioRepository: PortfolioRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<SimulationEntryData>>(UiState.Idle)
@@ -37,7 +39,18 @@ class SimulationEntryViewModel @Inject constructor(
             when (val result = simulationRepository.getPresetList()) {
                 is BaseResult.Success -> {
                     Timber.d("[Preset] 목록 조회 성공 | count=${result.data.size}")
-                    _uiState.update { UiState.Success(SimulationEntryData(bundles = result.data)) }
+                    val portfolioCount = when (val r = portfolioRepository.getPortfolioList()) {
+                        is BaseResult.Success -> r.data.count { !it.isMyData }
+                        is BaseResult.Error -> 0
+                    }
+                    _uiState.update {
+                        UiState.Success(
+                            SimulationEntryData(
+                                bundles = result.data,
+                                isPortfolioFull = portfolioCount >= 10
+                            )
+                        )
+                    }
                 }
                 is BaseResult.Error -> {
                     Timber.e("[Preset] 목록 조회 실패 | ${result.error.message}")
@@ -67,5 +80,6 @@ class SimulationEntryViewModel @Inject constructor(
 }
 
 data class SimulationEntryData(
-    val bundles: List<EtfBundle>
+    val bundles: List<EtfBundle>,
+    val isPortfolioFull: Boolean = false,
 )

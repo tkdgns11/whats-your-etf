@@ -224,7 +224,7 @@ private fun BubbleChartLayout(
         label = "orbitFraction",
     )
     val centerFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.26f else 0.46f,
+        targetValue   = if (isAllView) 0.26f else 0.32f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "centerFraction",
     )
@@ -762,7 +762,7 @@ private fun EtfHeader(detail: EtfDetail, englishName: String) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryBadge(label = badgeLabel, backgroundColor = badgeBg, textColor = badgeFg, isPill = true, modifier = Modifier.scale(1.3f).padding(bottom = 4.dp))
-        Text(detail.name, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold), color = TextPrimary)
+        Text(detail.name, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.ExtraBold), color = TextPrimary, textAlign = TextAlign.Center)
         if (englishName.isNotBlank()) {
             Text(englishName, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary)
         }

@@ -62,7 +62,7 @@ fun StockDetailScreen(
                 onEtfListClick = { onEtfListClick(state.data.ticker) },
                 onEtfClick = onEtfClick,
                 onRelatedStockClick = onRelatedStockClick,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
             )
 
             is UiState.Error -> Box(
@@ -105,95 +105,83 @@ private fun StockDetailContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .verticalScroll(rememberScrollState()),
     ) {
-        Spacer(Modifier.height(8.dp))
-
-        // ── 종목명 + 티커 ──────────────────────────────────────────
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stock.name, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
-            Text(stock.ticker, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
+        // ── 종목명 + 태그 + 카드 ──────────────────────────────────
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stock.name, style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                Text(stock.ticker, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(bottom = 4.dp))
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                tags.forEach { tag -> TagChip(tag) }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                MarketCapCard(marketCap = stock.marketCap, modifier = Modifier.weight(1f).fillMaxHeight())
+                CurrentPriceCard(price = stock.currentPrice, changeAmount = stock.changeAmount, modifier = Modifier.weight(1f).fillMaxHeight())
+            }
+            Spacer(Modifier.height(32.dp))
         }
 
-        Spacer(Modifier.height(16.dp))
-
-        // ── 태그 칩 ───────────────────────────────────────────────
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            tags.forEach { tag -> TagChip(tag) }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ── 시가총액 + 현재가 카드 ────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            MarketCapCard(marketCap = stock.marketCap, modifier = Modifier.weight(1f).fillMaxHeight())
-            CurrentPriceCard(
-                price = stock.currentPrice,
-                changeAmount = stock.changeAmount,
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
+        SectionDivider()
 
         // ── 회사 개요 ─────────────────────────────────────────────
-        SectionHeader(icon = { Icon(Icons.Outlined.Description, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "회사 개요")
-        Spacer(Modifier.height(20.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(SurfaceVariant)
-                .padding(16.dp),
-        ) {
-            Text(stock.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = TextSecondary)
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(32.dp))
+            SectionHeader(icon = { Icon(Icons.Outlined.Description, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "회사 개요")
+            Spacer(Modifier.height(20.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceVariant).padding(16.dp),
+            ) {
+                Text(stock.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = TextSecondary)
+            }
+            Spacer(Modifier.height(32.dp))
         }
 
-        Spacer(Modifier.height(48.dp))
+        SectionDivider()
 
         // ── 포함된 ETF ────────────────────────────────────────────
-        SectionHeader(icon = { Icon(Icons.Outlined.AccountBalance, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목이 포함되어있는 ETF")
-        Spacer(Modifier.height(20.dp))
-
-        stock.containedEtfs.take(3).forEach { etf ->
-            EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
-            Spacer(Modifier.height(36.dp))
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(32.dp))
+            SectionHeader(icon = { Icon(Icons.Outlined.AccountBalance, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목이 포함되어있는 ETF")
+            Spacer(Modifier.height(20.dp))
+            stock.containedEtfs.take(3).forEach { etf ->
+                EtfWeightItem(etf = etf, onClick = { onEtfClick(etf.ticker) })
+                Spacer(Modifier.height(36.dp))
+            }
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "포함된 ETF 전체보기",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.clickable(onClick = onEtfListClick),
+                )
+            }
+            Spacer(Modifier.height(32.dp))
         }
 
-        // 전체보기 버튼
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "포함된 ETF 전체보기",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                modifier = Modifier.clickable(onClick = onEtfListClick),
-            )
-        }
-
-        Spacer(Modifier.height(48.dp))
+        SectionDivider()
 
         // ── 함께 등장하는 종목 ────────────────────────────────────
-        SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
-        Spacer(Modifier.height(20.dp))
-
-        relatedStocks.forEach { related ->
-            RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
-            HorizontalDivider(color = Divider)
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(32.dp))
+            SectionHeader(icon = { Icon(Icons.Outlined.Hub, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(18.dp)) }, title = "이 종목과 함께 등장하는 종목")
+            Spacer(Modifier.height(20.dp))
+            relatedStocks.forEach { related ->
+                RelatedStockItem(stock = related, onClick = { onRelatedStockClick(related.ticker) })
+                HorizontalDivider(color = Divider)
+            }
+            Spacer(Modifier.height(32.dp))
         }
-
-        Spacer(Modifier.height(32.dp))
-
     }
 }
 
@@ -357,13 +345,24 @@ private fun RelatedStockItem(stock: RelatedStock, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun SectionDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .background(Color(0xFFF4F6F8))
+    )
+}
+
 private fun formatMarketCap(marketCap: Long): String {
-    val jo  = marketCap / 1_000_000_000_000L
-    val eok = (marketCap % 1_000_000_000_000L) / 100_000_000L
+    // marketCap 단위: 억원
+    val jo  = marketCap / 10_000L
+    val eok = marketCap % 10_000L
     return when {
         jo > 0 && eok > 0 -> "${jo}조 ${"%,d".format(eok)}억원"
         jo > 0             -> "${jo}조원"
         eok > 0            -> "${"%,d".format(eok)}억원"
-        else               -> "%,d원".format(marketCap)
+        else               -> "%,d억원".format(marketCap)
     }
 }

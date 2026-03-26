@@ -156,7 +156,8 @@ private fun StrategyScreenContent(
                             onItemClick = onStrategyClick,
                             onEditClick = onEditClick,
                             onDeleteClick = onDeleteClick,
-                            onMyDataConnectClick = onMyDataConnectClick
+                            onMyDataConnectClick = onMyDataConnectClick,
+                            onCreateFirstStrategyClick = onCreateFirstStrategyClick,
                         )
                     }
                 }
@@ -173,7 +174,8 @@ private fun StrategyListView(
     onItemClick: (Long) -> Unit,
     onEditClick: (StrategyCardUiModel) -> Unit,
     onDeleteClick: (String) -> Unit,
-    onMyDataConnectClick: () -> Unit
+    onMyDataConnectClick: () -> Unit,
+    onCreateFirstStrategyClick: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -222,7 +224,7 @@ private fun StrategyListView(
         }
 
         if (data.strategies.isEmpty()) {
-            item { EmptySavedStrategyCard() }
+            item { EmptySavedStrategyCard(onSimulationClick = onCreateFirstStrategyClick) }
         } else {
             items(data.strategies) { strategy ->
                 StrategyCard(
