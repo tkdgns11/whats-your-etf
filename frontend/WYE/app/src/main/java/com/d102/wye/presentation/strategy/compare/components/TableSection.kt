@@ -226,6 +226,7 @@ fun CompareTableSection(items: List<CompareDetailStat>) {
             }
         }
     }
+    Spacer(modifier = Modifier.height(12.dp))
 }
 
 @Composable

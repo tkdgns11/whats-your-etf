@@ -89,7 +89,7 @@ class StrategyViewModel @Inject constructor(
                     val allItems = result.data
 
                     // isMyData == true → 실제 자산 카드
-                    val myDataItem = allItems.find { it.isMyData == true }
+                    val myDataItem = allItems.find { it.isMyData }
                     val realAsset = myDataItem?.let { item ->
                         StrategyCardUiModel(
                             id = item.portfolioId.toString(),
@@ -97,7 +97,7 @@ class StrategyViewModel @Inject constructor(
                             date = item.createdAt,
                             tags = item.etfList.map { "#${it.name}" },
                             totalReturn = item.totalReturn,
-                            isRealAsset = true
+                            isMyData = true
                         )
                     }
 
@@ -189,7 +189,7 @@ data class StrategyCardUiModel(
     val date: String,
     val tags: List<String>,
     val totalReturn: Double = 0.0,
-    val isRealAsset: Boolean = false,
+    val isMyData: Boolean = false,
     val holdingCounts: Map<String, Double> = emptyMap()
 )
 

@@ -1,6 +1,7 @@
 package com.d102.wye.presentation.strategy.compare
 
 import MultiLineChart
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +49,7 @@ import com.d102.wye.presentation.theme.PrimaryGreen
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
 import com.d102.wye.presentation.theme.TextSecondary
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun StrategyCompareScreen(
@@ -66,6 +68,12 @@ fun StrategyCompareScreen(
     LaunchedEffect(compareResultState) {
         if (compareResultState is UiState.Error)
             snackbarHostState.showSnackbar((compareResultState as UiState.Error).message)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarEvent.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
     }
 
     StrategyCompareScreenContent(
@@ -139,15 +147,42 @@ private fun StrategyCompareScreenContent(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // C. 선택 행에 색상 동그라미 표시
+                            // C. 선택 행에 색상 동그라미 표시 (접기/펼치기 적용)
+                            var isListExpanded by remember { mutableStateOf(false) }
+                            val maxVisibleCount = 3
+
                             RoundedSurface(horizontalPaddingValue = 0.dp) {
-                                Column {
-                                    state.data.strategyList.forEach { item ->
+                                Column(
+                                    modifier = Modifier.animateContentSize()
+                                ) {
+                                    val displayList = if (isListExpanded) {
+                                        state.data.strategyList
+                                    } else {
+                                        state.data.strategyList.take(maxVisibleCount)
+                                    }
+
+                                    displayList.forEach { item ->
                                         StrategySelectionRow(
                                             item = item,
                                             onClick = { onToggleSelection(item.id) },
                                             indicatorColor = if (item.isSelected) item.color else Color.Transparent
                                         )
+                                    }
+
+                                    if (state.data.strategyList.size > maxVisibleCount) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { isListExpanded = !isListExpanded }
+                                                .padding(vertical = 14.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (isListExpanded) "접기" else "포트폴리오 더보기",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = TextSecondary
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -195,23 +230,22 @@ private fun StrategyCompareScreenContent(
 
                             // D. 테이블도 마지막 데이터 유지
                             val tableData = displayData?.tableItems
+
                             if (tableData != null) {
                                 CompareTableSection(items = tableData)
                             } else {
                                 EmptyTableSection()
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                CompareTipSection()
                             }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            CompareTipSection()
-                            Spacer(modifier = Modifier.height(10.dp))
 
                             Spacer(modifier = Modifier.weight(1f))
 
                             WyePrimaryButton(
                                 text = "닫기",
-                                modifier = Modifier
-                                    .fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth(),
                                 onClick = onBackClick
                             )
                         }
@@ -248,7 +282,7 @@ private fun CompareChartSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "수익률 추이",
+                    text = "수익률 추이(%)",
                     style = MaterialTheme.typography.labelLarge,
                     color = TextPrimary
                 )
@@ -274,11 +308,11 @@ private fun CompareChartSection(
             }
 
             // y축 라벨
-            Text(
-                text = "수익률 (%)",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                color = TextSecondary.copy(alpha = 0.6f)
-            )
+//            Text(
+//                text = "수익률 (%)",
+//                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+//                color = TextSecondary.copy(alpha = 0.6f)
+//            )
 
             // 차트 (D: 리프레시 중에도 기존 차트 표시)
             Box(
@@ -287,8 +321,10 @@ private fun CompareChartSection(
                     .height(180.dp)
             ) {
                 MultiLineChart(
+                    modifier = Modifier.fillMaxSize(),
                     lines = chartLines,
-                    modifier = Modifier.fillMaxSize()
+
+
                 )
                 // 리프레시 중 살짝 딤처리
                 if (isRefreshing) {

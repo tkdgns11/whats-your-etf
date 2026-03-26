@@ -59,7 +59,7 @@ fun StrategyCard(
         color = Color.White,
         border = BorderStroke(
             width = 1.dp,
-            color = if (strategy.isRealAsset) PrimaryGreen else Divider
+            color = if (strategy.isMyData) PrimaryGreen else Divider
         )
     ) {
         Box(modifier = Modifier.padding(20.dp)) {
@@ -69,7 +69,7 @@ fun StrategyCard(
             ) {
                 // 왼쪽: 정보 영역
                 Column(modifier = Modifier.weight(1f)) {
-                    if (strategy.isRealAsset) {
+                    if (strategy.isMyData) {
                         WyeBadge(
                             shape = RoundedCornerShape(8.dp),
                             label = "MY 전략",
@@ -87,7 +87,7 @@ fun StrategyCard(
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (!strategy.isRealAsset) {
+                    if (!strategy.isMyData) {
                         Text(
                             text = "${strategy.date} 저장됨",
                             style = MaterialTheme.typography.labelMedium,
@@ -127,7 +127,7 @@ fun StrategyCard(
             }
 
             // 우상단 고정 메뉴 아이콘
-            if (!strategy.isRealAsset && (onEditClick != null || onDeleteClick != null)) {
+            if (!strategy.isMyData && (onEditClick != null || onDeleteClick != null)) {
                 Box(modifier = Modifier.align(Alignment.TopEnd)) {
                     IconButton(
                         onClick = { menuExpanded = true },
