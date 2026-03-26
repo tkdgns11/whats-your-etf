@@ -35,6 +35,7 @@ public class EtfServiceImpl implements EtfService {
     private final EtfSectorAiHistoryRepository sectorAiHistoryRepository;
     private final EtfStockCompositionRepository stockCompositionRepository;
     private final EtfStockClusterMappingRepository clusterMappingRepository;
+    private final EtfOtherCompositionRepository otherCompositionRepository;
     private final StockCache stockCache;
     private final EtfDividendRepository etfDividendRepository;
 
@@ -68,10 +69,21 @@ public class EtfServiceImpl implements EtfService {
         // 영향력 종목 조회
         List<EtfInfluentialStockResponse> influentialStocks = getInfluentialStocks(etf.getId());
 
+        // 비주식 구성종목 조회 (채권/선물/현금 등)
+        List<EtfSectorStockResponse> otherCompositions = otherCompositionRepository.findByEtfId(etf.getId())
+                .stream()
+                .map(o -> EtfSectorStockResponse.builder()
+                        .ticker(o.getIdentifierValue())
+                        .name(o.getAssetName())
+                        .percentage(o.getWeight())
+                        .build())
+                .toList();
+
         return EtfClusterResponse.builder()
                 .englishName(etf.getEnglishName())
                 .sectors(sectors)
                 .influentialStocks(influentialStocks)
+                .otherCompositions(otherCompositions)
                 .build();
     }
 
