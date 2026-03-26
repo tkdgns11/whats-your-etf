@@ -14,6 +14,7 @@ import com.whatsyouretf.userservice.domain.etf.entity.QEtf;
 import com.whatsyouretf.userservice.domain.etf.entity.QEtfStockComposition;
 import com.whatsyouretf.userservice.domain.etf.entity.RiskType;
 import com.whatsyouretf.userservice.domain.etf.service.EtfQuery;
+import com.whatsyouretf.userservice.domain.user.entity.QUserFavoriteEtf;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,6 +32,7 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
     private static final QEtfStockComposition comp = QEtfStockComposition.etfStockComposition;
     private static final QStock stock = QStock.stock;
     private static final QCompanyInfo company = QCompanyInfo.companyInfo;
+    private static final QUserFavoriteEtf fav = QUserFavoriteEtf.userFavoriteEtf;
 
     private final JPAQueryFactory queryFactory;
 
@@ -41,10 +43,11 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                         etf.id,
                         etf.stockCode,
                         etf.name,
-                        Expressions.constant(false),
+                        fav.id.isNotNull(),
                         etf.riskType.stringValue()
                 ))
                 .from(etf)
+                .leftJoin(fav).on(fav.etf.eq(etf).and(isLikedCondition(query.userId())))
                 .where(buildWhere(query))
                 .orderBy(orderBy(query.sortedBy()))
                 .offset(pageable.getOffset())
@@ -67,13 +70,19 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                         etf.id,
                         etf.stockCode,
                         etf.name,
-                        Expressions.constant(false),
+                        fav.id.isNotNull(),
                         etf.riskType.stringValue()
                 ))
                 .from(etf)
+                .leftJoin(fav).on(fav.etf.eq(etf).and(isLikedCondition(query.userId())))
                 .where(buildWhere(query))
                 .orderBy(etf.aum.desc().nullsLast())
                 .fetch();
+    }
+
+    private BooleanExpression isLikedCondition(Long userId) {
+        if (userId == null) return Expressions.FALSE;
+        return fav.user.id.eq(userId);
     }
 
     private BooleanExpression[] buildWhere(EtfQuery query) {

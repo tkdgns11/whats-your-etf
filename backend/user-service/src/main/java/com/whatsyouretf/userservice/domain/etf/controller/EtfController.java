@@ -1,5 +1,6 @@
 package com.whatsyouretf.userservice.domain.etf.controller;
 
+import com.whatsyouretf.userservice.common.auth.CustomUserDetails;
 import com.whatsyouretf.userservice.common.response.ApiResponse;
 import com.whatsyouretf.userservice.common.response.PaginatedResponse;
 import com.whatsyouretf.userservice.domain.etf.dto.*;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -67,12 +69,14 @@ public class EtfController {
     @Operation(summary = "etf 목록 조회", description = "etf 조건에 맞는 etf 목록을 페이징하여 응답합니다")
     public ResponseEntity<ApiResponse<PaginatedResponse<EtfListResponse>>> getEtfList(
             @Parameter(description = "etf 검색 조건") @RequestBody EtfListRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             Pageable pageable
     ) {
+            Long userId = userDetails != null ? userDetails.getUserId() : null;
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(ApiResponse.success(PaginatedResponse.createPaginatedResponse(
-                                    etfService.getEtfList(request.toQuery(), pageable)
+                                    etfService.getEtfList(request.toQuery(userId), pageable)
                                             .map(etfSummary -> EtfListResponse.of(
                                                     etfSummary,
                                                     etfService.getEtfCurrentInfo(etfSummary.ticker()))))));

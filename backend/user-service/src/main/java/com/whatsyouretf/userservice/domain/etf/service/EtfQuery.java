@@ -20,6 +20,7 @@ public record EtfQuery(
         BigDecimal commission,
         BigDecimal aum,
         String sortedBy,
-        String searchName
+        String searchName,
+        Long userId
 ) {
 }

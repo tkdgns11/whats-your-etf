@@ -24,7 +24,7 @@ public record EtfListRequest(
         String sortedBy,
         String searchName
 ) {
-        public EtfQuery toQuery() {
+        public EtfQuery toQuery(Long userId) {
                 return new EtfQuery(
                         riskType,
                         strategy,
@@ -43,7 +43,8 @@ public record EtfListRequest(
                         commission,
                         aum,
                         sortedBy,
-                        searchName
+                        searchName,
+                        userId
                 );
         }
 }
