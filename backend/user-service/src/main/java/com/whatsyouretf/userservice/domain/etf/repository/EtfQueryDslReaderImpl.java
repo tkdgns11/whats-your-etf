@@ -53,6 +53,7 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
         Long total = queryFactory
                 .select(etf.count())
                 .from(etf)
+                .leftJoin(fav).on(fav.etf.eq(etf).and(isLikedCondition(query.userId())))
                 .where(buildWhere(query))
                 .fetchOne();
 
@@ -81,6 +82,18 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
         return fav.user.id.eq(userId);
     }
 
+    private BooleanExpression isFavoriteEq(Boolean isFavorite, Long userId) {
+        if (isFavorite == null) return null;
+        if (userId == null) return Expressions.FALSE;
+        if (isFavorite) {
+            // 찜한 ETF만: fav JOIN이 매칭된 것만
+            return fav.id.isNotNull();
+        } else {
+            // 찜 안 한 ETF만: fav JOIN이 없는 것만
+            return fav.id.isNull();
+        }
+    }
+
     private BooleanExpression[] buildWhere(EtfQuery query) {
         return new BooleanExpression[]{
                 etf.isActive.isTrue(),
@@ -97,7 +110,8 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                 roeBetween(query.roeLow(), query.roeHigh()),
                 commissionLoe(query.commission()),
                 aumGoe(query.aum()),
-                searchNameContains(query.searchName())
+                searchNameContains(query.searchName()),
+                isFavoriteEq(query.isFavorite(), query.userId())
         };
     }
 

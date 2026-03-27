@@ -22,7 +22,8 @@ public record EtfListRequest(
         BigDecimal commission,
         BigDecimal aum,
         String sortedBy,
-        String searchName
+        String searchName,
+        Boolean isFavorite
 ) {
         public EtfQuery toQuery(Long userId) {
                 return new EtfQuery(
@@ -44,7 +45,8 @@ public record EtfListRequest(
                         aum,
                         sortedBy,
                         searchName,
-                        userId
+                        userId,
+                        isFavorite
                 );
         }
 }
