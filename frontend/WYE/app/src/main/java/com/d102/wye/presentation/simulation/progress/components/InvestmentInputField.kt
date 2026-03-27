@@ -60,13 +60,10 @@ fun InvestmentInputField(
         BasicTextField(
             value = displayValue,
             onValueChange = { input ->
-                // 1. 숫자 이외의 문자(콤마 등) 제거
                 val cleaned = input.replace(",", "").filter { it.isDigit() }
 
-                // 2. 앞의 불필요한 0 제거 (단, 아무것도 안 남으면 0으로 두거나 빈 문자열로)
                 val normalized = if (cleaned.isEmpty()) "" else cleaned.toLongOrNull()?.toString() ?: ""
 
-                // ✨ 수정 포인트: 상한선 체크를 삭제하고 부모에게 그대로 전달합니다.
                 onValueChange(normalized)
             },
             textStyle = MaterialTheme.typography.bodySmall.copy(color = TextPrimary),
