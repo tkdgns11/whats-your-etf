@@ -3,7 +3,6 @@ package com.whatsyouretf.userservice.domain.auth.service.impl;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.common.service.EmailService;
-import com.whatsyouretf.userservice.common.service.RedisService;
 import com.whatsyouretf.userservice.common.util.JwtTokenUtil;
 import com.whatsyouretf.userservice.domain.alert.repository.FcmTokenRepository;
 import com.whatsyouretf.userservice.domain.auth.dto.*;
@@ -40,7 +39,6 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final RedisService redisService;
 
     @Value("${jwt.access-token-validity}")
     private Long accessTokenValidity;
@@ -77,22 +75,15 @@ public class AuthServiceImpl implements AuthService {
 
     // ========== 이메일 회원가입 ==========
 
+    /**
+     * 회원가입 1단계: 이메일 인증 요청 (이메일만)
+     */
     @Override
     @Transactional
     public void signup(SignupRequest request) {
-        // 비밀번호 확인
-        if (!request.getPassword().equals(request.getPasswordConfirm())) {
-            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
-        }
-
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        // 닉네임 중복 확인
-        if (userRepository.existsByNickname(request.getNickname())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
         }
 
         // 기존 미인증 토큰 삭제
@@ -109,23 +100,18 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         emailVerificationTokenRepository.save(verificationToken);
 
-        // 회원가입 정보 Redis에 임시 저장 (10분)
-        PendingSignup pendingSignup = PendingSignup.builder()
-                .email(request.getEmail())
-                .encodedPassword(passwordEncoder.encode(request.getPassword()))
-                .nickname(request.getNickname())
-                .build();
-        redisService.savePendingSignup(request.getEmail(), pendingSignup, VERIFICATION_TOKEN_VALIDITY_MINUTES);
-
         // 인증 이메일 발송
         emailService.sendVerificationEmail(request.getEmail(), token);
 
         log.info("Signup verification email sent to: {}", request.getEmail());
     }
 
+    /**
+     * 회원가입 2단계: 이메일 인증 확인
+     */
     @Override
     @Transactional
-    public AuthResponse verifyEmail(EmailVerifyRequest request) {
+    public void verifyEmail(EmailVerifyRequest request) {
         // 인증 토큰 확인
         EmailVerificationToken verificationToken = emailVerificationTokenRepository
                 .findByEmailAndToken(request.getEmail(), request.getToken())
@@ -139,34 +125,54 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
         }
 
-        // Redis에서 회원가입 정보 조회
-        PendingSignup pendingSignup = redisService.getPendingSignup(request.getEmail(), PendingSignup.class)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EXPIRED_TOKEN));
+        // 인증 토큰 검증 완료 처리
+        verificationToken.verify();
 
-        // 이메일 중복 재확인 (동시 요청 대비)
+        log.info("Email verified: {}", request.getEmail());
+    }
+
+    /**
+     * 회원가입 3단계: 비밀번호/닉네임 입력하여 가입 완료
+     */
+    @Override
+    @Transactional
+    public AuthResponse completeSignup(SignupCompleteRequest request) {
+        // 비밀번호 확인
+        if (!request.getPassword().equals(request.getPasswordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // 이메일 인증 여부 확인
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository
+                .findVerifiedByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED));
+
+        // 이메일 중복 확인 (동시 요청 대비)
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
 
+        // 닉네임 중복 확인
+        if (userRepository.existsByNickname(request.getNickname())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
         // 사용자 생성
         User user = User.builder()
-                .email(pendingSignup.getEmail())
-                .password(pendingSignup.getEncodedPassword())
-                .nickname(pendingSignup.getNickname())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .nickname(request.getNickname())
                 .build();
         user = userRepository.save(user);
 
-        // 인증 토큰 사용 처리
-        verificationToken.verify();
-
-        // Redis 임시 데이터 삭제
-        redisService.deletePendingSignup(request.getEmail());
+        // 인증 토큰 삭제 (더 이상 필요 없음)
+        emailVerificationTokenRepository.delete(verificationToken);
 
         // 로그인 처리
         user.updateLastLogin();
         saveLoginHistory(user, "EMAIL");
 
-        log.info("User verified and created: {}", user.getEmail());
+        log.info("User signup completed: {}", user.getEmail());
 
         return generateAuthResponse(user, true, "EMAIL");
     }
@@ -174,18 +180,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resendVerificationEmail(String email) {
-        // 기존 토큰 삭제
-        emailVerificationTokenRepository.deleteByEmail(email);
-
         // 이미 가입된 사용자인지 확인
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        // Redis에 대기 중인 회원가입 정보가 있는지 확인
-        if (!redisService.hasPendingSignup(email)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
+        // 기존 토큰 삭제
+        emailVerificationTokenRepository.deleteByEmail(email);
 
         // 새 인증 코드 생성
         String token = generateNumericToken(VERIFICATION_TOKEN_LENGTH);

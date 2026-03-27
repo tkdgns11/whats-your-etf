@@ -37,6 +37,9 @@ public class LlmServiceImpl implements LlmService {
     @Value("${anthropic.model.max-tokens:${gms.model.max-tokens}}")
     private int maxTokens;
 
+    private static final int MAX_RETRIES = 3;
+    private static final long INITIAL_DELAY_MS = 1000; // 1초
+
     private static final String SYSTEM_PROMPT = """
         당신은 ETF 포트폴리오 분석 전문가입니다. 사용자의 포트폴리오를 분석하여 투자 성향과 특징을 진단해주세요.
 
@@ -76,12 +79,7 @@ public class LlmServiceImpl implements LlmService {
                     maxTokens
             );
 
-            GmsResponse response = gmsWebClient.post()
-                    .uri("/v1/messages")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(GmsResponse.class)
-                    .block();
+            GmsResponse response = callGmsApiWithRetry(request);
 
             if (response == null || response.getTextContent() == null) {
                 throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
@@ -93,9 +91,8 @@ public class LlmServiceImpl implements LlmService {
             // JSON 파싱 및 저장
             parseLlmResponseAndUpdate(feedback, llmResponse);
 
-        } catch (WebClientResponseException e) {
-            log.error("GMS API 호출 실패: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             log.error("LLM 분석 실패: feedbackId={}", feedbackId, e);
             throw new BusinessException(ErrorCode.REVIEW_GENERATION_FAILED);
@@ -119,6 +116,61 @@ public class LlmServiceImpl implements LlmService {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * GMS API 호출 (재시도 로직 포함)
+     * - 529 (Overloaded), 503 (Service Unavailable), 429 (Rate Limit) 에러 시 재시도
+     * - 지수 백오프: 1초 → 2초 → 4초
+     */
+    private GmsResponse callGmsApiWithRetry(GmsRequest request) {
+        int attempt = 0;
+        long delayMs = INITIAL_DELAY_MS;
+
+        while (attempt < MAX_RETRIES) {
+            try {
+                return gmsWebClient.post()
+                        .uri("/v1/messages")
+                        .bodyValue(request)
+                        .retrieve()
+                        .bodyToMono(GmsResponse.class)
+                        .block();
+
+            } catch (WebClientResponseException e) {
+                int statusCode = e.getStatusCode().value();
+
+                // 재시도 가능한 에러인지 확인 (529, 503, 429)
+                if (isRetryableError(statusCode) && attempt < MAX_RETRIES - 1) {
+                    attempt++;
+                    log.warn("GMS API 일시적 오류 (status={}), {}ms 후 재시도 ({}/{})",
+                            statusCode, delayMs, attempt, MAX_RETRIES);
+
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+                    }
+
+                    delayMs *= 2; // 지수 백오프
+                } else {
+                    log.error("GMS API 호출 실패: status={}, body={}", statusCode, e.getResponseBodyAsString());
+                    throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+                }
+            }
+        }
+
+        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+    }
+
+    /**
+     * 재시도 가능한 HTTP 상태 코드 확인
+     */
+    private boolean isRetryableError(int statusCode) {
+        return statusCode == 529    // Overloaded (Claude)
+                || statusCode == 503 // Service Unavailable
+                || statusCode == 429 // Too Many Requests
+                || statusCode == 500; // Internal Server Error
     }
 
     /**
