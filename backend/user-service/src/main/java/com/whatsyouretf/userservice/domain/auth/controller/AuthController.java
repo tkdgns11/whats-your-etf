@@ -81,17 +81,17 @@ public class AuthController {
         )));
     }
 
-    // ========== 이메일 회원가입 ==========
+    // ========== 이메일 회원가입 (3단계) ==========
 
     /**
-     * 이메일 회원가입
+     * 회원가입 1단계: 이메일 인증 요청
      * <p>
-     * 이메일 인증을 통한 회원가입을 요청합니다.
-     * 인증 이메일이 발송되며, 인증 완료 후 계정이 생성됩니다.
+     * 이메일을 입력받아 인증 메일을 발송합니다.
+     * 인증 완료 후 /signup/complete에서 비밀번호와 닉네임을 입력하여 가입을 완료합니다.
      *
-     * @param request 이메일, 비밀번호, 닉네임
+     * @param request 이메일
      */
-    @Operation(summary = "회원가입", description = "이메일 인증을 통한 회원가입을 요청합니다.")
+    @Operation(summary = "회원가입 1단계: 이메일 인증 요청", description = "이메일을 입력받아 인증 메일을 발송합니다.")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Map<String, String>>> signup(
             @Valid @RequestBody SignupRequest request
@@ -104,21 +104,42 @@ public class AuthController {
     }
 
     /**
-     * 이메일 인증 확인
+     * 이메일 인증 확인 (회원가입 2단계)
      * <p>
      * 이메일로 발송된 6자리 인증 코드를 확인합니다.
-     * 인증 성공 시 계정이 생성되고 JWT 토큰이 발급됩니다.
+     * 인증 성공 후 /signup/complete로 비밀번호와 닉네임을 입력하여 가입을 완료합니다.
      *
      * @param request 이메일, 인증 코드
-     * @return JWT 토큰 및 사용자 정보
      */
-    @Operation(summary = "이메일 인증 확인", description = "이메일로 발송된 인증 코드를 확인합니다.")
+    @Operation(summary = "회원가입 2단계: 이메일 인증 확인", description = "이메일로 발송된 6자리 인증 코드를 확인합니다.")
     @PostMapping("/signup/verify")
-    public ResponseEntity<ApiResponse<AuthResponse>> verifyEmail(
+    public ResponseEntity<ApiResponse<Map<String, String>>> verifyEmail(
             @Valid @RequestBody EmailVerifyRequest request
     ) {
-        AuthResponse response = authService.verifyEmail(request);
-        return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", response));
+        authService.verifyEmail(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "이메일 인증이 완료되었습니다. 비밀번호와 닉네임을 입력해주세요.",
+                Map.of("email", request.getEmail())
+        ));
+    }
+
+    /**
+     * 회원가입 완료 (회원가입 3단계)
+     * <p>
+     * 이메일 인증 후 비밀번호와 닉네임을 입력하여 가입을 완료합니다.
+     * 계정이 생성되고 JWT 토큰이 발급됩니다.
+     *
+     * @param request 이메일, 비밀번호, 닉네임
+     * @return JWT 토큰 및 사용자 정보
+     */
+    @Operation(summary = "회원가입 3단계: 가입 완료", description = "이메일 인증 후 비밀번호와 닉네임을 입력하여 가입을 완료합니다.")
+    @PostMapping("/signup/complete")
+    public ResponseEntity<ApiResponse<AuthResponse>> completeSignup(
+            @Valid @RequestBody SignupCompleteRequest request
+    ) {
+        AuthResponse response = authService.completeSignup(request);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(ApiResponse.success("회원가입이 완료되었습니다.", response));
     }
 
     /**

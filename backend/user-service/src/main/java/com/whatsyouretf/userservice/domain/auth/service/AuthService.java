@@ -21,14 +21,19 @@ public interface AuthService {
     // ========== 이메일 회원가입 ==========
 
     /**
-     * 이메일 회원가입 요청 (인증 이메일 발송)
+     * 회원가입 1단계: 이메일 인증 요청 (인증 이메일 발송)
      */
     void signup(SignupRequest request);
 
     /**
-     * 이메일 인증 확인 후 회원 생성
+     * 회원가입 2단계: 이메일 인증 확인
      */
-    AuthResponse verifyEmail(EmailVerifyRequest request);
+    void verifyEmail(EmailVerifyRequest request);
+
+    /**
+     * 회원가입 3단계: 비밀번호/닉네임 입력하여 가입 완료
+     */
+    AuthResponse completeSignup(SignupCompleteRequest request);
 
     /**
      * 인증 이메일 재발송
