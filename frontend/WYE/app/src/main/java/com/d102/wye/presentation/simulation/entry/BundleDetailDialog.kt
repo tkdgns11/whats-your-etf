@@ -116,7 +116,7 @@ fun BundleDetailDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 4. ETF 리스트 (LazyColumn)
+                    // 4. ETF 리스트
                     LazyColumn(
                         modifier = Modifier
                             .weight(weight = 1f, fill = false)
@@ -147,7 +147,7 @@ fun BundleDetailDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     WyePrimaryButton(
                         text = "이 꾸러미로 시뮬레이션 시작하기",

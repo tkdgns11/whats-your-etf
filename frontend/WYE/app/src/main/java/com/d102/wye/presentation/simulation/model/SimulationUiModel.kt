@@ -102,5 +102,5 @@ private fun Long.formatAmount(): String {
 }
 
 private fun Long.formatFullAmount(): String {
-    return "%,d원".format(this)
+    return "%,d".format(this)
 }

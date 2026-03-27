@@ -237,5 +237,6 @@ fun RecommendedBundlesSection(
                 BundleCard(bundle = bundle, onClick = { onBundleClick(bundle) })
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

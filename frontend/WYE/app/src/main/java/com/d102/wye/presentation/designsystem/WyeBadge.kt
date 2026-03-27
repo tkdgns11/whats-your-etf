@@ -42,6 +42,8 @@ fun WyeBadge(
     label: String,
     shape: Shape = RoundedCornerShape(4.dp),
     textStyle: TextStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+    textHorizontalPadding: Int = 8,
+    textVerticalPadding: Int = 3,
     color: Color = BadgeConservative,
     style: WyeBadgeStyle = WyeBadgeStyle.FILLED,
     textColor: Color = if (style == WyeBadgeStyle.FILLED) TextOnColored else color,
@@ -58,7 +60,7 @@ fun WyeBadge(
         modifier = modifier
             .clip(shape)
             .then(bgModifier)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = textHorizontalPadding.dp, vertical = textVerticalPadding.dp),
     )
 }
 

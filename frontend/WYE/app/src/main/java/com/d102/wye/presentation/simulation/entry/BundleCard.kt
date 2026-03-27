@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -65,6 +65,8 @@ fun BundleCard(bundle: EtfBundle, onClick: () -> Unit) {
             color = TextPrimary
         )
 
+        Spacer(modifier = Modifier.height(4.dp))
+
         // 설명
         Text(
             modifier = Modifier.heightIn(min = 50.dp),
@@ -74,10 +76,12 @@ fun BundleCard(bundle: EtfBundle, onClick: () -> Unit) {
             maxLines = 2
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // 태그 리스트
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             bundle.tags.forEach { tag ->
                 WyeBadge(
                     label = "#$tag",

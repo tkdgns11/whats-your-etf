@@ -39,11 +39,9 @@ fun NewsSection(news: List<NewsItem>, onNewsClick: (Long) -> Unit = {}) {
     ) {
         Text(
             text = "관련 뉴스",
-            style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp),
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp),
             color = TextPrimary
         )
-
-//        Spacer(modifier = Modifier.height(20.dp))
 
         news.forEach { item ->
             Row(

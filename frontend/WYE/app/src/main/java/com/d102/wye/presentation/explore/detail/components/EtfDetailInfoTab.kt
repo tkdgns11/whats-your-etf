@@ -182,18 +182,18 @@ private fun PriceCard(
     subColor: Color = TextSecondary,
 ) {
     Card(
-        modifier = modifier.height(110.dp),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, Border),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(label, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), color = TextSecondary)
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = valueColor)
                 Text(sub, style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp), color = subColor)
             }
@@ -209,7 +209,6 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column {
             if (expanded) {
@@ -232,7 +231,7 @@ private fun ProductInfoSection(detail: EtfDetail, expanded: Boolean, onToggle: (
                     .fillMaxWidth()
                     .background(BackGroundLightGreen)
                     .clickable(onClick = onToggle)
-                    .padding(14.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
