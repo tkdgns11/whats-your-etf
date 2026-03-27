@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     kis_app_key: str = ""
     kis_app_secret: str = ""
 
+    # 환경 (local / prod)
+    app_env: str = "local"
+
     # RabbitMQ
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672

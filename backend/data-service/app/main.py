@@ -33,8 +33,12 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """앱 시작/종료 시 실행"""
     # Startup
-    logger.info("FastAPI 시작")
-    # start_scheduler()  # 로컬 개발 시 스케줄링 비활성화
+    settings = get_settings()
+    is_prod = settings.app_env == "prod"
+    logger.info(f"FastAPI 시작 (env={settings.app_env})")
+
+    if is_prod:
+        start_scheduler()
 
     # KIS 토큰 미리 발급 (전역 캐시에 저장) → 이후 병렬 API 호출 시 재발급 없음
     try:
@@ -43,17 +47,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"KIS 토큰 초기화 실패 (서비스는 계속 시작): {e}")
 
-    # 장 시간(09:00~15:40 KST)에만 startup 캐시 동기화 실행
-    from datetime import datetime, timezone, timedelta
-    _now_kst = datetime.now(timezone(timedelta(hours=9)))
-    _is_market_hours = (
-        _now_kst.weekday() < 5  # 월~금
-        and (9 <= _now_kst.hour < 15 or (_now_kst.hour == 15 and _now_kst.minute <= 40))
-    )
-    if _is_market_hours:
-        fire_cache_sync()
-    else:
-        logger.info("장 시간 외 → startup 캐시 동기화 건너뜀")
+    # prod 환경 + 장 시간에만 startup 캐시 동기화 실행
+    if is_prod:
+        from datetime import datetime, timezone, timedelta
+        _now_kst = datetime.now(timezone(timedelta(hours=9)))
+        _is_market_hours = (
+            _now_kst.weekday() < 5
+            and (9 <= _now_kst.hour < 15 or (_now_kst.hour == 15 and _now_kst.minute <= 40))
+        )
+        if _is_market_hours:
+            fire_cache_sync()
+        else:
+            logger.info("장 시간 외 → startup 캐시 동기화 건너뜀")
 
     # RabbitMQ ETF 캐시 갱신 consumer 시작
     from app.consumers.cache_consumer import start_cache_consumer
@@ -745,6 +750,30 @@ async def dev_sync_etf_dividends(
     background_tasks.add_task(_run)
     logger.info(f"[DEV] ETF 분배금 동기화 백그라운드 시작 (ticker={ticker})")
     return {"status": "accepted", "message": "분배금 동기화가 백그라운드에서 시작되었습니다.", "ticker": ticker}
+
+
+@app.post("/dev/etf/sync/dividends/kodex")
+async def dev_sync_kodex_etf_dividends(
+    background_tasks: BackgroundTasks,
+    ticker: Optional[str] = Query(None, description="특정 ETF 종목코드. 없으면 전체 KODEX ETF 대상"),
+):
+    """
+    [DEV] 삼성자산운용 KODEX ETF 분배금 이력을 수집해 DB에 저장합니다.
+    백그라운드로 실행됩니다.
+    """
+    from app.services.etf_dividend_service import sync_kodex_etf_dividends
+
+    async def _run():
+        logger.info(f"[DEV] KODEX 분배금 동기화 백그라운드 실행 시작 (ticker={ticker})")
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await sync_kodex_etf_dividends(db, ticker=ticker)
+                logger.info(f"[DEV] KODEX 분배금 동기화 완료: {result}")
+            except Exception as e:
+                logger.error(f"[DEV] KODEX 분배금 동기화 실패: {e}")
+
+    background_tasks.add_task(_run)
+    return {"status": "accepted", "message": "KODEX 분배금 동기화가 백그라운드에서 시작되었습니다.", "ticker": ticker}
 
 
 # ==================== ETF Cache Endpoints ====================

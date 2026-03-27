@@ -352,9 +352,15 @@ class EtfService:
                     except ValueError:
                         pass
 
-                # 운용사 (삼성자산운용(ETF) → 삼성자산운용)
+                # 운용사 (브랜드명으로 변환)
                 if res.get("mbcr_name"):
-                    info["asset_manager"] = res["mbcr_name"].replace("(ETF)", "").strip()
+                    raw = res["mbcr_name"].replace("(ETF)", "").strip()
+                    if "삼성" in raw:
+                        info["asset_manager"] = "KODEX"
+                    elif "미래에셋" in raw:
+                        info["asset_manager"] = "TIGER"
+                    else:
+                        info["asset_manager"] = raw
 
                 # 상장일
                 if res.get("stck_lstn_date") and res["stck_lstn_date"] != "0":
