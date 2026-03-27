@@ -78,9 +78,9 @@ public interface EtfStockCompositionRepository extends JpaRepository<EtfStockCom
         JOIN FETCH esc.etf e
         WHERE esc.stock.ticker = :ticker
           AND e.isActive = true
-          AND esc.baseDate = (
-              SELECT MAX(e2.baseDate) FROM EtfStockComposition e2
-              WHERE e2.etf.id = esc.etf.id
+          AND NOT EXISTS (
+              SELECT 1 FROM EtfStockComposition e2
+              WHERE e2.etf.id = esc.etf.id AND e2.baseDate > esc.baseDate
           )
         ORDER BY esc.weightPct DESC
     """)
