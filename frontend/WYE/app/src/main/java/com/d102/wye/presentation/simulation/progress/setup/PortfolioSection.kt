@@ -1,5 +1,11 @@
 package com.d102.wye.presentation.simulation.progress.setup
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,8 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -73,8 +82,8 @@ fun PortfolioSection(
 
     val badgeColor = when {
         totalWeight == 100 -> PrimaryGreen
-        totalWeight > 100  -> BadgeNeutralFont
-        else               -> IconInactive
+        totalWeight > 100 -> BadgeNeutralFont
+        else -> IconInactive
     }
 
     Column(
@@ -109,7 +118,7 @@ fun PortfolioSection(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
+// 1. 기존 선택된 리스트 (로딩 중이더라도 기존 아이템은 보여야 함)
         if (formState.portfolioItems.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 formState.portfolioItems.forEach { item ->
@@ -129,55 +138,106 @@ fun PortfolioSection(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        if (formState.portfolioItems.isEmpty()) {
-            DashedContainer(
-                modifier = Modifier.clickable { onAddClick() },
-                strokeWidth = 2.dp,
-                borderColor = Border
+        // 2. 하단 UI (로딩 바 OR 종목 추가 버튼)
+        if (formState.isFetchingEtfInfo) {
+            // ── 똥도동똥똥 애니메이션 설정 ──────────────────────────────────
+            val infiniteTransition = rememberInfiniteTransition(label = "loading")
+            val offsetY by infiniteTransition.animateFloat(
+                initialValue = -5f, // 위로 5dp
+                targetValue = 5f,   // 아래로 5dp
+                animationSpec = infiniteRepeatable(
+                    animation = tween(600, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse // 왔다 갔다
+                ),
+                label = "offsetY"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp), // 여백을 살짝 더 줌
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_plus),
-                        contentDescription = null,
-                        tint = IconInactive
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = PrimaryGreen,
+                        strokeWidth = 2.dp
                     )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
                     Text(
-                        text = "ETF 종목 추가하기",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = IconInactive
+                        text = "ETF 과거 데이터를 분석하고 있어요...",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = PrimaryGreen,
+                        modifier = Modifier.graphicsLayer {
+                            translationY = offsetY.dp.toPx()
+                        }
                     )
                 }
             }
-        } else if (formState.portfolioItems.size < 10) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = PrimaryGreen.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(16.dp)
+        } else {
+            // 로딩 중이 아닐 때만 추가 버튼 노출
+            if (formState.portfolioItems.isEmpty()) {
+                // 아무것도 없을 때는 텅 빈 대형 점선 버튼
+                DashedContainer(
+                    modifier = Modifier.clickable { onAddClick() },
+                    strokeWidth = 2.dp,
+                    borderColor = Border
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_plus),
+                            contentDescription = null,
+                            tint = IconInactive
+                        )
+                        Text(
+                            text = "ETF 종목 추가하기",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = IconInactive
+                        )
+                    }
+                }
+            } else if (formState.portfolioItems.size < 10) {
+                // 1개~9개 있을 때는 얇은 초록색 추가 버튼
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = PrimaryGreen.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .clickable { onAddClick() }
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "추가",
+                        tint = PrimaryGreen,
+                        modifier = Modifier.size(20.dp)
                     )
-                    .clickable { onAddClick() }
-                    .padding(vertical = 14.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "추가",
-                    tint = PrimaryGreen,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "ETF 종목 추가하기",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = PrimaryGreen
-                )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "ETF 종목 추가하기",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = PrimaryGreen
+                    )
+                }
             }
         }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -207,13 +267,6 @@ private fun PortfolioSliderItemRow(
                 selection = TextRange(item.weight.toString().length)
             )
         )
-    }
-
-    fun middleEllipsis(text: String, maxLength: Int = 18): String {
-        if (text.length <= maxLength) return text
-
-        val keep = maxLength / 2
-        return text.take(keep) + "..." + text.takeLast(keep)
     }
 
     WyeCard(
@@ -270,7 +323,8 @@ private fun PortfolioSliderItemRow(
                             )
                             onWeightChange(newWeight)
                         } else {
-                            weightTextFieldValue = newValue.copy(text = "", selection = TextRange(0))
+                            weightTextFieldValue =
+                                newValue.copy(text = "", selection = TextRange(0))
                             onWeightChange(0)
                         }
                     },

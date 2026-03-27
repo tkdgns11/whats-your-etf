@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 fun ExploreScreen(
     title: String = "탐색",
     isSelectionMode: Boolean = false,
+    initialSelectedTickers: List<SelectedEtf> = emptyList(),
     onEtfClick: (ticker: String, riskLevel: Int) -> Unit,
     onBackClick: (() -> Unit)? = null,
     onSelectionComplete: ((List<String>) -> Unit)? = null,
@@ -61,6 +62,12 @@ fun ExploreScreen(
     val marketStatusLabel by viewModel.marketStatusLabel.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(Unit) {
+        if (isSelectionMode && initialSelectedTickers.isNotEmpty()) {
+            viewModel.setInitialSelections(initialSelectedTickers)
+        }
+    }
 
     // 즐겨찾기 토글 시 맨 위로 스크롤
     LaunchedEffect(filterState.onlyLiked) {
