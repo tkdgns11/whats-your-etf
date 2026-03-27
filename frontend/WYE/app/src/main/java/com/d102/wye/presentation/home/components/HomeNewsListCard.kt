@@ -19,7 +19,6 @@ fun HomeNewsListCard(
         timeAgo = news.timeAgo,
         source = news.source,
         thumbnailUrl = news.thumbnailUrl,
-        modifier = modifier.padding(top = 2.dp),
         onClick = onClick
     )
 }

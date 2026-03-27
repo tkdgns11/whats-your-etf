@@ -53,24 +53,3 @@ fun SectionHeader(
         }
     }
 }
-
-@Preview(showBackground = true, backgroundColor = 0xFFF5F0E8)
-@Composable
-private fun SectionHeaderPreview() {
-    Column(
-        modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        // 1) 기본 — 제목 + 전체보기
-        SectionHeader(title = "실시간 ETF 뉴스", onActionClick = {})
-
-        // 2) 액션 없음 — 제목만
-        SectionHeader(title = "거래량 TOP 10", actionLabel = null)
-
-        // 3) 커스텀 액션 레이블
-        SectionHeader(title = "나의 전략", actionLabel = "더보기", onActionClick = {})
-
-        // 4) 긴 제목
-        SectionHeader(title = "테마별 ETF 추천 포트폴리오", onActionClick = {})
-    }
-}

@@ -37,9 +37,7 @@ import com.d102.wye.presentation.theme.TextSecondary
 
 @Composable
 fun SummaryMetricsRow(data: StrategyDetailData) {
-    // ✨ 태그 펼침 상태 기억
     var isTagsExpanded by remember { mutableStateOf(false) }
-    // 기본으로 보여줄 태그 개수
     val maxVisibleTags = 3
 
     RoundedSurface(horizontalPaddingValue = 24.dp) {
@@ -49,12 +47,9 @@ fun SummaryMetricsRow(data: StrategyDetailData) {
                 .animateContentSize()
         ) {
 
-
-            // 1. 상단 (날짜, 제목 등)
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 2. 투자 유형 (텍스트로 깔끔하게)
                 Text(
                     modifier = Modifier.align(Alignment.TopStart),
                     text = "•  ${data.investmentType}",
@@ -145,10 +140,11 @@ fun SummaryMetricsRow(data: StrategyDetailData) {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = value,
+                            text = value.replace(" ", "\n"),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp
                             ),
                             color = when {
                                 value.startsWith("+") -> EtfRise

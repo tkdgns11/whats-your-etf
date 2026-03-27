@@ -3,9 +3,9 @@ package com.d102.wye.domain.model
 enum class BundleType {
     STABLE_INCOME,
     HIGH_GROWTH,
-    BALANCED_PORTFOLIO,
-    AGGRESSIVE_PLAY,
-    LONG_TERM_INVESTING,
+    BALANCED,
+    AGGRESSIVE,
+    LONG_TERM,
     UNKNOWN;
 
     companion object {

@@ -70,18 +70,17 @@ fun NewsCard(
             Text(
                 text = title,
                 color = TextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 20.sp,
             )
 
             // 시간 · 출처
             Text(
                 text = "$timeAgo · $source",
                 color = TextSecondary,
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -104,31 +103,5 @@ fun NewsCard(
                     .background(EtfNeutral),
             )
         }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFF5F0E8)
-@Composable
-private fun NewsCardPreview() {
-    Column(
-        modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        NewsCard(
-            category = "위험중립형",
-            categoryColor = BadgeNeutral,
-            categoryFontColor = BadgeNeutralFont,
-            title = "나스닥 100 3배 레버리지, 변동성 확대에도 투자자 매수세 집중",
-            timeAgo = "2시간 전",
-            source = "파이낸셜 뉴스",
-        )
-        NewsCard(
-            category = "적극투자형",
-            categoryColor = BadgeActive,
-            categoryFontColor = BadgeActiveFont,
-            title = "반도체 섹터 ETF, 인공지능 수요 폭증에 수익률 고공행진",
-            timeAgo = "5시간 전",
-            source = "경제타임즈",
-        )
     }
 }

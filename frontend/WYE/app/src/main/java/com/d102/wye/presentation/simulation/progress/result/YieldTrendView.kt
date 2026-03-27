@@ -30,7 +30,6 @@ import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.MyDataYellow
 import com.d102.wye.presentation.theme.PrimaryGreen
-import com.d102.wye.presentation.theme.SurfaceCard
 import com.d102.wye.presentation.theme.SurfaceDivider
 import com.d102.wye.presentation.theme.SurfaceVariant
 import com.d102.wye.presentation.theme.TextPrimary
@@ -44,7 +43,7 @@ fun YieldTrendView(
     formState: SimulationFormState,
     simulationState: UiState<SimulationUiModel>,
     onOverlayToggled: (Boolean) -> Unit,
-    overlayPoints:  List<BacktestPoint>?,
+    overlayPoints: List<BacktestPoint>?,
     idleGuideMessage: String
 ) {
     Column {
@@ -65,9 +64,10 @@ fun YieldTrendView(
                     Text(
                         text = "내 보유 자산 겹쳐보기",
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
+                        color = if (simulationState is UiState.Success) TextPrimary else TextSecondary
                     )
                     Text(
-                        text = "실제 자산과 시뮬레이션을 비교해보세요",
+                        text = if (simulationState is UiState.Success) "실제 자산과 시뮬레이션을 비교해보세요" else "포트폴리오를 구성하고 실제 자산과 비교해보세요",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary,
                     )
@@ -75,6 +75,7 @@ fun YieldTrendView(
                 Switch(
                     checked = formState.isOverlayEnabled,
                     onCheckedChange = onOverlayToggled,
+                    enabled = simulationState is UiState.Success,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = MyDataYellow,
@@ -82,6 +83,11 @@ fun YieldTrendView(
                         uncheckedThumbColor = Color.White,
                         uncheckedTrackColor = SurfaceDivider,
                         uncheckedBorderColor = SurfaceDivider,
+                        disabledCheckedThumbColor = Color.White,
+                        disabledCheckedTrackColor = MyDataYellow.copy(alpha = 0.5f),
+                        disabledUncheckedThumbColor = Color.White,
+                        disabledUncheckedTrackColor = SurfaceDivider.copy(alpha = 0.5f),
+                        disabledUncheckedBorderColor = SurfaceDivider.copy(alpha = 0.5f)
                     )
                 )
             }
@@ -142,7 +148,7 @@ fun YieldTrendView(
                         if (subText != "-") {
                             Text(
                                 text = subText,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                 color = subColor,
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.End

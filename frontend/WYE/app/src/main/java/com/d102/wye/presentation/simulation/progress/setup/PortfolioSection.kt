@@ -209,7 +209,7 @@ private fun PortfolioSliderItemRow(
         )
     }
 
-    fun middleEllipsis(text: String, maxLength: Int = 20): String {
+    fun middleEllipsis(text: String, maxLength: Int = 18): String {
         if (text.length <= maxLength) return text
 
         val keep = maxLength / 2
@@ -244,10 +244,9 @@ private fun PortfolioSliderItemRow(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = middleEllipsis(item.name),
+                        text = item.name,
                         color = TextPrimary,
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
-                        maxLines = 1,
                     )
                     Text(
                         text = item.ticker,

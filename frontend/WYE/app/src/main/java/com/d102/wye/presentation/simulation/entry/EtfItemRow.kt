@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.d102.wye.presentation.designsystem.WyeCard
 import com.d102.wye.presentation.designsystem.WyeCircleIcon
 import com.d102.wye.presentation.theme.PrimaryGreen
@@ -23,7 +24,7 @@ fun EtfItemRow(item: String) {
         containerColor = PrimaryGreen.copy(alpha = 0.05f), elevation = 0.dp
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             WyeCircleIcon(tag = item)
 
@@ -33,7 +34,7 @@ fun EtfItemRow(item: String) {
             ) {
                 Text(
                     text = item,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
                 )
                 Text(
                     text = "ETF Full Name (Mock)",
