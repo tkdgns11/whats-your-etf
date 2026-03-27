@@ -35,6 +35,7 @@ import com.d102.wye.presentation.simulation.model.SimulationUiModel
 import com.d102.wye.presentation.simulation.progress.components.ResultCard
 import com.d102.wye.presentation.theme.BackGroundLightGreen3
 import com.d102.wye.presentation.theme.Divider
+import com.d102.wye.presentation.theme.IconInactive
 import com.d102.wye.presentation.theme.SectorColor1
 import com.d102.wye.presentation.theme.SectorColor2
 import com.d102.wye.presentation.theme.SectorColor3
@@ -52,7 +53,7 @@ fun PortfolioAnalysisView(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -104,7 +105,7 @@ fun PortfolioAnalysisView(
                 ResultCard(
                     modifier = Modifier
                         .weight(1f)
-                        .height(84.dp),
+                        .height(80.dp),
                     borderColor = SurfaceVariant,
                     backgroundColor = BackGroundLightGreen3
                 ) {
@@ -131,9 +132,10 @@ fun PortfolioAnalysisView(
         }
 
         // ── 섹터 비중 도넛 차트 ───────────────────────────────────────────────
+        // ── 섹터 비중 도넛 차트 ───────────────────────────────────────────────
         WyeCard(
             modifier = Modifier.fillMaxWidth(),
-            innerPadding = PaddingValues(20.dp),
+            innerPadding = PaddingValues(20.dp), // (또는 16.dp)
             border = BorderStroke(1.dp, SurfaceVariant),
             containerColor = SurfaceCard,
             elevation = 0.dp
@@ -151,10 +153,11 @@ fun PortfolioAnalysisView(
 
                 DonutChart(items = sectorData)
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .defaultMinSize(minHeight = 24.dp),
+                        .defaultMinSize(minHeight = 40.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!isEmpty) {
@@ -179,12 +182,19 @@ fun PortfolioAnalysisView(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "${sector.name} ${sector.ratio.toInt()}%",
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                         color = TextSecondary
                                     )
                                 }
                             }
                         }
+                    } else {
+                        Text(
+                            text = "ETF를 추가하고 섹터 비중을 확인해보세요",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = IconInactive,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
