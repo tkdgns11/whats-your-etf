@@ -92,7 +92,8 @@ fun LoginFormSection(
         WyePrimaryButton(
             text = if (uiState.isLoading) "" else "로그인",
             onClick = onLoginClick,
-            enabled = uiState.canLogin && !uiState.isLoading,
+            enabled = !uiState.isLoading,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp)

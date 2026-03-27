@@ -127,7 +127,7 @@ fun ClusterTab(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            Column(modifier = Modifier.height(screenH - 130.dp)) {
+            Column(modifier = Modifier.height(screenH - 140.dp)) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -143,15 +143,20 @@ fun ClusterTab(
                         onClusterClick = { selectedCluster = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .padding(top = 20.dp),
                     )
 
                     val marketStatusLabel by viewModel.marketStatusLabel.collectAsStateWithLifecycle()
                     PriceVolumeRow(detail = detail, marketStatusLabel = marketStatusLabel)
                 }
             }
-            HorizontalDivider(color = Divider, modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp))
-
+            HorizontalDivider(
+                color = Divider,
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 2.dp, bottom = 10.dp)
+            )
             InfluentialStocksSection(
                 stocks = clusterData.influentialStocks,
                 onStockClick = onStockClick
@@ -179,12 +184,14 @@ private fun ClusterBubbleChart(
     // false = 메인 뷰(상위 5개+기타), true = 전체 확장 뷰
     var showAll by remember { mutableStateOf(false) }
 
+    val othersLabel = "기타"
+
     val displayClusters = if (showAll) sorted else mainClusters
     val viewKey = if (showAll) "all" else "main"
 
     BubbleChartLayout(
         key = viewKey,
-        centerLabel = name,
+        centerLabel = if (showAll && hasOthers) othersLabel else name,
         centerColor = PrimaryGreen,
         isAllView = showAll,
         clusters = displayClusters,
@@ -259,12 +266,15 @@ private fun BubbleChartLayout(
 
     // 전체 뷰일 때 궤도 반경 확장 → 버블이 바깥으로 퍼짐
     val orbitFraction by animateFloatAsState(
-        targetValue   = if (isAllView) 0.60f else 0.37f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        targetValue = if (isAllView) 0.60f else 0.39f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "orbitFraction",
     )
     val centerFraction by animateFloatAsState(
-        targetValue = if (isAllView) 0.26f else 0.32f,
+        targetValue = if (isAllView) 0.26f else 0.42f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -272,7 +282,7 @@ private fun BubbleChartLayout(
         label = "centerFraction",
     )
     val maxBubbleFraction by animateFloatAsState(
-        targetValue = if (isAllView) 0.22f else 0.32f,
+        targetValue = if (isAllView) 0.22f else 0.31f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -280,7 +290,7 @@ private fun BubbleChartLayout(
         label = "maxBubbleFraction",
     )
     val minBubbleFraction by animateFloatAsState(
-        targetValue = if (isAllView) 0.15f else 0.20f,
+        targetValue = if (isAllView) 0.15f else 0.22f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -430,7 +440,7 @@ private fun BubbleChartLayout(
                 }
                 val fontSize = (centerBubble.value * 0.13f).coerceIn(12f, 18f).sp
                 Text(
-                    text = centerLabel.replace(" ", "\n"),
+                    text = if (isAllView) centerLabel else centerLabel.replace(" ", "\n"),
                     color = Color.White,
                     fontSize = fontSize,
                     fontWeight = FontWeight.ExtraBold,
@@ -709,9 +719,10 @@ private fun InfluentialStocksSection(
     ) {
         Text(
             "현재 이 ETF에 영향을 많이 끼치는 종목은?",
-            style = MaterialTheme.typography.titleSmall.copy(fontSize = 18.sp),
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.5.sp),
             color = TextPrimary,
         )
+
         if (stocks.isEmpty()) {
             Box(
                 modifier = Modifier

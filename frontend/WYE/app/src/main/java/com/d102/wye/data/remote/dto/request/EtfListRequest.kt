@@ -21,4 +21,5 @@ data class EtfListRequest(
     @SerializedName("aum") val aum: Long? = null,
     @SerializedName("sortedBy") val sortedBy: String? = null,
     @SerializedName("searchName") val searchName: String? = null,
+    @SerializedName("isFavorite") val isFavorite: Boolean? = null,
 )

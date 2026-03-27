@@ -42,7 +42,7 @@ class ExploreViewModel @Inject constructor(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
-    private val _sortedBy = MutableStateFlow<String?>(null)
+    private val _sortedBy = MutableStateFlow<String?>("volume")
     val sortedBy: StateFlow<String?> = _sortedBy.asStateFlow()
 
     private var rawEtfList: List<EtfListItemUiModel> = emptyList()
@@ -124,8 +124,11 @@ class ExploreViewModel @Inject constructor(
     private fun observeFavoriteChanges() {
         viewModelScope.launch {
             userRepository.favoriteEtfChanged.collectLatest {
-                if (rawEtfList.isEmpty()) return@collectLatest
-                loadEtfList(_filterState.value)
+                if (_filterState.value.onlyLiked) {
+                    loadFavorites()
+                } else if (rawEtfList.isNotEmpty()) {
+                    loadEtfList(_filterState.value)
+                }
             }
         }
     }
@@ -156,7 +159,7 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun loadMore() {
-        if (isLastPage || _isLoadingMore.value) return
+        if (isLastPage || _isLoadingMore.value || _filterState.value.onlyLiked) return
         viewModelScope.launch {
             _isLoadingMore.update { true }
             val nextPage = currentPage + 1
@@ -204,8 +207,14 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun onFilterChanged(filter: EtfFilterState) {
+        val prev = _filterState.value
         _filterState.update { filter }
-        loadEtfList(filter)
+        when {
+            filter.onlyLiked && !prev.onlyLiked -> loadFavorites()
+            !filter.onlyLiked && prev.onlyLiked -> loadEtfList(filter)
+            filter.onlyLiked -> loadFavorites()
+            else -> loadEtfList(filter)
+        }
     }
 
     fun onLikeToggled(ticker: String) {
@@ -228,7 +237,7 @@ class ExploreViewModel @Inject constructor(
                     rawEtfList = rawEtfList.map { item ->
                         if (item.ticker == ticker) item.copy(isLiked = !item.isLiked) else item
                     }
-                    applyFilter()
+                    if (_filterState.value.onlyLiked) loadFavorites() else applyFilter()
                 }
                 is BaseResult.Error -> {
                     Timber.e(
@@ -264,9 +273,30 @@ class ExploreViewModel @Inject constructor(
     private fun applyFilter() {
         if (!isDataInitialized) return
         val filter = _filterState.value
-        val filtered = if (filter.onlyLiked) rawEtfList.filter { it.isLiked } else rawEtfList
         _uiState.update {
-            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = filtered, filter = filter))
+            UiState.Success(ExploreData(etfList = rawEtfList, filteredList = rawEtfList, filter = filter))
+        }
+    }
+
+    private fun loadFavorites() {
+        viewModelScope.launch {
+            _uiState.update { UiState.Loading }
+            val filter = _filterState.value.toFilter(_sortedBy.value).copy(isFavorite = true)
+            when (val result = etfRepository.getEtfList(filter, page = 0)) {
+                is BaseResult.Success -> {
+                    val favorites = result.data.items.map { it.toUiModel() }
+                    _uiState.update {
+                        UiState.Success(
+                            ExploreData(
+                                etfList = rawEtfList,
+                                filteredList = favorites,
+                                filter = _filterState.value
+                            )
+                        )
+                    }
+                }
+                is BaseResult.Error -> _uiState.update { UiState.Error(result.error.message) }
+            }
         }
     }
 }
