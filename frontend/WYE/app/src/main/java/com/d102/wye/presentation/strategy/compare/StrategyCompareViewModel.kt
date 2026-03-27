@@ -246,7 +246,7 @@ class StrategyCompareViewModel @Inject constructor(
                                     r.totalReturnRate
                                 )
                             }%",
-                            volatility = "-${"%.2f".format(r.volatility)}%",
+                            volatility = "${"%.2f".format(r.volatility)}%",
                             sharpeRatio = "%.2f".format(r.sharpeRatio),
                             rank = rank
                         )
@@ -258,32 +258,33 @@ class StrategyCompareViewModel @Inject constructor(
 
     private fun calcVolatility(points: List<BacktestPoint>): Double {
         if (points.size < 2) return 0.0
+        val n = points.size - 1
         val dailyReturns = (1 until points.size).map { i ->
             val prev = points[i - 1].value
             val curr = points[i].value
-            if (prev != 0.0) (curr - prev) / prev else 0.0
+            (curr - prev) / (100.0 + prev)
         }
-        if (dailyReturns.isEmpty()) return 0.0
-        val avg = dailyReturns.average()
-        val variance = dailyReturns.sumOf { (it - avg) * (it - avg) } / dailyReturns.size
-        return Math.sqrt(variance) * Math.sqrt(252.0) * 100.0  // 연율화 %
+        if (n < 2) return 0.0
+        val mean = dailyReturns.average()
+        val sigma = sqrt(dailyReturns.sumOf { (it - mean) * (it - mean) } / (n - 1))
+        return sigma * sqrt(n.toDouble()) * 100.0  // 기간 연율화 %
     }
 
     private fun calcSharpeRatio(points: List<BacktestPoint>): Double {
         if (points.size < 2) return 0.0
+        val n = points.size - 1
         val dailyReturns = (1 until points.size).map { i ->
             val prev = points[i - 1].value
             val curr = points[i].value
-            if (prev != 0.0) (curr - prev) / prev else 0.0
+            (curr - prev) / (100.0 + prev)
         }
-        if (dailyReturns.isEmpty()) return 0.0
-        val avgReturn = dailyReturns.average()
-        val riskFreeDaily = 0.03 / 252
-        val variance =
-            dailyReturns.sumOf { (it - avgReturn) * (it - avgReturn) } / dailyReturns.size
-        val stdDev = sqrt(variance)
-        if (stdDev == 0.0) return 0.0
-        return ((avgReturn - riskFreeDaily) / stdDev) * sqrt(252.0)
+        if (n < 2) return 0.0
+        val mean = dailyReturns.average()
+        val rfDaily = 0.0299 / 252
+        val sigma = sqrt(dailyReturns.sumOf { (it - mean) * (it - mean) } / (n - 1))
+        if (sigma == 0.0) return 0.0
+        val dailySharpe = (mean - rfDaily) / sigma
+        return dailySharpe * sqrt(n.toDouble())
     }
 }
 
