@@ -21,6 +21,7 @@ public record EtfQuery(
         BigDecimal aum,
         String sortedBy,
         String searchName,
-        Long userId
+        Long userId,
+        Boolean isFavorite
 ) {
 }
