@@ -66,11 +66,23 @@ public interface EtfStockCompositionRepository extends JpaRepository<EtfStockCom
             @Param("groupCode") String groupCode
     );
 
+    /**
+     * 특정 종목이 포함된 ETF 목록 조회
+     * - 각 ETF의 최신 baseDate 데이터만 조회
+     * - 활성 ETF만 조회
+     * - 비중 높은 순 정렬
+     */
     @Query("""
         SELECT esc FROM EtfStockComposition esc
         JOIN FETCH esc.stock s
         JOIN FETCH esc.etf e
         WHERE esc.stock.ticker = :ticker
+          AND e.isActive = true
+          AND esc.baseDate = (
+              SELECT MAX(e2.baseDate) FROM EtfStockComposition e2
+              WHERE e2.etf.id = esc.etf.id
+          )
+        ORDER BY esc.weightPct DESC
     """)
     List<EtfStockComposition> getEtfStockCompositionByStockTicker(@Param("ticker") String ticker);
 
