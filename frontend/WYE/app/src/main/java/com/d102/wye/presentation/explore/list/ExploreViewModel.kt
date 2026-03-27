@@ -83,7 +83,13 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
-    fun stopPolling() { pollingJob?.cancel() }
+    fun setInitialSelections(selections: List<SelectedEtf>) {
+        if (_selectedTickers.value.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _selectedTickers.update { selections.toSet() }
+        }
+    }
 
     private suspend fun refreshMarketData() {
         val current = (_uiState.value as? UiState.Success)?.data ?: return

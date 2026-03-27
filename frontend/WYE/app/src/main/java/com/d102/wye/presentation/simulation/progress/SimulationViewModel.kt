@@ -71,48 +71,30 @@ class SimulationViewModel @Inject constructor(
     // ─────────────────────────────────────────────────────────────────────────
 
     fun addPortfolioItems(tickers: List<String>) {
-        Timber.d("[Portfolio] addPortfolioItems 호출 | tickers=$tickers")
-
         viewModelScope.launch {
             val currentTickers = _formState.value.portfolioItems.map { it.ticker }
             val newTickers = tickers.filter { it !in currentTickers }
-            Timber.d("[Portfolio] 현재 포트폴리오=$currentTickers | 신규 ticker=$newTickers")
 
             if (newTickers.isNotEmpty()) {
                 _simulationState.update { UiState.Loading }
+                _formState.update { it.copy(isFetchingEtfInfo = true) }
 
-                // 1. 가격 이력 조회 (DB 캐시 없는 것만)
-                val newToBeFetched = newTickers.filter {
-                    val hasCached = simulationRepository.hasCachedPriceHistory(it)
-                    Timber.d("[Cache] ticker=$it | DB 캐시 존재=$hasCached")
-                    !hasCached
-                }
+                val newToBeFetched = newTickers.filter { !simulationRepository.hasCachedPriceHistory(it) }
 
                 if (newToBeFetched.isNotEmpty()) {
                     val endDate = LocalDate.now().toString()
                     val startDate = LocalDate.now().minusYears(3).toString()
-                    Timber.d("[API] 가격 이력 API 호출 시작 | tickers=$newToBeFetched | 기간=$startDate ~ $endDate")
 
-                    when (val result = simulationRepository.getEtfPriceHistories(
-                        tickers = newToBeFetched,
-                        startDate = startDate,
-                        endDate = endDate
-                    )) {
+                    when (val result = simulationRepository.getEtfPriceHistories(newToBeFetched, startDate, endDate)) {
                         is BaseResult.Success -> {
-                            val pointCounts = result.data.mapValues { it.value.content.size }
-                            Timber.d("[API] 가격 이력 조회 성공 | 데이터 건수=$pointCounts")
                             simulationRepository.savePriceHistories(result.data)
-                            Timber.d("[DB] 가격 이력 저장 완료 | tickers=${result.data.keys}")
                         }
-
                         is BaseResult.Error -> {
-                            Timber.e("[API] 가격 이력 조회 실패 | message=${result.error.message}")
                             _simulationState.update { UiState.Error(result.error.message) }
+                            _formState.update { it.copy(isFetchingEtfInfo = false) }
                             return@launch
                         }
                     }
-                } else {
-                    Timber.d("[Cache] 모든 ticker DB 캐시 존재 → API 호출 스킵")
                 }
 
                 // 2. ETF 상세 조회 (name, per, pbr, roe, currentPrice)
@@ -165,7 +147,7 @@ class SimulationViewModel @Inject constructor(
                             )
                         }
                     }
-                    current.copy(portfolioItems = items)
+                    current.copy(portfolioItems = items, isFetchingEtfInfo = false)
                 }
             } else {
                 // 신규 ticker 없을 때도 formState 동기화
@@ -180,7 +162,6 @@ class SimulationViewModel @Inject constructor(
                 }
             }
 
-            Timber.d("[Portfolio] formState 업데이트 완료 | 포트폴리오=${_formState.value.portfolioItems.map { "${it.ticker}(${it.weight}%)" }}")
             triggerCalculation()
         }
     }
@@ -523,7 +504,8 @@ data class SimulationFormState(
     val investmentType: InvestmentType = InvestmentType.REGULAR_SAVING,
     val investmentAmount: String = "",
     val investmentPeriod: String = "",
-    val portfolioItems: List<PortfolioItem> = emptyList()
+    val portfolioItems: List<PortfolioItem> = emptyList(),
+    val isFetchingEtfInfo: Boolean = false
 )
 
 data class SectorWeightUiModel(

@@ -35,8 +35,7 @@ fun InvestmentSetupSection(
     // 투자 금액 에러
     val amountInt = formState.investmentAmount.toLongOrNull() ?: 0
     val isAmountError =
-        formState.investmentAmount.isNotEmpty() && (amountInt <= 0 || amountInt > 10_000_000)
-
+        formState.investmentAmount.isNotEmpty() &&  (amountInt <= 0 || amountInt > 1_000_000)
     val amountErrorMessage = when {
         amountInt <= 0 -> "1만원 이상의 금액을 입력해 주세요"
         amountInt > 10_000_000 -> "최대 100억까지 입력 가능해요"

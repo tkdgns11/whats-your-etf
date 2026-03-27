@@ -3,11 +3,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -77,11 +74,13 @@ fun DonutChart(
 
         if (isEmpty) {
             Text(
-                text = "ETF를 추가하고\n섹터 비중을 확인해보세요.",
-                style = MaterialTheme.typography.bodySmall,
+                text = "0%",
+                style = MaterialTheme.typography.bodyMedium,
                 color = IconInactive,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.wrapContentWidth(unbounded = true)
+                modifier = Modifier
+                    .wrapContentWidth(unbounded = true)
+                    .padding()
             )
         } else {
             Text(
