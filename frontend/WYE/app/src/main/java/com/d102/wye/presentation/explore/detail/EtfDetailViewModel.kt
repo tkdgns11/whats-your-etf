@@ -147,6 +147,7 @@ class EtfDetailViewModel @Inject constructor(
             now.format(DateTimeFormatter.ofPattern("yy.MM.dd HH:mm")) + " 기준"
         } else {
             var date = now.toLocalDate()
+            if (now.toLocalTime() < LocalTime.of(9, 0)) date = date.minusDays(1)
             while (date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY) {
                 date = date.minusDays(1)
             }
