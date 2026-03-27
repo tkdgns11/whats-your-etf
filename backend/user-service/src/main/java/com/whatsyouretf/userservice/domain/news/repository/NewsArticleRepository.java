@@ -49,35 +49,37 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     Page<NewsArticle> searchByKeywordAndCategory(@Param("keyword") String keyword, @Param("categoryCode") String categoryCode, Pageable pageable);
 
     /**
-     * 커서 기반 최신 뉴스 목록 조회 (lastId 이후)
+     * 커서 기반 최신 뉴스 목록 조회 (lastPublishedAt, lastId 이후)
      */
     @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
-           "WHERE n.isActive = true AND n.contentSummary IS NOT NULL AND n.id < :lastId " +
-           "ORDER BY n.id DESC")
-    List<NewsArticle> findLatestNewsByCursor(@Param("lastId") Long lastId, Pageable pageable);
+           "WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
+           "AND (n.publishedAt < :lastPublishedAt OR (n.publishedAt = :lastPublishedAt AND n.id < :lastId)) " +
+           "ORDER BY n.publishedAt DESC, n.id DESC")
+    List<NewsArticle> findLatestNewsByCursor(@Param("lastPublishedAt") java.time.LocalDateTime lastPublishedAt, @Param("lastId") Long lastId, Pageable pageable);
 
     /**
      * 커서 기반 최신 뉴스 목록 조회 (첫 페이지)
      */
     @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
            "WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
-           "ORDER BY n.id DESC")
+           "ORDER BY n.publishedAt DESC, n.id DESC")
     List<NewsArticle> findLatestNewsFirstPage(Pageable pageable);
 
     /**
-     * 커서 기반 카테고리별 뉴스 목록 조회 (lastId 이후)
+     * 커서 기반 카테고리별 뉴스 목록 조회 (lastPublishedAt, lastId 이후)
      */
     @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
-           "WHERE n.category.code = :categoryCode AND n.isActive = true AND n.contentSummary IS NOT NULL AND n.id < :lastId " +
-           "ORDER BY n.id DESC")
-    List<NewsArticle> findByCategoryCodeByCursor(@Param("categoryCode") String categoryCode, @Param("lastId") Long lastId, Pageable pageable);
+           "WHERE n.category.code = :categoryCode AND n.isActive = true AND n.contentSummary IS NOT NULL " +
+           "AND (n.publishedAt < :lastPublishedAt OR (n.publishedAt = :lastPublishedAt AND n.id < :lastId)) " +
+           "ORDER BY n.publishedAt DESC, n.id DESC")
+    List<NewsArticle> findByCategoryCodeByCursor(@Param("categoryCode") String categoryCode, @Param("lastPublishedAt") java.time.LocalDateTime lastPublishedAt, @Param("lastId") Long lastId, Pageable pageable);
 
     /**
      * 커서 기반 카테고리별 뉴스 목록 조회 (첫 페이지)
      */
     @Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
            "WHERE n.category.code = :categoryCode AND n.isActive = true AND n.contentSummary IS NOT NULL " +
-           "ORDER BY n.id DESC")
+           "ORDER BY n.publishedAt DESC, n.id DESC")
     List<NewsArticle> findByCategoryCodeFirstPage(@Param("categoryCode") String categoryCode, Pageable pageable);
 
     /**

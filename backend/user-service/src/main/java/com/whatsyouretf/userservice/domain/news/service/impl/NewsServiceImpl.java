@@ -61,17 +61,26 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         Pageable pageable = PageRequest.of(0, validSize + 1);
 
         List<NewsArticle> articles;
+
+        // 커서 기반 페이징: lastId로 해당 뉴스의 publishedAt 조회
+        LocalDateTime lastPublishedAt = null;
+        if (lastId != null) {
+            lastPublishedAt = newsArticleRepository.findById(lastId)
+                    .map(NewsArticle::getPublishedAt)
+                    .orElse(null);
+        }
+
         if (categoryCode != null && !categoryCode.isBlank()) {
             // 카테고리 필터 적용
-            if (lastId != null) {
-                articles = newsArticleRepository.findByCategoryCodeByCursor(categoryCode, lastId, pageable);
+            if (lastId != null && lastPublishedAt != null) {
+                articles = newsArticleRepository.findByCategoryCodeByCursor(categoryCode, lastPublishedAt, lastId, pageable);
             } else {
                 articles = newsArticleRepository.findByCategoryCodeFirstPage(categoryCode, pageable);
             }
         } else {
             // 전체 조회
-            if (lastId != null) {
-                articles = newsArticleRepository.findLatestNewsByCursor(lastId, pageable);
+            if (lastId != null && lastPublishedAt != null) {
+                articles = newsArticleRepository.findLatestNewsByCursor(lastPublishedAt, lastId, pageable);
             } else {
                 articles = newsArticleRepository.findLatestNewsFirstPage(pageable);
             }
