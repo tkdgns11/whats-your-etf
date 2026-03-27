@@ -19,4 +19,5 @@ data class EtfFilter(
     val aum: Long? = null,
     val sortedBy: String? = null,
     val searchName: String? = null,
+    val isFavorite: Boolean? = null,
 )

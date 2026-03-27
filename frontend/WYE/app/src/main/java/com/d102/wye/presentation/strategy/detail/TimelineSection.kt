@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -42,7 +45,6 @@ private const val PREVIEW_COUNT = 2
 @Composable
 fun TimelineSection(timelines: List<TimelineItem>) {
     var expanded by remember { mutableStateOf(false) }
-    val displayed = if (expanded) timelines else timelines.take(PREVIEW_COUNT)
     val hasMore = timelines.size > PREVIEW_COUNT
 
     Column(
@@ -58,50 +60,20 @@ fun TimelineSection(timelines: List<TimelineItem>) {
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        displayed.forEachIndexed { index, item ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                // 왼쪽 타임라인 선과 점
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.width(20.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                if (index == 0) PrimaryGreen else Border,
-                                CircleShape
-                            )
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(72.dp)
-                            .background(Divider)
-                    )
+        if (expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                timelines.forEachIndexed { index, item ->
+                    TimelineItemRow(index = index, item = item)
                 }
-
-                // 오른쪽 텍스트 정보
-                Column(
-                    modifier = Modifier.padding(start = 12.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = item.date,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = if (index == 0) PrimaryGreen else IconInactive
-                    )
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp),
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = item.content,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = TextSecondary,
-                    )
-                }
+            }
+        } else {
+            timelines.take(PREVIEW_COUNT).forEachIndexed { index, item ->
+                TimelineItemRow(index = index, item = item)
             }
         }
 
@@ -126,6 +98,52 @@ fun TimelineSection(timelines: List<TimelineItem>) {
                     modifier = Modifier.size(22.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TimelineItemRow(index: Int, item: TimelineItem) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(20.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(
+                        if (index == 0) PrimaryGreen else Border,
+                        CircleShape
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(72.dp)
+                    .background(Divider)
+            )
+        }
+
+        Column(
+            modifier = Modifier.padding(start = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = item.date,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = if (index == 0) PrimaryGreen else IconInactive
+            )
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp),
+                color = TextPrimary
+            )
+            Text(
+                text = item.content,
+                style = MaterialTheme.typography.labelLarge,
+                color = TextSecondary,
+            )
         }
     }
 }

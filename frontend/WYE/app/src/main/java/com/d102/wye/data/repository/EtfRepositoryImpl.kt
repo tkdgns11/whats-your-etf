@@ -92,4 +92,5 @@ private fun EtfFilter.toRequest() = EtfListRequest(
     aum = aum,
     sortedBy = sortedBy,
     searchName = searchName?.takeIf { it.isNotBlank() },
+    isFavorite = isFavorite,
 )

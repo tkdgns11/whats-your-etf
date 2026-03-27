@@ -62,6 +62,11 @@ fun ExploreScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
+    // 즐겨찾기 토글 시 맨 위로 스크롤
+    LaunchedEffect(filterState.onlyLiked) {
+        listState.scrollToItem(0)
+    }
+
     // 스크롤 끝 감지 → 다음 페이지 로드
     LaunchedEffect(listState) {
         snapshotFlow {

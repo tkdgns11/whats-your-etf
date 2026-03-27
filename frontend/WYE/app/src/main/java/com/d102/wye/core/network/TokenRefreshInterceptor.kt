@@ -40,8 +40,7 @@ class TokenRefreshInterceptor @Inject constructor(
         }
 
         if (refreshToken.isNullOrEmpty()) {
-            Timber.e("No refresh token found, clearing auth data")
-            runBlocking { authTokenDataStore.clearTokensBySessionExpired() }
+            Timber.e("No refresh token found, skipping session expired (not logged in)")
             return response
         }
 
