@@ -21,6 +21,7 @@ import com.d102.wye.presentation.auth.login.LoginScreen
 import com.d102.wye.presentation.auth.passwordreset.PasswordResetScreen
 import com.d102.wye.presentation.explore.detail.EtfDetailScreen
 import com.d102.wye.presentation.explore.list.ExploreScreen
+import com.d102.wye.presentation.explore.list.SelectedEtf
 import com.d102.wye.presentation.explore.stock.StockDetailScreen
 import com.d102.wye.presentation.explore.stock.StockEtfListScreen
 import com.d102.wye.presentation.home.HomeScreen
@@ -292,11 +293,11 @@ fun AppNavGraph(
 
             SimulationScreen(
                 onBackClick = { navController.popBackStack() },
-                onAddEtfClick = { currentTickers ->
-                    // 현재 포트폴리오 tickers를 SimulationAddStock 화면에 전달
-                    navController.currentBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("current_tickers", currentTickers.toTypedArray())
+                onAddEtfClick = { tickers, names ->
+                    navController.currentBackStackEntry?.savedStateHandle?.apply {
+                        set("current_tickers", tickers)
+                        set("current_names", names)
+                    }
                     navController.navigate(Route.SimulationAddStock.route)
                 },
                 onSaveClick = {
@@ -315,16 +316,19 @@ fun AppNavGraph(
         // 시뮬레이션에서 '추가하기'를 눌렀을 때 띄울 탐색 화면
         // ─────────────────────────────────────────
         composable(Route.SimulationAddStock.route) { backStackEntry ->
-            // 이전 화면(Simulation)에서 넘긴 현재 포트폴리오 tickers
-            val currentTickers = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<Array<String>>("current_tickers")
-                ?.toList()
-                ?: emptyList()
+            val savedState = navController.previousBackStackEntry?.savedStateHandle
+
+            val tickers = savedState?.get<Array<String>>("current_tickers") ?: emptyArray()
+            val names = savedState?.get<Array<String>>("current_names") ?: emptyArray()
+
+            val currentSelections = tickers.zip(names).map { (ticker, name) ->
+                SelectedEtf(ticker = ticker, name = name)
+            }
 
             ExploreScreen(
                 title = "종목 추가",
                 isSelectionMode = true,
+                initialSelectedTickers = currentSelections,
                 onBackClick = { navController.popBackStack() },
                 onEtfClick = { ticker, riskLevel ->
                     navController.navigate(Route.EtfDetail(ticker, riskLevel).route)

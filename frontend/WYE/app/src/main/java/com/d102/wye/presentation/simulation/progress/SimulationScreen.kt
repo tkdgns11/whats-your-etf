@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SimulationScreen(
     onBackClick: () -> Unit,
-    onAddEtfClick: (currentTickers: List<String>) -> Unit,
+    onAddEtfClick: (tickers: Array<String>, names: Array<String>) -> Unit,
     onSaveClick: () -> Unit,
     viewModel: SimulationViewModel = hiltViewModel()
 ) {
@@ -133,7 +133,11 @@ fun SimulationScreen(
                 )
                 PortfolioSection(
                     formState = formState,
-                    onAddClick = { onAddEtfClick(formState.portfolioItems.map { it.ticker }) },
+                    onAddClick = {
+                        val tickers = formState.portfolioItems.map { it.ticker }.toTypedArray()
+                        val names = formState.portfolioItems.map { it.name }.toTypedArray()
+                        onAddEtfClick(tickers, names)
+                    },
                     onRemoveClick = { viewModel.onPortfolioItemRemoved(it) },
                     onWeightChange = { ticker, weight ->
                         viewModel.updateItemWeight(
