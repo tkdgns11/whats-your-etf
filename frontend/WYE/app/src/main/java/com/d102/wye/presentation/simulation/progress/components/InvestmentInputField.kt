@@ -50,8 +50,8 @@ fun InvestmentInputField(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 표시용 값
-        val displayValue = if (isCurrencyField) {
+        // 표시용 값 포맷팅 (숫자에 콤마 찍기 등)
+        val displayValue = if (isCurrencyField && value.isNotEmpty()) {
             value.replace(",", "").toLongOrNull()
                 ?.let { "%,d".format(it) }
                 ?: value
@@ -60,22 +60,14 @@ fun InvestmentInputField(
         BasicTextField(
             value = displayValue,
             onValueChange = { input ->
-                val cleaned = input
-                    .replace(",", "")
-                    .filter { it.isDigit() }
-                    .trimStart('0')
+                // 1. 숫자 이외의 문자(콤마 등) 제거
+                val cleaned = input.replace(",", "").filter { it.isDigit() }
 
-                val normalized = cleaned.ifEmpty { "0" }
+                // 2. 앞의 불필요한 0 제거 (단, 아무것도 안 남으면 0으로 두거나 빈 문자열로)
+                val normalized = if (cleaned.isEmpty()) "" else cleaned.toLongOrNull()?.toString() ?: ""
 
-                // 최대 100억
-                val maxAmount = 10_000_000
-
-                val finalValue = normalized.toLongOrNull()?.let {
-                    if (it > maxAmount) maxAmount.toString() else it.toString()
-                } ?: ""
-
-                // "0" 단독 입력 허용하려면 조건 유지
-                onValueChange(finalValue)
+                // ✨ 수정 포인트: 상한선 체크를 삭제하고 부모에게 그대로 전달합니다.
+                onValueChange(normalized)
             },
             textStyle = MaterialTheme.typography.bodySmall.copy(color = TextPrimary),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

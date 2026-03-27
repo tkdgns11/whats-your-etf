@@ -15,17 +15,17 @@ import com.d102.wye.presentation.theme.IconBackGroundRed
 fun BundleType.toDrawable(): Int = when (this) {
     BundleType.STABLE_INCOME -> R.drawable.ic_bundle_crown
     BundleType.HIGH_GROWTH -> R.drawable.ic_bundle_high_growth
-    BundleType.BALANCED_PORTFOLIO -> R.drawable.ic_bundle_balance
-    BundleType.AGGRESSIVE_PLAY -> R.drawable.ic_bundle_aggressive
-    BundleType.LONG_TERM_INVESTING -> R.drawable.ic_bundle_long_term
+    BundleType.BALANCED -> R.drawable.ic_bundle_balance
+    BundleType.AGGRESSIVE -> R.drawable.ic_bundle_aggressive
+    BundleType.LONG_TERM -> R.drawable.ic_bundle_long_term
     BundleType.UNKNOWN -> R.drawable.ic_bundle_else
 }
 
 fun BundleType.toBackgroundColor(): Color = when (this) {
     BundleType.STABLE_INCOME -> IconBackGroundOrange
     BundleType.HIGH_GROWTH -> IconBackGroundBlue
-    BundleType.BALANCED_PORTFOLIO -> IconBackGroundGreen
-    BundleType.AGGRESSIVE_PLAY -> IconBackGroundRed
-    BundleType.LONG_TERM_INVESTING -> IconBackGroundPurple
+    BundleType.BALANCED -> IconBackGroundGreen
+    BundleType.AGGRESSIVE -> IconBackGroundRed
+    BundleType.LONG_TERM -> IconBackGroundPurple
     BundleType.UNKNOWN -> IconBackGroundGray
 }
