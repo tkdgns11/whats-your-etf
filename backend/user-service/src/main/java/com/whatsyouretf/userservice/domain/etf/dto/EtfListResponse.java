@@ -17,9 +17,9 @@ public record EtfListResponse(
                         etfSummary.etfId(),
                         etfSummary.ticker(),
                         etfSummary.etfName(),
-                        info.currentPrice(),
-                        info.dailyReturn(),
-                        info.dailyFluctuation(),
+                        info != null ? info.currentPrice() : etfSummary.nav(),
+                        info != null ? info.dailyReturn() : null,
+                        info != null ? info.dailyFluctuation() : null,
                         etfSummary.isFavorite(),
                         etfSummary.riskType()
                 );

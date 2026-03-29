@@ -1,5 +1,5 @@
 """ETF 관련 모델"""
-from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float, UniqueConstraint
+from sqlalchemy import Column, BigInteger, String, DECIMAL, Boolean, Date, TIMESTAMP, Integer, ForeignKey, Float, UniqueConstraint, Text
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -55,6 +55,21 @@ class ETF(Base):
 
     def __repr__(self):
         return f"<ETF(stock_code={self.stock_code}, name={self.name})>"
+
+
+class EtfIssue(Base):
+    """ETF 이슈 테이블 (etf_issue)"""
+    __tablename__ = "etf_issue"
+    __table_args__ = (
+        UniqueConstraint("etf_id", "issue_date", name="uq_etf_issue_etf_date"),
+    )
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    etf_id = Column(BigInteger, ForeignKey("etf.id", ondelete="CASCADE"), nullable=False)
+    issue_date = Column(Date, nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
 class ETFSectorCluster(Base):

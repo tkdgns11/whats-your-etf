@@ -1,6 +1,5 @@
 """네이버 증권 종목뉴스 크롤링, AI 분석, KRX 공시 스케줄러"""
 import asyncio
-import concurrent.futures
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -248,30 +247,31 @@ async def sync_missing_stock_descriptions_job():
             logger.error(f"Stock Description 동기화 중 에러 발생: {e}")
             await db.rollback()
 
-# ── 캐시 싱크 전용 스레드 풀 (uvicorn 이벤트 루프와 완전 분리) ─────────────
-_sync_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="cache-sync")
-_sync_running = False
+_sync_lock: asyncio.Lock | None = None
 
 
-def _run_sync_in_new_loop():
-    """별도 스레드에서 새 이벤트 루프를 생성해 캐시 동기화 실행.
-    uvicorn 이벤트 루프와 완전히 분리되므로 HTTP 요청 처리에 영향 없음."""
-    global _sync_running
-    if _sync_running:
+def _get_sync_lock() -> asyncio.Lock:
+    global _sync_lock
+    if _sync_lock is None:
+        _sync_lock = asyncio.Lock()
+    return _sync_lock
+
+
+async def _guarded_sync():
+    lock = _get_sync_lock()
+    if lock.locked():
         logger.info("[캐시 동기화] 이미 실행 중, 건너뜀")
         return
-    _sync_running = True
-    try:
-        asyncio.run(run_etf_stock_cache_sync())
-    except Exception as e:
-        logger.error(f"[캐시 동기화 스레드] 실패: {e}")
-    finally:
-        _sync_running = False
+    async with lock:
+        try:
+            await run_etf_stock_cache_sync()
+        except Exception as e:
+            logger.error(f"[캐시 동기화] 실패: {e}")
 
 
 def fire_cache_sync():
-    """uvicorn 이벤트 루프와 분리된 스레드에서 캐시 동기화를 fire-and-forget으로 실행."""
-    _sync_executor.submit(_run_sync_in_new_loop)
+    """uvicorn 이벤트 루프에서 캐시 동기화를 create_task로 fire-and-forget 실행."""
+    asyncio.ensure_future(_guarded_sync())
 
 
 async def _run_batched(coro_fns, batch_size=15):
@@ -365,6 +365,133 @@ async def sync_etf_stock_cache_job():
 
     await run_etf_stock_cache_sync()
 
+async def save_stock_close_from_cache_job():
+    """장 마감 후 캐시 현재가 → stock.close 저장 (매일 16:00 KST)"""
+    logger.info("=== stock.close 캐시 동기화 시작 ===")
+    from app.database import AsyncSessionLocal
+    from app.config import get_settings
+    from app.models.stock import Stock
+    from sqlalchemy import update
+    import redis.asyncio as aioredis
+
+    settings = get_settings()
+    r = aioredis.Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        password=settings.redis_password or None,
+        db=settings.redis_db,
+        decode_responses=True,
+    )
+    try:
+        tickers = await r.smembers("StockInfo")
+        if not tickers:
+            logger.info("=== StockInfo 캐시 없음, 스킵 ===")
+            return
+
+        price_map: dict[str, float] = {}
+        for ticker in tickers:
+            price_str = await r.hget(f"StockInfo:{ticker}", "currentPrice")
+            if price_str:
+                try:
+                    price_map[ticker] = float(price_str)
+                except ValueError:
+                    pass
+
+        if not price_map:
+            logger.info("=== 유효한 가격 데이터 없음 ===")
+            return
+
+        async with AsyncSessionLocal() as db:
+            for ticker, price in price_map.items():
+                await db.execute(
+                    update(Stock).where(Stock.ticker == ticker).values(close=price)
+                )
+            await db.commit()
+
+        logger.info(f"=== stock.close 캐시 동기화 완료: {len(price_map)}건 ===")
+    except Exception as e:
+        logger.error(f"stock.close 캐시 동기화 실패: {e}")
+    finally:
+        await r.aclose()
+
+
+async def save_etf_issue_from_cache_job():
+    """장 마감 후 ETF 등락률 5%/10% 이상 시 etf_issue 저장 (매일 16:10 KST)"""
+    logger.info("=== ETF 이슈 저장 시작 ===")
+    from app.database import AsyncSessionLocal
+    from app.config import get_settings
+    from app.models.etf import ETF, EtfIssue
+    from sqlalchemy import select, insert
+    from datetime import date
+    import redis.asyncio as aioredis
+
+    settings = get_settings()
+    r = aioredis.Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        password=settings.redis_password or None,
+        db=settings.redis_db,
+        decode_responses=True,
+    )
+    today = date.today()
+    saved = 0
+
+    try:
+        tickers = await r.smembers("EtfCurrentInfo")
+        if not tickers:
+            logger.info("=== EtfCurrentInfo 캐시 없음, 스킵 ===")
+            return
+
+        async with AsyncSessionLocal() as db:
+            etf_map_result = await db.execute(select(ETF.id, ETF.stock_code, ETF.name).where(ETF.is_active == True))
+            etf_map = {row.stock_code: (row.id, row.name) for row in etf_map_result}
+
+            for ticker in tickers:
+                etf_info = etf_map.get(ticker)
+                if not etf_info:
+                    continue
+
+                etf_id, etf_name = etf_info
+                daily_return_str = await r.hget(f"EtfCurrentInfo:{ticker}", "dailyReturn")
+                if not daily_return_str:
+                    continue
+
+                try:
+                    daily_return = float(daily_return_str)
+                except ValueError:
+                    continue
+
+                abs_return = abs(daily_return)
+                if abs_return < 5.0:
+                    continue
+
+                direction = "급등" if daily_return > 0 else "급락"
+                if abs_return >= 10.0:
+                    title = f"10% {direction}"
+                else:
+                    title = f"5% {direction}"
+
+                description = f"{etf_name} 전일 대비 {abs_return:.2f}% {direction}"
+
+                await db.execute(
+                    insert(EtfIssue).values(
+                        etf_id=etf_id,
+                        issue_date=today,
+                        title=title,
+                        description=description,
+                    ).on_conflict_do_nothing()
+                )
+                saved += 1
+
+            await db.commit()
+
+        logger.info(f"=== ETF 이슈 저장 완료: {saved}건 ===")
+    except Exception as e:
+        logger.error(f"ETF 이슈 저장 실패: {e}")
+    finally:
+        await r.aclose()
+
+
 async def sync_fundamentals_job():
     """종목 및 ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
     1. KOSPI/KOSDAQ 전 종목 PER/PBR/ROE 업데이트 (pykrx 배치 조회)
@@ -379,7 +506,6 @@ async def sync_fundamentals_job():
             service = EtfService(db)
             await service.sync_stock_fundamentals()
             await service.sync_etf_fundamentals()
-            await service.sync_etf_risk_type()
             logger.info("=== 재무지표 동기화 완료 ===")
         except Exception as e:
             logger.error(f"재무지표 동기화 실패: {e}")
@@ -486,6 +612,8 @@ def start_scheduler():
         trigger=CronTrigger(day_of_week='mon-fri', hour='9-15', minute='*', timezone='Asia/Seoul'),
         id="sync_etf_stock_cache_job",
         name="ETF and Stock Realtime Cache Sync",
+        max_instances=1,
+        coalesce=True,
         replace_existing=True
     )
 
@@ -496,6 +624,24 @@ def start_scheduler():
         trigger=CronTrigger(minute='0,30', timezone='Asia/Seoul'),
         id="sync_etf_stock_cache_offhours_job",
         name="ETF and Stock Cache Sync (Off-hours 30min)",
+        replace_existing=True
+    )
+
+    # 장 마감 후 캐시 현재가 → stock.close 저장 (매일 16:00 KST)
+    scheduler.add_job(
+        save_stock_close_from_cache_job,
+        trigger=CronTrigger(hour=16, minute=0, timezone='Asia/Seoul'),
+        id="save_stock_close_from_cache_job",
+        name="Save Stock Close Price from Cache",
+        replace_existing=True
+    )
+
+    # ETF 등락률 5%/10% 이상 이슈 저장 (매일 16:10 KST)
+    scheduler.add_job(
+        save_etf_issue_from_cache_job,
+        trigger=CronTrigger(hour=16, minute=10, timezone='Asia/Seoul'),
+        id="save_etf_issue_from_cache_job",
+        name="Save ETF Issue from Cache",
         replace_existing=True
     )
 

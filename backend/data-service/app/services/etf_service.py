@@ -484,7 +484,7 @@ class EtfService:
             if not w_per or not w_pbr or w_per == 0:
                 continue
 
-            w_roe = round(w_pbr / w_per, 4)
+            w_roe = round(w_pbr / w_per * 100, 4)
             stmt_upd = (
                 update(ETF)
                 .where(ETF.id == etf_id)
