@@ -622,9 +622,9 @@ private fun TableHeader() {
         modifier = Modifier.fillMaxWidth().background(SurfaceVariant).padding(vertical = 10.dp),
     ) {
         Text("구분",   style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
-        Text("1개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
-        Text("3개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
-        Text("6개월",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("1개월 전",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("3개월 전",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
+        Text("6개월 전",  style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1.5f), textAlign = TextAlign.Center)
     }
 }
 

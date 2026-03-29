@@ -184,16 +184,16 @@ fun EtfHeatmapGrid(
 private fun EtfHeatmapGridPreview() {
     EtfHeatmapGrid(
         items = listOf(
-            "KODEX 200"           to  1.24,
-            "TIGER 미국 S&P500"   to  0.85,
-            "KODEX 인버스"        to -0.98,
-            "KODEX 반도체"        to  1.10,
-            "TIGER 나스닥100"     to  0.42,
-            "KODEX 레버리지"      to -0.12,
-            "KODEX 2차전지"       to  2.35,
-            "SOL 미국배당"        to  0.68,
+            "KODEX 200"             to  1.24,
+            "TIGER 미국 S&P500"    to  0.85,
+            "KODEX 인버스"         to -0.98,
+            "KODEX 반도체"         to  1.10,
+            "TIGER 나스닥100"      to  0.42,
+            "KODEX 레버리지"       to -0.12,
+            "KODEX 2차전지"        to  2.35,
+            "SOL 미국배당"         to  0.68,
             "TIGER 차이나전기차SOL" to -1.45,
-            "ACE 미국 S&P500"     to  0.91,
+            "ACE 미국 S&P500"      to  0.91,
         ),
         modifier = Modifier.padding(16.dp),
     )

@@ -35,7 +35,7 @@ fun ColumnScope.JoinVerificationStep(
     )
     Spacer(modifier = Modifier.weight(1f))
     WyePrimaryButton(
-        text = "가입 완료",
+        text = "확인",
         onClick = onNextClick,
         enabled = canProceed
     )

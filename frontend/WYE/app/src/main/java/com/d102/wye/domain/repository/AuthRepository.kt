@@ -29,16 +29,19 @@ interface AuthRepository {
         newPasswordConfirm: String
     ): BaseResult<Unit>
 
-    /** 이메일 회원가입을 요청한다. */
-    suspend fun signup(
+    /** 회원가입 1단계: 이메일로 인증 메일을 발송한다. */
+    suspend fun sendSignupEmail(email: String): BaseResult<Unit>
+
+    /** 회원가입 2단계: 이메일 인증 코드를 확인한다. */
+    suspend fun verifySignup(email: String, token: String): BaseResult<Unit>
+
+    /** 회원가입 3단계: 비밀번호·닉네임을 입력해 가입을 완료하고 토큰을 반환한다. */
+    suspend fun signupComplete(
         email: String,
         password: String,
         passwordConfirm: String,
         nickname: String
-    ): BaseResult<Unit>
-
-    /** 이메일 인증 코드를 확인하고 발급된 JWT를 반환한다. */
-    suspend fun verifySignup(email: String, token: String): BaseResult<TokenPair>
+    ): BaseResult<TokenPair>
 
     /** 회원가입 인증 메일을 재발송한다. */
     suspend fun resendSignupCode(email: String): BaseResult<Unit>

@@ -68,8 +68,20 @@ fun BacktestChart(
     val maxVal = remember(values, overlayValues) {
         (values + overlayValues).maxOrNull() ?: 1.0
     }
-    val range = remember(minVal, maxVal) {
-        if (abs(maxVal - minVal) < 0.001) 1.0 else maxVal - minVal
+    val displayMin = remember(minVal, maxVal) {
+        if (maxVal - minVal < 10.0) {
+            val center = (maxVal + minVal) / 2.0
+            minOf(center - 5.0, 0.0)
+        } else minVal
+    }
+    val displayMax = remember(minVal, maxVal) {
+        if (maxVal - minVal < 10.0) {
+            val center = (maxVal + minVal) / 2.0
+            maxOf(center + 5.0, 0.0)
+        } else maxVal
+    }
+    val range = remember(displayMin, displayMax) {
+        if (abs(displayMax - displayMin) < 0.001) 1.0 else displayMax - displayMin
     }
 
     Column(modifier = modifier) {
@@ -89,7 +101,7 @@ fun BacktestChart(
 
                         fun xOf(i: Int, size: Int) = (i.toFloat() / (size - 1).coerceAtLeast(1)) * w
                         fun yOf(v: Double) =
-                            verticalPadding + h - ((v - minVal) / range * h).toFloat()
+                            verticalPadding + h - ((v - displayMin) / range * h).toFloat()
 
                         val zeroY =
                             yOf(0.0).coerceIn(verticalPadding, size.height - verticalPadding)
@@ -163,7 +175,7 @@ fun BacktestChart(
                                     0.5.dp.toPx()
                                 )
                             }
-                            if (minVal < 0.0 || maxVal > 0.0) {
+                            if (displayMin < 0.0 || displayMax > 0.0) {
                                 drawLine(
                                     color = Color.Gray.copy(alpha = 0.4f),
                                     start = Offset(0f, zeroY),
