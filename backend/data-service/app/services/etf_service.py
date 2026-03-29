@@ -229,9 +229,17 @@ class EtfService:
                 if not price_histories:
                     continue
 
+                # DB 직전 종가 기준으로 change_rate 계산
+                prev_close = await self.etf_price_repository.get_latest_close(etf_id)
                 for history in price_histories:
                     history['etf_id'] = etf_id
                     history['created_at'] = now
+                    cur_close = history.get('close') or 0
+                    if prev_close and prev_close != 0:
+                        history['change_rate'] = round((cur_close - float(prev_close)) / float(prev_close) * 100, 4)
+                    else:
+                        history['change_rate'] = 0.0
+                    prev_close = cur_close  # 다음 행의 기준가로 업데이트
 
                 logging.debug(f"[{ticker}] DB 가격 이력 {len(price_histories)}건 적재 완료.")
                 await self.etf_price_repository.save_bulk(price_histories)

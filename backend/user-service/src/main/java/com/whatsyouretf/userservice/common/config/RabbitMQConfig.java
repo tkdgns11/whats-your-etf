@@ -17,6 +17,7 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_NAME = "wye.events";
     public static final String QUEUE_NEWS_ALERT = "wye.news.alert";
     public static final String QUEUE_CACHE_ETF_SYNC = "wye.cache.etf.sync";
+    public static final String QUEUE_PORTFOLIO_ALERT = "wye.portfolio.alert";
 
     @Bean
     public DirectExchange exchange() {
@@ -41,6 +42,16 @@ public class RabbitMQConfig {
     @Bean
     public Binding cacheEtfSyncBinding(Queue cacheEtfSyncQueue, DirectExchange exchange) {
         return BindingBuilder.bind(cacheEtfSyncQueue).to(exchange).with(QUEUE_CACHE_ETF_SYNC);
+    }
+
+    @Bean
+    public Queue portfolioAlertQueue() {
+        return QueueBuilder.durable(QUEUE_PORTFOLIO_ALERT).build();
+    }
+
+    @Bean
+    public Binding portfolioAlertBinding(Queue portfolioAlertQueue, DirectExchange exchange) {
+        return BindingBuilder.bind(portfolioAlertQueue).to(exchange).with(QUEUE_PORTFOLIO_ALERT);
     }
 
     @Bean

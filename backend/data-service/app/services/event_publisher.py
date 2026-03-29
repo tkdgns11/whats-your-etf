@@ -14,6 +14,7 @@ settings = get_settings()
 # 큐/익스체인지 이름
 EXCHANGE_NAME = "wye.events"
 QUEUE_NEWS_ALERT = "wye.news.alert"
+QUEUE_PORTFOLIO_ALERT = "wye.portfolio.alert"
 
 
 class EventPublisher:
@@ -111,6 +112,66 @@ class EventPublisher:
 
         except Exception as e:
             logger.error(f"이벤트 발행 실패: {e}")
+            return False
+
+    async def publish_portfolio_alert(
+        self,
+        portfolio_id: int,
+        user_id: int,
+        portfolio_name: str,
+        change_rate: float,
+        threshold: int,
+        direction: str
+    ) -> bool:
+        """
+        포트폴리오 가치 변동 알림 이벤트 발행
+
+        Args:
+            portfolio_id: 포트폴리오 ID
+            user_id: 사용자 ID
+            portfolio_name: 포트폴리오 이름
+            change_rate: 변동률 (%, 음수 = 하락)
+            threshold: 트리거 임계값 (5 또는 10)
+            direction: "상승" 또는 "하락"
+
+        Returns:
+            발행 성공 여부
+        """
+        await self.connect()
+
+        if not self.channel:
+            logger.warning("RabbitMQ 채널이 없어 포트폴리오 알림 이벤트 발행 스킵")
+            return False
+
+        try:
+            event = {
+                "eventType": "PORTFOLIO_ALERT",
+                "portfolioId": portfolio_id,
+                "userId": user_id,
+                "portfolioName": portfolio_name,
+                "changeRate": change_rate,
+                "threshold": threshold,
+                "direction": direction,
+            }
+
+            exchange = await self.channel.get_exchange(EXCHANGE_NAME)
+            await exchange.publish(
+                Message(
+                    body=json.dumps(event, ensure_ascii=False).encode(),
+                    delivery_mode=DeliveryMode.PERSISTENT,
+                    content_type="application/json"
+                ),
+                routing_key=QUEUE_PORTFOLIO_ALERT
+            )
+
+            logger.info(
+                f"포트폴리오 알림 이벤트 발행: portfolioId={portfolio_id}, "
+                f"userId={user_id}, change={change_rate}%, threshold={threshold}%"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"포트폴리오 알림 이벤트 발행 실패: {e}")
             return False
 
 

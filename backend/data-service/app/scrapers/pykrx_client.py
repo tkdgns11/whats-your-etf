@@ -57,8 +57,6 @@ class PykrxClient:
                 return []
 
             df = df.reset_index()
-            # 컬럼 매핑: [날짜, 시가, 고가, 저가, 종가, 거래량, 거래대금, 등락률, NAV]
-            # 우리 스키마에 필요한 것: trade_date, close, nav, volume, change_rate
 
             history_data = []
             for _, row in df.iterrows():
@@ -67,7 +65,7 @@ class PykrxClient:
                     "close": float(row.get('종가', 0)),
                     "nav": float(row.get('NAV', 0)),
                     "volume": int(row.get('거래량', 0)),
-                    "change_rate": float(row.get('등락률', 0.0))
+                    "change_rate": round(float(row.get('change_rate', 0.0)), 4)
                 })
             
             logging.debug(f"[{ticker}] pykrx에서 가격 이력 데이터 {len(history_data)}건 조회 성공.")
