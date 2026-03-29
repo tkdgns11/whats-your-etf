@@ -506,7 +506,6 @@ async def sync_fundamentals_job():
             service = EtfService(db)
             await service.sync_stock_fundamentals()
             await service.sync_etf_fundamentals()
-            await service.sync_etf_risk_type()
             logger.info("=== 재무지표 동기화 완료 ===")
         except Exception as e:
             logger.error(f"재무지표 동기화 실패: {e}")
