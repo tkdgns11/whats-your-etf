@@ -257,6 +257,34 @@ def _get_sync_lock() -> asyncio.Lock:
     return _sync_lock
 
 
+async def _mirror_wye200():
+    """WYE 200 캐시를 KODEX 200과 동기화 (테스트용 페이크 ETF, override 없을 때만)"""
+    from app.config import get_settings
+    import redis.asyncio as aioredis
+    settings = get_settings()
+    r = aioredis.Redis(
+        host=settings.redis_host, port=settings.redis_port,
+        password=settings.redis_password or None, db=settings.redis_db,
+        decode_responses=True,
+    )
+    try:
+        override = await r.get("wye200:override")
+        if override and override != "0":
+            return  # 수동 가격 조작 중 → 미러링 스킵
+
+        kodex_data = await r.hgetall("EtfCurrentInfo:069500")
+        if not kodex_data:
+            return
+
+        wye_data = {**kodex_data, "ticker": "WYE200", "name": "WYE 200"}
+        await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
+        await r.sadd("EtfCurrentInfo", "WYE200")
+    except Exception as e:
+        logger.debug(f"[WYE200 미러링] 실패: {e}")
+    finally:
+        await r.aclose()
+
+
 async def _guarded_sync():
     lock = _get_sync_lock()
     if lock.locked():
@@ -265,6 +293,11 @@ async def _guarded_sync():
     async with lock:
         try:
             await run_etf_stock_cache_sync()
+            # WYE 200 (테스트용) 캐시를 KODEX 200과 동기화
+            await _mirror_wye200()
+            # ETF 가격 갱신 후 포트폴리오 변동률 체크
+            from app.services.portfolio_alert_service import check_portfolio_alerts
+            await check_portfolio_alerts()
         except Exception as e:
             logger.error(f"[캐시 동기화] 실패: {e}")
 
@@ -274,15 +307,15 @@ def fire_cache_sync():
     asyncio.ensure_future(_guarded_sync())
 
 
-async def _run_batched(coro_fns, batch_size=15):
-    """코루틴 함수 목록을 batch_size씩 순차 처리.
-    매 배치 후 asyncio.sleep(0)으로 이벤트 루프에 제어를 양보 → 다른 요청 처리 가능."""
-    results = []
+async def _run_batched(coro_fns, batch_size=16):
+    """배치당 18개 요청을 즉시 발사 후 1초 대기 (응답 완료 기다리지 않음).
+    1초 사이 응답이 도착하고, 다음 배치는 1초 후 발사 → 초당 18건 제한 준수."""
+    tasks = []
     for i in range(0, len(coro_fns), batch_size):
-        batch_results = await asyncio.gather(*coro_fns[i:i + batch_size], return_exceptions=True)
-        results.extend(batch_results)
-        await asyncio.sleep(0)  # 이벤트 루프에 제어 양보
-    return results
+        batch = [asyncio.ensure_future(c) for c in coro_fns[i:i + batch_size]]
+        tasks.extend(batch)
+        await asyncio.sleep(1.5)
+    return list(await asyncio.gather(*tasks, return_exceptions=True))
 
 
 async def run_etf_stock_cache_sync():
@@ -352,6 +385,14 @@ async def run_etf_stock_cache_sync():
             logger.error(f"실시간 캐시 업데이트 실패: {e}")
         finally:
             await cache_service.close()
+
+
+async def snapshot_portfolio_values_job():
+    """장 시작 전 포트폴리오 가치 스냅샷 저장 (매일 08:50 KST)"""
+    logger.info("=== 포트폴리오 가치 스냅샷 시작 ===")
+    from app.services.portfolio_alert_service import snapshot_portfolio_values
+    await snapshot_portfolio_values()
+    logger.info("=== 포트폴리오 가치 스냅샷 완료 ===")
 
 
 async def sync_etf_stock_cache_job():
@@ -603,6 +644,15 @@ def start_scheduler():
         trigger=CronTrigger(day_of_week='sat', hour=2, minute=0, timezone='Asia/Seoul'),
         id="sync_missing_stock_descriptions_job",
         name="Sync Missing Stock Descriptions",
+        replace_existing=True
+    )
+
+    # 포트폴리오 가치 스냅샷 (매일 08:50 KST - 장 시작 10분 전)
+    scheduler.add_job(
+        snapshot_portfolio_values_job,
+        trigger=CronTrigger(hour=8, minute=50, timezone='Asia/Seoul'),
+        id="snapshot_portfolio_values_job",
+        name="Portfolio Value Snapshot",
         replace_existing=True
     )
 

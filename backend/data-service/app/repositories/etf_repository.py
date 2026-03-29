@@ -131,3 +131,14 @@ class EtfPriceRepository:
         stmt = select(func.max(ETFPrice.trade_date)).where(ETFPrice.etf_id == etf_id)
         result = await self.db.execute(stmt)
         return result.scalar()
+
+    async def get_latest_close(self, etf_id: int):
+        """직전 저장된 종가 조회 (change_rate 계산용)"""
+        stmt = (
+            select(ETFPrice.close)
+            .where(ETFPrice.etf_id == etf_id)
+            .order_by(ETFPrice.trade_date.desc())
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar()

@@ -24,6 +24,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -833,6 +834,85 @@ async def get_etf_realtime(ticker: str):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await cache_service.close()
+
+
+# ==================== Portfolio Alert Test Endpoints ====================
+
+@app.post("/dev/portfolio-alert/snapshot")
+async def dev_portfolio_alert_snapshot():
+    """[TEST] 포트폴리오 가치 스냅샷 수동 저장 (08:50 스케줄 대체)"""
+    from app.services.portfolio_alert_service import snapshot_portfolio_values
+    await snapshot_portfolio_values()
+    return {"status": "ok", "message": "포트폴리오 가치 스냅샷 저장 완료"}
+
+
+@app.post("/dev/portfolio-alert/trigger")
+async def dev_portfolio_alert_trigger(
+    step: int = Query(default=1, description="1=KODEX200 현재가 대비 -5%, 2=-10%, 0=리셋")
+):
+    """[TEST] WYE 200 가격 수동 조작
+    - step=1: KODEX 200 현재가 대비 -5%
+    - step=2: KODEX 200 현재가 대비 -10%
+    - step=0: 초기화 (KODEX 200 현재가 복원, 미러링 재개)
+    """
+    import redis.asyncio as aioredis
+    r = aioredis.Redis(
+        host=settings.redis_host, port=settings.redis_port,
+        password=settings.redis_password or None, db=settings.redis_db,
+        decode_responses=True,
+    )
+    try:
+        kodex_data = await r.hgetall("EtfCurrentInfo:069500")
+        if not kodex_data:
+            raise HTTPException(status_code=404, detail="KODEX 200 캐시가 없습니다. 먼저 캐시 동기화를 실행하세요.")
+
+        if step == 0:
+            await r.set("wye200:override", "0")
+            wye_data = {**kodex_data, "ticker": "WYE200", "name": "WYE 200"}
+            await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
+            await r.sadd("EtfCurrentInfo", "WYE200")
+            return {"status": "ok", "message": "WYE 200 초기화 완료 (KODEX 200 동기화 재개)"}
+
+        base_price = float(kodex_data.get("currentPrice", 0))
+        prev_price = float(kodex_data.get("previousPrice", base_price))
+        if base_price <= 0:
+            raise HTTPException(status_code=400, detail="KODEX 200 현재가가 0입니다.")
+
+        drop_pct = step * 6
+        new_price = round(base_price * (1 - drop_pct / 100))
+        fluct = new_price - prev_price
+        daily_return = round((fluct / prev_price * 100) if prev_price != 0 else 0.0, 2)
+
+        wye_data = {
+            **kodex_data,
+            "ticker": "WYE200",
+            "name": "WYE 200",
+            "currentPrice": str(new_price),
+            "dailyFluctuation": str(int(fluct)),
+            "dailyReturn": str(daily_return),
+        }
+        await r.set("wye200:override", str(step))
+        await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
+        await r.sadd("EtfCurrentInfo", "WYE200")
+
+        return {
+            "status": "ok",
+            "step": step,
+            "basePrice": base_price,
+            "newPrice": new_price,
+            "dailyReturn": daily_return,
+            "message": f"WYE 200 가격 -{drop_pct}% 조작 완료",
+        }
+    finally:
+        await r.aclose()
+
+
+@app.post("/dev/portfolio-alert/check")
+async def dev_portfolio_alert_check():
+    """[TEST] 포트폴리오 변동률 체크 및 알림 발행 수동 실행"""
+    from app.services.portfolio_alert_service import check_portfolio_alerts
+    await check_portfolio_alerts()
+    return {"status": "ok", "message": "포트폴리오 알림 체크 완료"}
 
 
 if __name__ == "__main__":
