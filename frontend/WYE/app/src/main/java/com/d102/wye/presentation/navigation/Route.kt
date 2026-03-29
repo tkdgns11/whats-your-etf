@@ -16,9 +16,17 @@ sealed class Route(val route: String) {
     // Bottom Nav (BottomNavBar가 보이는 화면)
     // ─────────────────────────────────────────
 
-    object Main : Route("main")
+    object Home : Route("home")
     object Explore : Route("explore")
+
+    // ─────────────────────────────────────────
+    // 시뮬레이션 화면
+    // ─────────────────────────────────────────
+
     object Simulation : Route("simulation")
+    object SimulationEntry : Route("simulation_entry")
+    object SimulationAddStock : Route("simulation_add_stock")
+
     object Strategy : Route("strategy")
     object MyPage : Route("mypage")
 
@@ -27,18 +35,22 @@ sealed class Route(val route: String) {
     // ─────────────────────────────────────────
 
     object Login : Route("login")
-    object Signup : Route("signup")
+    object Join : Route("join")
     object PasswordReset : Route("password_reset")
+    object LikedEtfList : Route("liked_etf_list")
+    object HoldingEtfList : Route("holding_etf_list")
+    object Faq : Route("faq")
+    object Terms : Route("terms")
 
     // ─────────────────────────────────────────
     // ETF 상세 (ticker로 단건 조회)
     // ─────────────────────────────────────────
 
-    data class EtfDetail(val ticker: String) : Route("etf_detail/$ticker") {
+    data class EtfDetail(val ticker: String, val riskLevel: Int = 0) : Route("etf_detail/$ticker/$riskLevel") {
         companion object {
-            // NavHost 등록용 경로 패턴 (중괄호 포함)
-            const val ROUTE_PATTERN = "etf_detail/{ticker}"
+            const val ROUTE_PATTERN = "etf_detail/{ticker}/{riskLevel}"
             const val ARG_TICKER = "ticker"
+            const val ARG_RISK_LEVEL = "riskLevel"
         }
     }
 
@@ -53,14 +65,7 @@ sealed class Route(val route: String) {
         }
     }
 
-    // ─────────────────────────────────────────
-    // 시뮬레이션 서브 화면
-    // ─────────────────────────────────────────
 
-    object SimulationEntry : Route("simulation_entry")
-    object SimulationSetup : Route("simulation_setup")
-    object SimulationAddStock : Route("simulation_add_stock")
-    object SimulationResult : Route("simulation_result")
 
     // ─────────────────────────────────────────
     // 나의전략 서브 화면
@@ -76,8 +81,34 @@ sealed class Route(val route: String) {
     object StrategyCompare : Route("strategy_compare")
 
     // ─────────────────────────────────────────
+    // 종목 상세 (ticker로 단건 조회)
+    // ─────────────────────────────────────────
+
+    data class StockDetail(val ticker: String) : Route("stock_detail/$ticker") {
+        companion object {
+            const val ROUTE_PATTERN = "stock_detail/{ticker}"
+            const val ARG_TICKER = "ticker"
+        }
+    }
+
+    // 종목에 포함된 ETF 전체 목록
+    data class StockEtfList(val ticker: String) : Route("stock_etf_list/$ticker") {
+        companion object {
+            const val ROUTE_PATTERN = "stock_etf_list/{ticker}"
+            const val ARG_TICKER = "ticker"
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // 뉴스 목록
+    // ─────────────────────────────────────────
+
+    object NewsList : Route("news_list")
+
+    // ─────────────────────────────────────────
     // 알림
     // ─────────────────────────────────────────
 
-    object Notification : Route("notification")
+    object AlertList : Route("alerts")
+    object AlertSettings : Route("alert_settings")
 }

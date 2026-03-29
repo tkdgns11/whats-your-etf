@@ -23,18 +23,9 @@ data class LikedEtfEntity(
     @ColumnInfo(name = "change_rate")
     val changeRate: Double,
 
-    @ColumnInfo(name = "volume")
-    val volume: Long,
+    @ColumnInfo(name = "change_amount")
+    val changeAmount: Long,
 
-    @ColumnInfo(name = "risk_level")
-    val riskLevel: Int,
-
-    @ColumnInfo(name = "investment_strategy")
-    val investmentStrategy: String,
-
-    @ColumnInfo(name = "asset_class")
-    val assetClass: String,
-
-    @ColumnInfo(name = "dividend_yield")
-    val dividendYield: Double
+    @ColumnInfo(name = "risk_type")
+    val riskType: String,
 )

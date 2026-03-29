@@ -1,3 +1,6 @@
 package com.d102.wye.domain.state
 
-enum class InvestmentType { LUMP_SUM, ACCUMULATE }  // 관망형 / 적립형
+enum class InvestmentType {
+    REGULAR_SAVING,  // 적립형
+    LUMP_SUM      // 거치형
+}
