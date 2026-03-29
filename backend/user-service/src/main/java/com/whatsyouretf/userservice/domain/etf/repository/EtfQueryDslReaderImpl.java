@@ -40,7 +40,8 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                         etf.stockCode,
                         etf.name,
                         fav.id.isNotNull(),
-                        etf.riskType.stringValue()
+                        etf.riskType.stringValue(),
+                        etf.nav
                 ))
                 .from(etf)
                 .leftJoin(fav).on(fav.etf.eq(etf).and(isLikedCondition(query.userId())))
@@ -68,7 +69,8 @@ public class EtfQueryDslReaderImpl implements EtfQueryDslReader {
                         etf.stockCode,
                         etf.name,
                         fav.id.isNotNull(),
-                        etf.riskType.stringValue()
+                        etf.riskType.stringValue(),
+                        etf.nav
                 ))
                 .from(etf)
                 .leftJoin(fav).on(fav.etf.eq(etf).and(isLikedCondition(query.userId())))

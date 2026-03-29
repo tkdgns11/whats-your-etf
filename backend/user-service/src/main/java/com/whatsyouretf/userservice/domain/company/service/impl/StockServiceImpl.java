@@ -12,6 +12,7 @@ import com.whatsyouretf.userservice.domain.company.service.StockService;
 import com.whatsyouretf.userservice.domain.etf.entity.IndustryClassification;
 import com.whatsyouretf.userservice.domain.etf.repository.IndustryClassificationRepository;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -103,7 +104,12 @@ public class StockServiceImpl implements StockService {
     @Override
     public StockInfo getStockInfo(String ticker) {
         Stock stock = stockRepository.findByTickerWithCompany(ticker).orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
-        return stockCache.get(ticker, stock.getDescription());
+        StockInfo cached = stockCache.get(ticker, stock.getDescription());
+        if (cached != null) return cached;
+        if (stock.getClose() != null) {
+            return new StockInfo(ticker, stock.getDescription() != null ? stock.getDescription() : "", stock.getClose(), stock.getClose(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, stock.getDescription());
+        }
+        return null;
     }
 
     /**
