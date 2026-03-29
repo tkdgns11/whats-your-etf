@@ -231,31 +231,88 @@ public class LlmServiceImpl implements LlmService {
     }
 
     /**
-     * JSON 블록 추출
+     * JSON 블록 추출 및 정제
      */
     private String extractJsonFromResponse(String response) {
         if (response == null) return "{}";
+
+        String jsonContent;
 
         // ```json ... ``` 형식 처리
         if (response.contains("```json")) {
             int start = response.indexOf("```json") + 7;
             int end = response.indexOf("```", start);
             if (end > start) {
-                return response.substring(start, end).trim();
+                jsonContent = response.substring(start, end).trim();
+            } else {
+                jsonContent = response.trim();
             }
         }
-
         // ``` ... ``` 형식 처리
-        if (response.contains("```")) {
+        else if (response.contains("```")) {
             int start = response.indexOf("```") + 3;
             int end = response.indexOf("```", start);
             if (end > start) {
-                return response.substring(start, end).trim();
+                jsonContent = response.substring(start, end).trim();
+            } else {
+                jsonContent = response.trim();
             }
+        } else {
+            jsonContent = response.trim();
         }
 
-        // 그 외는 그대로 반환
-        return response.trim();
+        // JSON 문자열 내 줄바꿈 이스케이프 처리
+        // LLM이 문자열 값 내에 줄바꿈을 넣는 경우 파싱 에러 방지
+        return sanitizeJsonNewlines(jsonContent);
+    }
+
+    /**
+     * JSON 문자열 값 내의 줄바꿈을 이스케이프 처리
+     * - JSON 구조의 줄바꿈(키 사이)은 유지
+     * - 문자열 값 내의 줄바꿈만 \n으로 변환
+     */
+    private String sanitizeJsonNewlines(String json) {
+        if (json == null) return "{}";
+
+        StringBuilder result = new StringBuilder();
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+
+            if (escaped) {
+                result.append(c);
+                escaped = false;
+                continue;
+            }
+
+            if (c == '\\') {
+                result.append(c);
+                escaped = true;
+                continue;
+            }
+
+            if (c == '"') {
+                inString = !inString;
+                result.append(c);
+                continue;
+            }
+
+            // 문자열 내부의 줄바꿈은 이스케이프 처리
+            if (inString && (c == '\n' || c == '\r')) {
+                if (c == '\r' && i + 1 < json.length() && json.charAt(i + 1) == '\n') {
+                    // \r\n은 \n 하나로 처리
+                    continue;
+                }
+                result.append("\\n");
+                continue;
+            }
+
+            result.append(c);
+        }
+
+        return result.toString();
     }
 
     private String getTextOrNull(JsonNode node, String fieldName) {
