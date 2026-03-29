@@ -52,9 +52,9 @@ public class PortfolioReviewRequest {
     @Builder
     public static class EtfInfo {
 
-        /** ETF 종목 코드 (6자리 숫자) */
+        /** ETF 종목 코드 (6자리 영숫자) */
         @NotBlank(message = "ETF 종목 코드는 필수입니다.")
-        @Pattern(regexp = "^\\d{6}$", message = "ETF 종목 코드는 6자리 숫자여야 합니다.")
+        @Pattern(regexp = "^[A-Za-z0-9]{6}$", message = "ETF 종목 코드는 6자리여야 합니다.")
         private String ticker;
 
         /** ETF 이름 (최대 200자) */
