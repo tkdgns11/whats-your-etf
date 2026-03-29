@@ -11,6 +11,8 @@ import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewRequest;
 import com.whatsyouretf.userservice.domain.ai.entity.PortfolioAiFeedback;
 import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.ai.service.LlmService;
+import com.whatsyouretf.userservice.domain.etf.entity.Etf;
+import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * LLM 서비스 구현체 (GMS API 연동)
@@ -29,6 +34,7 @@ public class LlmServiceImpl implements LlmService {
 
     private final WebClient gmsWebClient;
     private final PortfolioAiFeedbackRepository feedbackRepository;
+    private final EtfRepository etfRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${anthropic.model.name:${gms.model.name}}")
@@ -101,18 +107,35 @@ public class LlmServiceImpl implements LlmService {
 
     /**
      * 사용자 메시지 생성
+     * DB에서 ETF 정보를 조회하여 프롬프트 형식에 맞게 구성
      */
     private String buildUserMessage(PortfolioReviewRequest.PortfolioInfo portfolio) {
+        // ticker로 ETF 정보 조회
+        List<String> tickers = portfolio.getEtfs().stream()
+                .map(PortfolioReviewRequest.EtfInfo::getTicker)
+                .toList();
+
+        Map<String, Etf> etfMap = etfRepository.findEtfsByStockCodeInTickers(tickers).stream()
+                .collect(java.util.stream.Collectors.toMap(Etf::getStockCode, e -> e));
+
         StringBuilder sb = new StringBuilder();
         sb.append("[포트폴리오 정보]\n");
-        sb.append("투자금액: ").append(String.format("%,d", portfolio.getTotalAmount())).append("원\n");
-        sb.append("투자유형: ").append(portfolio.getInvestmentType()).append("\n\n");
+        sb.append("투자금액: ").append(String.format("%,d", portfolio.getTotalAmount())).append("원\n\n");
 
         sb.append("[ETF 구성]\n");
-        for (PortfolioReviewRequest.EtfInfo etf : portfolio.getEtfs()) {
-            sb.append("- ").append(etf.getName())
-                    .append(" (").append(etf.getTicker()).append(")")
-                    .append(": ").append(etf.getWeight()).append("%\n");
+        for (PortfolioReviewRequest.EtfInfo etfInfo : portfolio.getEtfs()) {
+            Etf etf = etfMap.get(etfInfo.getTicker());
+
+            sb.append("- ETF명: ").append(etfInfo.getName()).append("\n");
+            sb.append("  - 비중: ").append(etfInfo.getWeight()).append("%\n");
+
+            if (etf != null) {
+                sb.append("  - 섹터: ").append(etf.getSector() != null ? etf.getSector().name() : "N/A").append("\n");
+                sb.append("  - 전략: ").append(etf.getStrategyType() != null ? etf.getStrategyType() : "N/A").append("\n");
+                sb.append("  - 위험등급: ").append(etf.getRiskType() != null ? etf.getRiskType().getTypeName() : "N/A").append("\n");
+                sb.append("  - 배당주기: ").append(etf.getDividendFreq() != null ? etf.getDividendFreq() : "N/A").append("\n");
+            }
+            sb.append("\n");
         }
 
         return sb.toString();
