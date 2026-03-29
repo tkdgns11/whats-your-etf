@@ -415,6 +415,83 @@ async def save_stock_close_from_cache_job():
         await r.aclose()
 
 
+async def save_etf_issue_from_cache_job():
+    """장 마감 후 ETF 등락률 5%/10% 이상 시 etf_issue 저장 (매일 16:10 KST)"""
+    logger.info("=== ETF 이슈 저장 시작 ===")
+    from app.database import AsyncSessionLocal
+    from app.config import get_settings
+    from app.models.etf import ETF, EtfIssue
+    from sqlalchemy import select, insert
+    from datetime import date
+    import redis.asyncio as aioredis
+
+    settings = get_settings()
+    r = aioredis.Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        password=settings.redis_password or None,
+        db=settings.redis_db,
+        decode_responses=True,
+    )
+    today = date.today()
+    saved = 0
+
+    try:
+        tickers = await r.smembers("EtfCurrentInfo")
+        if not tickers:
+            logger.info("=== EtfCurrentInfo 캐시 없음, 스킵 ===")
+            return
+
+        async with AsyncSessionLocal() as db:
+            etf_map_result = await db.execute(select(ETF.id, ETF.stock_code, ETF.name).where(ETF.is_active == True))
+            etf_map = {row.stock_code: (row.id, row.name) for row in etf_map_result}
+
+            for ticker in tickers:
+                etf_info = etf_map.get(ticker)
+                if not etf_info:
+                    continue
+
+                etf_id, etf_name = etf_info
+                daily_return_str = await r.hget(f"EtfCurrentInfo:{ticker}", "dailyReturn")
+                if not daily_return_str:
+                    continue
+
+                try:
+                    daily_return = float(daily_return_str)
+                except ValueError:
+                    continue
+
+                abs_return = abs(daily_return)
+                if abs_return < 5.0:
+                    continue
+
+                direction = "급등" if daily_return > 0 else "급락"
+                if abs_return >= 10.0:
+                    title = f"10% {direction}"
+                else:
+                    title = f"5% {direction}"
+
+                description = f"{etf_name} 전일 대비 {abs_return:.2f}% {direction}"
+
+                await db.execute(
+                    insert(EtfIssue).values(
+                        etf_id=etf_id,
+                        issue_date=today,
+                        title=title,
+                        description=description,
+                    ).on_conflict_do_nothing()
+                )
+                saved += 1
+
+            await db.commit()
+
+        logger.info(f"=== ETF 이슈 저장 완료: {saved}건 ===")
+    except Exception as e:
+        logger.error(f"ETF 이슈 저장 실패: {e}")
+    finally:
+        await r.aclose()
+
+
 async def sync_fundamentals_job():
     """종목 및 ETF 재무지표 동기화 (매일 16:30 KST - 장 마감 후)
     1. KOSPI/KOSDAQ 전 종목 PER/PBR/ROE 업데이트 (pykrx 배치 조회)
@@ -557,6 +634,15 @@ def start_scheduler():
         trigger=CronTrigger(hour=16, minute=0, timezone='Asia/Seoul'),
         id="save_stock_close_from_cache_job",
         name="Save Stock Close Price from Cache",
+        replace_existing=True
+    )
+
+    # ETF 등락률 5%/10% 이상 이슈 저장 (매일 16:10 KST)
+    scheduler.add_job(
+        save_etf_issue_from_cache_job,
+        trigger=CronTrigger(hour=16, minute=10, timezone='Asia/Seoul'),
+        id="save_etf_issue_from_cache_job",
+        name="Save ETF Issue from Cache",
         replace_existing=True
     )
 
