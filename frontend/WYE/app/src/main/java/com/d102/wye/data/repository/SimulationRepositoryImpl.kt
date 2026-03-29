@@ -137,7 +137,7 @@ class SimulationRepositoryImpl @Inject constructor(
                 portfolio = AiPortfolioData(
                     totalAmount = totalAmount,
                     investmentType = investmentType.name,
-                    etfs = portfolios.map { portfolio ->
+                    etfs = portfolios.filter { it.weightPercent > 0 }.map { portfolio ->
                         AiEtfInfo(
                             ticker = portfolio.ticker,
                             name = portfolio.name,
