@@ -139,33 +139,32 @@ public class AlertServiceImpl implements AlertService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 해당 토큰 조회
-        FcmToken existingToken = fcmTokenRepository.findByToken(request.getToken()).orElse(null);
+        // 1. 해당 사용자+디바이스 타입으로 기존 토큰 조회
+        FcmToken existingUserToken = fcmTokenRepository
+                .findByUserIdAndDeviceType(userId, request.getDeviceType())
+                .orElse(null);
 
-        if (existingToken != null) {
-            if (existingToken.getUser().getId().equals(userId)) {
-                // 같은 사용자: 활성화 및 갱신
-                existingToken.updateToken(request.getToken());
-            } else {
-                // 다른 사용자: 삭제 후 새로 등록 (기기 교체)
-                fcmTokenRepository.delete(existingToken);
-                fcmTokenRepository.flush();
-                FcmToken newToken = FcmToken.builder()
-                        .user(user)
-                        .token(request.getToken())
-                        .deviceType(request.getDeviceType())
-                        .build();
-                fcmTokenRepository.save(newToken);
-            }
-        } else {
-            // 새 토큰 등록
-            FcmToken newToken = FcmToken.builder()
-                    .user(user)
-                    .token(request.getToken())
-                    .deviceType(request.getDeviceType())
-                    .build();
-            fcmTokenRepository.save(newToken);
+        if (existingUserToken != null) {
+            // 기존 토큰이 있으면 업데이트
+            existingUserToken.updateToken(request.getToken());
+            return;
         }
+
+        // 2. 다른 사용자가 같은 토큰을 사용 중인지 확인 (기기 이전)
+        FcmToken tokenUsedByOther = fcmTokenRepository.findByToken(request.getToken()).orElse(null);
+        if (tokenUsedByOther != null) {
+            // 다른 사용자의 토큰 삭제 (기기 교체)
+            fcmTokenRepository.delete(tokenUsedByOther);
+            fcmTokenRepository.flush();
+        }
+
+        // 3. 새 토큰 등록
+        FcmToken newToken = FcmToken.builder()
+                .user(user)
+                .token(request.getToken())
+                .deviceType(request.getDeviceType())
+                .build();
+        fcmTokenRepository.save(newToken);
     }
 
     @Override
