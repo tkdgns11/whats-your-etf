@@ -7,6 +7,7 @@ import com.d102.wye.data.remote.dto.request.LogoutRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
+import com.d102.wye.data.remote.dto.request.SignupEmailRequest
 import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
@@ -40,11 +41,17 @@ interface AuthApiService {
         @Body request: LoginRequest
     ): Response<BaseResponse<TokenResponse>>
 
-    /** 회원가입을 요청하고 인증 메일 발송 결과를 받는다. */
+    /** 회원가입 1단계: 이메일로 인증 메일을 발송한다. */
     @POST("auth/signup")
-    suspend fun signup(
+    suspend fun sendSignupEmail(
+        @Body request: SignupEmailRequest
+    ): Response<BaseResponse<Unit>>
+
+    /** 회원가입 3단계: 이메일 인증 후 비밀번호·닉네임으로 가입을 완료한다. */
+    @POST("auth/signup/complete")
+    suspend fun signupComplete(
         @Body request: SignupRequest
-    ): Response<BaseResponse<SignupResponse>>
+    ): Response<BaseResponse<TokenResponse>>
 
     /** 비밀번호 재설정 인증 메일을 요청한다. */
     @POST("auth/password/reset/request")
@@ -64,11 +71,11 @@ interface AuthApiService {
         @Body request: PasswordResetConfirmRequest
     ): Response<BaseResponse<Unit>>
 
-    /** 이메일 인증 코드를 검증하고 회원가입을 완료한다. */
+    /** 회원가입 2단계: 이메일로 발송된 인증 코드를 확인한다. */
     @POST("auth/signup/verify")
     suspend fun verifySignup(
         @Body request: SignupVerifyRequest
-    ): Response<BaseResponse<TokenResponse>>
+    ): Response<BaseResponse<Unit>>
 
     /** 회원가입 인증 메일을 같은 이메일로 재발송한다. */
     @POST("auth/signup/resend")

@@ -84,16 +84,7 @@ class JoinViewModel @Inject constructor(
                 if (!EMAIL_REGEX.matches(email)) {
                     setError("올바른 이메일 형식을 입력해 주세요.")
                 } else {
-                    checkEmailAvailability(email)
-                }
-            }
-
-            JoinStep.PASSWORD -> {
-                when {
-                    current.password.length < 8 -> setError("비밀번호는 8자 이상이어야 합니다.")
-                    !PASSWORD_REGEX.matches(current.password) -> setError("비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.")
-                    current.password != current.passwordConfirm -> setError("비밀번호가 일치하지 않습니다.")
-                    else -> requestSignup()
+                    sendVerificationEmail(email)
                 }
             }
 
@@ -102,6 +93,15 @@ class JoinViewModel @Inject constructor(
                     setError("인증번호 6자리를 입력해 주세요.")
                 } else {
                     verifySignupCode()
+                }
+            }
+
+            JoinStep.PASSWORD -> {
+                when {
+                    current.password.length < 8 -> setError("비밀번호는 8자 이상이어야 합니다.")
+                    !PASSWORD_REGEX.matches(current.password) -> setError("비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.")
+                    current.password != current.passwordConfirm -> setError("비밀번호가 일치하지 않습니다.")
+                    else -> completeSignup()
                 }
             }
 
@@ -117,9 +117,9 @@ class JoinViewModel @Inject constructor(
                 currentStep = when (it.currentStep) {
                     JoinStep.NICKNAME -> JoinStep.NICKNAME
                     JoinStep.EMAIL -> JoinStep.NICKNAME
-                    JoinStep.PASSWORD -> JoinStep.EMAIL
-                    JoinStep.VERIFICATION -> JoinStep.PASSWORD
-                    JoinStep.SUCCESS -> JoinStep.VERIFICATION
+                    JoinStep.VERIFICATION -> JoinStep.EMAIL
+                    JoinStep.PASSWORD -> JoinStep.VERIFICATION
+                    JoinStep.SUCCESS -> JoinStep.PASSWORD
                 },
                 pendingTokenPair = if (it.currentStep == JoinStep.SUCCESS) null else it.pendingTokenPair,
                 errorMessage = null
@@ -172,23 +172,16 @@ class JoinViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = false, errorMessage = message) }
     }
 
-    /** 입력한 닉네임/이메일/비밀번호로 회원가입을 요청한다. */
-    private fun requestSignup() {
-        val current = _uiState.value
+    /** 1단계: 이메일로 인증 메일을 발송하고 인증 단계로 이동한다. */
+    private fun sendVerificationEmail(email: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (
-                val result = authRepository.signup(
-                    email = current.email.trim(),
-                    password = current.password,
-                    passwordConfirm = current.passwordConfirm,
-                    nickname = current.nickname.trim()
-                )
-            ) {
+            when (val result = authRepository.sendSignupEmail(email)) {
                 is BaseResult.Success -> {
                     _uiState.update {
                         it.copy(
                             currentStep = JoinStep.VERIFICATION,
+                            email = email,
                             isLoading = false,
                             helperMessage = "인증번호 재전송",
                             errorMessage = null
@@ -200,31 +193,7 @@ class JoinViewModel @Inject constructor(
         }
     }
 
-    /** 이메일 중복 여부를 확인하고 사용 가능할 때만 비밀번호 단계로 이동한다. */
-    private fun checkEmailAvailability(email: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = authRepository.checkEmailAvailability(email)) {
-                is BaseResult.Success -> {
-                    if (result.data) {
-                        _uiState.update {
-                            it.copy(
-                                currentStep = JoinStep.PASSWORD,
-                                email = email,
-                                isLoading = false,
-                                errorMessage = null
-                            )
-                        }
-                    } else {
-                        setError("이미 존재하는 이메일입니다.")
-                    }
-                }
-                is BaseResult.Error -> setError(result.error.message)
-            }
-        }
-    }
-
-    /** 입력한 인증번호를 검증하고 성공 시 완료 단계로 전환한다. */
+    /** 2단계: 인증번호를 검증하고 성공 시 비밀번호 단계로 이동한다. */
     private fun verifySignupCode() {
         val current = _uiState.value
         viewModelScope.launch {
@@ -233,6 +202,33 @@ class JoinViewModel @Inject constructor(
                 val result = authRepository.verifySignup(
                     email = current.email.trim(),
                     token = current.verificationCode
+                )
+            ) {
+                is BaseResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            currentStep = JoinStep.PASSWORD,
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                }
+                is BaseResult.Error -> setError(result.error.message)
+            }
+        }
+    }
+
+    /** 3단계: 비밀번호·닉네임으로 가입을 완료하고 성공 화면으로 이동한다. */
+    private fun completeSignup() {
+        val current = _uiState.value
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (
+                val result = authRepository.signupComplete(
+                    email = current.email.trim(),
+                    password = current.password,
+                    passwordConfirm = current.passwordConfirm,
+                    nickname = current.nickname.trim()
                 )
             ) {
                 is BaseResult.Success -> {

@@ -718,7 +718,7 @@ private fun InfluentialStocksSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "현재 이 ETF에 영향을 많이 끼치는 종목은?",
+            "현재 이 ETF 수익률에 영향력을 미치는 종목은?",
             style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.5.sp),
             color = TextPrimary,
         )
@@ -883,7 +883,7 @@ private fun PriceVolumeRow(detail: EtfDetail, marketStatusLabel: String = "") {
                 modifier = Modifier.weight(1f)
             )
             InfoCard(
-                label = "거래량",
+                label = "거래량(주)",
                 value = formatVolume(detail.volume),
                 valueColor = PrimaryGreen,
                 modifier = Modifier.weight(1f)

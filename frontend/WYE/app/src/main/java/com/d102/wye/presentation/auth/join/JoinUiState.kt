@@ -5,8 +5,8 @@ import com.d102.wye.domain.model.TokenPair
 enum class JoinStep {
     NICKNAME,
     EMAIL,
-    PASSWORD,
     VERIFICATION,
+    PASSWORD,
     SUCCESS
 }
 

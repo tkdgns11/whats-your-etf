@@ -10,6 +10,7 @@ import com.d102.wye.data.remote.dto.request.LogoutRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetConfirmRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetRequest
 import com.d102.wye.data.remote.dto.request.PasswordResetVerifyRequest
+import com.d102.wye.data.remote.dto.request.SignupEmailRequest
 import com.d102.wye.data.remote.dto.request.SignupRequest
 import com.d102.wye.data.remote.dto.request.SignupResendRequest
 import com.d102.wye.data.remote.dto.request.SignupVerifyRequest
@@ -97,16 +98,32 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    /** 회원가입 요청을 보내고 성공 여부만 반환한다. */
-    override suspend fun signup(
+    /** 회원가입 1단계: 이메일로 인증 메일을 발송한다. */
+    override suspend fun sendSignupEmail(email: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.sendSignupEmail(SignupEmailRequest(email = email))
+        }
+    }
+
+    /** 회원가입 2단계: 이메일 인증 코드를 확인한다. */
+    override suspend fun verifySignup(email: String, token: String): BaseResult<Unit> {
+        return safeApiCallWithoutData {
+            authApiService.verifySignup(
+                SignupVerifyRequest(email = email, token = token)
+            )
+        }
+    }
+
+    /** 회원가입 3단계: 비밀번호·닉네임을 입력해 가입을 완료하고 토큰을 반환한다. */
+    override suspend fun signupComplete(
         email: String,
         password: String,
         passwordConfirm: String,
         nickname: String
-    ): BaseResult<Unit> {
+    ): BaseResult<TokenPair> {
         return when (
             val result = safeApiCall {
-                authApiService.signup(
+                authApiService.signupComplete(
                     SignupRequest(
                         email = email,
                         password = password,
@@ -116,27 +133,7 @@ class AuthRepositoryImpl @Inject constructor(
                 )
             }
         ) {
-            is BaseResult.Success -> BaseResult.Success(Unit)
-            is BaseResult.Error -> result
-        }
-    }
-
-    /** 인증 코드를 검증하고 회원가입 완료에 필요한 토큰만 반환한다. */
-    override suspend fun verifySignup(email: String, token: String): BaseResult<TokenPair> {
-        return when (
-            val result = safeApiCall {
-                authApiService.verifySignup(
-                    SignupVerifyRequest(
-                        email = email,
-                        token = token
-                    )
-                )
-            }
-        ) {
-            is BaseResult.Success -> {
-                val tokenPair = result.data.toDomain()
-                BaseResult.Success(tokenPair)
-            }
+            is BaseResult.Success -> BaseResult.Success(result.data.toDomain())
             is BaseResult.Error -> result
         }
     }
