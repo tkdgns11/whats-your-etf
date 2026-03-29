@@ -66,7 +66,9 @@ public class EtfReaderImpl implements EtfReader {
         BigDecimal changeRate = ep.getChangeRate()  != null ? ep.getChangeRate()  : BigDecimal.ZERO;
         BigDecimal fluctuation   = close.multiply(changeRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         BigDecimal previousClose = close.subtract(fluctuation);
-        return new EtfCurrentInfo(ticker, name, close, previousClose, 0L, nav, changeRate, fluctuation);
+        Long volume = ep.getVolume();
+        log.info(ep.toString());
+        return new EtfCurrentInfo(ticker, name, close, previousClose, volume, nav, changeRate, fluctuation);
     }
 
     @Override
@@ -104,11 +106,7 @@ public class EtfReaderImpl implements EtfReader {
         // Redis 캐시 비어있음(장외 시간 등) → DB latest volume 기준 top 10 + Redis 가격 병합
         log.debug("[Top10] Redis 캐시 없음 → DB fallback (최신 etf_prices volume 기준)");
         return etfPriceRepository.findTop10ByLatestVolume().stream()
-                .map(ep -> {
-                    String ticker = ep.getEtf().getStockCode();
-                    EtfCurrentInfo redisInfo = etfCache.findByTicker(ticker);
-                    return redisInfo != null ? redisInfo : buildFromEtfPrice(ep);
-                })
+                .map(this::buildFromEtfPrice)
                 .toList();
     }
 }
