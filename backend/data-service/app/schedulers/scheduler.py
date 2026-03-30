@@ -701,9 +701,9 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # ETF 구성종목 뉴스 크롤링 (03:00, 12:00 KST - 하루 2회)
+    # ETF 구성종목 뉴스 크롤링 (03:00, 12:00, 18:00 KST - 하루 3회)
     # - 상위 100개 ETF + 사용자 관심 ETF + 포트폴리오 ETF 구성종목
-    for hour in [3, 12]:
+    for hour in [3, 12, 18]:
         scheduler.add_job(
             scrape_stock_news_job,
             trigger=CronTrigger(hour=hour, minute=0, timezone='Asia/Seoul'),
