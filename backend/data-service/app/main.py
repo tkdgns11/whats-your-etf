@@ -848,12 +848,12 @@ async def dev_portfolio_alert_snapshot():
 
 @app.post("/dev/portfolio-alert/trigger")
 async def dev_portfolio_alert_trigger(
-    step: int = Query(default=1, description="1=KODEX200 현재가 대비 -5%, 2=-10%, 0=리셋")
+    step: int = Query(default=0, description="0=baseline 저장, 1=baseline 대비 -8%, 2=baseline 대비 -15%")
 ):
     """[TEST] WYE 200 가격 수동 조작
-    - step=1: KODEX 200 현재가 대비 -5%
-    - step=2: KODEX 200 현재가 대비 -10%
-    - step=0: 초기화 (KODEX 200 현재가 복원, 미러링 재개)
+    - step=0: 현재 WYE200 가격을 baseline으로 저장
+    - step=1: baseline 대비 -8%
+    - step=2: baseline 대비 -15%
     """
     import redis.asyncio as aioredis
     r = aioredis.Redis(
@@ -862,38 +862,35 @@ async def dev_portfolio_alert_trigger(
         decode_responses=True,
     )
     try:
-        kodex_data = await r.hgetall("EtfCurrentInfo:069500")
-        if not kodex_data:
-            raise HTTPException(status_code=404, detail="KODEX 200 캐시가 없습니다. 먼저 캐시 동기화를 실행하세요.")
+        wye_data = await r.hgetall("EtfCurrentInfo:WYE200")
+        if not wye_data:
+            raise HTTPException(status_code=404, detail="WYE200 캐시가 없습니다.")
 
         if step == 0:
+            current_price = wye_data.get("currentPrice", "0")
+            await r.set("wye200:base_price", current_price)
             await r.set("wye200:override", "0")
-            wye_data = {**kodex_data, "ticker": "WYE200", "name": "WYE 200"}
-            await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
-            await r.sadd("EtfCurrentInfo", "WYE200")
-            return {"status": "ok", "message": "WYE 200 초기화 완료 (KODEX 200 동기화 재개)"}
+            return {"status": "ok", "basePrice": current_price, "message": "WYE 200 baseline 저장 완료"}
 
-        base_price = float(kodex_data.get("currentPrice", 0))
-        prev_price = float(kodex_data.get("previousPrice", base_price))
-        if base_price <= 0:
-            raise HTTPException(status_code=400, detail="KODEX 200 현재가가 0입니다.")
+        base_price_str = await r.get("wye200:base_price")
+        if not base_price_str:
+            raise HTTPException(status_code=400, detail="baseline이 없습니다. step=0 먼저 호출하세요.")
 
-        drop_pct = step * 6
-        new_price = round(base_price * (1 - drop_pct / 100))
+        base_price = float(base_price_str)
+        drop_pct = 8 if step == 1 else 15
+        new_price = int(base_price * (1 - drop_pct / 100))
+        prev_price = float(wye_data.get("previousPrice", base_price))
         fluct = new_price - prev_price
         daily_return = round((fluct / prev_price * 100) if prev_price != 0 else 0.0, 2)
 
-        wye_data = {
-            **kodex_data,
-            "ticker": "WYE200",
-            "name": "WYE 200",
+        updated = {
+            **wye_data,
             "currentPrice": str(new_price),
             "dailyFluctuation": str(int(fluct)),
             "dailyReturn": str(daily_return),
         }
         await r.set("wye200:override", str(step))
-        await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
-        await r.sadd("EtfCurrentInfo", "WYE200")
+        await r.hset("EtfCurrentInfo:WYE200", mapping=updated)
 
         return {
             "status": "ok",

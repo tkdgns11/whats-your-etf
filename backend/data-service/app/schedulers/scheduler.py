@@ -257,34 +257,6 @@ def _get_sync_lock() -> asyncio.Lock:
     return _sync_lock
 
 
-async def _mirror_wye200():
-    """WYE 200 캐시를 KODEX 200과 동기화 (테스트용 페이크 ETF, override 없을 때만)"""
-    from app.config import get_settings
-    import redis.asyncio as aioredis
-    settings = get_settings()
-    r = aioredis.Redis(
-        host=settings.redis_host, port=settings.redis_port,
-        password=settings.redis_password or None, db=settings.redis_db,
-        decode_responses=True,
-    )
-    try:
-        override = await r.get("wye200:override")
-        if override and override != "0":
-            return  # 수동 가격 조작 중 → 미러링 스킵
-
-        kodex_data = await r.hgetall("EtfCurrentInfo:069500")
-        if not kodex_data:
-            return
-
-        wye_data = {**kodex_data, "ticker": "WYE200", "name": "WYE 200"}
-        await r.hset("EtfCurrentInfo:WYE200", mapping=wye_data)
-        await r.sadd("EtfCurrentInfo", "WYE200")
-    except Exception as e:
-        logger.debug(f"[WYE200 미러링] 실패: {e}")
-    finally:
-        await r.aclose()
-
-
 async def _guarded_sync():
     lock = _get_sync_lock()
     if lock.locked():
@@ -293,8 +265,6 @@ async def _guarded_sync():
     async with lock:
         try:
             await run_etf_stock_cache_sync()
-            # WYE 200 (테스트용) 캐시를 KODEX 200과 동기화
-            await _mirror_wye200()
             # ETF 가격 갱신 후 포트폴리오 변동률 체크
             from app.services.portfolio_alert_service import check_portfolio_alerts
             await check_portfolio_alerts()
