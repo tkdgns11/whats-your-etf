@@ -870,6 +870,12 @@ async def dev_portfolio_alert_trigger(
             current_price = wye_data.get("currentPrice", "0")
             await r.set("wye200:base_price", current_price)
             await r.set("wye200:override", "0")
+            await r.hset("EtfCurrentInfo:WYE200", mapping={
+                **wye_data,
+                "previousPrice": current_price,
+                "dailyReturn": "0.0",
+                "dailyFluctuation": "0",
+            })
             return {"status": "ok", "basePrice": current_price, "message": "WYE 200 baseline 저장 완료"}
 
         base_price_str = await r.get("wye200:base_price")
