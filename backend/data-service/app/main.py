@@ -1,7 +1,8 @@
 """What's Your ETF - Data Service (FastAPI)"""
+import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -14,7 +15,7 @@ from app.models.etf_disclosure import EtfDisclosure
 from app.models.etf import ETF, ETFSectorCluster
 from app.scrapers.news_service import NewsCollectionService
 from app.scrapers.krx_scraper import KrxDisclosureScraper
-from app.schedulers.scheduler import start_scheduler, scheduler
+from app.schedulers.scheduler import start_scheduler, scheduler, run_etf_stock_cache_sync, fire_cache_sync
 from app.config import get_settings
 from app.scrapers.keywords import NEWS_CATEGORIES
 from app.database import AsyncSessionLocal
@@ -23,6 +24,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -32,13 +34,45 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """앱 시작/종료 시 실행"""
     # Startup
-    logger.info("FastAPI 시작")
-    start_scheduler()
+    settings = get_settings()
+    is_prod = settings.app_env == "prod"
+    logger.info(f"FastAPI 시작 (env={settings.app_env})")
+
+    if is_prod:
+        start_scheduler()
+
+    # KIS 토큰 미리 발급 (전역 캐시에 저장) → 이후 병렬 API 호출 시 재발급 없음
+    try:
+        from app.services.kis_client import initialize_token
+        await initialize_token()
+    except Exception as e:
+        logger.warning(f"KIS 토큰 초기화 실패 (서비스는 계속 시작): {e}")
+
+    # prod 환경 + 장 시간에만 startup 캐시 동기화 실행
+    if is_prod:
+        from datetime import datetime, timezone, timedelta
+        _now_kst = datetime.now(timezone(timedelta(hours=9)))
+        _is_market_hours = (
+            _now_kst.weekday() < 5
+            and (9 <= _now_kst.hour < 15 or (_now_kst.hour == 15 and _now_kst.minute <= 40))
+        )
+        if _is_market_hours:
+            fire_cache_sync()
+        else:
+            logger.info("장 시간 외 → startup 캐시 동기화 건너뜀")
+
+    # RabbitMQ ETF 캐시 갱신 consumer 시작
+    from app.consumers.cache_consumer import start_cache_consumer
+    _mq_connection = await start_cache_consumer()
 
     yield
 
+    if _mq_connection:
+        await _mq_connection.close()
+
     # Shutdown
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown()
     logger.info("FastAPI 종료")
 
 
@@ -130,7 +164,7 @@ class SectorClusterResponse(BaseModel):
     sectors: List[SectorItem]
 
 
-# ==================== API Endpoints ====================
+
 
 @app.get("/")
 async def root():
@@ -543,6 +577,345 @@ async def get_all_sector_clusters(
         ))
 
     return results
+
+
+# ==================== ETF Sync Test Endpoints (remove after validation) ====================
+
+@app.post("/dev/etf/sync/tickers")
+async def dev_sync_etf_tickers():
+    """[TEST] ETF 티커 동기화 — DB에 없는 신규 ETF를 기본 정보와 함께 저장합니다."""
+    logger.info("[DEV] ETF 티커 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_tickers()
+            return {"status": "ok", "job": "sync_etf_tickers"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 티커 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/active-status")
+async def dev_sync_etf_active_status():
+    """[TEST] ETF 활성 상태 검사 — PDF 구성종목 기반으로 is_krx_only 플래그를 업데이트합니다."""
+    logger.info("[DEV] ETF 활성 상태 검사 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.update_etfs_active_status()
+            return {"status": "ok", "job": "update_etfs_active_status"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 활성 상태 검사 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/metadata")
+async def dev_sync_etf_metadata():
+    """[TEST] ETF 메타데이터 동기화 — KIS API로 AUM, NAV, 운용사, 배당주기, expense_ratio, dividend_yield 등을 업데이트합니다."""
+    logger.info("[DEV] ETF 메타데이터 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_metadata()
+            return {"status": "ok", "job": "sync_etf_metadata"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 메타데이터 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/stock-fundamentals")
+async def dev_sync_stock_fundamentals():
+    """[TEST] 종목 재무지표 동기화 — pykrx로 KOSPI/KOSDAQ 전 종목 PER/PBR/ROE를 일괄 업데이트합니다."""
+    logger.info("[DEV] 종목 재무지표 동기화 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_stock_fundamentals()
+            return {"status": "ok", "job": "sync_stock_fundamentals"}
+        except Exception as e:
+            logger.error(f"[DEV] 종목 재무지표 동기화 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/etf-fundamentals")
+async def dev_sync_etf_fundamentals():
+    """[TEST] ETF 재무지표 계산 — 구성종목 비중 가중평균으로 ETF per/pbr/roe를 계산합니다."""
+    logger.info("[DEV] ETF 재무지표 계산 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_fundamentals()
+            return {"status": "ok", "job": "sync_etf_fundamentals"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 재무지표 계산 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/risk-type")
+async def dev_sync_etf_risk_type():
+    """[TEST] ETF 위험유형 계산 — ETF 속성 기반으로 risk_type을 업데이트합니다."""
+    logger.info("[DEV] ETF 위험유형 계산 수동 트리거")
+    from app.services.etf_service import EtfService
+    async with AsyncSessionLocal() as db:
+        try:
+            service = EtfService(db)
+            await service.sync_etf_risk_type()
+            return {"status": "ok", "job": "sync_etf_risk_type"}
+        except Exception as e:
+            logger.error(f"[DEV] ETF 위험유형 계산 실패: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/dev/etf/sync/all")
+async def dev_sync_all():
+    """[TEST] 전체 ETF 데이터 파이프라인 (병렬 실행)
+
+    실행 순서:
+    1. sync_etf_tickers (신규 ETF 저장)
+    2. update_etfs_active_status + sync_etf_metadata (병렬)
+    3. sync_stock_fundamentals (재무지표)
+    4. sync_etf_fundamentals + sync_etf_risk_type (병렬)
+    """
+    logger.info("[DEV] 전체 ETF 파이프라인 수동 트리거 (병렬 처리)")
+    results = {}
+    from app.services.etf_service import EtfService
+
+    async def run_step(name: str, method_name: str):
+        try:
+            logger.info(f"[DEV] 단계 시작: {name}")
+            async with AsyncSessionLocal() as db:
+                service = EtfService(db)
+                fn = getattr(service, method_name)
+                await fn()
+            results[name] = "ok"
+            logger.info(f"[DEV] 단계 완료: {name}")
+            return True
+        except Exception as e:
+            logger.error(f"[DEV] 단계 실패 [{name}]: {e}", exc_info=True)
+            results[name] = f"error: {str(e)[:100]}"
+            return False
+
+    # 1단계: 신규 ETF 저장
+    if not await run_step("sync_etf_tickers", "sync_etf_tickers"):
+        return {"status": "failed at step 1", "results": results}
+
+    # 2단계: 상태 확인 → 메타데이터 (순차, API 호출 제한)
+    # KRX + KIS 동시 호출 시 초당 30+ 요청으로 IP 블락 위험
+    await run_step("update_etfs_active_status", "update_etfs_active_status")
+    await run_step("sync_etf_metadata", "sync_etf_metadata")
+
+    # 3단계: 재무지표
+    if not await run_step("sync_stock_fundamentals", "sync_stock_fundamentals"):
+        logger.warning("[DEV] 재무지표 동기화 실패, 계속 진행...")
+
+    # 4단계: ETF 가중평균 + 위험유형 (병렬)
+    await asyncio.gather(
+        run_step("sync_etf_fundamentals", "sync_etf_fundamentals"),
+        run_step("sync_etf_risk_type", "sync_etf_risk_type"),
+        return_exceptions=True
+    )
+
+    return {"status": "done", "results": results}
+
+
+# ==================== ETF Dividend Endpoints ====================
+
+@app.post("/dev/etf/sync/dividends")
+async def dev_sync_etf_dividends(
+    background_tasks: BackgroundTasks,
+    ticker: Optional[str] = Query(None, description="특정 ETF 종목코드. 없으면 전체 Tiger ETF 대상"),
+):
+    """
+    [DEV] 미래에셋 Tiger ETF 사이트에서 분배금 이력을 크롤링해 DB에 저장합니다.
+    백그라운드로 실행되므로 즉시 응답을 반환합니다.
+
+    - ticker 미지정: 전체 Tiger ETF 분배금 동기화
+    - ticker 지정: 해당 종목만 동기화 (예: 102110)
+    """
+    from app.services.etf_dividend_service import sync_etf_dividends
+
+    async def _run():
+        logger.info(f"[DEV] ETF 분배금 동기화 백그라운드 실행 시작 (ticker={ticker})")
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await sync_etf_dividends(db, ticker=ticker)
+                logger.info(f"[DEV] ETF 분배금 동기화 완료: {result}")
+            except Exception as e:
+                logger.error(f"[DEV] ETF 분배금 동기화 실패: {e}")
+
+    background_tasks.add_task(_run)
+    logger.info(f"[DEV] ETF 분배금 동기화 백그라운드 시작 (ticker={ticker})")
+    return {"status": "accepted", "message": "분배금 동기화가 백그라운드에서 시작되었습니다.", "ticker": ticker}
+
+
+@app.post("/dev/etf/sync/dividends/kodex")
+async def dev_sync_kodex_etf_dividends(
+    background_tasks: BackgroundTasks,
+    ticker: Optional[str] = Query(None, description="특정 ETF 종목코드. 없으면 전체 KODEX ETF 대상"),
+):
+    """
+    [DEV] 삼성자산운용 KODEX ETF 분배금 이력을 수집해 DB에 저장합니다.
+    백그라운드로 실행됩니다.
+    """
+    from app.services.etf_dividend_service import sync_kodex_etf_dividends
+
+    async def _run():
+        logger.info(f"[DEV] KODEX 분배금 동기화 백그라운드 실행 시작 (ticker={ticker})")
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await sync_kodex_etf_dividends(db, ticker=ticker)
+                logger.info(f"[DEV] KODEX 분배금 동기화 완료: {result}")
+            except Exception as e:
+                logger.error(f"[DEV] KODEX 분배금 동기화 실패: {e}")
+
+    background_tasks.add_task(_run)
+    return {"status": "accepted", "message": "KODEX 분배금 동기화가 백그라운드에서 시작되었습니다.", "ticker": ticker}
+
+
+# ==================== ETF Cache Endpoints ====================
+
+@app.post("/dev/etf/cache/sync")
+async def dev_sync_etf_cache():
+    """
+    [DEV] 전체 ETF/Stock Redis 캐시 강제 동기화 (별도 스레드+이벤트루프 실행).
+    uvicorn 이벤트 루프와 분리되므로 동기화 중에도 다른 API 요청 정상 처리됩니다.
+    """
+    fire_cache_sync()
+    logger.info("[DEV] ETF/Stock 캐시 동기화 별도 스레드 시작")
+    return {"status": "accepted", "message": "ETF/Stock 캐시 동기화가 백그라운드에서 시작되었습니다."}
+
+
+@app.get("/etf/{ticker}/realtime")
+async def get_etf_realtime(ticker: str):
+    """
+    특정 ETF의 실시간 정보를 KIS API에서 직접 조회하고 Redis 캐시도 갱신합니다.
+    user-service에서 캐시 miss 시 fallback으로 호출합니다.
+    """
+    from app.services.cache_service import RedisCacheService
+    from app.database import AsyncSessionLocal
+    from sqlalchemy import select, text
+
+    cache_service = RedisCacheService()
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                text("SELECT name FROM etf WHERE stock_code = :ticker AND is_active = true"),
+                {"ticker": ticker}
+            )
+            row = result.first()
+            etf_name = row[0] if row else ""
+
+        await cache_service.publish_etf_cache(ticker, etf_name)
+
+        # 캐시에서 결과 읽어 반환
+        data = await cache_service.redis_client.hgetall(f"EtfCurrentInfo:{ticker}")
+        if not data:
+            raise HTTPException(status_code=404, detail=f"ETF 정보를 가져올 수 없습니다: {ticker}")
+
+        return {
+            "ticker": data.get("ticker", ticker),
+            "name": data.get("name", ""),
+            "currentPrice": data.get("currentPrice"),
+            "previousPrice": data.get("previousPrice"),
+            "dailyReturn": data.get("dailyReturn"),
+            "dailyFluctuation": data.get("dailyFluctuation"),
+            "volume": data.get("volume"),
+            "nav": data.get("nav"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[{ticker}] realtime 조회 실패: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await cache_service.close()
+
+
+# ==================== Portfolio Alert Test Endpoints ====================
+
+@app.post("/dev/portfolio-alert/snapshot")
+async def dev_portfolio_alert_snapshot():
+    """[TEST] 포트폴리오 가치 스냅샷 수동 저장 (08:50 스케줄 대체)"""
+    from app.services.portfolio_alert_service import snapshot_portfolio_values
+    await snapshot_portfolio_values()
+    return {"status": "ok", "message": "포트폴리오 가치 스냅샷 저장 완료"}
+
+
+@app.post("/dev/portfolio-alert/trigger")
+async def dev_portfolio_alert_trigger(
+    step: int = Query(default=0, description="0=baseline 저장, 1=baseline 대비 -8%, 2=baseline 대비 -15%")
+):
+    """[TEST] WYE 200 가격 수동 조작
+    - step=0: 현재 WYE200 가격을 baseline으로 저장
+    - step=1: baseline 대비 -8%
+    - step=2: baseline 대비 -15%
+    """
+    import redis.asyncio as aioredis
+    r = aioredis.Redis(
+        host=settings.redis_host, port=settings.redis_port,
+        password=settings.redis_password or None, db=settings.redis_db,
+        decode_responses=True,
+    )
+    try:
+        wye_data = await r.hgetall("EtfCurrentInfo:WYE200")
+        if not wye_data:
+            raise HTTPException(status_code=404, detail="WYE200 캐시가 없습니다.")
+
+        if step == 0:
+            current_price = wye_data.get("currentPrice", "0")
+            await r.set("wye200:base_price", current_price)
+            await r.set("wye200:override", "0")
+            await r.hset("EtfCurrentInfo:WYE200", mapping={
+                **wye_data,
+                "previousPrice": current_price,
+                "dailyReturn": "0.0",
+                "dailyFluctuation": "0",
+            })
+            return {"status": "ok", "basePrice": current_price, "message": "WYE 200 baseline 저장 완료"}
+
+        base_price_str = await r.get("wye200:base_price")
+        if not base_price_str:
+            raise HTTPException(status_code=400, detail="baseline이 없습니다. step=0 먼저 호출하세요.")
+
+        base_price = float(base_price_str)
+        drop_pct = 8 if step == 1 else 15
+        new_price = int(base_price * (1 - drop_pct / 100))
+        prev_price = float(wye_data.get("previousPrice", base_price))
+        fluct = new_price - prev_price
+        daily_return = round((fluct / prev_price * 100) if prev_price != 0 else 0.0, 2)
+
+        updated = {
+            **wye_data,
+            "currentPrice": str(new_price),
+            "dailyFluctuation": str(int(fluct)),
+            "dailyReturn": str(daily_return),
+        }
+        await r.set("wye200:override", str(step))
+        await r.hset("EtfCurrentInfo:WYE200", mapping=updated)
+
+        return {
+            "status": "ok",
+            "step": step,
+            "basePrice": base_price,
+            "newPrice": new_price,
+            "dailyReturn": daily_return,
+            "message": f"WYE 200 가격 -{drop_pct}% 조작 완료",
+        }
+    finally:
+        await r.aclose()
+
+
+@app.post("/dev/portfolio-alert/check")
+async def dev_portfolio_alert_check():
+    """[TEST] 포트폴리오 변동률 체크 및 알림 발행 수동 실행"""
+    from app.services.portfolio_alert_service import check_portfolio_alerts
+    await check_portfolio_alerts()
+    return {"status": "ok", "message": "포트폴리오 알림 체크 완료"}
 
 
 if __name__ == "__main__":

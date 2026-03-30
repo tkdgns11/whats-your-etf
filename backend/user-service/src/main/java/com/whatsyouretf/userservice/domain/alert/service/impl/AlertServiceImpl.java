@@ -139,22 +139,32 @@ public class AlertServiceImpl implements AlertService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 기존 토큰 조회 (같은 기기 유형)
-        FcmToken existingToken = fcmTokenRepository.findByUserIdAndDeviceType(userId, request.getDeviceType())
+        // 1. 해당 사용자+디바이스 타입으로 기존 토큰 조회
+        FcmToken existingUserToken = fcmTokenRepository
+                .findByUserIdAndDeviceType(userId, request.getDeviceType())
                 .orElse(null);
 
-        if (existingToken != null) {
-            // 기존 토큰 업데이트
-            existingToken.updateToken(request.getToken());
-        } else {
-            // 새 토큰 등록
-            FcmToken newToken = FcmToken.builder()
-                    .user(user)
-                    .token(request.getToken())
-                    .deviceType(request.getDeviceType())
-                    .build();
-            fcmTokenRepository.save(newToken);
+        if (existingUserToken != null) {
+            // 기존 토큰이 있으면 업데이트
+            existingUserToken.updateToken(request.getToken());
+            return;
         }
+
+        // 2. 다른 사용자가 같은 토큰을 사용 중인지 확인 (기기 이전)
+        FcmToken tokenUsedByOther = fcmTokenRepository.findByToken(request.getToken()).orElse(null);
+        if (tokenUsedByOther != null) {
+            // 다른 사용자의 토큰 삭제 (기기 교체)
+            fcmTokenRepository.delete(tokenUsedByOther);
+            fcmTokenRepository.flush();
+        }
+
+        // 3. 새 토큰 등록
+        FcmToken newToken = FcmToken.builder()
+                .user(user)
+                .token(request.getToken())
+                .deviceType(request.getDeviceType())
+                .build();
+        fcmTokenRepository.save(newToken);
     }
 
     @Override
@@ -235,31 +245,58 @@ public class AlertServiceImpl implements AlertService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        for (NotificationSettingsRequest.SettingItem item : request.getSettings()) {
-            // settingGroup에 속한 모든 alertType 조회
-            List<AlertType> alertTypes = alertTypeRepository.findBySettingGroupAndIsActiveTrue(item.getSettingGroup());
+        // 요청의 모든 settingGroup 수집
+        Set<String> requestedGroups = request.getSettings().stream()
+                .map(NotificationSettingsRequest.SettingItem::getSettingGroup)
+                .collect(Collectors.toSet());
 
-            if (alertTypes.isEmpty()) {
-                throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        List<AlertType> allAlertTypes = alertTypeRepository.findBySettingGroupInAndIsActiveTrue(requestedGroups);
+
+        if (allAlertTypes.isEmpty()) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        // settingGroup -> alertTypes 맵 생성
+        Map<String, List<AlertType>> groupToAlertTypes = allAlertTypes.stream()
+                .collect(Collectors.groupingBy(AlertType::getSettingGroup));
+
+        // 모든 alertType 코드 수집
+        Set<String> allAlertTypeCodes = allAlertTypes.stream()
+                .map(AlertType::getCode)
+                .collect(Collectors.toSet());
+
+        List<UserNotificationSetting> existingSettings =
+                notificationSettingRepository.findByUserIdAndAlertTypeCodeIn(userId, allAlertTypeCodes);
+
+        Map<String, UserNotificationSetting> existingSettingMap = existingSettings.stream()
+                .collect(Collectors.toMap(s -> s.getAlertType().getCode(), s -> s));
+
+        // 설정 업데이트 처리
+        List<UserNotificationSetting> newSettings = new ArrayList<>();
+        for (NotificationSettingsRequest.SettingItem item : request.getSettings()) {
+            List<AlertType> alertTypes = groupToAlertTypes.get(item.getSettingGroup());
+            if (alertTypes == null || alertTypes.isEmpty()) {
+                continue;
             }
 
-            // 그룹 내 모든 alertType에 대해 설정 업데이트
             for (AlertType alertType : alertTypes) {
-                UserNotificationSetting setting = notificationSettingRepository
-                        .findByUserIdAndAlertTypeCode(userId, alertType.getCode())
-                        .orElse(null);
+                UserNotificationSetting setting = existingSettingMap.get(alertType.getCode());
 
                 if (setting != null) {
                     setting.setEnabled(item.getIsEnabled());
                 } else {
-                    UserNotificationSetting newSetting = UserNotificationSetting.builder()
+                    newSettings.add(UserNotificationSetting.builder()
                             .user(user)
                             .alertType(alertType)
                             .isEnabled(item.getIsEnabled())
-                            .build();
-                    notificationSettingRepository.save(newSetting);
+                            .build());
                 }
             }
+        }
+
+        // 새 설정 일괄 저장
+        if (!newSettings.isEmpty()) {
+            notificationSettingRepository.saveAll(newSettings);
         }
 
         // 수정된 전체 설정 반환

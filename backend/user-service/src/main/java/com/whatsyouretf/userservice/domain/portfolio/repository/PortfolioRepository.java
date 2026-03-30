@@ -8,15 +8,28 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
+
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
-        List<Portfolio> findByUserOrderByCreatedAtDesc(User user);
 
+    /**
+     * 사용자의 포트폴리오 전체 삭제
+     */
+    void deleteAllByUserId(Long userId);
 
-        @Query("""
-            SELECT pe
-            FROM PortfolioEtf pe
-            JOIN FETCH pe.etf
-            JOIN FETCH pe.portfolio
-            WHERE pe.portfolio.id = :portfolioId
-        """)
-        List<PortfolioEtf> findByPortfolioId(@Param("portfolioId") Long portfolioId);}
+    List<Portfolio> findByUserOrderByCreatedAtDesc(User user);
+
+    /**
+     * 마이데이터 포트폴리오 조회
+     */
+    Optional<Portfolio> findByUserIdAndIsMyDataTrue(Long userId);
+
+    @Query("""
+        SELECT pe
+        FROM PortfolioEtf pe
+        JOIN FETCH pe.etf
+        JOIN FETCH pe.portfolio
+        WHERE pe.portfolio.id = :portfolioId
+    """)
+    List<PortfolioEtf> findByPortfolioId(@Param("portfolioId") Long portfolioId);
+}

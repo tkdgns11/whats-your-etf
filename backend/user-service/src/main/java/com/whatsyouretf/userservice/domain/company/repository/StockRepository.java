@@ -31,9 +31,9 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     Optional<Stock> findByCompanyId(Long companyId);
 
     /**
-     * 티커로 주식과 회사 정보 함께 조회
+     * 티커로 주식과 회사 정보 함께 조회 (industry 포함)
      */
-    @Query("SELECT s FROM Stock s JOIN FETCH s.company WHERE s.ticker = :ticker")
+    @Query("SELECT s FROM Stock s JOIN FETCH s.company c LEFT JOIN FETCH c.industry WHERE s.ticker = :ticker")
     Optional<Stock> findByTickerWithCompany(@Param("ticker") String ticker);
 
     /**
@@ -53,12 +53,12 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     @Query("""
         SELECT s FROM Stock s
         JOIN FETCH s.company c
-        JOIN IndustryClassification ic ON c.industryCode = ic.code
+        JOIN FETCH c.industry ic
         JOIN IndustryClassification ic2 ON ic2.code = :industryCode
         WHERE ic.groupName = ic2.groupName
         AND s.ticker != :excludeTicker
         AND s.isActive = true
-        ORDER BY c.listedShares DESC
+        ORDER BY s.listedShares DESC
         """)
     List<Stock> findRelatedStocksByIndustryCode(
             @Param("industryCode") String industryCode,

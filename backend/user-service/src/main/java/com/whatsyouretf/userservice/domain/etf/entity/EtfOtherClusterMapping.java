@@ -34,9 +34,10 @@ public class EtfOtherClusterMapping {
     @JoinColumn(name = "composition_id", nullable = false)
     private EtfOtherComposition composition;
 
-    /** 섹터 코드 (industry_classification FK) */
-    @Column(name = "sector_code", nullable = false, length = 20)
-    private String sectorCode;
+    /** 섹터 (industry_classification FK) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sector_code", nullable = false)
+    private IndustryClassification sector;
 
     /** 매핑 출처 (MANUAL / AI) */
     @Column(length = 20)

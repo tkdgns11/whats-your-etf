@@ -17,7 +17,11 @@ public interface EtfReader {
 
     Page<EtfSummary> readEtfList(EtfQuery query, Pageable pageable);
 
+    List<EtfSummary> readAllEtfList(EtfQuery query);
+
     Map<String, Etf> getValidEtfs(List<String> list);
 
     Map<String, EtfCurrentInfo> getInfosMap(Set<String> tickers);
+
+    List<EtfCurrentInfo> getTopTenEtfs();
 }

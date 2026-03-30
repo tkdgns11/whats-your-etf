@@ -2,7 +2,10 @@ package com.whatsyouretf.userservice.domain.user.service;
 
 import com.whatsyouretf.userservice.domain.user.dto.*;
 
+import com.whatsyouretf.userservice.domain.user.service.impl.MyDataEtfCount;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface UserService {
 
@@ -39,9 +42,9 @@ public interface UserService {
     boolean checkNicknameDuplicate(String nickname);
 
     /**
-     * 회원 탈퇴
+     * 회원 탈퇴 (hard delete)
      */
-    void deactivateUser(Long userId);
+    void deleteUser(Long userId);
 
     // ==================== 관심 ETF ====================
 
@@ -53,15 +56,21 @@ public interface UserService {
     /**
      * 관심 ETF 추가
      */
-    void addFavoriteEtf(Long userId, Long etfId);
+    void addFavoriteEtf(Long userId, String ticker);
 
     /**
      * 관심 ETF 삭제
      */
-    void removeFavoriteEtf(Long userId, Long etfId);
+    void removeFavoriteEtf(Long userId, String ticker);
 
     /**
      * 관심 ETF 여부 확인
      */
-    boolean isFavoriteEtf(Long userId, Long etfId);
+    boolean isFavoriteEtf(Long userId, String ticker);
+
+    List<MyDataEtfCount> getMyData(Long userId);
+
+    Boolean checkUserAcceptedMyData(Long userId);
+
+    void acceptMyData(Long userId);
 }

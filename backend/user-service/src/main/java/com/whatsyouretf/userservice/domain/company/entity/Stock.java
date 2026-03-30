@@ -1,5 +1,6 @@
 package com.whatsyouretf.userservice.domain.company.entity;
 
+import com.whatsyouretf.userservice.domain.etf.entity.Fundamental;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,9 @@ public class Stock {
     @Column(nullable = false, length = 20, unique = true)
     private String ticker;
 
+    @Column
+    private String description;
+
     /** 종가 */
     @Column(precision = 14, scale = 2)
     private BigDecimal close;
@@ -44,6 +48,9 @@ public class Stock {
     /** 액면가 */
     @Column(name = "face_value")
     private Integer faceValue;
+
+    @Embedded
+    private Fundamental fundamental;
 
     /** 상장주식수 */
     @Column(name = "listed_shares")

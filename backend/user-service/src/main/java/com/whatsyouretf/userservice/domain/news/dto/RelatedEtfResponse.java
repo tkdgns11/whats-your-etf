@@ -1,7 +1,7 @@
 package com.whatsyouretf.userservice.domain.news.dto;
 
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,15 +34,15 @@ public class RelatedEtfResponse {
     private BigDecimal changeRate;
 
     /**
-     * Entity -> DTO 변환
+     * Entity + CurrentInfo (Redis 캐시) -> DTO 변환
      */
-    public static RelatedEtfResponse from(Etf etf, EtfPrice latestPrice) {
+    public static RelatedEtfResponse from(Etf etf, EtfCurrentInfo currentInfo) {
         return RelatedEtfResponse.builder()
                 .etfId(etf.getId())
                 .ticker(etf.getStockCode())
                 .name(etf.getName())
                 .manager(etf.getAssetManager())
-                .changeRate(latestPrice != null ? latestPrice.getChangeRate() : BigDecimal.ZERO)
+                .changeRate(currentInfo != null ? currentInfo.dailyReturn() : BigDecimal.ZERO)
                 .build();
     }
 

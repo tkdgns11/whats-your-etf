@@ -77,7 +77,8 @@ public class PortfolioFacade {
                                         portfolio.getName(),
                                         portfolio.getCreatedAt(),
                                         etfs,
-                                        ratio
+                                        ratio,
+                                        portfolio.getIsMyData()
                                 );
                         })
                         .toList();

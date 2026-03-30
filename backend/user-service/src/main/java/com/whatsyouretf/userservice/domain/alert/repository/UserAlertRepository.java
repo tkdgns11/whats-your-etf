@@ -40,6 +40,7 @@ public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
      * 최근 7일 알림 목록 조회 (최신순)
      */
     @Query("SELECT ua FROM UserAlert ua " +
+           "JOIN FETCH ua.alertType at " +
            "WHERE ua.user.id = :userId AND ua.createdAt >= :since " +
            "ORDER BY ua.createdAt DESC")
     List<UserAlert> findRecentByUserId(@Param("userId") Long userId,
@@ -49,7 +50,7 @@ public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
      * 최근 7일 알림 목록 조회 (카테고리 필터, 최신순)
      */
     @Query("SELECT ua FROM UserAlert ua " +
-           "JOIN ua.alertType at " +
+           "JOIN FETCH ua.alertType at " +
            "WHERE ua.user.id = :userId AND at.category = :category AND ua.createdAt >= :since " +
            "ORDER BY ua.createdAt DESC")
     List<UserAlert> findRecentByUserIdAndCategory(@Param("userId") Long userId,
@@ -80,4 +81,12 @@ public interface UserAlertRepository extends JpaRepository<UserAlert, Long> {
     @Modifying
     @Query("DELETE FROM UserAlert ua WHERE ua.user.id = :userId AND ua.isRead = true")
     int deleteAllReadByUserId(@Param("userId") Long userId);
+
+    /**
+     * 사용자의 알림 전체 삭제
+     */
+    @Modifying
+    @Query("DELETE FROM UserAlert ua WHERE ua.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }
+

@@ -23,4 +23,6 @@ public interface PortfolioAiFeedbackRepository extends JpaRepository<PortfolioAi
      * 사용자의 리뷰 히스토리 조회 (최신순)
      */
     Page<PortfolioAiFeedback> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    void deleteAllByUserId(Long userId);
 }

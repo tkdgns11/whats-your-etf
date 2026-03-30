@@ -12,6 +12,7 @@ logs/
 *.zip
 *.tar.gz
 *.rar
+*.xlsx
 
 # Gradle
 .gradle/

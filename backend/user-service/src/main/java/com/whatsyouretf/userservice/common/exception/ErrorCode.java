@@ -34,6 +34,7 @@ public enum ErrorCode {
     FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND, "USER006", "관심 ETF를 찾을 수 없습니다."),
     MYDATA_NOT_CONNECTED(HttpStatus.BAD_REQUEST, "USER007", "마이데이터 연동이 필요합니다."),
     MYDATA_SYNC_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "USER008", "마이데이터 동기화에 실패했습니다."),
+    ALREADY_ACCEPTED_MYDATA(HttpStatus.BAD_REQUEST, "USER009", "이미 동의한 계정입니다."),
 
     // Social Account
     SOCIAL_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "SOCIAL001", "연동된 소셜 계정을 찾을 수 없습니다."),

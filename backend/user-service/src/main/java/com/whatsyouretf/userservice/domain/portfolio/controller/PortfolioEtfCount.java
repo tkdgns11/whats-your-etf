@@ -6,7 +6,8 @@ import java.math.BigDecimal;
 
 public record PortfolioEtfCount(
         String ticker,
-        BigDecimal counts
+        BigDecimal counts,
+        String etfName
 ) {
         public static PortfolioCommand toQuery(PortfolioEtfCount portfolioEtfCount) {
                 return new PortfolioCommand(portfolioEtfCount.ticker(), portfolioEtfCount.counts);

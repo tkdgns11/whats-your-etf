@@ -1,6 +1,5 @@
 package com.whatsyouretf.userservice.domain.etf.entity;
 
-import com.whatsyouretf.userservice.domain.etf.dto.RiskType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,11 +43,18 @@ public class Etf {
 
     /** 섹터 (반도체/2차전지/AI/배당 등) */
     @Column(length = 50)
-    private String sector;
+    @Enumerated(value = EnumType.STRING)
+    private EtfSector sector;
 
     /** 자산운용사 (KODEX/TIGER/KBSTAR 등) */
     @Column(name = "asset_manager", length = 50)
     private String assetManager;
+
+    @Column(name = "is_krx_only")
+    private Boolean isKrxOnly;
+
+    @Column(name = "is_derivatives")
+    private Boolean isDerivatives;
 
     /** 레버리지 ETF 여부 */
     @Column(name = "is_leveraged")

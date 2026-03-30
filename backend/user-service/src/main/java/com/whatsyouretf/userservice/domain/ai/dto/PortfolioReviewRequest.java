@@ -18,9 +18,6 @@ import java.util.List;
 @Builder
 public class PortfolioReviewRequest {
 
-    /** 저장된 포트폴리오 스냅샷 ID (선택) */
-    private Long portfolioSnapshotId;
-
     /** 포트폴리오 구성 정보 */
     @NotNull(message = "포트폴리오 정보는 필수입니다.")
     @Valid
@@ -37,9 +34,9 @@ public class PortfolioReviewRequest {
         @Max(value = 10000000000L, message = "최대 투자금액은 100억원입니다.")
         private long totalAmount;
 
-        /** 투자 유형: LUMP_SUM (관망형) / DCA (적립형) */
+        /** 투자 유형: LUMP_SUM (일시불) / REGULAR_SAVING (적립식) */
         @NotBlank(message = "투자 유형은 필수입니다.")
-        @Pattern(regexp = "^(LUMP_SUM|DCA)$", message = "투자 유형은 LUMP_SUM 또는 DCA여야 합니다.")
+        @Pattern(regexp = "^(LUMP_SUM|REGULAR_SAVING)$", message = "투자 유형은 LUMP_SUM 또는 REGULAR_SAVING이어야 합니다.")
         private String investmentType;
 
         /** ETF 목록 (최소 1개, 최대 20개) */
@@ -55,9 +52,9 @@ public class PortfolioReviewRequest {
     @Builder
     public static class EtfInfo {
 
-        /** ETF 종목 코드 (6자리 숫자) */
+        /** ETF 종목 코드 (6자리 영숫자) */
         @NotBlank(message = "ETF 종목 코드는 필수입니다.")
-        @Pattern(regexp = "^\\d{6}$", message = "ETF 종목 코드는 6자리 숫자여야 합니다.")
+        @Pattern(regexp = "^[A-Za-z0-9]{6}$", message = "ETF 종목 코드는 6자리여야 합니다.")
         private String ticker;
 
         /** ETF 이름 (최대 200자) */

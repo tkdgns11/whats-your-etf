@@ -1,17 +1,10 @@
 package com.whatsyouretf.userservice.domain.portfolio.entity;
 
-import com.whatsyouretf.userservice.domain.common.entity.Category;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * 꾸러미 (시스템 제공 포트폴리오) 엔티티
- * <p>
- * 시스템에서 제공하는 예시 포트폴리오 정보를 저장합니다.
  */
 @Entity
 @Table(name = "preset_portfolios")
@@ -25,43 +18,21 @@ public class PresetPortfolio {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 꾸러미 이름 */
     @Column(nullable = false, length = 100)
     private String name;
 
-    /** 짧은 설명 (카드 표시용) */
-    @Column(name = "short_description", length = 200)
-    private String shortDescription;
-
-    /** 상세 설명 */
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 200)
     private String description;
 
-    /** 카테고리 (FK -> category, PORTFOLIO_DIVIDEND 등) */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_code")
-    private Category category;
+    /** 카드 이미지/아이콘 식별자 (STABLE_INCOME, HIGH_GROWTH 등) */
+    @Column(name = "image_tag", length = 50)
+    private String imageTag;
 
-    /** 노출 순서 */
+    /** 카드 태그 목록 (콤마 구분, 예: "배당,저변동성") */
+    @Column(length = 200)
+    private String tags;
+
     @Column(name = "display_order")
     @Builder.Default
     private Integer displayOrder = 0;
-
-    /** 활성 여부 */
-    @Column(name = "is_active")
-    @Builder.Default
-    private Boolean isActive = true;
-
-    @Column(name = "created_at")
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(name = "updated_at")
-    @Builder.Default
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    /** 꾸러미 ETF 구성 */
-    @OneToMany(mappedBy = "presetPortfolio", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<PresetPortfolioEtf> presetPortfolioEtfs = new ArrayList<>();
 }

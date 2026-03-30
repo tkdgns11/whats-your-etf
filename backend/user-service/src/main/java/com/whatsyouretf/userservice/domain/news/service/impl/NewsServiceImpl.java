@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
+import com.whatsyouretf.userservice.domain.etf.dto.EtfCurrentInfo;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
-import com.whatsyouretf.userservice.domain.etf.entity.EtfPrice;
-import com.whatsyouretf.userservice.domain.etf.repository.EtfPriceRepository;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
+import com.whatsyouretf.userservice.domain.etf.service.EtfReader;
 import com.whatsyouretf.userservice.domain.news.dto.*;
 import com.whatsyouretf.userservice.domain.news.entity.NewsArticle;
 import com.whatsyouretf.userservice.domain.news.repository.NewsArticleRepository;
@@ -26,9 +26,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,41 +43,74 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
 
     private final NewsArticleRepository newsArticleRepository;
     private final EtfRepository etfRepository;
-    private final EtfPriceRepository etfPriceRepository;
+    private final EtfReader etfReader;
     private final PortfolioRepository portfolioRepository;
     private final ObjectMapper objectMapper;
 
-    private static final int NEWS_LIST_SIZE = 20;
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 50;
     private static final int MAX_ETF_NEWS_SIZE = 50;
     private static final int MAX_RELATED_ETFS = 5;
     private static final int MAX_PORTFOLIO_NEWS = 5;
 
     @Override
-    public NewsPageResponse getLatestNews(String categoryCode) {
-        Pageable pageable = PageRequest.of(0, NEWS_LIST_SIZE);
+    public NewsPageResponse getLatestNews(String categoryCode, Long lastId, int size) {
+        // 페이지 크기 제한 (최대 50)
+        int validSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        // 1개 더 조회해서 hasMore 판단
+        Pageable pageable = PageRequest.of(0, validSize + 1);
 
         List<NewsArticle> articles;
-        if (categoryCode != null && !categoryCode.isBlank()) {
-            articles = newsArticleRepository.findByCategory_CodeAndIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(categoryCode, pageable)
-                    .getContent();
-        } else {
-            articles = newsArticleRepository.findByIsActiveTrueAndContentSummaryIsNotNullOrderByPublishedAtDesc(pageable)
-                    .getContent();
+
+        // 커서 기반 페이징: lastId로 해당 뉴스의 publishedAt 조회
+        LocalDateTime lastPublishedAt = null;
+        if (lastId != null) {
+            lastPublishedAt = newsArticleRepository.findById(lastId)
+                    .map(NewsArticle::getPublishedAt)
+                    .orElse(null);
         }
 
-        List<NewsListResponse> newsList = articles.stream()
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            // 카테고리 필터 적용
+            if (lastId != null && lastPublishedAt != null) {
+                articles = newsArticleRepository.findByCategoryCodeByCursor(categoryCode, lastPublishedAt, lastId, pageable);
+            } else {
+                articles = newsArticleRepository.findByCategoryCodeFirstPage(categoryCode, pageable);
+            }
+        } else {
+            // 전체 조회
+            if (lastId != null && lastPublishedAt != null) {
+                articles = newsArticleRepository.findLatestNewsByCursor(lastPublishedAt, lastId, pageable);
+            } else {
+                articles = newsArticleRepository.findLatestNewsFirstPage(pageable);
+            }
+        }
+
+        // hasMore 판단: 요청한 것보다 1개 더 조회되면 다음 페이지 존재
+        boolean hasMore = articles.size() > validSize;
+
+        // 실제 반환할 뉴스 목록 (요청한 크기만큼만)
+        List<NewsArticle> resultArticles = hasMore ? articles.subList(0, validSize) : articles;
+
+        List<NewsListResponse> newsList = resultArticles.stream()
                 .map(NewsListResponse::from)
                 .toList();
 
+        // 다음 커서: 마지막 뉴스의 ID
+        Long nextCursor = resultArticles.isEmpty() ? null : resultArticles.get(resultArticles.size() - 1).getId();
+
         return NewsPageResponse.builder()
                 .news(newsList)
+                .size(validSize)
+                .hasMore(hasMore)
+                .nextCursor(hasMore ? nextCursor : null)
                 .build();
     }
 
     @Override
     @Transactional
     public NewsDetailResponse getNewsDetail(Long newsId) {
-        NewsArticle article = newsArticleRepository.findById(newsId)
+        NewsArticle article = newsArticleRepository.findByIdWithCategory(newsId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NEWS_NOT_FOUND));
 
         // 조회수 증가
@@ -107,19 +141,15 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
             return List.of();
         }
 
-        // ETF ID 목록
-        List<Long> etfIds = etfs.stream().map(Etf::getId).toList();
+        // ETF ticker 목록
+        Set<String> tickers = etfs.stream().map(Etf::getStockCode).collect(Collectors.toSet());
 
-        // 최신 시세 조회 (한번에 조회하여 N+1 문제 방지)
-        Map<Long, EtfPrice> priceMap = etfPriceRepository.findLatestByEtfIds(etfIds).stream()
-                .collect(Collectors.toMap(
-                        price -> price.getEtf().getId(),
-                        Function.identity()
-                ));
+        // Redis 캐시에서 최신 시세 조회 (ETF 목록 API와 동일한 데이터 소스)
+        Map<String, EtfCurrentInfo> priceInfoMap = etfReader.getInfosMap(tickers);
 
         // DTO 변환
         return etfs.stream()
-                .map(etf -> RelatedEtfResponse.from(etf, priceMap.get(etf.getId())))
+                .map(etf -> RelatedEtfResponse.from(etf, priceInfoMap.get(etf.getStockCode())))
                 .toList();
     }
 
@@ -176,36 +206,37 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
     }
 
     @Override
-    public NewsPageResponse searchNews(String keyword) {
-        // 키워드 검증
-        if (keyword == null || keyword.trim().length() < 2 || keyword.trim().length() > 50) {
+    public NewsPageResponse searchNews(String keyword, String categoryCode) {
+        // 키워드 검증 (1글자 이상 50글자 이하)
+        if (keyword == null || keyword.trim().isEmpty() || keyword.trim().length() > 50) {
             throw new BusinessException(ErrorCode.INVALID_KEYWORD);
         }
 
-        Pageable pageable = PageRequest.of(0, NEWS_LIST_SIZE);
+        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
 
-        List<NewsArticle> articles = newsArticleRepository.searchByKeyword(keyword.trim(), pageable)
-                .getContent();
+        Page<NewsArticle> articlePage;
+        if (categoryCode != null && !categoryCode.trim().isEmpty()) {
+            articlePage = newsArticleRepository.searchByKeywordAndCategory(keyword.trim(), categoryCode.trim(), pageable);
+        } else {
+            articlePage = newsArticleRepository.searchByKeyword(keyword.trim(), pageable);
+        }
 
-        List<NewsListResponse> newsList = articles.stream()
+        List<NewsListResponse> newsList = articlePage.getContent().stream()
                 .map(NewsListResponse::from)
                 .toList();
 
         return NewsPageResponse.builder()
                 .news(newsList)
                 .keyword(keyword)
+                .size(DEFAULT_PAGE_SIZE)
+                .hasMore(false)
+                .nextCursor(null)
                 .build();
     }
 
     // TODO: 팀원이 etf/company repository 구현 후 활성화
     @Override
     public EtfNewsResponse getEtfNews(Long etfId, int size) {
-        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
-    }
-
-    // TODO: 팀원이 etf/company repository 구현 후 활성화
-    @Override
-    public StockNewsResponse getStockNews(String ticker, int size) {
         throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
     }
 
@@ -216,8 +247,17 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
-        // 포트폴리오 관련 뉴스 조회 (관련성 높은 순 + 최신 5개)
-        List<NewsArticle> articles = newsArticleRepository.findByPortfolioId(portfolioId, MAX_PORTFOLIO_NEWS);
+        // 관련성 높은 뉴스 조회
+        List<NewsArticle> articles = newsArticleRepository.findPortfolioNewsWithFullData(portfolioId, MAX_PORTFOLIO_NEWS);
+
+        if (articles.isEmpty()) {
+            return PortfolioNewsResponse.builder()
+                    .portfolioId(portfolio.getId())
+                    .portfolioName(portfolio.getName())
+                    .news(List.of())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+        }
 
         // DTO 변환
         List<PortfolioNewsResponse.PortfolioNewsItem> newsItems = articles.stream()
@@ -232,9 +272,9 @@ public class NewsServiceImpl implements com.whatsyouretf.userservice.domain.news
                 .toList();
 
         // 오늘 오전 9시 기준 시각 계산
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime todayNineAm = now.toLocalDate().atTime(9, 0);
-        java.time.LocalDateTime updatedAt = now.isBefore(todayNineAm)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayNineAm = now.toLocalDate().atTime(9, 0);
+        LocalDateTime updatedAt = now.isBefore(todayNineAm)
                 ? todayNineAm.minusDays(1)
                 : todayNineAm;
 

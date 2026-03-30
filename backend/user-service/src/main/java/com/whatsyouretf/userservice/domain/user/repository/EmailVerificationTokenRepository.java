@@ -27,4 +27,10 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
     void deleteExpiredTokens(@Param("now") LocalDateTime now);
 
     boolean existsByEmailAndIsVerifiedFalse(String email);
+
+    /**
+     * 인증 완료된 토큰 조회 (회원가입 완료 시 사용)
+     */
+    @Query("SELECT t FROM EmailVerificationToken t WHERE t.email = :email AND t.isVerified = true ORDER BY t.createdAt DESC LIMIT 1")
+    Optional<EmailVerificationToken> findVerifiedByEmail(@Param("email") String email);
 }

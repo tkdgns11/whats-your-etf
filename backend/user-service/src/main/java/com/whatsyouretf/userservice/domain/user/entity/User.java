@@ -1,6 +1,8 @@
 package com.whatsyouretf.userservice.domain.user.entity;
 
 import com.whatsyouretf.userservice.common.entity.BaseEntity;
+import com.whatsyouretf.userservice.common.exception.BusinessException;
+import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,12 +43,30 @@ public class User extends BaseEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "is_my_data_accepted")
+    @Builder.Default
+    private Boolean isMyDataAccepted = false;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UserSocialAccount> socialAccounts = new ArrayList<>();
+
+    public void acceptMyData() {
+        if (isMyDataAccepted) {
+            throw new BusinessException(ErrorCode.ALREADY_ACCEPTED_MYDATA);
+        }
+
+        isMyDataAccepted = true;
+    }
+
+    public void checkMyDataAccepted() {
+        if(!isMyDataAccepted) {
+            throw new BusinessException(ErrorCode.MYDATA_NOT_CONNECTED);
+        }
+    }
 
     public enum Role {
         USER, ADMIN

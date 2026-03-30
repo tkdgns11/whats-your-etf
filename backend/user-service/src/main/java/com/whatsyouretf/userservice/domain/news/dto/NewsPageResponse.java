@@ -8,9 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * 뉴스 목록 응답 DTO
- * <p>
- * 페이징 없이 최신 뉴스 20개를 반환합니다.
+ * 뉴스 목록 응답 DTO (커서 기반 페이징)
  */
 @Getter
 @NoArgsConstructor
@@ -23,4 +21,13 @@ public class NewsPageResponse {
 
     /** 검색 키워드 (검색 시에만) */
     private String keyword;
+
+    /** 페이지 크기 */
+    private int size;
+
+    /** 다음 페이지 존재 여부 */
+    private boolean hasMore;
+
+    /** 다음 커서 (마지막 뉴스 ID) */
+    private Long nextCursor;
 }

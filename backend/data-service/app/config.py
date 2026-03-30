@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from urllib.parse import quote_plus
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_name: str = "whatsyouretf"
     db_user: str = "wye"
-    db_password: str = "wye1234"
+    db_password: str = ""
 
     # DATABASE_URL 직접 지정 시 사용 (로컬 개발용)
     database_url: str | None = None
@@ -48,6 +49,25 @@ class Settings(BaseSettings):
     krx_pw: str = ""
 
     data_portal_company_service_key: str = ""
+
+    # KIS API (한국투자증권)
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
+
+    # 환경 (local / prod)
+    app_env: str = "local"
+
+    # RabbitMQ
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = Field(default="guest", validation_alias="RABBITMQ_PASS")
+    
+    # Redis
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str = ""
+    redis_db: int = 0
 
     model_config = SettingsConfigDict(
         env_file=".env",
