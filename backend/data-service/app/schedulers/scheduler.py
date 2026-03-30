@@ -329,7 +329,7 @@ async def run_etf_stock_cache_sync():
             # Phase 1: 활성 ETF 캐시 업데이트 (15개씩 배치)
             etf_coros = [
                 cache_service.publish_etf_cache(etf.stock_code, etf.name or "", all_stocks)
-                for etf in etfs if etf.stock_code
+                for etf in etfs if etf.stock_code and etf.stock_code != "WYE200"
             ]
             phase1_results = await _run_batched(etf_coros, batch_size=15)
             logger.info(f"=== Phase 1 완료: {len(etf_coros)}개 ETF 캐시 업데이트 ===")
