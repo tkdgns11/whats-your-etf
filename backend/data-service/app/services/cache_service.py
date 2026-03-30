@@ -73,14 +73,6 @@ class RedisCacheService:
             await self.redis_client.sadd("EtfCurrentInfo", ticker)
             await self.redis_client.hset(etf_key, mapping=etf_fields)
 
-            # WYE200 (테스트용) — KODEX 200 갱신 시 함께 미러링
-            if ticker == "069500":
-                override = await self.redis_client.get("wye200:override")
-                if not override or override == "0":
-                    wye_fields = {**etf_fields, "id": "WYE200", "ticker": "WYE200", "name": "WYE 200"}
-                    await self.redis_client.sadd("EtfCurrentInfo", "WYE200")
-                    await self.redis_client.hset("EtfCurrentInfo:WYE200", mapping=wye_fields)
-
         except Exception as e:
             logger.error(f"[{ticker}] ETF Cache 실패: {e}")
             
