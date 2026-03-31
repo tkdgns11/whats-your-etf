@@ -94,8 +94,8 @@ server:
 # JWT
 jwt:
   secret: ${JWT_SECRET:whatsyouretf-jwt-secret-key-for-development-only-change-in-production}
-  access-token-validity: 21600000   # 6 hours
-  refresh-token-validity: 604800000 # 7 days
+  access-token-validity: 31536000000   # 1 year
+  refresh-token-validity: 31536000000 # 1 year
 
 # Logging
 logging:
