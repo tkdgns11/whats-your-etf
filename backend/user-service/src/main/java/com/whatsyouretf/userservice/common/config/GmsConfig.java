@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * LLM API 설정 (Anthropic 직접 호출 우선, GMS 대체)
+ * LLM API 설정 (Anthropic 직접 호출 우선, GMS 대체, OpenAI fallback)
  */
 @Configuration
 @Slf4j
@@ -32,6 +32,12 @@ public class GmsConfig {
 
     @Value("${anthropic.api.key:}")
     private String anthropicApiKey;
+
+    @Value("${openai.api.base-url:https://api.openai.com}")
+    private String openaiBaseUrl;
+
+    @Value("${openai.api.key:}")
+    private String openaiApiKey;
 
     @Bean
     public WebClient gmsWebClient() {
@@ -66,5 +72,31 @@ public class GmsConfig {
                         .defaultCodecs()
                         .maxInMemorySize(10 * 1024 * 1024)) // 10MB
                 .build();
+    }
+
+    @Bean
+    public WebClient openaiWebClient() {
+        log.info("OpenAI API WebClient 초기화 (fallback용)");
+
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .responseTimeout(Duration.ofSeconds(60))
+                .doOnConnected(conn ->
+                        conn.addHandlerLast(new ReadTimeoutHandler(60, TimeUnit.SECONDS))
+                            .addHandlerLast(new WriteTimeoutHandler(60, TimeUnit.SECONDS)));
+
+        return WebClient.builder()
+                .baseUrl(openaiBaseUrl)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .defaultHeader("Authorization", "Bearer " + openaiApiKey)
+                .defaultHeader("Content-Type", "application/json")
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .build();
+    }
+
+    public boolean isOpenaiAvailable() {
+        return openaiApiKey != null && !openaiApiKey.isEmpty();
     }
 }

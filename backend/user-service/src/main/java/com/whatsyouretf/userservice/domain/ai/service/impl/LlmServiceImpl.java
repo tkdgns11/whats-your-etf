@@ -3,18 +3,21 @@ package com.whatsyouretf.userservice.domain.ai.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.whatsyouretf.userservice.common.config.GmsConfig;
 import com.whatsyouretf.userservice.common.exception.BusinessException;
 import com.whatsyouretf.userservice.common.exception.ErrorCode;
 import com.whatsyouretf.userservice.domain.ai.dto.GmsRequest;
 import com.whatsyouretf.userservice.domain.ai.dto.GmsResponse;
+import com.whatsyouretf.userservice.domain.ai.dto.OpenAiRequest;
+import com.whatsyouretf.userservice.domain.ai.dto.OpenAiResponse;
 import com.whatsyouretf.userservice.domain.ai.dto.PortfolioReviewRequest;
 import com.whatsyouretf.userservice.domain.ai.entity.PortfolioAiFeedback;
 import com.whatsyouretf.userservice.domain.ai.repository.PortfolioAiFeedbackRepository;
 import com.whatsyouretf.userservice.domain.ai.service.LlmService;
 import com.whatsyouretf.userservice.domain.etf.entity.Etf;
 import com.whatsyouretf.userservice.domain.etf.repository.EtfRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +28,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LLM 서비스 구현체 (GMS API 연동)
+ * LLM 서비스 구현체 (GMS API 연동 + OpenAI fallback)
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class LlmServiceImpl implements LlmService {
 
     private final WebClient gmsWebClient;
+    private final WebClient openaiWebClient;
+    private final GmsConfig gmsConfig;
     private final PortfolioAiFeedbackRepository feedbackRepository;
     private final EtfRepository etfRepository;
     private final ObjectMapper objectMapper;
@@ -43,8 +47,29 @@ public class LlmServiceImpl implements LlmService {
     @Value("${anthropic.model.max-tokens:${gms.model.max-tokens}}")
     private int maxTokens;
 
+    @Value("${openai.model.name:gpt-4o-mini}")
+    private String openaiModelName;
+
+    @Value("${openai.model.max-tokens:4096}")
+    private int openaiMaxTokens;
+
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_DELAY_MS = 1000; // 1초
+
+    public LlmServiceImpl(
+            WebClient gmsWebClient,
+            @Qualifier("openaiWebClient") WebClient openaiWebClient,
+            GmsConfig gmsConfig,
+            PortfolioAiFeedbackRepository feedbackRepository,
+            EtfRepository etfRepository,
+            ObjectMapper objectMapper) {
+        this.gmsWebClient = gmsWebClient;
+        this.openaiWebClient = openaiWebClient;
+        this.gmsConfig = gmsConfig;
+        this.feedbackRepository = feedbackRepository;
+        this.etfRepository = etfRepository;
+        this.objectMapper = objectMapper;
+    }
 
     private static final String SYSTEM_PROMPT = """
         당신은 ETF 포트폴리오 분석 전문가입니다. 사용자의 포트폴리오를 분석하여 투자 성향과 특징을 진단해주세요.
@@ -78,20 +103,15 @@ public class LlmServiceImpl implements LlmService {
         try {
             String userMessage = buildUserMessage(portfolio);
 
-            GmsRequest request = GmsRequest.forPortfolioAnalysis(
-                    modelName,
+            String llmResponse = callLlmWithFallback(
                     promptTemplate != null ? promptTemplate : SYSTEM_PROMPT,
-                    userMessage,
-                    maxTokens
+                    userMessage
             );
 
-            GmsResponse response = callGmsApiWithRetry(request);
-
-            if (response == null || response.getTextContent() == null) {
+            if (llmResponse == null) {
                 throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
             }
 
-            String llmResponse = response.getTextContent();
             log.debug("LLM 응답: {}", llmResponse);
 
             // JSON 파싱 및 저장
@@ -197,6 +217,75 @@ public class LlmServiceImpl implements LlmService {
     }
 
     /**
+     * LLM 호출 (GMS 실패 시 OpenAI fallback)
+     */
+    private String callLlmWithFallback(String systemPrompt, String userMessage) {
+        // 1. GMS (Claude) 시도
+        try {
+            GmsRequest gmsRequest = GmsRequest.forPortfolioAnalysis(
+                    modelName, systemPrompt, userMessage, maxTokens);
+            GmsResponse response = callGmsApiWithRetry(gmsRequest);
+
+            if (response != null && response.getTextContent() != null) {
+                lastUsedModel = modelName;
+                return response.getTextContent();
+            }
+        } catch (BusinessException e) {
+            log.warn("GMS API 실패, OpenAI fallback 시도: {}", e.getMessage());
+        }
+
+        // 2. OpenAI fallback
+        if (gmsConfig.isOpenaiAvailable()) {
+            try {
+                String response = callOpenAiApi(systemPrompt, userMessage);
+                if (response != null) {
+                    lastUsedModel = openaiModelName;
+                    return response;
+                }
+            } catch (Exception e) {
+                log.error("OpenAI API도 실패: {}", e.getMessage());
+            }
+        } else {
+            log.warn("OpenAI API 키가 설정되지 않아 fallback 불가");
+        }
+
+        throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+    }
+
+    // 마지막 사용된 모델 추적
+    private String lastUsedModel;
+
+    /**
+     * OpenAI Chat Completions API 호출
+     */
+    private String callOpenAiApi(String systemPrompt, String userMessage) {
+        log.info("OpenAI API 호출 시작 (model={})", openaiModelName);
+
+        OpenAiRequest request = OpenAiRequest.forPortfolioAnalysis(
+                openaiModelName, systemPrompt, userMessage, openaiMaxTokens);
+
+        try {
+            OpenAiResponse response = openaiWebClient.post()
+                    .uri("/v1/chat/completions")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(OpenAiResponse.class)
+                    .block();
+
+            if (response != null && response.getTextContent() != null) {
+                log.info("OpenAI API 호출 성공");
+                return response.getTextContent();
+            }
+        } catch (WebClientResponseException e) {
+            log.error("OpenAI API 호출 실패: status={}, body={}",
+                    e.getStatusCode().value(), e.getResponseBodyAsString());
+            throw e;
+        }
+
+        return null;
+    }
+
+    /**
      * LLM 응답 파싱 및 피드백 엔티티 업데이트
      */
     private void parseLlmResponseAndUpdate(PortfolioAiFeedback feedback, String llmResponse) {
@@ -218,11 +307,12 @@ public class LlmServiceImpl implements LlmService {
             // 분석
             String analysis = getTextOrNull(root, "analysis");
 
-            // 엔티티 업데이트
-            feedback.complete(headline, subHeadline, keywords, analysis, modelName);
+            // 엔티티 업데이트 (실제 사용된 모델명 기록)
+            String usedModel = lastUsedModel != null ? lastUsedModel : modelName;
+            feedback.complete(headline, subHeadline, keywords, analysis, usedModel);
             feedbackRepository.save(feedback);
 
-            log.info("포트폴리오 AI 분석 완료: feedbackId={}", feedback.getId());
+            log.info("포트폴리오 AI 분석 완료: feedbackId={}, model={}", feedback.getId(), usedModel);
 
         } catch (JsonProcessingException e) {
             log.error("LLM 응답 JSON 파싱 실패: {}", llmResponse, e);
