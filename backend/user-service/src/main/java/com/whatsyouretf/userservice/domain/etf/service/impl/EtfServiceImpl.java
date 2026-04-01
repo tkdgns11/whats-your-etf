@@ -163,7 +163,8 @@ public class EtfServiceImpl implements EtfService {
                     .name(sectorName)
                     .percentage(cluster.getWeightPct())
                     .stocks(stocks)
-                    .aiAnalysis(aiAnalysisMap.get(cluster.getGroupCode()))
+                    // AI 분석 매칭: 테마형은 industry_code, 시장형은 group_code
+                    .aiAnalysis(aiAnalysisMap.get(code))
                     .build();
             })
             .toList();
