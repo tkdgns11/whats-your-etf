@@ -180,7 +180,9 @@
 > 사용자·인증 · ETF · 종목·산업분류 · 섹터 클러스터 · 뉴스 · 포트폴리오 · 백테스트 · 알림
 
 <div align="center">
-  <img src="career/ETF_ERD.png" width="900" alt="What's Your ETF ERD"/>
+  <img src="ERD/ETF_ERD.png" width="900" alt="What's Your ETF ERD"/>
+  <br/>
+  <a href="https://www.erdcloud.com/d/ZbmsxyCCYBmPnCbTN">🔗 ERDCloud에서 전체 보기</a>
 </div>
 
 <br>
