@@ -15,6 +15,7 @@
 - [💡 기획 배경](#-기획-배경)
 - [✨ 서비스 주요 기능](#-서비스-주요-기능)
 - [🛠️ 프로젝트 핵심 기술](#core-tech)
+- [💡 핵심 문제 해결](#core-problem)
 - [🗂️ ERD](#erd)
 - [👥 팀원 소개](#-팀원-소개)
 - [⚙️ 기술 스택](#tech-stack)
@@ -170,6 +171,94 @@
 
 - 과거 시세를 기준으로 누적·연환산 수익률(CAGR)·최대 낙폭(MDD)·샤프지수·리밸런싱을 시뮬레이션
 - 포트폴리오의 PER/PBR/ROE 가중 평균 지표 산출
+
+<br>
+
+<a name="core-problem"></a>
+
+# 💡 핵심 문제 해결
+
+### ① 뉴스 알림 처리 — RabbitMQ 비동기 채널 · Transactional Outbox
+
+- **역할 구분** — **RabbitMQ**: 뉴스 분석 결과와 알림 처리 흐름을 사용자 요청과 분리하는 **비동기 이벤트 채널** / **Transactional Outbox**: "알림 저장"과 "발송 요청 기록"을 **같은 DB 트랜잭션에 묶어** 발송 실패를 재시도·격리하는 구조 (둘은 별개 역할)
+- **문제** — 관심 ETF 뉴스 알림을 "알림 저장 → FCM 발송" 한 흐름으로 처리하면, 커밋 전에 발송이 나가거나(롤백 시 유령 알림) 실패해도 재시도가 없어 유실될 수 있음
+- **원인** — DB 저장과 외부 발송(FCM)이 한 흐름에 묶여 두 작업의 성공/실패가 갈라지는 **dual-write** 문제
+- **대안** — ① `@Async` 직발송 — 커밋 전 발송·실패 시 유실 ② RabbitMQ 직접 발행 — 비동기 처리는 가능하지만 DB 저장과 발행 흐름이 분리됨 ③ **Transactional Outbox** — DB 테이블 하나로 원자성 확보
+- **선택 이유** — 개발 단계·팀 규모에서는 이미 쓰는 DB에 outbox 테이블 하나로 **원자성 + 재시도 + 다중 릴레이 안전(SKIP LOCKED)** 까지 최소 인프라로 확보 가능
+- **해결** — 알림 저장과 발송 요청(`notification_outbox`)을 **같은 트랜잭션**에 적재(PENDING). 별도 `@Scheduled` 릴레이가 `FOR UPDATE SKIP LOCKED`로 PENDING을 선점해 FCM 발송·SENT 처리, 실패는 재시도(최대 5회) 후 `FAILED`로 격리(`retryCount`·`lastError` 기록)
+- **결과** — 알림 저장과 발송 요청을 같은 트랜잭션으로 관리하고, 실패 건은 재시도 후 `FAILED`로 격리해 추적 가능하게 함
+
+```java
+// NewsAlertService — 알림 저장과 발송 요청을 같은 트랜잭션에 적재 (원자적)
+@Transactional
+public int process(NewsAnalyzedEvent e) {
+    var alerts = buildDeduped(e);          // 중복 사용자 제거
+    alertRepo.saveAll(alerts);             // 알림 저장
+    outboxRepo.saveAll(toOutbox(alerts));  // 아웃박스 적재 (같은 TX)
+}
+// Relay(@Scheduled, @Transactional): PENDING을 FOR UPDATE SKIP LOCKED 로 선점
+//   → FCM 발송 → SENT / 실패는 재시도(최대 5회) 초과 시 FAILED 로 격리
+```
+
+### ② 뉴스·종목 목록 조회 — N+1 제거 + 커서 페이지네이션
+
+- **문제** — 목록 조회 시 연관 데이터를 건마다 다시 조회(N+1)하고, `OFFSET` 페이징은 페이지가 깊어질수록 느려짐
+- **원인** — 지연 로딩으로 연관을 매 건 조회, `OFFSET N`은 앞 N행을 읽고 버림
+- **대안** — ① `OFFSET` 페이징 — 깊어질수록 느려짐 ② `@EntityGraph` — 선언적이나 세밀한 제어는 약함 ③ **`JOIN FETCH` + 커서** — 조인 명시 + 비용 일정
+- **선택 이유** — 무한 스크롤이라 임의 페이지 점프가 필요 없고, 커서는 페이지가 깊어져도 비용이 일정. 연관은 조인으로 직접 제어
+- **해결** — 연관을 `LEFT JOIN FETCH`로 한 번에 로딩(뉴스 `category` / 종목 `company`·`industry`), 페이징은 `(publishedAt, id)` **커서**로 전환해 인덱스 시작점을 바로 탐색(같은 시각 중복·누락 방지용 `id` tie-breaker)
+- **결과** — 조회 쿼리 수 감소 + 페이지가 깊어져도 응답 비용 일정 (임의 페이지 점프 불가 → 무한 스크롤에 적합)
+
+```java
+// 카테고리를 함께 로딩(N+1 제거) + (발행일, id) 커서
+@Query("SELECT n FROM NewsArticle n LEFT JOIN FETCH n.category " +
+       "WHERE n.isActive = true AND n.contentSummary IS NOT NULL " +
+       "AND (n.publishedAt < :ts OR (n.publishedAt = :ts AND n.id < :id)) " +
+       "ORDER BY n.publishedAt DESC, n.id DESC")
+List<NewsArticle> findByCursor(LocalDateTime ts, Long id, Pageable p);
+// 종목 목록도 동일: LEFT JOIN FETCH s.company, s.industry
+```
+
+### ③ Redis 캐싱 — 데이터 성격별 TTL 차등
+
+- **문제** — 성격이 다른 데이터를 하나의 TTL로 묶으면 신선도와 효율이 상충
+- **원인** — 시세는 자주 바뀌고 구성종목·뉴스는 거의 안 바뀜
+- **대안** — ① 단일 TTL 일괄 — 짧으면 비효율·길면 낡은 값 ② **데이터 성격별 TTL 차등**
+- **선택 이유** — 변동 주기가 다른 데이터를 하나의 TTL로 묶으면 신선도·효율이 상충 → 자주 바뀌는 것만 짧게, 나머지는 길게
+- **해결** — 데이터 변동 주기에 따라 캐시 TTL을 다르게 둠 — 기본 TTL은 1시간, 구성종목·뉴스처럼 자주 바뀌지 않는 데이터는 24시간 캐시 후 장 시작 전 일괄 무효화
+- **결과** — 자주 바뀌는 것만 짧게·나머지는 길게 캐시해 DB·외부 API 부하 절감
+
+```java
+@Bean
+RedisCacheManager cacheManager(RedisConnectionFactory cf) {
+    var def = defaultCacheConfig().entryTtl(Duration.ofHours(1)); // 기본 1h
+    var configs = Map.of(
+        "etfTickers",    def.entryTtl(Duration.ofHours(24)),  // 종목: 24h
+        "portfolioNews", def.entryTtl(Duration.ofHours(24))); // 뉴스: 24h, 09시 무효화
+    return builder(cf).cacheDefaults(def)
+        .withInitialCacheConfigurations(configs).build();
+}
+```
+
+### ④ 서비스 분리 아키텍처 — 수집/비즈니스 분리 + 부하 격리
+
+- **문제** — 스크래핑·AI 요약 같은 무거운 작업이 사용자 API와 한 프로세스에 있으면 응답 지연이 전이
+- **원인** — CPU·메모리·장애를 공유하는 단일 프로세스
+- **대안** — ① 단일 프로세스 내 스레드 분리 — CPU·메모리·크래시 공유 ② **별도 서비스로 분리** — 부하·장애 격리
+- **선택 이유** — 스크래핑·AI는 무겁고 느려 API와 한 프로세스에 두면 부하가 전이 → 별도 서비스로 격리하고 역할에 맞는 언어(Python 수집 / Spring 비즈니스) 사용
+- **해결** — 수집 서버(**FastAPI**)와 서비스 서버(**Spring Boot**)를 분리하고 **RabbitMQ**(`@RabbitListener`)로 결과 이벤트만 비동기 소비, 조회는 REST로 연계
+- **결과** — 무거운 수집·AI 작업이 사용자 응답을 막지 않음(부하·프로세스 격리)
+
+```python
+# data-service (Python): 금융 데이터 스크래핑 + GPT/Claude 요약 → RabbitMQ (pika)
+```
+```java
+// user-service (Spring Boot): 무거운 작업 없이 결과 이벤트만 비동기 소비
+@RabbitListener(queues = "news.alert.queue")
+public void onNewsAlert(NewsAlertEvent e) {
+    fcmService.sendAsync(e.getUserIds(), e.toPush());  // FCM 푸시 (@Async)
+}   // 필요 시 조회는 REST → 스크래핑·수집 부하를 API와 격리
+```
 
 <br>
 
