@@ -18,6 +18,7 @@
 - [👤 담당 역할 및 기여](#-담당-역할-및-기여)
 - [💡 기획 배경](#-기획-배경)
 - [✨ 서비스 주요 기능](#-서비스-주요-기능)
+- [🖥️ 화면](#screens)
 - [🛠️ 프로젝트 핵심 기술](#core-tech)
 - [💡 핵심 문제 해결](#core-problem)
 - [🗂️ ERD](#erd)
@@ -137,6 +138,46 @@
 ### 🔐 소셜 로그인 · 마이페이지
 
 - Kakao OAuth 로그인, 관심 ETF·포트폴리오 관리
+
+<br>
+
+<a name="screens"></a>
+
+# 🖥️ 화면
+
+### 🔍 탐색 · 분석
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/mid-presentation/home.png" alt="홈 — 거래량 TOP 10과 실시간 ETF 뉴스"/></td>
+    <td align="center" width="25%"><img src="docs/mid-presentation/etf.png" alt="ETF 상세 클러스터 — 산업별 노출도 버블 차트"/></td>
+    <td align="center" width="25%"><img src="img/screens/etf-detail-tab.png" alt="ETF 상세보기 — NAV·수익률 그래프·거래량"/></td>
+    <td align="center" width="25%"><img src="img/screens/news-ai-summary.png" alt="뉴스 상세 — AI 핵심 요약과 산업 태그"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>홈</b><br/><sub>거래량 TOP 10 · 실시간 ETF 뉴스</sub></td>
+    <td align="center"><b>ETF 상세 · 클러스터</b><br/><sub>산업별 노출도를 버블 차트로 시각화</sub></td>
+    <td align="center"><b>ETF 상세보기</b><br/><sub>기준가(NAV) · 수익률 그래프 · 거래량</sub></td>
+    <td align="center"><b>뉴스 AI 분석</b><br/><sub>AI 3줄 요약 · 산업 자동 분류 · ETF 연결</sub></td>
+  </tr>
+</table>
+
+### 📈 전략 · 시뮬레이션
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/mid-presentation/portfolio1.png" alt="전략 상세 — 수익률 추이와 관련 뉴스 타임라인"/></td>
+    <td align="center" width="25%"><img src="docs/mid-presentation/portfolio2.png" alt="전략 비교 — 내 포트폴리오 간 수익률 비교"/></td>
+    <td align="center" width="25%"><img src="docs/mid-presentation/tracking1.png" alt="투자 시뮬레이션 — 수익률 추이"/></td>
+    <td align="center" width="25%"><img src="docs/mid-presentation/tracking2.png" alt="투자 시뮬레이션 — 포트폴리오 분석"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>전략 상세</b><br/><sub>수익률 추이 · 관련 뉴스 타임라인</sub></td>
+    <td align="center"><b>전략 비교</b><br/><sub>여러 전략의 수익률을 나란히 비교</sub></td>
+    <td align="center"><b>투자 시뮬레이션</b><br/><sub>적립·거치 조건별 과거 수익률 백테스트</sub></td>
+    <td align="center"><b>포트폴리오 분석</b><br/><sub>PER·PBR·ROE와 섹터 비중 진단</sub></td>
+  </tr>
+</table>
 
 <br>
 
