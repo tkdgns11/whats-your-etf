@@ -8,7 +8,7 @@
 - **수상**: SSAFY 특화 프로젝트 **1등**
 
 <div align="center">
-  <img src="award/award-specialized-1st.png" width="280" alt="SSAFY 특화 프로젝트 1등 상장"/>
+  <img src="award/award-specialized-1st.png" width="380" alt="SSAFY 특화 프로젝트 1등 상장"/>
 </div>
 
 <br>
