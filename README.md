@@ -7,6 +7,10 @@
 - **개발 인원**: 5명 (Backend 2 · Android 3)
 - **수상**: SSAFY 특화 프로젝트 **1등**
 
+<div align="center">
+  <img src="award/award-specialized-1st.png" width="280" alt="SSAFY 특화 프로젝트 1등 상장"/>
+</div>
+
 <br>
 
 # 목차
